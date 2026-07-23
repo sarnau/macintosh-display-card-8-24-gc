@@ -15,7 +15,8 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 | `gc24` -4048 | 48 K | 68k | host-side **QuickDraw GC accelerator engine** (this folder's `gc24.s`) |
 | `gc24` 32 | 2.7 K | 68k | secondary engine code |
 | `DRVR` -4048 | 18 K | 68k | **`.GraphAccel`** — low-level accelerator driver (this folder's `DRVR.s`; *not* a video driver, see below) |
-| `INIT` -4048 / -4080 | 5 K | 68k | boot-time loaders (`ACEFLoad` — download firmware to the card) |
+| `INIT` -4048 | 3.4 K | 68k | **`'8•24 GC'`** — boot-time handshake with `.GraphAccel` (`INIT_main.s`) |
+| `INIT` -4080 | 1.5 K | 68k | **`'DSInit'`** — finds/reconciles every 8•24 GC card by slot (`INIT_DSInit.s`) |
 | `CODE` -4048 | 548 B | 68k | cdev main-segment stub |
 | **`ACEF` 100** | **322 K** | **Am29000** | the main **"QuickDraw GC" accelerator firmware** |
 | `ACEF` 1 | 18 K | Am29000 | smaller Am29000 image (bootstrap/secondary) |
@@ -24,23 +25,28 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 
 The `ACEF` blobs carry a plaintext "© Copyright Apple Computer, 1990" header
 then a high-entropy body (7.2–7.4 bits/byte) — i.e. the Am29000 image is
-**packed/encoded**, unpacked by `ACEFLoad` in the 68k `INIT`/`gc24` code and
-downloaded into the card's DRAM. (`ACEF` ≈ the accelerator-executable container;
-the string table literally names the loader "ACEFLoad".)
+**packed/encoded**, unpacked by `ACEFLoad` — a routine both `gc24.s` and
+`DRVR.s` carry their own copy of (see `LoadFirmware` in `DRVR.s`) — and
+downloaded into the card's DRAM. (`ACEF` ≈ the accelerator-executable
+container; the string table literally names the loader "ACEFLoad".)
 
 ## How the pieces cooperate
 
 ```
-   boot  ──▶  INIT (-4048/-4080)
-                 │ checks environment, then ACEFLoad:
-                 │  unpack ACEF 100/1  ──▶  download to card DRAM  ──▶  Am29000 runs
+   boot  ──▶  INIT -4048 ('8•24 GC')       INIT -4080 ('DSInit')
+                 │ opens .GraphAccel by       │ scans every NuBus slot for
+                 │ name, drives a short       │ 8•24-GC-family cards, skips
+                 │ Control/Status handshake,  │ mono ones, reconciles the
+                 │ posts a boot chime, closes │ non-accelerator ones as
+                 │ the driver again           │ plain Color QD devices
+                 ▼                            ▼
+             DRVR  (.GraphAccel, the low-level accelerator driver — owns the
+                    engine-globals struct, installs the QuickDraw patches
+                    (InstallPatches), can itself run ACEFLoad)
+                 │
                  ▼
              gc24  (68k accelerator engine)  ◀──▶  Am29000 firmware (ACEF)
                  │  patches QuickDraw bottlenecks to route drawing to the card
-                 ▼
-             DRVR  (.GraphAccel, the low-level accelerator driver — owns the
-                    engine-globals struct, installs the QuickDraw patches,
-                    can itself run ACEFLoad; see below)
                  ▲
    user  ──▶  cdev (control panel)  — depth / gray / monitor / gamma UI,
                                        status + error reporting
@@ -177,15 +183,71 @@ globals" struct, `$BAA`/2986 bytes) and **A1 = ParamBlock**
 * Two smaller 35-case dispatch tables (index×6 into 6-byte records) are
   identified and rendered structurally but not deep-dived case-by-case.
 
+## The two boot-time INITs
+
+### `INIT_main.s` — the `'8•24 GC'` INIT (id `-4048`)
+
+A one-shot boot-time handshake, *not* a resident client — it never touches
+hardware directly (no `_SlotManager`/`_HWPriv`/`Set*TrapAddress` calls
+anywhere in the file, unlike `DRVR.s`/`gc24.s`). Fully traced control flow:
+
+1. `_GetKeys`, then a boot-icon/identity check (`ShowIconOrAlert`) that must
+   return a fixed sentinel (`$D8EF`) to continue.
+2. Probes whether Toolbox trap `$A8B5` (`_ScriptUtil` per Apple's `Traps.h`)
+   is implemented; two more calls to it most plausibly fetch the current
+   script/language code, used as `1000+code` to pick a **localised `STR#`
+   resource** — the same `STR#1000..` family inventoried above.
+3. Loads that `STR#` list plus a `STR` resource holding the product's
+   display name, builds `productName + separator + pickedMessage` via two
+   recovered utility routines (`PLStrCpy`/`PLStrCat`, Pascal string
+   copy/concat with the classic 255-byte cap), and posts it as a
+   **Notification Manager alert** (`NMInstall`) — the boot-time "product
+   ready" chime. The picked-message index is clamped to 0 or 1, plausibly
+   *monitor attached* vs. *not attached* (the develop article notes the
+   8•24 GC, unlike its plain 8•24 sibling, stays active with no monitor).
+4. **`OpenDriverByName('.GraphAccel', &refNum)`** — opens the very driver
+   disassembled above, by name, via a hand-rolled `_Open` call (same
+   pattern for `_Control`/`_Status`/`_Close`: `ControlDriverSync`,
+   `StatusDriverSync`, `CloseDriverSync` — minimal inline
+   `PBControlSync`/`PBStatusSync`/`PBCloseSync` equivalents).
+5. Drives a short, hard-coded `Control`/`Status` handshake against it,
+   branching on the results, then shows the success or error alert variant
+   and **closes the driver again** — confirming this INIT only performs a
+   one-time boot-time check/handshake.
+
+Also recovers two more embedded MacsBug symbols beyond `p2cstr`/`c2pstr`
+(shared with other 68k modules in this project): `PLStrCat`, `PLStrCpy`.
+
+### `INIT_DSInit.s` — `'DSInit'` (id `-4080`)
+
+Much smaller (1552 bytes; the first `$446` bytes are unreached constant
+data — an unconditional `bra` at the very start jumps straight past them).
+Unlike the main INIT, this one talks to the **Slot Manager directly**: after
+gating on Color QuickDraw + System 7-class environment checks, it walks
+**every NuBus slot** with a stack-allocated `SpBlock` (the exact same
+`spCategory`/`spCType`/`spDrvrSW`/`spDrvrHW=$1D` identity used throughout
+this project's ROM and `DRVR.s`) looking for **every 8•24 GC-family card**,
+not just the accelerator — skipping any whose driver reports
+`GFlags.MonoFlag` set (the exact bit position documented in
+`../extracted-source/VideoDriver.s`) and cross-checking a driver-name
+literal. This lines up precisely with the develop article's description of
+multi-card behaviour: *"you can have as many 8•24 GC boards as you want...
+only one will function as a graphics accelerator; any other becomes a
+glorified display card"* — `DSInit` is very plausibly the code that finds
+and reconciles those "other" cards as ordinary Color QuickDraw devices
+(via a `'scrn'` calibration-resource lookup and an unidentified OS trap,
+`$A204`, not present in Apple's published `Traps.h`).
+
 ## Status / what's next
 
 Delivered: the resource map, the 68k/Am29000 split, the commented **`cdev`**,
 the fully-disassembled **`gc24`** engine, the unpacked **`ACEF`** Am29000
-firmware, and the fully-disassembled **`.GraphAccel`** (`DRVR`). Remaining,
-on request:
+firmware, the fully-disassembled **`.GraphAccel`** (`DRVR`), and both
+boot-time **`INIT`**s. Remaining, on request:
 
 * **Am29000 disassembly depth** — `am29k_dasm.py` lifts `ACEF_100`'s `.text`
   cleanly (see [`firmware/`](firmware/)), but individual functions aren't
   named/commented yet (COFF relocations aren't applied either).
-* **`INIT` -4048/-4080 (5 K)** — the boot-time loaders; same toolchain,
-  not yet done.
+* A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
+  `ShowIconOrAlert`) and the unidentified `$A204` trap in `INIT_DSInit.s`
+  aren't traced further — flagged honestly in each file rather than guessed.
