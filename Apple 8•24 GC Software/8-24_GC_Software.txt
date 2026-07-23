@@ -1,0 +1,134 @@
+Name:         8¥24 GC Software
+Version:      7.0.1
+Released:     May 18, 1992
+Description:  This is a repost of the Macintosh 8¥24 GC Video Card software previously
+                         posted here.  It is intended for use with System 7.1 and earlier.  It is not
+                         fully compatible with System 7.5.   Version 1.1, included in this archive,
+                         is for use with System 6.
+
+The enclosed file is a self-extracting archive. To use, download, double-click the downloaded file (this decompresses it).
+
+
+WHAT IS THE 8¥24 GC SOFTWARE?
+
+The 8¥24 GC software is a control panel device that enables graphics acceleration with the Macintoshª Display Card 8¥24 GC.
+
+WHAT DO I NEED TO USE THE 8¥24 GC VERSION 7.01 SOFTWARE?
+
+You must have the following installed in your Macintosh:
+   ÑSystem 7.0 or greater (do NOT use System 6.0.x)
+   Ñan 8¥24 GC card
+   Ña minimum of 3 megabytes of RAM
+
+HOW TO INSTALL THE 8¥24 GC SOFTWARE
+
+1.  Insert the 8¥24 GC disk into your computer's floppy disk drive.
+2.  Drag the 8¥24 GC icon to the system folder on your startup disk.  System 7 will
+      install this in the Control Panels folder for you.
+3.  You will need to restart your Macintosh for the software to be fully installed.
+
+PLEASE NOTE:   The 8¥24 GC software is not designed for use with 68040 (Quadra) Macintosh computers.  Although the software can be copied into Control Panels, acceleration is permanently disabled.
+
+AFTER YOU INSTALL
+
+Restart your computer.  A rocket will appear and travel up your screen.  This indicates that the software has been installed correctly and acceleration is enabled.
+
+If the rocket does not travel up your screen and instead appears with a red circled line through it, there has been a problem installing the software. Please check your 8¥24 GC manual for troubleshooting information.
+
+KNOWN 3RD PARTY PRODUCT PROBLEMS WITH THE 8¥24 GC
+
+The following is a list of known problems running 3rd party applications with 8¥24GC acceleration.  Developers are being notified of these problems.  In some cases, the developer has already addressed the problem and a resolution is listed, preceded by an "°."
+
+Until new versions are available from the 3rd party companies below, a temporary workaround for any of these bugs is to disable acceleration on the 8¥24 GC card.  To do this, choose Control Panels from the Apple menu.  Find and select the 8¥24 GC icon.  In the box that appears at the top of the 8¥24 GC Control Panel, click the icon with a circled line through it to turn acceleration off.  When you turn acceleration on or off in the Control Panel, the change takes effect immediately; that is, you don't have to choose Restart.
+
+¥  MacRendermanª 1.1
+    When you try to render a ".rib" file from RenderAppª you will get a bus error
+    some time during the rendering process.  We recommend that you disable
+    acceleration before attempting this process, since it may take some time
+    for the bug to surface, and your rendering process will need to be restarted.
+    This problem is caused by MacRenderman's access of various reserved fields
+    in QuickDraw data structures.  The developer has been notified of the issue.
+
+¥  Aldus PageMakerª 4.01
+    When using an Adobe Type Managerª font with PageMaker 4.01, no text appears on
+    the screen when you type.
+    °  This problem has been fixed in Aldus PageMaker 4.2
+
+¥  Macromind Directorª 3.1
+    While running an animation sequence, you will notice some screen corruption
+    around moving objects.  Please note that other programs or games created with
+    Macromind Director will display similar screen corruption.  The developer has been
+    notified of this problem.
+
+¥  ImageStudioª 1.7
+    After launching ImageStudio, you will notice that the palette below the untitled
+    document window, which is supposed to be grayscale, is solid black.   We have
+     notified the developer of this issue.
+
+¥  DesignStudioª 2.0
+    While scrolling up and down through pages of text, you will notice that some of
+     the text will appear smeared on the screen.  The problem does not result in data
+     corruption or system locks.  The developer has been notified of this problem.
+
+¥ Aldus SuperPaint 3.0
+    When running Aldus SuperPaint 3.0 random bus errors can occur.  The developer has
+    been notified of this issue.
+
+¥  Imageª 1.26f
+    The LUT display on the left side of the screen is white instead of grayscale or
+     color.  Text drawn on the screen will appear fuzzy.  Images will appear with extra
+     dots.  We have notified the developer of this problem.
+
+¥  FullWrite Professionalª 1.6(p1)
+    Text that is highlighted disappears when you release the mouse.  The developer has
+    been notified of this problem.
+
+¥  ClickChangeª
+    With ClickChangeª enabled, the system will hang when you switch between colors
+    and grays in the monitor control panel.  Sometimes it takes a couple of times
+    before your system will actually hang.  The developer has been notified of the
+    issue.
+
+¥  Radius Rocketª
+    The Radius Rocket is not compatible with the display card 8¥24 GC.
+
+¥  Microsoft Flight Simulator 4.0ª
+    With the screen set to 4-bits per pixel or higher (16 colors), you will get a bus
+    error upon launching Flight Simulator 4.0.ª   This is an incompatibility related
+    to Flight Simulator's access of reserved registers in the 680X0 that are used
+    by system software.  The developer has been notified of the issue.
+
+¥  Maxima RAM diskª
+    Maximaª causes portions of the menu titles and/or areas behind some menus to be
+    filled with corrupted data (random data).  This problem will occur more frequently
+    if the cards are placed in the high numbered NuBus slots (e.g. $e or slot 6 on the
+    IIfx).  Technically, this RAM disk is moving information from RAM into ROM address
+    space which is reserved for Apple software.  We have notified the developer of this
+    issue.
+
+¥  AfterDarkª 2.0v  (fish module only)
+    When the "fish" module is active, you will notice a decrease in performance - the
+    fish swim slower with the 8¥24 GC acceleration ON.   Technically, this is caused by
+    misalignment of the fish pixmap drawings themselves, which leads to non-optimal
+    performance.  Other than this, the module works fine.  This is likely to be fixed in
+    future versions of the module.
+
+¥  Startup Managerª
+    When using Startup Manager to change the order that your INITs are launching,
+    and if the 8¥24 GC rocket appears on the second row, there will be slight screen
+    corruption when the rocket flies.    NOTE:  This is an on-screen artifact only,
+    and does not affect performance or data.
+
+¥  "ECS" or Engineering Capturing Systemª
+    When running the "Symbol" application, you will see 3 extra horizontal lines when
+    the screen depth is set to 8-bits per pixel.
+
+¥ A general note about games
+    Most games will not be accelerated by the 8¥24GC card.  Technically, this is
+    most often caused by the developer not using GWorlds for animation.
+
+KNOWN APPLE SOFTWARE COMPATIBILITY ISSUES WITH THE 8¥24 GC CARD
+
+¥  If you are using Chinese Talk II please make sure it is version 1.1 or greater.
+
+¥  Please note that the 8¥24GC card does not accelerate the display of TrueTypeª fonts.  For optimum performance, install the appropriate size bit-map 
