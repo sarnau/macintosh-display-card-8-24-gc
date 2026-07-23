@@ -85,13 +85,47 @@ def decode(op, pc):
     if o==0xe1: return ('divide', t2, None)
     return ('.word', f"${op:08x}", None)
 
-def disasm(data, base=0, labels=False, syms=None):
+NO_DEST = {'store','storel','storem','loadset','iret','halt','iretinv','inv',
+           'jmp','jmpi','jmpt','jmpti','jmpf','jmpfi','jmpfdec','call','calli',
+           'mtsr','mtsrim','mttlb','.word','emulate','div0'}
+
+def find_data_violations(data, base=0):
+    """Am29000 gr0 is hardwired zero and can never be a write destination.
+    Any decoded instruction whose destination operand is 'gr0' is therefore
+    proof that these bytes are NOT executed code -- almost certainly an
+    embedded literal/constant table sitting inside a function's byte range
+    (common for lookup tables baked in near their use site).  Returns the
+    set of byte offsets (relative to `base`) where this occurs."""
+    import re
+    n = len(data)//4
+    hits = set()
+    for i in range(n):
+        a = base + i*4
+        op = struct.unpack('>I', data[i*4:i*4+4])[0]
+        mn, ops, tgt = decode(op, a)
+        if mn in NO_DEST:
+            continue
+        if re.match(r'^gr0\b', ops):
+            hits.add(a)
+    return hits
+
+def disasm(data, base=0, labels=False, syms=None, flag_data=True):
     n=len(data)//4
     syms=syms or set()
     # pass 1: collect branch/call targets for labels
     lab={}
     for s in syms:                            # symbol-table entries = function starts
         if base <= s < base+n*4: lab[s]='sub_%05x'%s
+    data_funcs = {}
+    if flag_data and syms:
+        violations = find_data_violations(data, base)
+        if violations:
+            bounds = sorted(syms) + [base + n*4]
+            import bisect
+            for v in violations:
+                k = bisect.bisect_right(bounds, v) - 1
+                if 0 <= k < len(bounds)-1:
+                    data_funcs.setdefault(bounds[k], []).append(v)
     if labels:
         for i in range(n):
             op=struct.unpack('>I', data[i*4:i*4+4])[0]
@@ -104,7 +138,12 @@ def disasm(data, base=0, labels=False, syms=None):
         a=base+i*4
         op=struct.unpack('>I', data[i*4:i*4+4])[0]
         mn,ops,tgt=decode(op, a)
-        if labels and a in lab: out.append(lab[a]+':')
+        if labels and a in lab:
+            tag=''
+            if a in data_funcs:
+                tag=('  ; ** contains %d gr0-write violation(s) -> almost certainly '
+                     'embeds a literal/data table, not pure code **'%len(data_funcs[a]))
+            out.append(lab[a]+':'+tag)
         ann=''
         if labels and tgt is not None and tgt in lab: ann='   ; -> '+lab[tgt]
         if delay: ann=(ann+'   ; [delay slot]') if ann else '   ; [delay slot]'

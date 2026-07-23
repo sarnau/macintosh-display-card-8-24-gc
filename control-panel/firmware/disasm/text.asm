@@ -1,3 +1,56 @@
+* ==================================================================
+*  ACEF_100 "32-Bit Antelope" -- .text  (Am29000, 62,134 instructions)
+* ==================================================================
+*  Disassembled with am29k_dasm.py (this folder).  Function boundaries
+*  (`sub_XXXXX:` labels) come from the ACEF symbol table decoded by
+*  acef_unpack.py (../firmware/ACEF_100_Antelope/symbols.txt) -- 768
+*  distinct .text addresses.  The original function NAMES were
+*  stripped from this build (no string table survives anywhere in the
+*  ACEF file -- see ../firmware/README.md); only the addresses remain,
+*  so functions are named `sub_XXXXX` after their entry address, not
+*  by role.
+*
+*  WHAT COULD AND COULD NOT BE ESTABLISHED WITH CONFIDENCE
+*  --------------------------------------------------------
+*  Structural statistics (well-supported, not guesses):
+*    62,134 instructions across 768 functions (median size 144 bytes,
+*    i.e. ~36 instructions; largest is ~3,500 instructions).
+*    Control flow is dominated by conditional branches (jmpt: 5,149)
+*    over calls (call: 555 direct + calli: 1,155 indirect) -- i.e. this
+*    is much more a big state-machine/inlined-logic firmware than a
+*    conventional call-heavy one.  Indirect calls (calli, register-
+*    based) outnumber direct/resolvable calls better than 2:1, which is
+*    why a call-graph-based naming pass (tried first) surfaced very
+*    little: most call targets aren't statically resolvable without
+*    full data-flow tracing, which wasn't attempted here.
+*
+*  Embedded data tables (found and flagged, not guessed): Am29000's
+*  gr0 is a hardwired-zero register that real code can never write to.
+*  Scanning every decoded instruction's destination operand for a
+*  literal 'gr0' write finds 32 such "impossible" instructions,
+*  clustered inside just 15 of the 768 functions (mostly the largest
+*  ones -- 5 of the 15 are in the top 20 by size).  Each is flagged at
+*  its `sub_XXXXX:` label below with the violation count.  This is
+*  strong, mechanical evidence those specific byte ranges are NOT
+*  executed code, most likely compiler-embedded literal/lookup tables
+*  (gamma curves, dither/fill patterns, or similar -- plausible for a
+*  QuickDraw accelerator) sitting inside the function's byte span
+*  rather than proof that the *whole* function is data: most of each
+*  flagged function's bytes still decode as sensible instructions.
+*
+*  What was NOT achieved: individually understanding and naming each
+*  of the 768 functions by role.  A cross-reference against gc24.s's
+*  106 "Am29000 command code" dispatch values (hoping they were direct
+*  .text offsets) found essentially no correlation (1/106, consistent
+*  with chance) -- those command codes are opaque values interpreted
+*  by this firmware's own dispatch logic, not addresses into it, so
+*  that avenue doesn't identify per-operation entry points either.
+*  Without embedded symbol names, string literals, or a resolvable
+*  call graph to lean on (all three were checked and came up empty),
+*  assigning specific roles to individual functions here would be
+*  invention rather than evidence, so the `sub_XXXXX` addressing is
+*  kept as the honest baseline; the findings above are what's real.
+*
 sub_00000:
   00000:  03006000  const    gr96, $0000             
   00004:  020060e8  consth   gr96, $00e8             
@@ -1796,7 +1849,7 @@ L_01a40:
   01a48:  561d4f90  asleu    trap29, gr79, lr16         ; [delay slot]
 sub_01a4c:
   01a4c:  0012c9d4  .word    $0012c9d4               
-sub_01a50:
+sub_01a50:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   01a50:  251cc8e2  sub      gr28, lr72, $e2         
   01a54:  5e1dc953  asgeu    trap29, lr73, gr83      
   01a58:  159ccaa0  add      lr28, lr74, $a0         
@@ -9008,7 +9061,7 @@ L_085b0:
   08610:  5610799f  asleu    trap16, gr121, lr31        ; [delay slot]
 sub_08614:
   08614:  0002f838  .word    $0002f838               
-sub_08618:
+sub_08618:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   08618:  2511fab7  sub      gr17, lr122, $b7        
   0861c:  5e10fb12  asgeu    trap16, lr123, gr18     
   08620:  1591fb92  add      lr17, lr123, $92        
@@ -11867,7 +11920,7 @@ L_0ad0c:
   0ad10:  706f37e1  aseq     trap111, gr55, lr97        ; [delay slot]
 sub_0ad14:
   0ad14:  00223320  .word    $00223320               
-sub_0ad18:
+sub_0ad18:  ; ** contains 5 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   0ad18:  032e4b7f  const    gr75, $2e7f             
   0ad1c:  242e3116  sub      gr46, gr49, gr22        
   0ad20:  5e2f314c  asgeu    trap47, gr49, gr76      
@@ -19922,7 +19975,7 @@ L_11450:
   11454:  c0225208  jmpi     gr8                     
   11458:  70625387  aseq     trap98, gr83, lr7          ; [delay slot]
   1145c:  002e6d75  .word    $002e6d75               
-sub_11460:
+sub_11460:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   11460:  25236cd8  sub      gr35, gr108, $d8        
   11464:  5e226d56  asgeu    trap34, gr109, gr86     
   11468:  1542ff73  add      gr66, lr127, $73        
@@ -20407,7 +20460,7 @@ L_11aac:
   11ad0:  0222c492  consth   lr68, $2292                ; [delay slot]
 sub_11ad4:
   11ad4:  0030a6cd  .word    $0030a6cd               
-sub_11ad8:
+sub_11ad8:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   11ad8:  0323dc0c  const    lr92, $230c             
   11adc:  2423a7d6  sub      gr35, lr39, lr86        
   11ae0:  5e22a011  asgeu    trap34, lr32, gr17      
@@ -23118,7 +23171,7 @@ sub_14274:
   142b8:  c03980ef  jmpi     lr111                   
   142bc:  56390153  asleu    trap57, gr1, gr83          ; [delay slot]
   142c0:  003d80f2  .word    $003d80f2               
-sub_142c4:
+sub_142c4:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   142c4:  253882c5  sub      gr56, lr2, $c5          
   142c8:  5e3982d2  asgeu    trap57, lr2, lr82       
   142cc:  15b883f4  add      lr56, lr3, $f4          
@@ -23812,7 +23865,7 @@ L_14d1c:
   14d6c:  a0c45155  jmp      $05ec0                     ; -> L_05ec0
   14d70:  163bd2da  load     0, 3b, lr82, lr90          ; [delay slot]
   14d74:  003d5025  .word    $003d5025               
-sub_14d78:
+sub_14d78:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   14d78:  253a51fc  sub      gr58, gr81, $fc         
   14d7c:  5e3b5212  asgeu    trap59, gr82, gr18      
   14d80:  15ba52a7  add      lr58, gr82, $a7         
@@ -25266,7 +25319,7 @@ L_16188:
   161ec:  c035d28c  jmpi     lr12                    
   161f0:  56356c10  asleu    trap53, gr108, gr16        ; [delay slot]
   161f4:  0036eda8  .word    $0036eda8               
-sub_161f8:
+sub_161f8:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   161f8:  2534ed66  sub      gr52, lr109, $66        
   161fc:  5e35ed0b  asgeu    trap53, lr109, gr11     
   16200:  15b4ed2c  add      lr52, lr109, $2c        
@@ -52614,7 +52667,7 @@ L_2d778:
   2d7b0:  70ab12a1  aseq     trap171, gr18, lr33        ; [delay slot]
 sub_2d7b4:
   2d7b4:  00ec1390  .word    $00ec1390               
-sub_2d7b8:
+sub_2d7b8:  ; ** contains 3 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   2d7b8:  03ea681f  const    gr104, $ea1f            
   2d7bc:  24ea1356  sub      lr106, gr19, gr86       
   2d7c0:  5eeb138c  asgeu    trap235, gr19, lr12     
@@ -57412,7 +57465,7 @@ L_31df4:
   31e14:  a01cb6d3  jmp      $39160                     ; -> L_39160
   31e18:  70a3b78d  aseq     trap163, lr55, lr13        ; [delay slot]
   31e1c:  00f1b164  .word    $00f1b164               
-sub_31e20:
+sub_31e20:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   31e20:  25e2b147  sub      lr98, lr49, $47         
   31e24:  5ee3b236  asgeu    trap227, lr50, gr54     
   31e28:  1562b292  add      gr98, lr50, $92         
@@ -58421,7 +58474,7 @@ L_32bd8:
   32c04:  c0fde208  jmpi     gr8                     
   32c08:  1efd7986  store    1, 7d, gr121, lr6          ; [delay slot]
   32c0c:  00fffda5  .word    $00fffda5               
-sub_32c10:
+sub_32c10:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   32c10:  25fcfdd0  sub      lr124, lr125, $d0       
   32c14:  5efdfdf6  asgeu    trap253, lr125, lr118   
 L_32c18:
@@ -58626,7 +58679,7 @@ L_32ee8:
 L_32ef0:
   32ef0:  56fcc02d  asleu    trap252, lr64, gr45        ; [delay slot]
   32ef4:  00fe413d  .word    $00fe413d               
-sub_32ef8:
+sub_32ef8:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   32ef8:  25fd40fc  sub      lr125, gr64, $fc        
   32efc:  5efc4112  asgeu    trap252, gr65, gr18     
   32f00:  03fc20ef  const    gr32, $fcef             
@@ -59717,7 +59770,7 @@ L_33cf0:
   33cf0:  c0ff8fa0  jmpi     lr32                    
   33cf4:  56ff0eb7  asleu    trap255, gr14, lr55        ; [delay slot]
   33cf8:  00fc8e6f  .word    $00fc8e6f               
-sub_33cfc:
+sub_33cfc:  ; ** contains 1 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   33cfc:  25fe8fb4  sub      lr126, lr15, $b4        
   33d00:  5eff880c  asgeu    trap255, lr8, gr12      
   33d04:  03ffe9ed  const    lr105, $ffed            
@@ -62133,7 +62186,7 @@ L_35be0:
   35be0:  00fb86c8  .word    $00fb86c8               
 L_35be4:
   35be4:  00b9c128  .word    $00b9c128               
-sub_35be8:
+sub_35be8:  ; ** contains 2 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   35be8:  25fac157  sub      lr122, lr65, $57        
 L_35bec:
   35bec:  5efbc1f2  asgeu    trap251, lr65, lr114    
@@ -69386,7 +69439,7 @@ L_3c318:
   3c338:  028e1e6f  consth   gr30, $8e6f                ; [delay slot]
 sub_3c33c:
   3c33c:  00867f34  .word    $00867f34               
-sub_3c340:
+sub_3c340:  ; ** contains 6 gr0-write violation(s) -> almost certainly embeds a literal/data table, not pure code **
   3c340:  258f7eba  sub      lr15, gr126, $ba        
   3c344:  5e8e7f93  asgeu    trap142, gr127, lr19    
   3c348:  150f7fc4  add      gr15, gr127, $c4        

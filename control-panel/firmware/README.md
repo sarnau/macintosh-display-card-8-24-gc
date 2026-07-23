@@ -83,9 +83,15 @@ stock Ghidra have no Am29000 back-end, so this folder ships a small one:
   `asgeu trap0,gr1,gr86` (stack-overflow check), then setup + `jmpf`.
 
 Quality: **99.0%** of `.text` decodes to valid instructions (the ~1% `.word`
-lines are literal data / relocation placeholders), and **97%** of branch/call
-targets land inside the section — strong confirmation the decoder and jump-target
-math are right.
+lines are literal data / relocation placeholders). Note the honest caveat on
+this: syntactic validity isn't proof of *being executed code* — the Am29000
+opcode space is dense enough that most random data words also decode to some
+syntactically-valid instruction, and (per the "embedded data tables" finding
+below) some of `.text` genuinely isn't code. The **decoder and jump-target
+math itself** is checked a stronger way: gr0 is architecturally read-only, so
+any decoded instruction that writes to it is *proof* of a decode/data issue,
+not just a syntax fluke — and that check finds violations in only 32 of
+62,134 instructions (0.05%), which is the real confidence signal.
 
 Not yet applied: **COFF relocations** (6613 for `.text`) — so `const`/`consth`
 address pairs and external `call` targets still hold their unrelocated
@@ -93,6 +99,39 @@ placeholder values.
 
 `gr1` is the Am29000 register-stack pointer; registers 0–127 print as `grN`,
 128–255 as `lrN` (local, relative to the stack).
+
+## Function naming — what was and wasn't achievable
+
+The 768 `.text` function boundaries (below) are real; assigning each a *role*
+is not, and this was checked three ways before concluding that:
+
+* **No embedded symbol names or strings survive** anywhere in the ACEF file
+  (established when the symbol table was first decoded — see below).
+* **The call graph doesn't help much**: Am29000 control flow here is
+  dominated by conditional branches (`jmpt`: 5,149) and *indirect* calls
+  (`calli`, register-based: 1,155) over direct/resolvable calls (`call`:
+  555) — more than 2:1 indirect, so a call-graph-based naming pass surfaces
+  very little without full data-flow tracing (not attempted).
+* **Cross-referencing `gc24.s`'s 106 "Am29000 command code" dispatch values
+  against the 768 known function-start addresses**, hoping they were direct
+  `.text` offsets, found essentially no correlation (1/106 — consistent with
+  random chance) — those command codes are opaque values the firmware's own
+  dispatch logic interprets, not addresses into it.
+
+What **was** found, and is real: scanning every instruction's destination
+operand for an architecturally-impossible write to `gr0` (see above) surfaces
+**32 violations clustered in just 15 of the 768 functions** — mechanical,
+strong evidence those specific byte ranges are compiler-embedded literal/
+lookup tables (gamma curves, dither patterns, or similar — plausible for a
+QuickDraw accelerator) rather than executed code, even though most of each
+flagged function's *other* bytes still decode as sensible instructions. Each
+is flagged inline in `disasm/text.asm` at its `sub_XXXXX:` label with a
+violation count. `am29k_dasm.py --syms` now runs and reports this check
+automatically.
+
+Given all three avenues came up short of real per-function names, the
+`sub_XXXXX` (address-based) naming is kept as the honest baseline rather
+than inventing role names without evidence.
 
 ## Symbol table → function boundaries (`symbols.txt`)
 
