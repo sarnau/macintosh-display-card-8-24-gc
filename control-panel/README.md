@@ -14,7 +14,7 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 | `cdev` -4064 | 7.7 K | 68k | the control-panel UI (this folder's `cdev.s`) |
 | `gc24` -4048 | 48 K | 68k | host-side **QuickDraw GC accelerator engine** (this folder's `gc24.s`) |
 | `gc24` 32 | 2.7 K | 68k | secondary engine code |
-| `DRVR` -4048 | 18 K | 68k | disk-based `.Display_Video` driver (supersedes the ROM's) |
+| `DRVR` -4048 | 18 K | 68k | **`.GraphAccel`** — low-level accelerator driver (this folder's `DRVR.s`; *not* a video driver, see below) |
 | `INIT` -4048 / -4080 | 5 K | 68k | boot-time loaders (`ACEFLoad` — download firmware to the card) |
 | `CODE` -4048 | 548 B | 68k | cdev main-segment stub |
 | **`ACEF` 100** | **322 K** | **Am29000** | the main **"QuickDraw GC" accelerator firmware** |
@@ -38,15 +38,21 @@ the string table literally names the loader "ACEFLoad".)
              gc24  (68k accelerator engine)  ◀──▶  Am29000 firmware (ACEF)
                  │  patches QuickDraw bottlenecks to route drawing to the card
                  ▼
-             DRVR  (.Display_Video, the on-disk video driver)
+             DRVR  (.GraphAccel, the low-level accelerator driver — owns the
+                    engine-globals struct, installs the QuickDraw patches,
+                    can itself run ACEFLoad; see below)
                  ▲
    user  ──▶  cdev (control panel)  — depth / gray / monitor / gamma UI,
                                        status + error reporting
 ```
 
-The ROM's own video driver (`../extracted-source/VideoDriver.s`) is the
-"glorified display card" fallback; this software layers the Am29000
-acceleration on top of it.
+Note this is **not** a video driver — the card still displays pixels through
+the ROM's own `.Display_Video_Apple_MDCGC` (`../extracted-source/VideoDriver.s`),
+the "glorified display card" fallback. `.GraphAccel` is a purely
+QuickDraw-acceleration-side driver: it owns the private "engine globals"
+struct gc24.s reaches via `[$888]`, installs the bottleneck patches, and
+answers a family of custom Status calls that just read fields back out of
+that struct.
 
 ## The cdev (`cdev.s`)
 
@@ -137,18 +143,49 @@ The 106 op-handlers stay `handler_NN` (their Am29000 command code is shown in
 the dispatch table). The dispatch table, switch jump-tables, Gestalt table and
 embedded strings/symbols render as structured data; everything else is code.
 
+## The .GraphAccel driver (`DRVR.s`)
+
+18,470-byte 68020 `DRVR` resource, fully disassembled (every byte from the
+Pascal name onward accounted for and verified byte-exact against the
+original; every A-trap resolved bar one stray data byte). Standard classic
+Device Manager driver shape — `pea handler ; bra CommonDispatch` vectors for
+Open/Prime/Control/Status/Close, called with **A0 = DCE**
+(`dCtlStorage`+`$14` = a Handle to this driver's own private "engine
+globals" struct, `$BAA`/2986 bytes) and **A1 = ParamBlock**
+(`csCode`+`$1A`, `csParam`+`$1C` — the standard `CntrlParam` offsets).
+
+* **`DoOpen`** — allocates+locks the engine-globals struct, initialises it
+  (including setting globals+`$AA6` = `$FFFF`, the *same field offset*
+  `gc24.s`'s `StoreCtxWord_AA6` writes — strong evidence the two share a
+  struct convention), and calls `InstallPatches`.
+* **`InstallPatches`** — walks a 128-slot trap-patch table
+  (globals+`$278`) and, for each active entry, swaps in the accelerator's
+  replacement via `_Get/SetToolTrapAddress` / `_Get/SetOSTrapAddress` — the
+  actual **QuickDraw-bottleneck patch installer**.
+* **`DoStatus`** — a 53-way `csCode`-indexed dispatcher; ~18 implemented
+  selectors are simple getters (`return globals+$XXX`), named
+  `Sts_GetField_XXX` after the field they read since Apple's real selector
+  names aren't recoverable from the binary. One (`Sts_InvokeHook3`, csCode
+  54) instead calls a client-installable callback stored in the globals'
+  8-slot hook table.
+* **`DoControl`** — validates a `csParam` index against the engine globals,
+  and (via `LoadFirmware`) can itself run **`ACEFLoad`** — this driver
+  carries its *own* copy of the Am29000-COFF loader (checking the same
+  `0x12A`/`0x12B` magic as `gc24.s`'s copy), so firmware loading isn't
+  gc24-exclusive.
+* **`DoClose`** — a no-op stub (the driver expects to stay resident).
+* Two smaller 35-case dispatch tables (index×6 into 6-byte records) are
+  identified and rendered structurally but not deep-dived case-by-case.
+
 ## Status / what's next
 
 Delivered: the resource map, the 68k/Am29000 split, the commented **`cdev`**,
-and the fully-disassembled **`gc24`** engine. **Not yet done** (on request):
+the fully-disassembled **`gc24`** engine, the unpacked **`ACEF`** Am29000
+firmware, and the fully-disassembled **`.GraphAccel`** (`DRVR`). Remaining,
+on request:
 
-* **`ACEF` Am29000 firmware — DONE.** Reversed the `ACEFLoad` loaders and
-  unpacked both resources; see [`firmware/`](firmware/) and
-  [`acef_unpack.py`](acef_unpack.py). ACEF is obfuscated Am29000 COFF (one XOR
-  key byte); the unpacked `.text` is verified Am29000 code (62,134
-  instructions). `ACEF_100` = "32-Bit Antelope" accelerator, `ACEF_1` =
-  "Runtime" kernel (whose `VidComm` section sits at `0x4C007300` — the same
-  command block the ROM's video driver pokes). Remaining: an Am29000
-  disassembler to lift the code (no stock Capstone/Ghidra support).
-* **`DRVR` -4048 (18 K)** — the on-disk `.Display_Video` driver; same toolchain.
-  (Contains the dual-magic `ACEFLoad` used above.)
+* **Am29000 disassembly depth** — `am29k_dasm.py` lifts `ACEF_100`'s `.text`
+  cleanly (see [`firmware/`](firmware/)), but individual functions aren't
+  named/commented yet (COFF relocations aren't applied either).
+* **`INIT` -4048/-4080 (5 K)** — the boot-time loaders; same toolchain,
+  not yet done.
