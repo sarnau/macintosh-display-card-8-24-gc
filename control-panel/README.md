@@ -246,8 +246,10 @@ firmware, the fully-disassembled **`.GraphAccel`** (`DRVR`), and both
 boot-time **`INIT`**s. Remaining, on request:
 
 * **Am29000 disassembly depth** — `am29k_dasm.py` lifts `ACEF_100`'s `.text`
-  cleanly (see [`firmware/`](firmware/)), but individual functions aren't
-  named/commented yet (COFF relocations aren't applied either).
+  cleanly (see [`firmware/`](firmware/)); COFF relocations are now decoded
+  and applied where resolvable (35.7% — see `firmware/README.md`), but
+  individual functions still aren't named/commented (no evidence survives
+  to do so honestly — see the same file for why).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) and the unidentified `$A204` trap in `INIT_DSInit.s`
   aren't traced further — flagged honestly in each file rather than guessed.

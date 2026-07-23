@@ -93,12 +93,48 @@ any decoded instruction that writes to it is *proof* of a decode/data issue,
 not just a syntax fluke — and that check finds violations in only 32 of
 62,134 instructions (0.05%), which is the real confidence signal.
 
-Not yet applied: **COFF relocations** (6613 for `.text`) — so `const`/`consth`
-address pairs and external `call` targets still hold their unrelocated
-placeholder values.
-
 `gr1` is the Am29000 register-stack pointer; registers 0–127 print as `grN`,
 128–255 as `lrN` (local, relative to the stack).
+
+## COFF relocations — reverse-engineered and applied
+
+The relocation table (`relptr`/`nrel` in each section header) turned out to
+be one of the few things in this format that **isn't** obfuscated — it's
+stored plaintext, unlike the XOR-keystreamed headers and constant-XOR'd
+section data. Each record is 8 bytes, big-endian:
+
+```
+[vaddr:u32][symndx:u16][type:u16]
+```
+
+`vaddr` is section-relative, `symndx` indexes the same 6-byte
+`[scnum:s16][value:u32]` symbol table `acef_unpack.py` already decodes.
+Cross-checking candidate record sizes against two hard constraints —
+`vaddr` must land inside the section and increase monotonically, `symndx`
+must be `< nsyms` — confirmed 8 bytes at 98.4% validity (the remaining 1.6%
+are a handful of out-of-range indices, left unresolved rather than guessed
+at). Five relocation `type`s show up, identified by cross-referencing each
+one against the instruction it points at:
+
+| type | meaning | applies to |
+|-----:|---------|------------|
+| 26 | low 16 bits | `const` |
+| 27 | high 16 bits | `consth` |
+| 28 | null companion of type 27 (always symbol 0) | — (no independent info; just marks the pair as matched) |
+| 24 | absolute call target | `call` |
+| 29 | raw 32-bit word replace | often lands on non-code bytes — corroborates the "embedded data tables" finding above |
+
+A symbol resolves to a real address when its `scnum` is a normal section
+(section base + `value`) or `-1` (`N_ABS`, `value` already absolute);
+`scnum` 0/-2/-3 mean the symbol is external to this ACEF image (most likely
+defined in the separate `ACEF_1_Runtime` firmware, or patched in by the
+on-card loader at boot) and can't be resolved from this file alone.
+
+Applied to [`disasm/text.asm`](disasm/) and [`disasm/Code.asm`](disasm/) as
+inline `; RELOC ...` comments (original placeholder bytes/immediates left
+untouched — byte-exact verification still passes 0 missing/0 mismatched):
+**1,684 of 4,714 symbol-bearing `.text` relocations resolve (35.7%)**; the
+rest are marked "unresolved external" rather than guessed at.
 
 ## Function naming — what was and wasn't achievable
 
