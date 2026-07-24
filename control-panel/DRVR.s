@@ -5853,7 +5853,7 @@ SetTrap:
   04606:  22 6e 00 08          movea.l  $8(a6), a1
   0460a:  22 88                move.l   a0, (a1)
   0460c:  60 26                bra.b    $4634
-  0460e:  41 fa 00 36          lea.l    $4646(pc), a0
+  0460e:  41 fa 00 36          lea.l    $4646(pc), a0  ; -> SysEnvironsTable
   04612:  30 3c ea 51          move.w   #$ea51, d0
   04616:  22 2e 00 0c          move.l   $c(a6), d1
   0461a:  b2 98                cmp.l    (a0)+, d1
@@ -5861,7 +5861,7 @@ SetTrap:
   0461e:  4a 98                tst.l    (a0)+
   04620:  67 12                beq.b    $4634
   04622:  60 f6                bra.b    $461a
-  04624:  43 fa 00 20          lea.l    $4646(pc), a1
+  04624:  43 fa 00 20          lea.l    $4646(pc), a1  ; -> SysEnvironsTable
   04628:  d3 d0                adda.l   (a0), a1
   0462a:  4e d1                jmp      (a1)
   0462c:  22 6e 00 08          movea.l  $8(a6), a1
@@ -5874,45 +5874,43 @@ SetTrap:
   0463e:  4e d0                jmp      (a0)
   04640:  30 3c ea 52          move.w   #$ea52, d0
   04644:  60 ee                bra.b    $4634
-  04646:  76 65                moveq    #$65, d3
-  04648:  72 73                moveq    #$73, d1
-  0464a:  00 00 00 60          ori.b    #$60, d0
-  0464e:  6d 61                blt.b    $46b1
-  04650:  63 68                bls.b    $46ba
-  04652:  00 00 00 64          ori.b    #$64, d0
-  04656:  73 79 73             dc.b     $73,$79,$73  ; sys
-  04659:  76 00                moveq    #$0, d3
-  0465b:  00 00 88 70          ori.b    #$70, d0
-  0465f:  72 6f                moveq    #$6f, d1
-  04661:  63 00 00 00          bls.w    $4663
-  04665:  92 66                sub.w    -(a6), d1
-  04667:  70 75                moveq    #$75, d0
-  04669:  20 00                move.l   d0, d0
-  0466b:  00 00 9e 71          ori.b    #$71, d0
-  0466f:  64 20                bcc.b    $4691
-  04671:  20 00                move.l   d0, d0
-  04673:  00 00 e8 6b          ori.b    #$6b, d0
-  04677:  62 64                bhi.b    $46dd
-  04679:  20 00                move.l   d0, d0
-  0467b:  00 01 1a 61          ori.b    #$61, d1
-  0467f:  74 6c                moveq    #$6c, d2
-  04681:  6b 00 00 01          bmi.w    $4684
-  04685:  42 6d 6d 75          clr.w    $6d75(a5)
-  04689:  20 00                move.l   d0, d0
-  0468b:  00 01 64 72          ori.b    #$72, d1
-  0468f:  61 6d                bsr.b    $46fe
-  04691:  20 00                move.l   d0, d0
-  04693:  00 01 88 6c          ori.b    #$6c, d1
-  04697:  72 61                moveq    #$61, d1
-  04699:  6d 00 00 01          blt.w    $469c
-  0469d:  88 00                or.b     d0, d4
-  0469f:  00 00 00 00          ori.b    #$0, d0
-  046a3:  00 00 00 70          ori.b    #$70, d0
-  046a7:  01 60                bchg.b   d0, -(a0)
-  046a9:  82 22                or.b     -(a2), d1
-  046ab:  78 02                moveq    #$2, d4
-  046ad:  ae 70                dc.w     $ae70  ; A-trap 0xae70 (unidentified)
-  046af:  04                   dc.b     $04  ; .
+* ==================================================================
+* SysEnvironsTable  -  old-style SysEnvirons selector fallback
+* ==================================================================
+* Reached from $460e: this driver checks whether _GetToolTrapAddress
+* $A89F (_Unimplemented) and _GetOSTrapAddress $A0AD both still point
+* at their stock ROM handlers; if either has been patched away (or the
+* trap doesn't exist -- i.e. _Gestalt itself isn't safely callable),
+* it falls back to answering a small, hand-rolled set of the classic
+* pre-Gestalt SysEnvirons fields itself, keyed by the same 4-byte ASCII
+* codes SysEnvirons/Gestalt use ('vers','mach','sysv', etc.).
+*
+* Table format: 8-byte records [4-byte ASCII selector][4-byte PC-
+* relative offset from $4646 to that selector's case-handler code],
+* terminated by an all-zero record (a real case can never land AT the
+* table base, so an offset of 0 is an unambiguous end marker).  Walked
+* by a linear scan at $461a-$4622: cmp.l (a0)+,d1 against the wanted
+* selector, tst.l (a0)+ to skip/check the offset.
+*
+* PREVIOUSLY MISREAD: earlier passes disassembled straight through this
+* table as if it were code (byte-for-byte data has no natural
+* instruction boundaries), which desynced everything downstream until
+* the real case-handler bytes happened to realign by chance -- the
+* spurious 'A-trap $AE70' finding was a symptom of that, not a real
+* trap. Fixed by treating $4646-0x46a5 as data and re-seeding recursive descent at each case handler's real (table-computed) address.
+SysEnvironsTable:
+  04646:  76 65 72 73 00 00 00 60 6d 61 63 68 00 00 00 64 dc.b     $76,$65,$72,$73,$00,$00,$00,$60,$6d,$61,$63,$68,$00,$00,$00,$64  ; vers...`mach...d
+  04656:  73 79 73 76 00 00 00 88 70 72 6f 63 00 00 00 92 dc.b     $73,$79,$73,$76,$00,$00,$00,$88,$70,$72,$6f,$63,$00,$00,$00,$92  ; sysv....proc....
+  04666:  66 70 75 20 00 00 00 9e 71 64 20 20 00 00 00 e8 dc.b     $66,$70,$75,$20,$00,$00,$00,$9e,$71,$64,$20,$20,$00,$00,$00,$e8  ; fpu ....qd  ....
+  04676:  6b 62 64 20 00 00 01 1a 61 74 6c 6b 00 00 01 42 dc.b     $6b,$62,$64,$20,$00,$00,$01,$1a,$61,$74,$6c,$6b,$00,$00,$01,$42  ; kbd ....atlk...B
+  04686:  6d 6d 75 20 00 00 01 64 72 61 6d 20 00 00 01 88 dc.b     $6d,$6d,$75,$20,$00,$00,$01,$64,$72,$61,$6d,$20,$00,$00,$01,$88  ; mmu ...dram ....
+  04696:  6c 72 61 6d 00 00 01 88 00 00 00 00 00 00 00 00 dc.b     $6c,$72,$61,$6d,$00,$00,$01,$88,$00,$00,$00,$00,$00,$00,$00,$00  ; lram............
+SE_vers:
+  046a6:  70 01                moveq    #$1, d0
+  046a8:  60 82                bra.b    $462c
+SE_mach:
+  046aa:  22 78 02 ae          movea.l  $2ae.w, a1
+  046ae:  70 04                moveq    #$4, d0
   046b0:  0c 69 00 75 00 08    cmpi.w   #$75, $8(a1)
   046b6:  67 12                beq.b    $46ca
   046b8:  0c 69 02 76 00 08    cmpi.w   #$276, $8(a1)
@@ -5922,13 +5920,16 @@ SetTrap:
   046c4:  10 38 0c b3          move.b   $cb3.w, d0
   046c8:  5c 80                addq.l   #$6, d0
   046ca:  60 00 ff 60          bra.w    $462c
+SE_sysv:
   046ce:  70 00                moveq    #$0, d0
   046d0:  30 38 01 5a          move.w   $15a.w, d0
   046d4:  60 00 ff 56          bra.w    $462c
+SE_proc:
   046d8:  70 00                moveq    #$0, d0
   046da:  10 38 01 2f          move.b   $12f.w, d0
   046de:  52 40                addq.w   #$1, d0
   046e0:  60 00 ff 4a          bra.w    $462c
+SE_fpu:
   046e4:  0c 38 00 04 01 2f    cmpi.b   #$4, $12f.w
   046ea:  67 38                beq.b    $4724
   046ec:  08 38 00 04 0b 22    btst.b   #$4, $b22.w
@@ -5956,6 +5957,7 @@ SetTrap:
   04726:  60 02                bra.b    $472a
   04728:  70 00                moveq    #$0, d0
   0472a:  60 00 ff 00          bra.w    $462c
+SE_qd:
   0472e:  0c 78 3f ff 02 8e    cmpi.w   #$3fff, $28e.w
   04734:  6e 1c                bgt.b    $4752
   04736:  30 3c a8 9f          move.w   #$a89f, d0
@@ -5971,6 +5973,7 @@ SetTrap:
   04754:  60 06                bra.b    $475c
   04756:  20 3c 00 00 02 00    move.l   #$200, d0
   0475c:  60 00 fe ce          bra.w    $462c
+SE_kbd:
   04760:  10 38 02 1e          move.b   $21e.w, d0
   04764:  41 fa 00 16          lea.l    $477c(pc), a0
   04768:  22 48                movea.l  a0, a1
@@ -5986,6 +5989,7 @@ SetTrap:
   04780:  01 06                btst.l   d0, d6
   04782:  07 04                btst.l   d3, d4
   04784:  05 08 09 00          movep.w  $900(a0), d2
+SE_atlk:
   04788:  70 00                moveq    #$0, d0
   0478a:  4a 38 02 91          tst.b    $291.w
   0478e:  6b 16                bmi.b    $47a6
@@ -5996,6 +6000,7 @@ SetTrap:
   0479e:  20 78 02 dc          movea.l  $2dc.w, a0
   047a2:  10 28 00 07          move.b   $7(a0), d0
   047a6:  60 00 fe 84          bra.w    $462c
+SE_mmu:
   047aa:  0c 38 00 02 01 2f    cmpi.b   #$2, $12f.w
   047b0:  6d 16                blt.b    $47c8
   047b2:  70 00                moveq    #$0, d0
@@ -6008,6 +6013,7 @@ SetTrap:
   047c6:  60 02                bra.b    $47ca
   047c8:  70 00                moveq    #$0, d0
   047ca:  60 00 fe 60          bra.w    $462c
+SE_ram:
   047ce:  30 3c a8 9f          move.w   #$a89f, d0
   047d2:  a7 46                dc.w     $a746  ; _GetToolTrapAddress
   047d4:  24 08                move.l   a0, d2
