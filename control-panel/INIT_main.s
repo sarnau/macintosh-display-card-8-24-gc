@@ -868,7 +868,9 @@ Main:
 * back to a single _SysBeep if the icon resource is missing.  The
 * inner helpers ($A78, $AD0, $AFE, $B7E -- the latter two using
 * _NewGrowRgn-family traps $AA1E/$AA25) are icon/alert plumbing not
-* traced further here.
+* traced further here -- and per the credit block right after this
+* function (sub_0a78's header below), they're third-party code
+* (Paul Mercer's ShowINIT), not this project's own logic.
 ShowIconOrAlert:
   0099a:  4e 56 00 00          link.w   a6, #$0
   0099e:  48 e7 1f 38          movem.l  d3-d7/a2-a4, -(a7)
@@ -924,32 +926,25 @@ ShowIconOrAlert:
   00a32:  61 00 01 4a          bsr.w    $b7e  ; -> sub_0b7e
   00a36:  aa 25                dc.w     $aa25  ; _DisposCIcon
   00a38:  60 a8                bra.b    $9e2
-  00a3a:  53 68 6f 77          subq.w   #$1, $6f77(a0)
-  00a3e:  49                   dc.b     $49  ; I
-  00a3f:  4e 49                trap     #$9
-  00a41:  54 20                addq.b   #$2, -(a0)
-  00a43:  62 79                bhi.b    $abe
-  00a45:  20 50                movea.l  (a0), a0
-  00a47:  61 75                bsr.b    $abe
-  00a49:  6c 20                bge.b    $a6b
-  00a4b:  4d                   dc.b     $4d  ; M
-  00a4c:  65 72                bcs.b    $ac0
-  00a4e:  63 65                bls.b    $ab5
-  00a50:  72 00                moveq    #$0, d1
-  00a52:  43                   dc.b     $43  ; C
-  00a53:  6f 70                ble.b    $ac5
-  00a55:  79                   dc.b     $79  ; y
-  00a56:  72 69                moveq    #$69, d1
-  00a58:  67 68                beq.b    $ac2
-  00a5a:  74 20                moveq    #$20, d2
-  00a5c:  31 39 38 37 2d 31    move.w   $38372d31.l, -(a0)
-  00a62:  39 38 38 00          move.w   $3800.w, -(a4)
-  00a66:  56 65                addq.w   #$3, -(a5)
-  00a68:  72 73                moveq    #$73, d1
-  00a6a:  69 6f                bvs.b    $adb
-  00a6c:  6e 20                bgt.b    $a8e
-  00a6e:  6f 66                ble.b    $ad6
-  00a70:  20 37 2f 31 35 2f 38 38 move.l   ([$352f3838, a7, d2.l * 8]), d0
+* Embedded credit block (3 NUL-terminated C strings, 62 bytes, ending
+* exactly at sub_0a78) -- NOT code, though earlier passes disassembled
+* straight through it as if it were (same class of artifact as the
+* DRVR.s $AE70 case: byte-for-byte data has no natural instruction
+* boundaries, and this project's 68k opcode space is dense enough that
+* most byte sequences decode to *something* syntactically valid).
+* Reading the raw bytes as ASCII instead settles it definitively:
+*   "ShowINIT by Paul Mercer"
+*   "Copyright 1987-1988"
+*   "Version of 7/15/88"
+* ShowINIT was Paul Mercer's well-known shareware/freeware INIT-icon-
+* display utility of that era -- this confirms ShowIconOrAlert's icon/
+* alert plumbing above is (licensed or otherwise incorporated) THIRD-
+* PARTY code, not custom Apple/vendor logic, which is exactly why its
+* inner helpers don't follow this project's driver/engine conventions.
+  00a3a:  53 68 6f 77 49 4e 49 54 20 62 79 20 50 61 75 6c dc.b     $53,$68,$6f,$77,$49,$4e,$49,$54,$20,$62,$79,$20,$50,$61,$75,$6c  ; ShowINIT by Paul
+  00a4a:  20 4d 65 72 63 65 72 00 43 6f 70 79 72 69 67 68 dc.b     $20,$4d,$65,$72,$63,$65,$72,$00,$43,$6f,$70,$79,$72,$69,$67,$68  ;  Mercer.Copyrigh
+  00a5a:  74 20 31 39 38 37 2d 31 39 38 38 00 56 65 72 73 dc.b     $74,$20,$31,$39,$38,$37,$2d,$31,$39,$38,$38,$00,$56,$65,$72,$73  ; t 1987-1988.Vers
+  00a6a:  69 6f 6e 20 6f 66 20 37 2f 31 35 2f 38 38 dc.b     $69,$6f,$6e,$20,$6f,$66,$20,$37,$2f,$31,$35,$2f,$38,$38  ; ion of 7/15/88
 sub_0a78:
   00a78:  2d 78 09 04 ff fc    move.l   $904.w, -$4(a6)
   00a7e:  4b ee ff f8          lea.l    -$8(a6), a5

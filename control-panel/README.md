@@ -251,5 +251,12 @@ boot-time **`INIT`**s. Remaining, on request:
   individual functions still aren't named/commented (no evidence survives
   to do so honestly — see the same file for why).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
-  `ShowIconOrAlert`) and the unidentified `$A204` trap in `INIT_DSInit.s`
-  aren't traced further — flagged honestly in each file rather than guessed.
+  `ShowIconOrAlert`) aren't traced further — turns out they don't need to
+  be: an embedded credit block right after the function (previously
+  misdecoded as garbage instructions, same artifact class as the DRVR.s
+  fix below) reads `"ShowINIT by Paul Mercer / Copyright 1987-1988"` —
+  this is third-party code (Paul Mercer's well-known ShowINIT utility),
+  not custom Apple/vendor logic. The unidentified `$A204` trap in
+  `INIT_DSInit.s` remains genuinely unresolved — checked against the full
+  internal System 7.1 `Traps.h` (not just the public copy), which confirms
+  it's a real gap in Apple's own trap numbering, not a missing reference.
