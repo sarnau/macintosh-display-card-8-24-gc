@@ -77,6 +77,22 @@ into, pre-linked to its fixed SRAM/register map, while `Antelope` is a
 loadable, relocatable accelerator module — which is exactly why *it* needed
 6,613+ relocation records and this one needs none.
 
+`Boot` and `Hand` are `Runtime`'s only actual code sections (everything else
+is a comm/register block or private state); disassembled the same way as
+`ACEF_100_Antelope`'s, minus any relocation pass since there isn't one:
+
+* [`disasm/Boot.asm`](disasm/) — the Am29000 boot code (512 instructions,
+  99.2% decode as valid; the gr0-write check flags 1 embedded-literal
+  instruction plus a trailing 4-word data table).
+* [`disasm/Hand.asm`](disasm/) — the interrupt/trap handler bank (2,885
+  instructions, **100%** decode as valid; the gr0-write check flags 4
+  embedded-literal instructions). Ends in an `iretinv`, consistent with a
+  handler-table body.
+
+No symbol table means no `sub_XXXXX:` function boundaries in either file —
+only `L_XXXXXXX:` labels for in-section branch/call targets, same as
+`Code.asm`.
+
 ## Disassembly
 
 These are **Am29000** (big-endian, 32-bit fixed instructions). Capstone and
