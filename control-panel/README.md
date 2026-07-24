@@ -26,9 +26,23 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 The `ACEF` blobs carry a plaintext "© Copyright Apple Computer, 1990" header
 then a high-entropy body (7.2–7.4 bits/byte) — i.e. the Am29000 image is
 **packed/encoded**, unpacked by `ACEFLoad` — a routine both `gc24.s` and
-`DRVR.s` carry their own copy of (see `LoadFirmware` in `DRVR.s`) — and
-downloaded into the card's DRAM. (`ACEF` ≈ the accelerator-executable
-container; the string table literally names the loader "ACEFLoad".)
+`DRVR.s` carry their own copy of (see `LoadFirmware` in `DRVR.s`). (`ACEF` ≈
+the accelerator-executable container; the string table literally names the
+loader "ACEFLoad".)
+
+`ACEFLoad`'s own embedded debug strings spell out the load mechanism
+directly: for each section it logs an "Address" and either `BlockMove`s the
+raw bytes there or zero-fills it (`.bss`), validating/patching branch
+targets as it goes — the live counterpart of this project's offline COFF-
+relocation work (see `firmware/README.md`), able to resolve external
+symbols the offline analysis couldn't since it has the real load address.
+The destination pointer is `Strip24`'d (`StripAddress`) first, the same
+hygiene classic Mac OS applies to any hardware pointer — meaning the
+Am29000's program/data memory is directly memory-mapped into the card's
+NuBus slot space, and firmware is written there with plain
+`BlockMove`/`move.l`, not shuttled through the separate command-queue
+mechanism `gc24` uses for ordinary QuickDraw commands at runtime. How
+execution actually gets kicked off afterward isn't traced.
 
 ## How the pieces cooperate
 

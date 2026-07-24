@@ -21,7 +21,30 @@
 *
 *  gc24 also contains ACEFLoad - the relocating loader that parses the ACEF
 *  Am29000 object format (magic/sections/symbols/relocations) and downloads
-*  the firmware to the card (see the log strings near $3080).
+*  the firmware to the card.  Its own embedded debug strings (near $3080)
+*  spell out the algorithm directly: for each section, log
+*  "Section %8s: (0x%08x) %d Address: %X size: %d %s at 0x%08X" (%s =
+*  "loaded" or "zeroed"), i.e. BlockMove the raw bytes to a real target
+*  Address for sections with file data, zero-fill for .bss (only one
+*  .BSS section is allowed).  Branch targets get validated/patched as it
+*  goes ("Absolute/Relative Branch Target (0x%08x) Out of Range at
+*  0x%08X") -- this is the LIVE counterpart of the COFF relocation work
+*  in ../firmware/README.md, except the live loader can resolve external
+*  symbols the offline analysis couldn't (35.7%), since it has the real,
+*  current load addresses to relocate against.  The destination pointer
+*  is passed through Strip24 (StripAddress) before being written through,
+*  the same 24-bit-clean hygiene classic Mac OS applies to any hardware
+*  pointer -- i.e. the Am29000's program/data memory is directly
+*  memory-mapped into the card's NuBus slot space and firmware bytes are
+*  written with plain BlockMove/move.l, not shuttled through the
+*  separate command-queue mechanism (CopyParamsToQueue) gc24 uses for
+*  ordinary QuickDraw commands at runtime.  Not established: exactly how
+*  execution gets kicked off afterward (reset-vector poke, a "go" bit in
+*  the comm block, etc.) -- not traced past the load/relocate step.
+*
+*  DRVR.s carries its own copy of this loader (LoadFirmware/ACEFLoad,
+*  invoked from a private Control selector) -- i.e. the low-level driver
+*  can itself re-flash firmware, not just gc24.
 *
 *  Labels: infrastructure routines named by inspection (GlobalsAccessor,
 *  Strip24, GetA5, EngineDispatch, StoreCtxWord_AA6, HWPrivProbe,
@@ -3478,11 +3501,23 @@ sub_23ae:
   0023b2:  4e 5e                unlk     a6
   0023b4:  4e 75                rts      
 * ACEFLoad  -  the relocating loader for the Am29000 firmware (ACEF).
-* Parses the ACEF object format (magic / sections / symbols / relocations),
-* loads and zero-fills sections, fixes up absolute & relative branch
-* targets, and reports progress via the log strings just below
-* ("Loading %d sections", "Not in ACEF format!", "Load Complete." ...).
-* This is the "ACEFLoad" the control panel's string table names.
+* Parses the ACEF object format (magic / sections / symbols / relocations)
+* directly out of the in-memory resource buffer -- same file-header (20
+* bytes) then optional-header (68 bytes) layout ../acef_unpack.py already
+* decodes, confirmed by matching this routine's own copy-loop sizes to
+* those exact field widths.  For each section: BlockMoves it to a real
+* target address (sections with file data) or zero-fills it (.bss, only
+* one allowed), fixes up absolute & relative branch targets in place
+* (the live counterpart of the offline COFF-relocation work in
+* ../firmware/README.md -- this loader can resolve external symbols the
+* offline analysis couldn't, since it has the real current load address),
+* and reports progress via the log strings just below ("Loading %d
+* sections", "Not in ACEF format!", "Load Complete." ...).  The
+* destination pointer goes through Strip24 first -- the same 24-bit-
+* clean hygiene classic Mac OS applies to any hardware pointer -- so the
+* Am29000's memory is directly NuBus-memory-mapped and these are plain
+* BlockMove/move.l writes, not a queued/DMA protocol.  This is the
+* "ACEFLoad" the control panel's string table names.
 ACEFLoad:
   0023b6:  4e 56 ff 1e          link.w   a6, #$ff1e
   0023ba:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)

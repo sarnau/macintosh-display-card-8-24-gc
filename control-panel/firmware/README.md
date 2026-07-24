@@ -203,6 +203,14 @@ untouched — byte-exact verification still passes 0 missing/0 mismatched):
 **1,684 of 4,714 symbol-bearing `.text` relocations resolve (35.7%)**; the
 rest are marked "unresolved external" rather than guessed at.
 
+This offline pass has a live counterpart: `ACEFLoad` (`../gc24.s`, and
+`../DRVR.s`'s own copy) performs this exact same relocation job at load
+time, patching branch targets in place and logging
+`"Absolute/Relative Branch Target (0x%08x) Out of Range at 0x%08X"` if one
+doesn't fit — and it can resolve the *external* symbols this static
+analysis can't, since it runs with the real, current load address rather
+than a symbol table with no string names.
+
 `.lit` (literal pool, 662 relocations) and `.data` (initialised data, 101
 relocations) aren't Am29000 code, so there's nothing to disassemble — instead
 [`disasm/lit.asm`](disasm/) and [`disasm/data.asm`](disasm/) are plain word

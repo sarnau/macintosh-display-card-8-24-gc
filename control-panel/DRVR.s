@@ -4047,7 +4047,15 @@ LoadFirmware:
 * key, an optional header, N section headers, then section data).
 * Not re-diagrammed line-by-line here; see gc24.s's ACEFLoad for the
 * fully-commented twin of this routine (this copy checks the same
-* 0x12A/0x12B magic at file-relative $3162/$3170).
+* 0x12A/0x12B magic at file-relative $3162/$3170) -- including the
+* traced load mechanism: BlockMove each section to a real target
+* address (or zero-fill for .bss), patch branch targets in place (the
+* live counterpart of the offline COFF-relocation work), destination
+* pointer Strip24'd first, confirming the Am29000's memory is directly
+* NuBus-memory-mapped rather than loaded via a queued/DMA protocol.
+* Being called from a private Control selector here (not just from
+* gc24's own loader path) means this driver can itself re-flash
+* firmware, independent of gc24.
 ACEFLoad:
   030ac:  4e 56 fe ba          link.w   a6, #$feba
   030b0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
