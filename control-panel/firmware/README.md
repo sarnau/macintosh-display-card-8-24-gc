@@ -40,7 +40,9 @@ instructions**.
 | `Apple`,`.data1` | 0 | small | vendor / aux data |
 | `.bss` | 0 | 0xA64 | zero-init (no file data) |
 
-`firmware_image.bin` is the flattened load image (248 KB).
+`firmware_image.bin` (254 KB) + `firmware_image.map.txt` is a flattened,
+relocation-patched image — see "COFF relocations" below for how it's built
+and why the sections all report `vaddr` 0.
 
 ## `ACEF_1_Runtime/` — "Runtime" (the Am29000 kernel)
 
@@ -107,8 +109,12 @@ section data. Each record is 8 bytes, big-endian:
 [vaddr:u32][symndx:u16][type:u16]
 ```
 
-`vaddr` is section-relative, `symndx` indexes the same 6-byte
-`[scnum:s16][value:u32]` symbol table `acef_unpack.py` already decodes.
+`vaddr` is **absolute** (confirmed against `Code`'s own records, which carry
+values like `0xf00c` directly rather than a small `Code`-relative offset) —
+for the sections with `vaddr=0` that happens to look the same as
+section-relative, but `Code`'s live at `sec.vaddr + local_offset`. `symndx`
+indexes the same 6-byte `[scnum:s16][value:u32]` symbol table `acef_unpack.py`
+already decodes.
 Cross-checking candidate record sizes against two hard constraints —
 `vaddr` must land inside the section and increase monotonically, `symndx`
 must be `< nsyms` — confirmed 8 bytes at 98.4% validity (the remaining 1.6%
@@ -122,7 +128,7 @@ one against the instruction it points at:
 | 27 | high 16 bits | `consth` |
 | 28 | null companion of type 27 (always symbol 0) | — (no independent info; just marks the pair as matched) |
 | 24 | absolute call target | `call` |
-| 29 | raw 32-bit word replace | often lands on non-code bytes — corroborates the "embedded data tables" finding above |
+| 29 | raw 32-bit word replace (or a single **byte** replace — see below) | often lands on non-code bytes — corroborates the "embedded data tables" finding above |
 | 31 | raw 32-bit word replace | only seen in `.lit`/`.data` — same idea as 29, apparently a separate type code reserved for pure-data sections |
 
 A symbol resolves to a real address when its `scnum` is a normal section
@@ -146,6 +152,44 @@ in these two sections resolve** — every one references an external symbol,
 unlike `.text` where over a third do. The ASCII column also shows `.lit`
 isn't pure numeric literals: e.g. offset `$0` reads `"Bogu"`/`"s\x00\x03\x60"`
 — a literal string constant sitting right next to the pointer-table entries.
+
+**Not every type-29 hit is a whole word.** 748 of them (747 in `.text`, 1 in
+`Code`) land at `offset % 4 == 1` — one byte into a word, not the start of
+one. Every one of those resolves to a value ≤ 255 (only 0x40/0x41 show up
+across the whole table), which is the tell: these are single-**byte**
+constant patches (e.g. a small flag/enum byte living mid-word next to an
+unrelated instruction), not misaligned 32-bit fixups. Treating them as a
+naive 4-byte overwrite was tried first and quietly corrupted the start of
+the *next* word — caught by re-diffing the patched output against the
+original bytes outside every touched relocation site and finding 725
+unexplained differences, all one byte past a type-29 hit. `apply_reloc.py`
+now special-cases `offset % 4 != 0` as a single-byte patch.
+
+### `firmware_image.bin` — relocated flat image
+
+The original `firmware_image.bin` (built by `acef_unpack.py`, which sums
+each section at its raw `vaddr` field) was silently **corrupt**: `Code` is
+the only section with a distinct `vaddr` (`0xF000`) — `.text`, `.lit`,
+`.data`, `Apple`, and `.data1` all report `vaddr=0`, because this is a
+*relocatable* object file and real load addresses are assigned by the
+on-card loader at boot, not baked into the section header. Summing them at
+face value made every zero-`vaddr` section after `.text` overwrite `.text`'s
+first few KB.
+
+`apply_reloc.py` now builds a corrected image instead: sections laid out
+**sequentially** (`Code`, `.text`, `.lit`, `.data`, `Apple`, `.data1` — `.bss`
+has no file data) at the offsets recorded in the companion
+`firmware_image.map.txt`. This is a synthetic, documented concatenation for
+inspection purposes — **not** a claim about the real runtime memory layout,
+which the relocation evidence says is loader-assigned. Every *resolved*
+relocation is applied as a genuine byte-level patch (a raw binary has no
+comment channel): **1,687 of 4,723 total relocations patched** (`Code` 3,
+`.text` 1,684; `.lit`/`.data`/`Apple`/`.data1` 0, matching their 0%
+resolution rate above), **0 skipped**. Verified by re-diffing every patched
+section against its original bytes outside the touched relocation sites (0
+unexplained differences) and by round-tripping a sample of patched
+`const`/`consth` pairs back through `am29k_dasm.py` to confirm they decode
+to the intended resolved address.
 
 ## Function naming — what was and wasn't achievable
 

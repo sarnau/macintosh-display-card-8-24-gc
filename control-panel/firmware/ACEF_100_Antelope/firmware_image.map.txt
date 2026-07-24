@@ -1,0 +1,7 @@
+# offset     size       orig_vaddr  section   patched/skipped
+  0x000000  0x000098  0x00f000  Code      3 patched / 0 skipped
+  0x000098  0x03cad8  0x000000  .text     1684 patched / 0 skipped
+  0x03cb70  0x001124  0x000000  .lit      0 patched / 0 skipped
+  0x03dc94  0x0018f0  0x000000  .data     0 patched / 0 skipped
+  0x03f584  0x000058  0x000000  Apple     0 patched / 0 skipped
+  0x03f5dc  0x00004c  0x000000  .data1    0 patched / 0 skipped
