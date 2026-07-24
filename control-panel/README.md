@@ -235,8 +235,10 @@ multi-card behaviour: *"you can have as many 8•24 GC boards as you want...
 only one will function as a graphics accelerator; any other becomes a
 glorified display card"* — `DSInit` is very plausibly the code that finds
 and reconciles those "other" cards as ordinary Color QuickDraw devices
-(via a `'scrn'` calibration-resource lookup and an unidentified OS trap,
-`$A204`, not present in Apple's published `Traps.h`).
+(via a `'scrn'` calibration-resource lookup and two private `_Control`
+calls — `$A204`, confirmed identical to `_Control`/`$A004` by tracing
+Apple's own live trap dispatcher, see `INIT_DSInit.s` — sent directly to
+that card's own driver).
 
 ## Status / what's next
 
@@ -256,7 +258,12 @@ boot-time **`INIT`**s. Remaining, on request:
   misdecoded as garbage instructions, same artifact class as the DRVR.s
   fix below) reads `"ShowINIT by Paul Mercer / Copyright 1987-1988"` —
   this is third-party code (Paul Mercer's well-known ShowINIT utility),
-  not custom Apple/vendor logic. The unidentified `$A204` trap in
-  `INIT_DSInit.s` remains genuinely unresolved — checked against the full
-  internal System 7.1 `Traps.h` (not just the public copy), which confirms
-  it's a real gap in Apple's own trap numbering, not a missing reference.
+  not custom Apple/vendor logic. The `$A204` trap in `INIT_DSInit.s`,
+  previously flagged "unidentified" (absent even from the full internal
+  System 7.1 `Traps.h`, not just the public copy), turned out not to need
+  a `Traps.h` entry at all: tracing Apple's own live A-line dispatcher
+  (`OS/TrapDispatcher/Dispatch.a`) shows it indexes its handler table by
+  the trap word's low byte only — `$A204` and `$A004` (`_Control`)
+  dispatch to the byte-identical routine, so `$A204` *is* `_Control`; the
+  higher bits only matter to `GetTrapAddress`/`SetTrapAddress`'s own,
+  unrelated numbering convention.

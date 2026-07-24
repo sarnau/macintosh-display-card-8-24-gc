@@ -131,13 +131,25 @@ EntryStub:
 * used by several Apple monitor-configuration tools of this era --
 * and looks up the entry for this slot number.  If found (and not the
 * sentinel value $FFFF), it's consumed (_ReleaseResource either way).
-* It then issues what looks like two _GDevice-family calls through an
-* unidentified OS trap ($A204, not in Apple's published Traps.h) --
-* once with a small built record (selector 3) and once with a colour-
-* table handle pulled out of the matching GDevice (selector 4) -- most
-* plausibly registering/refreshing that slot's device with the
-* Device/Palette Manager machinery, but the exact trap's identity
-* isn't established here.
+*
+* It then issues two hand-rolled _Control calls (dc.w $A204 -- traced
+* against Apple's own trap dispatcher, OS/TrapDispatcher/Dispatch.a:
+* ATrap68020's live A-line dispatch indexes OSTable by the trap word's
+* LOW BYTE ONLY, so $A204 and $A004 execute the byte-identical
+* OSTable[4] entry -- $A204 IS _Control, not a distinct/undocumented
+* trap; bit 9 only matters to GetTrapAddress/SetTrapAddress's own,
+* unrelated 'new numbering' convention).  Each call builds a CntrlParam
+* on the stack (ioCRefNum=D6, the slot's OWN driver refnum from the
+* Unit Table chase above; csParam=A2), so this is FindGCSlot issuing
+* PRIVATE Control selectors DIRECTLY to that non-primary card's own
+* '.GraphAccel'-family driver -- csCode 4 with a small built record,
+* then csCode 3 with a colour-table handle pulled out of the matching
+* GDevice.  (The specific csCode 3/4 semantics aren't named -- DRVR.s's
+* DoControl doesn't label its csCode cases the way DoStatus's getters
+* are -- but the *mechanism* is now fully resolved: this is the
+* reconciled card being told, via its own driver's Control interface,
+* to pick up its colour table / device state now that it's been
+* identified as non-primary.)
 *
 * This lines up precisely with the develop-magazine description of
 * the 8*24 GC's multi-card behaviour ("you can have as many 8*24 GC
@@ -263,7 +275,7 @@ FindGCSlot:
   00598:  31 46 00 18          move.w   d6, $18(a0)
   0059c:  31 7c 00 04 00 1a    move.w   #$4, $1a(a0)
   005a2:  21 4a 00 1c          move.l   a2, $1c(a0)
-  005a6:  a2 04                dc.w     $a204  ; A-trap 0xa204 (unidentified)
+  005a6:  a2 04                dc.w     $a204  ; _Control
   005a8:  20 78 08 a8          movea.l  $8a8.w, a0
   005ac:  20 50                movea.l  (a0), a0
   005ae:  bc 50                cmp.w    (a0), d6
@@ -289,7 +301,7 @@ FindGCSlot:
   005ec:  31 46 00 18          move.w   d6, $18(a0)
   005f0:  31 7c 00 03 00 1a    move.w   #$3, $1a(a0)
   005f6:  21 4a 00 1c          move.l   a2, $1c(a0)
-  005fa:  a2 04                dc.w     $a204  ; A-trap 0xa204 (unidentified)
+  005fa:  a2 04                dc.w     $a204  ; _Control
   005fc:  20 5f                movea.l  (a7)+, a0
   005fe:  a0 2a                dc.w     $a02a  ; _HUnlock
   00600:  60 00 fe 86          bra.w    $488
