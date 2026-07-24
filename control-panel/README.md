@@ -41,8 +41,26 @@ hygiene classic Mac OS applies to any hardware pointer — meaning the
 Am29000's program/data memory is directly memory-mapped into the card's
 NuBus slot space, and firmware is written there with plain
 `BlockMove`/`move.l`, not shuttled through the separate command-queue
-mechanism `gc24` uses for ordinary QuickDraw commands at runtime. How
-execution actually gets kicked off afterward isn't traced.
+mechanism `gc24` uses for ordinary QuickDraw commands at runtime.
+
+**What happens right after the load, traced in `DRVR.s`'s `LoadFirmware`:**
+two fundamental hardware-access primitives it uses everywhere
+(`MakeSuperslotAddr`, the NuBus super-slot address builder, and
+`PokeHardwareLong`, a `_SwapMMUMode`-bracketed aligned longword write —
+confirmed by decoding their bodies, not named speculatively) get used four
+times right after a successful `ACEFLoad`, writing into fixed offsets
+(`+$04`/`+$0C`/`+$18`/`+$40`) of the just-loaded image — a parameter/
+handshake header the Am29000 side must read once it starts running, not a
+discrete reset/interrupt trigger (none is issued). Only *after* those four
+writes does the driver set a pure software "ready" flag and return. Given
+the Am29000's own `Boot` code is already running continuously and reads a
+lot of state before branching (see `firmware/README.md`), the most
+consistent picture is that the coprocessor **polls** this header rather
+than being explicitly kicked off — but the polling code itself isn't
+present in this file to confirm directly, and one of the four written
+values (`+$0C`, built from the ACEF magic byte's low nibble as a slot
+number) isn't fully explained. See `DRVR.s`'s `LoadFirmware` header for
+the full field-by-field breakdown.
 
 ## How the pieces cooperate
 

@@ -1040,14 +1040,14 @@ DoControl:
   00be8:  20 2c 01 44          move.l   $144(a4), d0
   00bec:  50 80                addq.l   #$8, d0
   00bee:  2f 00                move.l   d0, -(a7)
-  00bf0:  61 ff 00 00 23 d6    bsr.l    $2fc8
+  00bf0:  61 ff 00 00 23 d6    bsr.l    $2fc8  ; -> PokeHardwareLong
   00bf6:  70 00                moveq    #$0, d0
   00bf8:  30 14                move.w   (a4), d0
   00bfa:  2f 00                move.l   d0, -(a7)
   00bfc:  2f 3c 73 33 33 37    move.l   #$73333337, -(a7)
   00c02:  20 2c 01 44          move.l   $144(a4), d0
   00c06:  2f 00                move.l   d0, -(a7)
-  00c08:  61 ff 00 00 23 be    bsr.l    $2fc8
+  00c08:  61 ff 00 00 23 be    bsr.l    $2fc8  ; -> PokeHardwareLong
   00c0e:  4f ef 00 18          lea.l    $18(a7), a7
   00c12:  60 00 03 5a          bra.w    $f6e
   00c16:  20 0c                move.l   a4, d0
@@ -2491,7 +2491,7 @@ ClassifyTrapNum:
   01db6:  70 00                moveq    #$0, d0
   01db8:  2f 00                move.l   d0, -(a7)
   01dba:  2f 3c 04 00 00 28    move.l   #$4000028, -(a7)
-  01dc0:  61 ff 00 00 12 06    bsr.l    $2fc8
+  01dc0:  61 ff 00 00 12 06    bsr.l    $2fc8  ; -> PokeHardwareLong
   01dc6:  4f ef 00 0c          lea.l    $c(a7), a7
   01dca:  60 04                bra.b    $1dd0
   01dcc:  70 00                moveq    #$0, d0
@@ -2513,7 +2513,7 @@ ClassifyTrapNum:
   01dfa:  72 18                moveq    #$18, d1
   01dfc:  d0 81                add.l    d1, d0
   01dfe:  2f 00                move.l   d0, -(a7)
-  01e00:  61 ff 00 00 11 c6    bsr.l    $2fc8
+  01e00:  61 ff 00 00 11 c6    bsr.l    $2fc8  ; -> PokeHardwareLong
   01e06:  20 54                movea.l  (a4), a0
   01e08:  30 28 01 62          move.w   $162(a0), d0
   01e0c:  04 40 00 2c          subi.w   #$2c, d0
@@ -2528,7 +2528,7 @@ ClassifyTrapNum:
   01e24:  70 ff                moveq    #$ff, d0
   01e26:  2f 00                move.l   d0, -(a7)
   01e28:  2f 3c 04 00 00 28    move.l   #$4000028, -(a7)
-  01e2e:  61 ff 00 00 11 98    bsr.l    $2fc8
+  01e2e:  61 ff 00 00 11 98    bsr.l    $2fc8  ; -> PokeHardwareLong
   01e34:  4f ef 00 0c          lea.l    $c(a7), a7
   01e38:  60 04                bra.b    $1e3e
   01e3a:  70 00                moveq    #$0, d0
@@ -2862,7 +2862,7 @@ ClassifyTrapNum:
   02252:  46 80                not.l    d0
   02254:  2f 00                move.l   d0, -(a7)
   02256:  2f 07                move.l   d7, -(a7)
-  02258:  61 ff 00 00 0d 6e    bsr.l    $2fc8
+  02258:  61 ff 00 00 0d 6e    bsr.l    $2fc8  ; -> PokeHardwareLong
   0225e:  4f ef 00 0c          lea.l    $c(a7), a7
   02262:  06 87 00 00 01 00    addi.l   #$100, d7
   02268:  0c 87 00 02 00 00    cmpi.l   #$20000, d7
@@ -3001,7 +3001,7 @@ ClassifyTrapNum:
   02428:  46 80                not.l    d0
   0242a:  2f 00                move.l   d0, -(a7)
   0242c:  2f 07                move.l   d7, -(a7)
-  0242e:  61 ff 00 00 0b 98    bsr.l    $2fc8
+  0242e:  61 ff 00 00 0b 98    bsr.l    $2fc8  ; -> PokeHardwareLong
   02434:  4f ef 00 0c          lea.l    $c(a7), a7
   02438:  06 87 00 00 10 00    addi.l   #$1000, d7
   0243e:  0c 87 00 02 00 00    cmpi.l   #$20000, d7
@@ -3148,22 +3148,22 @@ ClassifyTrapNum:
   0265a:  72 18                moveq    #$18, d1
   0265c:  d0 81                add.l    d1, d0
   0265e:  2f 00                move.l   d0, -(a7)
-  02660:  61 ff 00 00 09 66    bsr.l    $2fc8
+  02660:  61 ff 00 00 09 66    bsr.l    $2fc8  ; -> PokeHardwareLong
   02666:  2f 06                move.l   d6, -(a7)
   02668:  2f 3c 42 00 53 00    move.l   #$42005300, -(a7)
   0266e:  20 2e ff f8          move.l   -$8(a6), d0
   02672:  2f 00                move.l   d0, -(a7)
-  02674:  61 ff 00 00 09 52    bsr.l    $2fc8
+  02674:  61 ff 00 00 09 52    bsr.l    $2fc8  ; -> PokeHardwareLong
   0267a:  2f 06                move.l   d6, -(a7)
   0267c:  2f 06                move.l   d6, -(a7)
   0267e:  2f 2c 01 38          move.l   $138(a4), -(a7)
-  02682:  61 ff 00 00 08 78    bsr.l    $2efc
+  02682:  61 ff 00 00 08 78    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02688:  50 8f                addq.l   #$8, a7
   0268a:  2f 00                move.l   d0, -(a7)
   0268c:  20 2e ff f8          move.l   -$8(a6), d0
   02690:  50 80                addq.l   #$8, d0
   02692:  2f 00                move.l   d0, -(a7)
-  02694:  61 ff 00 00 09 32    bsr.l    $2fc8
+  02694:  61 ff 00 00 09 32    bsr.l    $2fc8  ; -> PokeHardwareLong
   0269a:  2f 06                move.l   d6, -(a7)
   0269c:  2f 06                move.l   d6, -(a7)
   0269e:  20 2c 01 34          move.l   $134(a4), d0
@@ -3171,14 +3171,14 @@ ClassifyTrapNum:
   026a8:  22 3c ff ff ff 00    move.l   #$ffffff00, d1
   026ae:  c2 80                and.l    d0, d1
   026b0:  2f 01                move.l   d1, -(a7)
-  026b2:  61 ff 00 00 08 48    bsr.l    $2efc
+  026b2:  61 ff 00 00 08 48    bsr.l    $2efc  ; -> MakeSuperslotAddr
   026b8:  50 8f                addq.l   #$8, a7
   026ba:  2f 00                move.l   d0, -(a7)
   026bc:  20 2e ff f8          move.l   -$8(a6), d0
   026c0:  72 14                moveq    #$14, d1
   026c2:  d0 81                add.l    d1, d0
   026c4:  2f 00                move.l   d0, -(a7)
-  026c6:  61 ff 00 00 09 00    bsr.l    $2fc8
+  026c6:  61 ff 00 00 09 00    bsr.l    $2fc8  ; -> PokeHardwareLong
   026cc:  20 3c 00 00 08 00    move.l   #$800, d0
   026d2:  c0 85                and.l    d5, d0
   026d4:  4f ef 00 30          lea.l    $30(a7), a7
@@ -3195,12 +3195,12 @@ ClassifyTrapNum:
   026fc:  72 0c                moveq    #$c, d1
   026fe:  d0 81                add.l    d1, d0
   02700:  2f 00                move.l   d0, -(a7)
-  02702:  61 ff 00 00 08 c4    bsr.l    $2fc8
+  02702:  61 ff 00 00 08 c4    bsr.l    $2fc8  ; -> PokeHardwareLong
   02708:  2f 06                move.l   d6, -(a7)
   0270a:  2f 3c 73 33 33 37    move.l   #$73333337, -(a7)
   02710:  20 2c 01 44          move.l   $144(a4), d0
   02714:  2f 00                move.l   d0, -(a7)
-  02716:  61 ff 00 00 08 b0    bsr.l    $2fc8
+  02716:  61 ff 00 00 08 b0    bsr.l    $2fc8  ; -> PokeHardwareLong
   0271c:  4f ef 00 20          lea.l    $20(a7), a7
   02720:  42 6e ff fc          clr.w    -$4(a6)
   02724:  20 4b                movea.l  a3, a0
@@ -3226,7 +3226,7 @@ ClassifyTrapNum:
   02760:  ef a8                lsl.l    d7, d0
   02762:  2f 00                move.l   d0, -(a7)
   02764:  2f 06                move.l   d6, -(a7)
-  02766:  61 ff 00 00 08 60    bsr.l    $2fc8
+  02766:  61 ff 00 00 08 60    bsr.l    $2fc8  ; -> PokeHardwareLong
   0276c:  2f 05                move.l   d5, -(a7)
   0276e:  2f 06                move.l   d6, -(a7)
   02770:  61 ff 00 00 08 12    bsr.l    $2f84
@@ -3243,7 +3243,7 @@ ClassifyTrapNum:
   0278c:  2f 05                move.l   d5, -(a7)
   0278e:  2f 06                move.l   d6, -(a7)
   02790:  2f 06                move.l   d6, -(a7)
-  02792:  61 ff 00 00 08 34    bsr.l    $2fc8
+  02792:  61 ff 00 00 08 34    bsr.l    $2fc8  ; -> PokeHardwareLong
   02798:  2f 05                move.l   d5, -(a7)
   0279a:  2f 06                move.l   d6, -(a7)
   0279c:  61 ff 00 00 07 e6    bsr.l    $2f84
@@ -3255,7 +3255,7 @@ ClassifyTrapNum:
   027ae:  46 80                not.l    d0
   027b0:  2f 00                move.l   d0, -(a7)
   027b2:  2f 06                move.l   d6, -(a7)
-  027b4:  61 ff 00 00 08 12    bsr.l    $2fc8
+  027b4:  61 ff 00 00 08 12    bsr.l    $2fc8  ; -> PokeHardwareLong
   027ba:  2f 05                move.l   d5, -(a7)
   027bc:  2f 06                move.l   d6, -(a7)
   027be:  61 ff 00 00 07 c4    bsr.l    $2f84
@@ -3267,14 +3267,14 @@ ClassifyTrapNum:
   027d0:  2f 05                move.l   d5, -(a7)
   027d2:  2f 04                move.l   d4, -(a7)
   027d4:  2f 06                move.l   d6, -(a7)
-  027d6:  61 ff 00 00 07 f0    bsr.l    $2fc8
+  027d6:  61 ff 00 00 07 f0    bsr.l    $2fc8  ; -> PokeHardwareLong
   027dc:  70 01                moveq    #$1, d0
   027de:  4f ef 00 0c          lea.l    $c(a7), a7
   027e2:  60 12                bra.b    $27f6
   027e4:  2f 05                move.l   d5, -(a7)
   027e6:  2f 04                move.l   d4, -(a7)
   027e8:  2f 06                move.l   d6, -(a7)
-  027ea:  61 ff 00 00 07 dc    bsr.l    $2fc8
+  027ea:  61 ff 00 00 07 dc    bsr.l    $2fc8  ; -> PokeHardwareLong
   027f0:  70 00                moveq    #$0, d0
   027f2:  4f ef 00 0c          lea.l    $c(a7), a7
   027f6:  4c ee 00 f0 ff f0    movem.l  -$10(a6), d4-d7
@@ -3300,12 +3300,12 @@ ClassifyTrapNum:
   0283a:  ef a8                lsl.l    d7, d0
   0283c:  2f 00                move.l   d0, -(a7)
   0283e:  2f 05                move.l   d5, -(a7)
-  02840:  61 ff 00 00 07 86    bsr.l    $2fc8
+  02840:  61 ff 00 00 07 86    bsr.l    $2fc8  ; -> PokeHardwareLong
   02846:  2f 06                move.l   d6, -(a7)
   02848:  70 00                moveq    #$0, d0
   0284a:  2f 00                move.l   d0, -(a7)
   0284c:  2f 04                move.l   d4, -(a7)
-  0284e:  61 ff 00 00 07 78    bsr.l    $2fc8
+  0284e:  61 ff 00 00 07 78    bsr.l    $2fc8  ; -> PokeHardwareLong
   02854:  2f 06                move.l   d6, -(a7)
   02856:  2f 05                move.l   d5, -(a7)
   02858:  61 ff 00 00 07 2a    bsr.l    $2f84
@@ -3322,13 +3322,13 @@ ClassifyTrapNum:
   02876:  2f 06                move.l   d6, -(a7)
   02878:  2f 05                move.l   d5, -(a7)
   0287a:  2f 05                move.l   d5, -(a7)
-  0287c:  61 ff 00 00 07 4a    bsr.l    $2fc8
+  0287c:  61 ff 00 00 07 4a    bsr.l    $2fc8  ; -> PokeHardwareLong
   02882:  2f 06                move.l   d6, -(a7)
   02884:  20 05                move.l   d5, d0
   02886:  46 80                not.l    d0
   02888:  2f 00                move.l   d0, -(a7)
   0288a:  2f 04                move.l   d4, -(a7)
-  0288c:  61 ff 00 00 07 3a    bsr.l    $2fc8
+  0288c:  61 ff 00 00 07 3a    bsr.l    $2fc8  ; -> PokeHardwareLong
   02892:  2f 06                move.l   d6, -(a7)
   02894:  2f 05                move.l   d5, -(a7)
   02896:  61 ff 00 00 06 ec    bsr.l    $2f84
@@ -3340,11 +3340,11 @@ ClassifyTrapNum:
   028a8:  46 80                not.l    d0
   028aa:  2f 00                move.l   d0, -(a7)
   028ac:  2f 05                move.l   d5, -(a7)
-  028ae:  61 ff 00 00 07 18    bsr.l    $2fc8
+  028ae:  61 ff 00 00 07 18    bsr.l    $2fc8  ; -> PokeHardwareLong
   028b4:  2f 06                move.l   d6, -(a7)
   028b6:  2f 05                move.l   d5, -(a7)
   028b8:  2f 04                move.l   d4, -(a7)
-  028ba:  61 ff 00 00 07 0c    bsr.l    $2fc8
+  028ba:  61 ff 00 00 07 0c    bsr.l    $2fc8  ; -> PokeHardwareLong
   028c0:  2f 06                move.l   d6, -(a7)
   028c2:  2f 05                move.l   d5, -(a7)
   028c4:  61 ff 00 00 06 be    bsr.l    $2f84
@@ -3356,22 +3356,22 @@ ClassifyTrapNum:
   028d6:  2f 06                move.l   d6, -(a7)
   028d8:  2f 2e ff f8          move.l   -$8(a6), -(a7)
   028dc:  2f 05                move.l   d5, -(a7)
-  028de:  61 ff 00 00 06 e8    bsr.l    $2fc8
+  028de:  61 ff 00 00 06 e8    bsr.l    $2fc8  ; -> PokeHardwareLong
   028e4:  2f 06                move.l   d6, -(a7)
   028e6:  2f 2e ff fc          move.l   -$4(a6), -(a7)
   028ea:  2f 04                move.l   d4, -(a7)
-  028ec:  61 ff 00 00 06 da    bsr.l    $2fc8
+  028ec:  61 ff 00 00 06 da    bsr.l    $2fc8  ; -> PokeHardwareLong
   028f2:  70 01                moveq    #$1, d0
   028f4:  4f ef 00 18          lea.l    $18(a7), a7
   028f8:  60 22                bra.b    $291c
   028fa:  2f 06                move.l   d6, -(a7)
   028fc:  2f 2e ff f8          move.l   -$8(a6), -(a7)
   02900:  2f 05                move.l   d5, -(a7)
-  02902:  61 ff 00 00 06 c4    bsr.l    $2fc8
+  02902:  61 ff 00 00 06 c4    bsr.l    $2fc8  ; -> PokeHardwareLong
   02908:  2f 06                move.l   d6, -(a7)
   0290a:  2f 2e ff fc          move.l   -$4(a6), -(a7)
   0290e:  2f 04                move.l   d4, -(a7)
-  02910:  61 ff 00 00 06 b6    bsr.l    $2fc8
+  02910:  61 ff 00 00 06 b6    bsr.l    $2fc8  ; -> PokeHardwareLong
   02916:  70 00                moveq    #$0, d0
   02918:  4f ef 00 18          lea.l    $18(a7), a7
   0291c:  4c ee 00 f0 ff e8    movem.l  -$18(a6), d4-d7
@@ -3383,6 +3383,28 @@ ClassifyTrapNum:
 * Orchestrates a firmware download: prepares the source/relocation
 * context then calls ACEFLoad (twice, for two different inputs -- 
 * compare gc24.s's ACEFLoad, called once from its own loader path).
+*
+* After a successful ACEFLoad, on the SUCCESS path this writes FOUR
+* longwords into fixed offsets of the just-loaded image (base =
+* engine-globals+$130) via PokeHardwareLong -- i.e. a parameter/
+* handshake header the Am29000 side must read once it starts running,
+* not some separate reset/interrupt trigger (none is issued here):
+*   +$18  <- engine-globals+$168
+*   +$0C  <- MakeSuperslotAddr(0, ACEF-magic-byte)  (a bare super-slot
+*           base address $s000'0000, s = the low nibble of the ACEF
+*           magic $12A/$12B just parsed -- an odd reuse of the magic
+*           byte as a slot nibble; not fully explained)
+*   +$04  <- ACEFLoad's own out-parameter (the value it wrote back
+*           through the pointer passed at call time -- most plausibly
+*           a relocated entry point or final load size, not proven)
+*   +$40  <- engine-globals+$134
+* Only after all four writes does it mark dCtlStorage+$8 bit 1 (a pure
+* SOFTWARE ready flag, not a hardware trigger) and return. Given the
+* Am29000's Boot code (../firmware/disasm/Boot.asm) is already running
+* continuously and reads a great deal of state before branching, the
+* most consistent picture is that the coprocessor POLLS this header
+* rather than being explicitly kicked off -- but that polling code
+* isn't present in this file to confirm directly.
 LoadFirmware:
   02926:  4e 56 ff f8          link.w   a6, #$fff8
   0292a:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
@@ -3436,36 +3458,36 @@ LoadFirmware:
   029b0:  72 18                moveq    #$18, d1
   029b2:  d0 81                add.l    d1, d0
   029b4:  2f 00                move.l   d0, -(a7)
-  029b6:  61 ff 00 00 06 10    bsr.l    $2fc8
+  029b6:  61 ff 00 00 06 10    bsr.l    $2fc8  ; -> PokeHardwareLong
   029bc:  2f 07                move.l   d7, -(a7)
   029be:  2f 07                move.l   d7, -(a7)
   029c0:  2f 05                move.l   d5, -(a7)
-  029c2:  61 ff 00 00 05 38    bsr.l    $2efc
+  029c2:  61 ff 00 00 05 38    bsr.l    $2efc  ; -> MakeSuperslotAddr
   029c8:  50 8f                addq.l   #$8, a7
   029ca:  2f 00                move.l   d0, -(a7)
   029cc:  20 2e ff fc          move.l   -$4(a6), d0
   029d0:  72 0c                moveq    #$c, d1
   029d2:  d0 81                add.l    d1, d0
   029d4:  2f 00                move.l   d0, -(a7)
-  029d6:  61 ff 00 00 05 f0    bsr.l    $2fc8
+  029d6:  61 ff 00 00 05 f0    bsr.l    $2fc8  ; -> PokeHardwareLong
   029dc:  2f 07                move.l   d7, -(a7)
   029de:  2f 2e ff f8          move.l   -$8(a6), -(a7)
   029e2:  20 2e ff fc          move.l   -$4(a6), d0
   029e6:  58 80                addq.l   #$4, d0
   029e8:  2f 00                move.l   d0, -(a7)
-  029ea:  61 ff 00 00 05 dc    bsr.l    $2fc8
+  029ea:  61 ff 00 00 05 dc    bsr.l    $2fc8  ; -> PokeHardwareLong
   029f0:  2f 07                move.l   d7, -(a7)
   029f2:  2f 07                move.l   d7, -(a7)
   029f4:  20 54                movea.l  (a4), a0
   029f6:  2f 28 01 34          move.l   $134(a0), -(a7)
-  029fa:  61 ff 00 00 05 00    bsr.l    $2efc
+  029fa:  61 ff 00 00 05 00    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02a00:  50 8f                addq.l   #$8, a7
   02a02:  2f 00                move.l   d0, -(a7)
   02a04:  20 2e ff fc          move.l   -$4(a6), d0
   02a08:  72 40                moveq    #$40, d1
   02a0a:  d0 81                add.l    d1, d0
   02a0c:  2f 00                move.l   d0, -(a7)
-  02a0e:  61 ff 00 00 05 b8    bsr.l    $2fc8
+  02a0e:  61 ff 00 00 05 b8    bsr.l    $2fc8  ; -> PokeHardwareLong
   02a14:  20 4b                movea.l  a3, a0
   02a16:  10 06                move.b   d6, d0
   02a18:  a0 6a                dc.w     $a06a  ; _HSetState
@@ -3504,7 +3526,7 @@ LoadFirmware:
   02a74:  72 18                moveq    #$18, d1
   02a76:  d0 81                add.l    d1, d0
   02a78:  2f 00                move.l   d0, -(a7)
-  02a7a:  61 ff 00 00 05 4c    bsr.l    $2fc8
+  02a7a:  61 ff 00 00 05 4c    bsr.l    $2fc8  ; -> PokeHardwareLong
   02a80:  20 54                movea.l  (a4), a0
   02a82:  70 00                moveq    #$0, d0
   02a84:  30 10                move.w   (a0), d0
@@ -3514,7 +3536,7 @@ LoadFirmware:
   02a8c:  22 28 01 30          move.l   $130(a0), d1
   02a90:  d2 bc 00 00 03 d4    add.l    #$3d4, d1
   02a96:  2f 01                move.l   d1, -(a7)
-  02a98:  61 ff 00 00 05 2e    bsr.l    $2fc8
+  02a98:  61 ff 00 00 05 2e    bsr.l    $2fc8  ; -> PokeHardwareLong
   02a9e:  20 54                movea.l  (a4), a0
   02aa0:  70 00                moveq    #$0, d0
   02aa2:  30 10                move.w   (a0), d0
@@ -3522,7 +3544,7 @@ LoadFirmware:
   02aa6:  70 ff                moveq    #$ff, d0
   02aa8:  2f 00                move.l   d0, -(a7)
   02aaa:  2f 3c 04 00 00 50    move.l   #$4000050, -(a7)
-  02ab0:  61 ff 00 00 05 16    bsr.l    $2fc8
+  02ab0:  61 ff 00 00 05 16    bsr.l    $2fc8  ; -> PokeHardwareLong
   02ab6:  20 54                movea.l  (a4), a0
   02ab8:  00 a8 00 00 00 04 00 08 ori.l    #$4, $8(a0)
   02ac0:  4f ef 00 24          lea.l    $24(a7), a7
@@ -3606,14 +3628,14 @@ LoadFirmware:
   02bde:  2f 07                move.l   d7, -(a7)
   02be0:  2f 07                move.l   d7, -(a7)
   02be2:  2f 05                move.l   d5, -(a7)
-  02be4:  61 ff 00 00 03 16    bsr.l    $2efc
+  02be4:  61 ff 00 00 03 16    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02bea:  50 8f                addq.l   #$8, a7
   02bec:  2f 00                move.l   d0, -(a7)
   02bee:  20 0b                move.l   a3, d0
   02bf0:  72 20                moveq    #$20, d1
   02bf2:  d0 81                add.l    d1, d0
   02bf4:  2f 00                move.l   d0, -(a7)
-  02bf6:  61 ff 00 00 03 d0    bsr.l    $2fc8
+  02bf6:  61 ff 00 00 03 d0    bsr.l    $2fc8  ; -> PokeHardwareLong
   02bfc:  2f 07                move.l   d7, -(a7)
   02bfe:  20 54                movea.l  (a4), a0
   02c00:  70 00                moveq    #$0, d0
@@ -3625,47 +3647,47 @@ LoadFirmware:
   02c0e:  d2 80                add.l    d0, d1
   02c10:  d2 85                add.l    d5, d1
   02c12:  2f 01                move.l   d1, -(a7)
-  02c14:  61 ff 00 00 02 e6    bsr.l    $2efc
+  02c14:  61 ff 00 00 02 e6    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02c1a:  50 8f                addq.l   #$8, a7
   02c1c:  2f 00                move.l   d0, -(a7)
   02c1e:  20 0b                move.l   a3, d0
   02c20:  72 24                moveq    #$24, d1
   02c22:  d0 81                add.l    d1, d0
   02c24:  2f 00                move.l   d0, -(a7)
-  02c26:  61 ff 00 00 03 a0    bsr.l    $2fc8
+  02c26:  61 ff 00 00 03 a0    bsr.l    $2fc8  ; -> PokeHardwareLong
   02c2c:  2f 07                move.l   d7, -(a7)
   02c2e:  2f 06                move.l   d6, -(a7)
   02c30:  20 0b                move.l   a3, d0
   02c32:  72 28                moveq    #$28, d1
   02c34:  d0 81                add.l    d1, d0
   02c36:  2f 00                move.l   d0, -(a7)
-  02c38:  61 ff 00 00 03 8e    bsr.l    $2fc8
+  02c38:  61 ff 00 00 03 8e    bsr.l    $2fc8  ; -> PokeHardwareLong
   02c3e:  2f 07                move.l   d7, -(a7)
   02c40:  2f 04                move.l   d4, -(a7)
   02c42:  20 0b                move.l   a3, d0
   02c44:  72 2c                moveq    #$2c, d1
   02c46:  d0 81                add.l    d1, d0
   02c48:  2f 00                move.l   d0, -(a7)
-  02c4a:  61 ff 00 00 03 7c    bsr.l    $2fc8
+  02c4a:  61 ff 00 00 03 7c    bsr.l    $2fc8  ; -> PokeHardwareLong
   02c50:  2f 07                move.l   d7, -(a7)
   02c52:  2f 2e 00 10          move.l   $10(a6), -(a7)
   02c56:  20 0b                move.l   a3, d0
   02c58:  72 30                moveq    #$30, d1
   02c5a:  d0 81                add.l    d1, d0
   02c5c:  2f 00                move.l   d0, -(a7)
-  02c5e:  61 ff 00 00 03 68    bsr.l    $2fc8
+  02c5e:  61 ff 00 00 03 68    bsr.l    $2fc8  ; -> PokeHardwareLong
   02c64:  2f 07                move.l   d7, -(a7)
   02c66:  2f 07                move.l   d7, -(a7)
   02c68:  20 54                movea.l  (a4), a0
   02c6a:  2f 28 01 34          move.l   $134(a0), -(a7)
-  02c6e:  61 ff 00 00 02 8c    bsr.l    $2efc
+  02c6e:  61 ff 00 00 02 8c    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02c74:  50 8f                addq.l   #$8, a7
   02c76:  2f 00                move.l   d0, -(a7)
   02c78:  20 0b                move.l   a3, d0
   02c7a:  72 40                moveq    #$40, d1
   02c7c:  d0 81                add.l    d1, d0
   02c7e:  2f 00                move.l   d0, -(a7)
-  02c80:  61 ff 00 00 03 46    bsr.l    $2fc8
+  02c80:  61 ff 00 00 03 46    bsr.l    $2fc8  ; -> PokeHardwareLong
   02c86:  4f ef 00 48          lea.l    $48(a7), a7
   02c8a:  20 05                move.l   d5, d0
   02c8c:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
@@ -3750,13 +3772,13 @@ LoadFirmware:
   02d88:  2f 07                move.l   d7, -(a7)
   02d8a:  2f 07                move.l   d7, -(a7)
   02d8c:  2f 0c                move.l   a4, -(a7)
-  02d8e:  61 ff 00 00 01 6c    bsr.l    $2efc
+  02d8e:  61 ff 00 00 01 6c    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02d94:  50 8f                addq.l   #$8, a7
   02d96:  2f 00                move.l   d0, -(a7)
   02d98:  20 2e ff f8          move.l   -$8(a6), d0
   02d9c:  58 ae ff f8          addq.l   #$4, -$8(a6)
   02da0:  2f 00                move.l   d0, -(a7)
-  02da2:  61 ff 00 00 02 24    bsr.l    $2fc8
+  02da2:  61 ff 00 00 02 24    bsr.l    $2fc8  ; -> PokeHardwareLong
   02da8:  20 6e 00 0c          movea.l  $c(a6), a0
   02dac:  26 70 6c 00          movea.l  (a0, d6.l * 4), a3
   02db0:  4f ef 00 0c          lea.l    $c(a7), a7
@@ -3792,7 +3814,7 @@ LoadFirmware:
   02df8:  22 2e ff f8          move.l   -$8(a6), d1
   02dfc:  58 ae ff f8          addq.l   #$4, -$8(a6)
   02e00:  2f 01                move.l   d1, -(a7)
-  02e02:  61 ff 00 00 01 c4    bsr.l    $2fc8
+  02e02:  61 ff 00 00 01 c4    bsr.l    $2fc8  ; -> PokeHardwareLong
   02e08:  70 00                moveq    #$0, d0
   02e0a:  4f ef 00 0c          lea.l    $c(a7), a7
   02e0e:  4c ee 18 e0 ff e4    movem.l  -$1c(a6), d5-d7/a3-a4
@@ -3806,7 +3828,7 @@ LoadFirmware:
   02e2e:  e4 8f                lsr.l    #$2, d7
   02e30:  2f 2e 00 10          move.l   $10(a6), -(a7)
   02e34:  2f 0c                move.l   a4, -(a7)
-  02e36:  61 ff 00 00 00 c4    bsr.l    $2efc
+  02e36:  61 ff 00 00 00 c4    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02e3c:  28 40                movea.l  d0, a4
   02e3e:  41 ee ff ff          lea.l    -$1(a6), a0
   02e42:  10 10                move.b   (a0), d0
@@ -3887,6 +3909,19 @@ LoadFirmware:
   02ef4:  28 6e ff fc          movea.l  -$4(a6), a4
   02ef8:  4e 5e                unlk     a6
   02efa:  4e 75                rts      
+* ==================================================================
+* MakeSuperslotAddr(addr, slotNibble)
+* ==================================================================
+* NuBus super-slot address builder/normaliser -- one of this driver's
+* two fundamental hardware-access primitives (called ~30x throughout
+* the file, not just from LoadFirmware below). If `addr`'s top nibble
+* is already $F (i.e. already a standard-slot-space pointer,
+* $Fs00'0000-style), returns it UNCHANGED. Otherwise masks `addr` to
+* its low 28 bits and ORs in (slotNibble&$F)<<28, building a super-
+* slot address $s000'0000 + addr -- the exact convention documented
+* in ../extracted-source/README.md ('the board lives in NuBus super-
+* slot space, base $s000'0000, s = slot').
+MakeSuperslotAddr:
   02efc:  4e 56 00 00          link.w   a6, #$0
   02f00:  2f 0c                move.l   a4, -(a7)
   02f02:  28 6e 00 08          movea.l  $8(a6), a4
@@ -3914,7 +3949,7 @@ LoadFirmware:
   02f44:  1d 7c 00 01 ff ff    move.b   #$1, -$1(a6)
   02f4a:  2f 2e 00 10          move.l   $10(a6), -(a7)
   02f4e:  2f 07                move.l   d7, -(a7)
-  02f50:  61 ff ff ff ff aa    bsr.l    $2efc
+  02f50:  61 ff ff ff ff aa    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02f56:  2e 00                move.l   d0, d7
   02f58:  41 ee ff ff          lea.l    -$1(a6), a0
   02f5c:  10 10                move.b   (a0), d0
@@ -3938,7 +3973,7 @@ LoadFirmware:
   02f8c:  1d 7c 00 01 ff ff    move.b   #$1, -$1(a6)
   02f92:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   02f96:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  02f9a:  61 ff ff ff ff 60    bsr.l    $2efc
+  02f9a:  61 ff ff ff ff 60    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02fa0:  72 fc                moveq    #$fc, d1
   02fa2:  c2 80                and.l    d0, d1
   02fa4:  28 41                movea.l  d1, a4
@@ -3955,12 +3990,26 @@ LoadFirmware:
   02fbe:  4c ee 10 80 ff f6    movem.l  -$a(a6), d7/a4
   02fc4:  4e 5e                unlk     a6
   02fc6:  4e 75                rts      
+* ==================================================================
+* PokeHardwareLong(addr, value, slotNibble)
+* ==================================================================
+* This driver's other fundamental hardware-access primitive (called
+* ~35x). Runs `addr` through MakeSuperslotAddr, aligns the result down
+* to a longword boundary, then writes `value` there -- bracketed by a
+* _SwapMMUMode save/restore pair, the standard classic-Mac idiom for
+* safely touching hardware that must be addressed 32-bit-clean
+* regardless of the running Mac's own addressing mode. This is the
+* confirmed mechanism LoadFirmware uses below to hand parameters to
+* the just-loaded Am29000 image -- i.e. proof the coprocessor's memory
+* is directly NuBus-memory-mapped and reachable with plain stores,
+* not some separate DMA/interrupt protocol.
+PokeHardwareLong:
   02fc8:  4e 56 ff fe          link.w   a6, #$fffe
   02fcc:  2f 0c                move.l   a4, -(a7)
   02fce:  1d 7c 00 01 ff ff    move.b   #$1, -$1(a6)
   02fd4:  2f 2e 00 10          move.l   $10(a6), -(a7)
   02fd8:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  02fdc:  61 ff ff ff ff 1e    bsr.l    $2efc
+  02fdc:  61 ff ff ff ff 1e    bsr.l    $2efc  ; -> MakeSuperslotAddr
   02fe2:  72 fc                moveq    #$fc, d1
   02fe4:  c2 80                and.l    d0, d1
   02fe6:  28 41                movea.l  d1, a4
@@ -4073,14 +4122,14 @@ ACEFLoad:
   030e0:  2f 2e 00 10          move.l   $10(a6), -(a7)
   030e4:  20 6e 00 0c          movea.l  $c(a6), a0
   030e8:  2f 10                move.l   (a0), -(a7)
-  030ea:  61 ff ff ff fe 10    bsr.l    $2efc
+  030ea:  61 ff ff ff fe 10    bsr.l    $2efc  ; -> MakeSuperslotAddr
   030f0:  2d 40 ff f0          move.l   d0, -$10(a6)
   030f4:  50 4f                addq.w   #$8, a7
   030f6:  60 14                bra.b    $310c
   030f8:  2f 2e 00 10          move.l   $10(a6), -(a7)
   030fc:  70 00                moveq    #$0, d0
   030fe:  2f 00                move.l   d0, -(a7)
-  03100:  61 ff ff ff fd fa    bsr.l    $2efc
+  03100:  61 ff ff ff fd fa    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03106:  2d 40 ff f0          move.l   d0, -$10(a6)
   0310a:  50 4f                addq.w   #$8, a7
   0310c:  2f 2e ff f0          move.l   -$10(a6), -(a7)
@@ -4386,7 +4435,7 @@ ACEFLoad:
   03542:  66 1c                bne.b    $3560
   03544:  2f 2e 00 10          move.l   $10(a6), -(a7)
   03548:  2f 2e ff 3a          move.l   -$c6(a6), -(a7)
-  0354c:  61 ff ff ff f9 ae    bsr.l    $2efc
+  0354c:  61 ff ff ff f9 ae    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03552:  20 6e 00 0c          movea.l  $c(a6), a0
   03556:  20 80                move.l   d0, (a0)
   03558:  1d 7c 00 01 ff d7    move.b   #$1, -$29(a6)
@@ -4572,7 +4621,7 @@ ACEFLoad:
   037ec:  d2 81                add.l    d1, d1
   037ee:  d0 81                add.l    d1, d0
   037f0:  2f 30 08 02          move.l   $2(a0, d0.l), -(a7)
-  037f4:  61 ff ff ff f7 06    bsr.l    $2efc
+  037f4:  61 ff ff ff f7 06    bsr.l    $2efc  ; -> MakeSuperslotAddr
   037fa:  20 6e ff e4          movea.l  -$1c(a6), a0
   037fe:  22 2e ff c2          move.l   -$3e(a6), d1
   03802:  d2 81                add.l    d1, d1
@@ -4625,7 +4674,7 @@ ACEFLoad:
   0388e:  02 ae 0f ff ff ff ff dc andi.l   #$fffffff, -$24(a6)
   03896:  2f 2e 00 10          move.l   $10(a6), -(a7)
   0389a:  2f 2e fe ee          move.l   -$112(a6), -(a7)
-  0389e:  61 ff ff ff f6 5c    bsr.l    $2efc
+  0389e:  61 ff ff ff f6 5c    bsr.l    $2efc  ; -> MakeSuperslotAddr
   038a4:  20 6e ff e4          movea.l  -$1c(a6), a0
   038a8:  22 2e ff c2          move.l   -$3e(a6), d1
   038ac:  d2 81                add.l    d1, d1
@@ -4653,7 +4702,7 @@ ACEFLoad:
   038f2:  d2 81                add.l    d1, d1
   038f4:  d0 81                add.l    d1, d0
   038f6:  2f 30 08 02          move.l   $2(a0, d0.l), -(a7)
-  038fa:  61 ff ff ff f6 00    bsr.l    $2efc
+  038fa:  61 ff ff ff f6 00    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03900:  20 6e ff e4          movea.l  -$1c(a6), a0
   03904:  22 2e ff c2          move.l   -$3e(a6), d1
   03908:  d2 81                add.l    d1, d1
@@ -4714,7 +4763,7 @@ ACEFLoad:
   039a6:  65 00 ff 3a          bcs.w    $38e2
   039aa:  2f 2e 00 10          move.l   $10(a6), -(a7)
   039ae:  2f 2e fe ea          move.l   -$116(a6), -(a7)
-  039b2:  61 ff ff ff f5 48    bsr.l    $2efc
+  039b2:  61 ff ff ff f5 48    bsr.l    $2efc  ; -> MakeSuperslotAddr
   039b8:  2d 40 fe e6          move.l   d0, -$11a(a6)
   039bc:  90 ae ff 02          sub.l    -$fe(a6), d0
   039c0:  2d 40 fe e2          move.l   d0, -$11e(a6)
@@ -4776,7 +4825,7 @@ ACEFLoad:
   03a8c:  60 04                bra.b    $3a92
   03a8e:  20 2e fe ce          move.l   -$132(a6), d0
   03a92:  2f 00                move.l   d0, -(a7)
-  03a94:  61 ff ff ff f4 66    bsr.l    $2efc
+  03a94:  61 ff ff ff f4 66    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03a9a:  2d 40 fe ca          move.l   d0, -$136(a6)
   03a9e:  70 00                moveq    #$0, d0
   03aa0:  30 2e ff 1a          move.w   -$e6(a6), d0
@@ -4946,7 +4995,7 @@ CmdTableJumpTable_03b48:
   03c66:  8a 80                or.l     d0, d5
   03c68:  2f 2e 00 10          move.l   $10(a6), -(a7)
   03c6c:  2f 2e fe ba          move.l   -$146(a6), -(a7)
-  03c70:  61 ff ff ff f2 8a    bsr.l    $2efc
+  03c70:  61 ff ff ff f2 8a    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03c76:  da 80                add.l    d0, d5
   03c78:  20 3c ff 00 ff 00    move.l   #$ff00ff00, d0
   03c7e:  c0 87                and.l    d7, d0
@@ -4979,7 +5028,7 @@ CmdTableJumpTable_03b48:
   03cce:  8a 80                or.l     d0, d5
   03cd0:  2f 2e 00 10          move.l   $10(a6), -(a7)
   03cd4:  2f 2e fe ba          move.l   -$146(a6), -(a7)
-  03cd8:  61 ff ff ff f2 22    bsr.l    $2efc
+  03cd8:  61 ff ff ff f2 22    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03cde:  d0 85                add.l    d5, d0
   03ce0:  2a 00                move.l   d0, d5
   03ce2:  70 10                moveq    #$10, d0
@@ -5216,7 +5265,7 @@ CmdTableJumpTable_03e5a:
   03f70:  8c 80                or.l     d0, d6
   03f72:  2f 2e 00 10          move.l   $10(a6), -(a7)
   03f76:  2f 04                move.l   d4, -(a7)
-  03f78:  61 ff ff ff ef 82    bsr.l    $2efc
+  03f78:  61 ff ff ff ef 82    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03f7e:  dc 80                add.l    d0, d6
   03f80:  20 3c ff 00 ff 00    move.l   #$ff00ff00, d0
   03f86:  c0 87                and.l    d7, d0
@@ -5259,7 +5308,7 @@ CmdTableJumpTable_03e5a:
   03ff0:  8c 80                or.l     d0, d6
   03ff2:  2f 2e 00 10          move.l   $10(a6), -(a7)
   03ff6:  2f 04                move.l   d4, -(a7)
-  03ff8:  61 ff ff ff ef 02    bsr.l    $2efc
+  03ff8:  61 ff ff ff ef 02    bsr.l    $2efc  ; -> MakeSuperslotAddr
   03ffe:  d0 86                add.l    d6, d0
   04000:  2c 00                move.l   d0, d6
   04002:  70 10                moveq    #$10, d0
@@ -5402,7 +5451,7 @@ CmdTableJumpTable_03e5a:
   041ac:  20 80                move.l   d0, (a0)
   041ae:  2f 2e 00 10          move.l   $10(a6), -(a7)
   041b2:  2f 2e fe ea          move.l   -$116(a6), -(a7)
-  041b6:  61 ff ff ff ed 44    bsr.l    $2efc
+  041b6:  61 ff ff ff ed 44    bsr.l    $2efc  ; -> MakeSuperslotAddr
   041bc:  2d 40 fe ea          move.l   d0, -$116(a6)
   041c0:  4a ae ff e4          tst.l    -$1c(a6)
   041c4:  50 4f                addq.w   #$8, a7
