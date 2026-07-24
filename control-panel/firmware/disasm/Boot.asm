@@ -17,7 +17,67 @@
 *  executed code. Address: $20031e8. The trailing 4 words at
 *  $20037f0-$20037fc also decode as `.word` (not valid instructions),
 *  consistent with a small data table at the end of the boot code.
-  2003000:  0300460c  const    gr70, $000c             
+*
+*  WHAT THE CODE ACTUALLY DOES (well-supported, from tracing every
+*  branch target and instruction shape below):
+*  ------------------------------------------------------------------
+*  Entry ($2003000): loads a few 16-bit constants, reads one word
+*  through GR2 (its incoming value isn't independently known -- the
+*  Am29000 only guarantees GR1/PC0 are hardware-set at reset, not
+*  GR2), then an early jmpt/jmpfdec branches on the result -- the
+*  classic "test a config/status bit, take one of two setup paths"
+*  shape for a boot routine.
+*
+*  Early special-register writes (`mtsrim spr124,$0040`,
+*  `mtsrim spr122,$04f7`, `mtsr spr89,lr15`, `mtsr spr88,gr6`) are
+*  unambiguously hardware/cache configuration -- that's what
+*  mtsr/mtsrim do -- but SPRs 88/89/122/124 aren't in this project's
+*  name table (only the well-known ones like VAB/CFG/CHA/CHD/CHC are),
+*  so which specific config bits these touch isn't claimed.
+*
+*  The bulk of the body ($2003020-$20037ec) is a long, repetitive
+*  pattern: const/consth pairs building 32-bit values into scratch
+*  registers, a load, then add into a rotating accumulator
+*  (gr70/gr71/gr72/gr73) by a small offset -- the shape of either an
+*  unrolled memory copy or a checksum/verification pass over some
+*  data table. Which one isn't established: the constants involved
+*  don't consistently form addresses in any mapped region (some pair
+*  up as $4Cxx/$4Dxx highs, matching the Private/comm-block region;
+*  others are $42xx/$45xx/$47xx, matching nothing known -- more
+*  consistent with literal/checksum constants than pointers).
+*
+*  THE REAL FINDING: many of this section's OWN jump targets land
+*  outside it entirely.  Classified against the memory map (see
+*  ../README.md):
+*    - 5 targets ($20021ec, $20023dc, $200261c, $2002ca8, $2002cf0)
+*      land cleanly inside `Hand` -- Boot calling into already-mapped
+*      interrupt-handler-setup code, unsurprising -- flagged inline
+*      below as "-> Hand".
+*    - 6 targets ($2002e64-$2002fdc) land in the small gap between
+*      Hand's end ($2002d14) and Boot's start ($2003000) -- flagged
+*      inline as "-> UNMAPPED (gap)".
+*    - ~43 targets, densely packed from $2003954 to $2003e38, land
+*      inside what the section table calls `Cache` -- declared bss
+*      (zero-initialized) in this ACEF, confirmed genuinely empty on
+*      disk (its scnptr is a leftover alias of the next section's
+*      offset, the normal COFF convention for empty bss, not a
+*      missed-extraction bug) -- flagged inline as "-> UNMAPPED
+*      (Cache)".
+*  That means Boot's own control flow depends on real code sitting in
+*  a region that ships EMPTY in this firmware image -- it must get
+*  populated at runtime, before these jumps execute, by something not
+*  captured in this static file.  This isn't a decode error (unlike
+*  the DRVR.s $AE70 / INIT_main.s ShowINIT misdecodes found earlier in
+*  this project): it's an architectural fact, and `Cache`'s vaddr and
+*  name already imply the read: this is very plausibly the Am29000's
+*  on-chip instruction RAM, a real, documented feature of that
+*  architecture that can run in directly-addressable RAM mode instead
+*  of transparent-cache mode.  The natural reading is that Boot's job
+*  includes shadowing/decompressing a second boot stage into that RAM
+*  before jumping into it -- consistent with the copy/checksum-shaped
+*  code right before those targets -- but the actual payload for that
+*  stage isn't present anywhere in this ACEF file.
+  2003000:  0300460c  const    gr70, $000c
   2003004:  024447cc  consth   gr71, $44cc             
   2003008:  03004088  const    gr64, $0088             
   200300c:  0300449a  const    gr68, $009a             
@@ -27,7 +87,7 @@
 L_200301c:
   200301c:  93423eed  or       gr66, gr62, $ed         
   2003020:  15463a7c  add      gr70, gr58, $7c         
-  2003024:  b4ff3a33  jmpfdec  gr58, $2002cf0          
+  2003024:  b4ff3a33  jmpfdec  gr58, $2002cf0  ; -> Hand (interrupt/trap handler region)
   2003028:  81423c85  sll      gr66, gr60, $85            ; [delay slot]
   200302c:  83423d89  srl      gr66, gr61, $89         
   2003030:  04007c40  mtsrim   spr124, $0040           
@@ -50,7 +110,7 @@ L_200301c:
   2003074:  024c3698  consth   gr54, $4c98             
   2003078:  160038d6  load     0, 0, gr56, lr86        
   200307c:  604838ab  cpeq     gr72, gr56, lr43        
-  2003080:  a4ff3886  jmpf     gr56, $2002e98          
+  2003080:  a4ff3886  jmpf     gr56, $2002e98  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   2003084:  030039c8  const    gr57, $00c8                ; [delay slot]
   2003088:  1e003ac2  store    0, 0, gr58, lr66        
   200308c:  1e003bc1  store    0, 0, gr59, lr65        
@@ -72,7 +132,7 @@ L_200301c:
   20030cc:  160021d0  load     0, 0, gr33, lr80        
   20030d0:  15482340  add      gr72, gr35, $40         
   20030d4:  1e002edf  store    0, 0, gr46, lr95        
-  20030d8:  b4ff2d6d  jmpfdec  gr45, $2002e8c          
+  20030d8:  b4ff2d6d  jmpfdec  gr45, $2002e8c  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   20030dc:  154723e8  add      gr71, gr35, $e8            ; [delay slot]
   20030e0:  03ff2d87  const    gr45, $ff87             
   20030e4:  020f2c37  consth   gr44, $0f37             
@@ -199,21 +259,21 @@ L_2003280:
   20032bc:  0203eeec  consth   lr110, $03ec            
   20032c0:  1e01ee3f  store    0, 1, lr110, gr63       
   20032c4:  1546eecc  add      gr70, lr110, $cc        
-  20032c8:  b4fee978  jmpfdec  lr105, $2002ca8         
+  20032c8:  b4fee978  jmpfdec  lr105, $2002ca8  ; -> Hand (interrupt/trap handler region)
   20032cc:  7041aa89  aseq     trap65, lr42, lr9          ; [delay slot]
   20032d0:  0301e856  const    lr104, $0156            
   20032d4:  031ce284  const    lr98, $1c84             
   20032d8:  0203e288  consth   lr98, $0388             
   20032dc:  1e01e29f  store    0, 1, lr98, lr31        
   20032e0:  1546e300  add      gr70, lr99, $00         
-  20032e4:  b4fee6e4  jmpfdec  lr102, $2002e74         
+  20032e4:  b4fee6e4  jmpfdec  lr102, $2002e74  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   20032e8:  7041a451  aseq     trap65, lr36, gr81         ; [delay slot]
   20032ec:  0301e52a  const    lr101, $012a            
   20032f0:  031ce070  const    lr96, $1c70             
   20032f4:  0203e108  consth   lr97, $0308             
   20032f8:  1e01e103  store    0, 1, lr97, gr3         
   20032fc:  1546e70c  add      gr70, lr103, $0c        
-  2003300:  b4fee3fc  jmpfdec  lr99, $2002ef0          
+  2003300:  b4fee3fc  jmpfdec  lr99, $2002ef0  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   2003304:  7041a0cd  aseq     trap65, lr32, lr77         ; [delay slot]
   2003308:  0310e40c  const    lr100, $100c            
   200330c:  0203e598  consth   lr101, $0398            
@@ -243,25 +303,25 @@ L_2003280:
   200336c:  0301dfdc  const    lr95, $01dc             
   2003370:  0245df44  consth   lr95, $4544             
   2003374:  1601d7d0  load     0, 1, lr87, lr80        
-  2003378:  a401d793  jmpf     lr87, $20039c4          
+  2003378:  a401d793  jmpf     lr87, $20039c4  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200337c:  1549d8e8  add      gr73, lr88, $e8            ; [delay slot]
   2003380:  9350c179  or       gr80, lr65, $79         
   2003384:  8150c0c9  sll      gr80, lr64, $c9         
   2003388:  0301dacc  const    lr90, $01cc             
   200338c:  0245db88  consth   lr91, $4588             
   2003390:  1601d408  load     0, 1, lr84, gr8         
-  2003394:  a401cb8f  jmpf     lr75, $20039d0          
+  2003394:  a401cb8f  jmpf     lr75, $20039d0  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003398:  1549c48c  add      gr73, lr68, $8c            ; [delay slot]
   200339c:  9350ddd9  or       gr80, lr93, $d9         
   20033a0:  8150dd05  sll      gr80, lr93, $05         
   20033a4:  0301c554  const    lr69, $0154             
   20033a8:  0245c550  consth   lr69, $4550             
   20033ac:  1601c964  load     0, 1, lr73, gr100       
-  20033b0:  a401c97b  jmpf     lr73, $200399c          
+  20033b0:  a401c97b  jmpf     lr73, $200399c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20033b4:  70418e09  aseq     trap65, lr14, gr9          ; [delay slot]
   20033b8:  9350de45  or       gr80, lr94, $45         
   20033bc:  6146d90f  cpeq     gr70, lr89, $0f         
-  20033c0:  a401cf65  jmpf     lr79, $2003954          
+  20033c0:  a401cf65  jmpf     lr79, $2003954  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20033c4:  0301cfcc  const    lr79, $01cc                ; [delay slot]
   20033c8:  01fecd77  constn   lr77, $fe77             
   20033cc:  0301c2a0  const    lr66, $01a0             
@@ -290,13 +350,13 @@ L_2003280:
   2003428:  0301b7c0  const    lr55, $01c0             
   200342c:  0245b698  consth   lr54, $4598             
   2003430:  1601b50d  load     0, 1, lr53, gr13        
-  2003434:  a401b29b  jmpf     lr50, $2003aa0          
+  2003434:  a401b29b  jmpf     lr50, $2003aa0  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003438:  0301a990  const    lr41, $0190                ; [delay slot]
   200343c:  9350a9ed  or       gr80, lr41, $ed         
   2003440:  0301b134  const    lr49, $0134             
   2003444:  0245b0c8  consth   lr48, $45c8             
   2003448:  1601b0cd  load     0, 1, lr48, lr77        
-  200344c:  a401b18b  jmpf     lr49, $2003a78          
+  200344c:  a401b18b  jmpf     lr49, $2003a78  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003450:  8150aa41  sll      gr80, lr42, $41            ; [delay slot]
   2003454:  9350a58d  or       gr80, lr37, $8d         
   2003458:  0301bda4  const    lr61, $01a4             
@@ -311,18 +371,18 @@ L_2003280:
   200347c:  0301b900  const    lr57, $0100             
   2003480:  0201b900  consth   lr57, $0100             
   2003484:  7041f0cd  aseq     trap65, lr112, lr77     
-  2003488:  b4febb77  jmpfdec  lr59, $2002e64          
+  2003488:  b4febb77  jmpfdec  lr59, $2002e64  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   200348c:  7041f299  aseq     trap65, lr114, lr25        ; [delay slot]
   2003490:  0301ba00  const    lr58, $0100             
   2003494:  0245a598  consth   lr37, $4598             
   2003498:  1601a6d9  load     0, 1, lr38, lr89        
-  200349c:  a401a6ef  jmpf     lr38, $2003c58          
+  200349c:  a401a6ef  jmpf     lr38, $2003c58  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20034a0:  8150bd79  sll      gr80, lr61, $79            ; [delay slot]
   20034a4:  9350bcc9  or       gr80, lr60, $c9         
   20034a8:  0301a7c8  const    lr39, $01c8             
   20034ac:  0245a688  consth   lr38, $4588             
   20034b0:  1601a509  load     0, 1, lr37, gr9         
-  20034b4:  a401a28f  jmpf     lr34, $2003af0          
+  20034b4:  a401a28f  jmpf     lr34, $2003af0  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20034b8:  8150b989  sll      gr80, lr57, $89            ; [delay slot]
   20034bc:  9350b9d9  or       gr80, lr57, $d9         
   20034c0:  0301a128  const    lr33, $0128             
@@ -337,18 +397,18 @@ L_2003280:
   20034e4:  0301acc4  const    lr44, $01c4             
   20034e8:  0201af88  consth   lr47, $0188             
   20034ec:  7041e699  aseq     trap65, lr102, lr25     
-  20034f0:  b4feaebb  jmpfdec  lr46, $2002fdc          
+  20034f0:  b4feaebb  jmpfdec  lr46, $2002fdc  ; -> UNMAPPED (gap between Hand and Boot, no known section)
   20034f4:  7041e199  aseq     trap65, lr97, lr25         ; [delay slot]
   20034f8:  0301a9d4  const    lr41, $01d4             
   20034fc:  0245a9ec  consth   lr41, $45ec             
   2003500:  1601aa31  load     0, 1, lr42, gr49        
-  2003504:  a401abcb  jmpf     lr43, $2003c30          
+  2003504:  a401abcb  jmpf     lr43, $2003c30  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003508:  8150b385  sll      gr80, lr51, $85            ; [delay slot]
   200350c:  9350b289  or       gr80, lr50, $89         
   2003510:  0301aa08  const    lr42, $0108             
   2003514:  0245958c  consth   lr21, $458c             
   2003518:  160196c1  load     0, 1, lr22, lr65        
-  200351c:  a40196db  jmpf     lr22, $2003c88          
+  200351c:  a40196db  jmpf     lr22, $2003c88  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003520:  81508d05  sll      gr80, lr13, $05            ; [delay slot]
   2003524:  93508c19  or       gr80, lr12, $19         
   2003528:  0301947c  const    lr20, $017c             
@@ -371,12 +431,12 @@ L_2003280:
   200356c:  03309de8  const    lr29, $30e8             
   2003570:  02569d19  consth   lr29, $5619             
   2003574:  604b99c6  cpeq     gr75, lr25, lr70        
-  2003578:  a4019a91  jmpf     lr26, $2003bbc          
+  2003578:  a4019a91  jmpf     lr26, $2003bbc  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200357c:  037299d0  const    lr25, $72d0                ; [delay slot]
   2003580:  024d9904  consth   lr25, $4d04             
   2003584:  16019651  load     0, 1, lr22, gr81        
   2003588:  61449650  cpeq     gr68, lr22, $50         
-  200358c:  ac019738  jmpt     lr23, $2003a6c          
+  200358c:  ac019738  jmpt     lr23, $2003a6c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003590:  03699864  const    lr24, $6964                ; [delay slot]
   2003594:  024d9908  consth   lr25, $4d08             
   2003598:  1e01940e  store    0, 1, lr20, gr14        
@@ -394,14 +454,14 @@ L_2003280:
   20035c8:  16018dcd  load     0, 1, lr13, lr77        
   20035cc:  036981a0  const    lr1, $69a0              
   20035d0:  024d8140  consth   lr1, $4d40              
-  20035d4:  a0fbc406  jmp      $20021ec                
+  20035d4:  a0fbc406  jmp      $20021ec  ; -> Hand (interrupt/trap handler region)
   20035d8:  1e0183c2  store    0, 1, lr3, lr66            ; [delay slot]
   20035dc:  030182d8  const    lr2, $01d8              
   20035e0:  02458204  consth   lr2, $4504              
   20035e4:  03018d18  const    lr13, $0118             
   20035e8:  03018242  const    lr2, $0142              
   20035ec:  16018f6a  load     0, 1, lr15, gr106       
-  20035f0:  a4018f7b  jmpf     lr15, $2003bdc          
+  20035f0:  a4018f7b  jmpf     lr15, $2003bdc  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20035f4:  1e018e4e  store    0, 1, lr14, gr78           ; [delay slot]
   20035f8:  93498f45  or       gr73, lr15, $45         
   20035fc:  b4fe87f4  jmpfdec  lr7, $20031cc              ; -> L_20031cc
@@ -410,13 +470,13 @@ L_2003280:
   2003608:  030184f4  const    lr4, $01f4              
   200360c:  02458598  consth   lr5, $4598              
   2003610:  16018502  load     0, 1, lr5, gr2          
-  2003614:  a4017a9b  jmpf     gr122, $2003c80         
+  2003614:  a4017a9b  jmpf     gr122, $2003c80  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003618:  70413d91  aseq     trap65, gr61, lr17         ; [delay slot]
   200361c:  814974ed  sll      gr73, gr116, $ed        
   2003620:  03017af8  const    gr122, $01f8            
   2003624:  02457bc8  consth   gr123, $45c8            
   2003628:  160178c2  load     0, 1, gr120, lr66       
-  200362c:  a401798b  jmpf     gr121, $2003c58         
+  200362c:  a401798b  jmpf     gr121, $2003c58  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003630:  70413e41  aseq     trap65, gr62, gr65         ; [delay slot]
   2003634:  8149708d  sll      gr73, gr112, $8d        
   2003638:  924970ca  or       gr73, gr112, lr74       
@@ -432,64 +492,64 @@ L_2003280:
   2003660:  83497c18  srl      gr73, gr124, $18        
   2003664:  91487dca  and      gr72, gr125, $ca        
   2003668:  61487f88  cpeq     gr72, gr127, $88        
-  200366c:  a4017e89  jmpf     gr126, $2003c90         
+  200366c:  a4017e89  jmpf     gr126, $2003c90  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003670:  03017e5c  const    gr126, $015c               ; [delay slot]
   2003674:  91497880  and      gr73, gr120, $80        
   2003678:  61447888  cpeq     gr68, gr120, $88        
-  200367c:  a40175ef  jmpf     gr117, $2003e38         
+  200367c:  a40175ef  jmpf     gr117, $2003e38  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003680:  03017970  const    gr121, $0170               ; [delay slot]
-  2003684:  a00131c3  jmp      $2003d90                
+  2003684:  a00131c3  jmp      $2003d90  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003688:  61447a94  cpeq     gr68, gr122, $94           ; [delay slot]
-  200368c:  a401768b  jmpf     gr118, $2003cb8         
+  200368c:  a401768b  jmpf     gr118, $2003cb8  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003690:  03017a44  const    gr122, $0144               ; [delay slot]
-  2003694:  a0012c8b  jmp      $2003cc0                
+  2003694:  a0012c8b  jmp      $2003cc0  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003698:  61446480  cpeq     gr68, gr100, $80           ; [delay slot]
-  200369c:  a40169dc  jmpf     gr105, $2003e0c         
+  200369c:  a40169dc  jmpf     gr105, $2003e0c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036a0:  03016506  const    gr101, $0106               ; [delay slot]
-  20036a4:  a0012d1b  jmp      $2003b10                
+  20036a4:  a0012d1b  jmp      $2003b10  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036a8:  70412c51  aseq     trap65, gr44, gr81         ; [delay slot]
   20036ac:  0301672d  const    gr103, $012d            
   20036b0:  03696458  const    gr100, $6958            
   20036b4:  024d6508  consth   gr101, $4d08            
   20036b8:  1e01660e  store    0, 1, gr102, gr14       
   20036bc:  6144790b  cpeq     gr68, gr121, $0b        
-  20036c0:  ac016d1c  jmpt     gr109, $2003b30         
+  20036c0:  ac016d1c  jmpt     gr109, $2003b30  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036c4:  614478cc  cpeq     gr68, gr120, $cc           ; [delay slot]
-  20036c8:  ac016f92  jmpt     gr111, $2003d10         
+  20036c8:  ac016f92  jmpt     gr111, $2003d10  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036cc:  61447a99  cpeq     gr68, gr122, $99           ; [delay slot]
-  20036d0:  ac016e5e  jmpt     gr110, $2003c48         
+  20036d0:  ac016e5e  jmpt     gr110, $2003c48  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036d4:  6144759d  cpeq     gr68, gr117, $9d           ; [delay slot]
-  20036d8:  ac016188  jmpt     gr97, $2003cf8          
+  20036d8:  ac016188  jmpt     gr97, $2003cf8  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036dc:  614475e8  cpeq     gr68, gr117, $e8           ; [delay slot]
-  20036e0:  ac016160  jmpt     gr97, $2003c60          
+  20036e0:  ac016160  jmpt     gr97, $2003c60  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036e4:  614474ca  cpeq     gr68, gr116, $ca           ; [delay slot]
-  20036e8:  ac01639c  jmpt     gr99, $2003d58          
+  20036e8:  ac01639c  jmpt     gr99, $2003d58  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036ec:  6144768e  cpeq     gr68, gr118, $8e           ; [delay slot]
-  20036f0:  ac01624e  jmpt     gr98, $2003c28          
+  20036f0:  ac01624e  jmpt     gr98, $2003c28  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20036f4:  03036753  const    gr103, $0353               ; [delay slot]
   20036f8:  604471cf  cpeq     gr68, gr113, lr79       
-  20036fc:  ac0165cf  jmpt     gr101, $2003e38         
+  20036fc:  ac0165cf  jmpt     gr101, $2003e38  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003700:  0302670b  const    gr103, $020b               ; [delay slot]
   2003704:  6044705f  cpeq     gr68, gr112, gr95       
-  2003708:  ac016442  jmpt     gr100, $2003c10         
+  2003708:  ac016442  jmpt     gr100, $2003c10  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200370c:  03006563  const    gr101, $0063               ; [delay slot]
   2003710:  6044733f  cpeq     gr68, gr115, gr63       
-  2003714:  ac016603  jmpt     gr102, $2003b20         
+  2003714:  ac016603  jmpt     gr102, $2003b20  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003718:  0301644b  const    gr100, $014b               ; [delay slot]
   200371c:  60444d4f  cpeq     gr68, gr77, gr79        
-  2003720:  ac01590c  jmpt     gr89, $2003b50          
+  2003720:  ac01590c  jmpt     gr89, $2003b50  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003724:  70411ccd  aseq     trap65, gr28, lr77         ; [delay slot]
-  2003728:  a0011e85  jmp      $2003d3c                
+  2003728:  a0011e85  jmp      $2003d3c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200372c:  03005478  const    gr84, $0078                ; [delay slot]
-  2003730:  a0011f4f  jmp      $2003c6c                
+  2003730:  a0011f4f  jmp      $2003c6c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003734:  030253fe  const    gr83, $02fe                ; [delay slot]
-  2003738:  a0011899  jmp      $2003d9c                
+  2003738:  a0011899  jmp      $2003d9c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200373c:  0302538a  const    gr83, $028a                ; [delay slot]
-  2003740:  a001187f  jmp      $2003d3c                
+  2003740:  a001187f  jmp      $2003d3c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003744:  0300522e  const    gr82, $002e                ; [delay slot]
-  2003748:  a0011a81  jmp      $2003d4c                
+  2003748:  a0011a81  jmp      $2003d4c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   200374c:  03005008  const    gr80, $0008                ; [delay slot]
-  2003750:  a0011b43  jmp      $2003c5c                
+  2003750:  a0011b43  jmp      $2003c5c  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003754:  03035fcc  const    gr95, $03cc                ; [delay slot]
   2003758:  03035ff8  const    gr95, $03f8             
   200375c:  036958f0  const    gr88, $69f0             
@@ -498,13 +558,13 @@ L_2003280:
   2003768:  0301532c  const    gr83, $012c             
   200376c:  0245502c  consth   gr80, $452c             
   2003770:  1601503e  load     0, 1, gr80, gr62        
-  2003774:  ac015112  jmpt     gr81, $2003bbc          
+  2003774:  ac015112  jmpt     gr81, $2003bbc  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003778:  030151e4  const    gr81, $01e4                ; [delay slot]
   200377c:  02455608  consth   gr86, $4508             
   2003780:  03015800  const    gr88, $0100             
   2003784:  030156c6  const    gr86, $01c6             
   2003788:  16015bce  load     0, 1, gr91, lr78        
-  200378c:  a4015a9b  jmpf     gr90, $2003df8          
+  200378c:  a4015a9b  jmpf     gr90, $2003df8  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   2003790:  1e015a02  store    0, 1, gr90, gr2            ; [delay slot]
   2003794:  93494499  or       gr73, gr68, $99         
   2003798:  b4fe4b6c  jmpfdec  gr75, $2003148             ; -> L_2003148
@@ -512,22 +572,22 @@ L_2003280:
   20037a0:  03014af8  const    gr74, $01f8             
   20037a4:  02454bc8  consth   gr75, $45c8             
   20037a8:  160148c2  load     0, 1, gr72, lr66        
-  20037ac:  a401498b  jmpf     gr73, $2003dd8          
+  20037ac:  a401498b  jmpf     gr73, $2003dd8  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20037b0:  81494741  sll      gr73, gr71, $41            ; [delay slot]
   20037b4:  8149408d  sll      gr73, gr64, $8d         
   20037b8:  030b4288  const    gr66, $0b88             
   20037bc:  48474092  cpgt     gr71, gr64, lr18        
-  20037c0:  a4014e07  jmpf     gr78, $2003bdc          
+  20037c0:  a4014e07  jmpf     gr78, $2003bdc  ; -> UNMAPPED (Cache -- ships as bss/all-zero, not present in this file)
   20037c4:  70410819  aseq     trap65, gr8, gr25          ; [delay slot]
   20037c8:  81494350  sll      gr73, gr67, $50         
   20037cc:  03694008  const    gr64, $6908             
   20037d0:  024d4078  consth   gr64, $4d78             
-  20037d4:  a0fb0b02  jmp      $20023dc                
+  20037d4:  a0fb0b02  jmp      $20023dc  ; -> Hand (interrupt/trap handler region)
   20037d8:  1e01430e  store    0, 1, gr67, gr14           ; [delay slot]
   20037dc:  030b4c08  const    gr76, $0b08             
   20037e0:  03694e24  const    gr78, $6924             
   20037e4:  024d4fcc  consth   gr79, $4dcc             
-  20037e8:  a0fb068d  jmp      $200261c                
+  20037e8:  a0fb068d  jmp      $200261c  ; -> Hand (interrupt/trap handler region)
   20037ec:  1e014fd2  store    0, 1, gr79, lr82           ; [delay slot]
   20037f0:  00010744  .word    $00010744               
   20037f4:  00010098  .word    $00010098               

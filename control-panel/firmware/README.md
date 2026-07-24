@@ -93,6 +93,40 @@ No symbol table means no `sub_XXXXX:` function boundaries in either file —
 only `L_XXXXXXX:` labels for in-section branch/call targets, same as
 `Code.asm`.
 
+### `Boot` analysed: it jumps into memory this file doesn't contain
+
+Tracing every branch in `Boot.asm`: entry does an early config-bit test and
+branch, then some early `mtsr`/`mtsrim` writes (unambiguously hardware/cache
+setup, though SPRs 88/89/122/124 aren't in this project's name table so the
+specific bits aren't claimed), then a long, repetitive `const`/`consth` +
+`load` + rotating-accumulator `add` pattern — the shape of an unrolled copy
+or checksum pass, though which one isn't established (the constants involved
+don't consistently form addresses in any mapped region).
+
+The real finding is in the branch *targets*. Classified against the memory
+map above: 5 land cleanly inside `Hand` (unsurprising — calling into
+interrupt-handler setup); 6 land in the small gap between `Hand`'s end
+(`$2002d14`) and `Boot`'s start (`$2003000`); and **~43, densely packed from
+`$2003954` to `$2003e38`, land inside what the section table calls `Cache`**
+— declared `bss` in this ACEF, and confirmed genuinely empty on disk (its
+`scnptr` is a leftover alias of the next section's file offset, the normal
+COFF convention for empty bss, not a missed-extraction bug).
+
+So `Boot`'s own control flow depends on real code sitting in a region that
+ships **empty** in this firmware image — it must get populated at runtime,
+before those jumps execute, by something not captured in this static file.
+Unlike the `DRVR.s`/`INIT_main.s` misdecodes found earlier, this isn't a
+decode error to fix — it's an architectural fact, and `Cache`'s vaddr/name
+already point at the read: this is very plausibly the Am29000's on-chip
+instruction RAM, a real, documented feature of that architecture usable as
+directly-addressable RAM instead of transparent cache. The natural
+conclusion is that `Boot` shadows/decompresses a second boot stage into that
+RAM before jumping into it, consistent with the copy/checksum-shaped code
+right before those targets — but that stage's actual payload isn't present
+anywhere in `ACEF_1.bin`. All of this is flagged inline in
+[`disasm/Boot.asm`](disasm/) (`-> Hand` / `-> UNMAPPED (gap)` /
+`-> UNMAPPED (Cache)` on the relevant jump lines) and in its header.
+
 ## Disassembly
 
 These are **Am29000** (big-endian, 32-bit fixed instructions). Capstone and
