@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """apply_reloc.py -- resolve the ACEF_100 COFF relocation table and annotate
-the .text/Code disassembly with the resolved target of each relocation.
+the .text/Code disassembly, and dump the .lit/.data sections, with the
+resolved target of each relocation.
 
 Format (reverse-engineered; see firmware/README.md "COFF relocations"):
   8-byte PLAINTEXT records (unobfuscated, unlike headers/section data):
@@ -18,11 +19,16 @@ Format (reverse-engineered; see firmware/README.md "COFF relocations"):
   type 29 = raw 32-bit WORD fixup -- hits both code words used as literals
             and genuine embedded data words (corroborates the gr0-write
             "embedded data table" finding in am29k_dasm.py)
+  type 31 = raw 32-bit WORD fixup, seen only in .lit/.data -- same idea as
+            29 but apparently reserved for pure-data sections
 
-Usage:  python3 apply_reloc.py ACEF_100.bin disasm/text.asm disasm/Code.asm
-Patches the .asm files in place, appending "; RELOC ..." comments to any
-line with a relocation.  Original hex-byte columns are never touched, so
-existing byte-exact verification against the binary still passes.
+Usage:  python3 apply_reloc.py ACEF_100.bin disasm/text.asm disasm/Code.asm \
+            disasm/lit.asm disasm/data.asm
+Patches text.asm/Code.asm in place (appends "; RELOC ..." comments; hex-byte
+columns are never touched, so byte-exact verification still passes) and
+(re)generates lit.asm/data.asm from scratch as plain word dumps annotated
+the same way, since .lit/.data are literal pools / initialised data, not
+Am29000 code.
 """
 import struct, re, sys, os
 
@@ -105,6 +111,45 @@ def build_line_annotations(d, sec, sym, resolve, fmt_target):
         line_ann.setdefault(base, []).append(text)
     return line_ann, stats
 
+def load_section_symbols(symbols_path, secname):
+    """symbols.txt lines are '<section>\\t<0xaddr>'; return sorted unique addrs."""
+    if not symbols_path or not os.path.exists(symbols_path):
+        return []
+    want = secname.lstrip('.').lower()
+    addrs = set()
+    for ln in open(symbols_path):
+        p = ln.split()
+        if len(p) == 2 and p[0].lstrip('.').lower() == want:
+            addrs.add(int(p[1], 16))
+    return sorted(addrs)
+
+def ascii_hint(word_bytes):
+    return ''.join(chr(c) if 0x20 <= c < 0x7f else '.' for c in word_bytes)
+
+def dump_data_section(d, KEY, sec, sym, resolve, fmt_target, obj_addrs, header_lines):
+    data = bytes(c ^ KEY for c in d[sec['scnptr']:sec['scnptr']+sec['size']])
+    line_ann, stats = build_line_annotations(d, sec, sym, resolve, fmt_target)
+    obj_set = set(obj_addrs)
+    out = [f'* ' + '=' * 66,
+           f"*  ACEF_100 \"32-Bit Antelope\" -- {sec['name']}  "
+           f"({sec['size']} bytes, {stats['resolved']}/{stats['total']} "
+           f"relocations resolved)",
+           '* ' + '=' * 66]
+    out += ['* ' + l if l else '*' for l in header_lines]
+    out.append('*')
+    n = sec['size'] // 4
+    for i in range(n):
+        a = i * 4
+        if a in obj_set:
+            out.append(f'obj_{a:05x}:')
+        w = data[a:a+4]
+        val = struct.unpack('>I', w)[0]
+        line = f'  {a:05x}:  {val:08x}  .long    ${val:08x}             |{ascii_hint(w)}|'
+        if a in line_ann:
+            line += '  ; ' + ' | '.join(line_ann[a])
+        out.append(line)
+    return '\n'.join(out) + '\n', stats
+
 def patch_file(path, line_ann):
     lines = open(path).read().splitlines()
     addr_re = re.compile(r'^  ([0-9a-f]{5}):')
@@ -121,10 +166,23 @@ def patch_file(path, line_ann):
     open(path, 'w').write('\n'.join(out) + '\n')
     return patched
 
+DATA_HEADER = [
+    "Not Am29000 code -- a plain word dump of the section's raw content.",
+    "`obj_XXXXX:` labels come from the ACEF symbol table (symbols.txt) at",
+    "this section's object boundaries; RELOC lines are decoded the same",
+    "way as text.asm/Code.asm (see apply_reloc.py / firmware/README.md).",
+    "The trailing |....| column is the 4 bytes read as ASCII (unprintable",
+    "bytes shown as '.') -- several entries are plainly literal strings,",
+    "not addresses, confirming '.lit' holds a mix of numeric and string",
+    "constants, not just floats.",
+]
+
 if __name__ == '__main__':
     acef_path = sys.argv[1] if len(sys.argv) > 1 else 'ACEF_100.bin'
     d, KEY, symptr, nsyms, secs = load(acef_path)
     sym, resolve, fmt_target = make_resolver(d, symptr, nsyms, secs)
+    symbols_path = sys.argv[6] if len(sys.argv) > 6 else None
+
     targets = {
         '.text': (next(s for s in secs if s['name'] == '.text'), sys.argv[2] if len(sys.argv) > 2 else None),
         'Code': (next(s for s in secs if s['name'] == 'Code'), sys.argv[3] if len(sys.argv) > 3 else None),
@@ -137,4 +195,19 @@ if __name__ == '__main__':
         if path and os.path.exists(path):
             patched = patch_file(path, line_ann)
             msg += f' -- {patched} lines annotated in {path}'
+        print(msg)
+
+    data_targets = {
+        '.lit': (next(s for s in secs if s['name'] == '.lit'), sys.argv[4] if len(sys.argv) > 4 else None),
+        '.data': (next(s for s in secs if s['name'] == '.data'), sys.argv[5] if len(sys.argv) > 5 else None),
+    }
+    for label, (sec, path) in data_targets.items():
+        obj_addrs = load_section_symbols(symbols_path, label)
+        text, stats = dump_data_section(d, KEY, sec, sym, resolve, fmt_target, obj_addrs, DATA_HEADER)
+        msg = (f"{label}: {stats['total']} symbol-bearing relocations, "
+               f"{stats['resolved']} resolved ({100*stats['resolved']/stats['total']:.1f}%), "
+               f"{stats['unresolved']} unresolved")
+        if path:
+            open(path, 'w').write(text)
+            msg += f' -- wrote {path}'
         print(msg)

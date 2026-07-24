@@ -123,6 +123,7 @@ one against the instruction it points at:
 | 28 | null companion of type 27 (always symbol 0) | — (no independent info; just marks the pair as matched) |
 | 24 | absolute call target | `call` |
 | 29 | raw 32-bit word replace | often lands on non-code bytes — corroborates the "embedded data tables" finding above |
+| 31 | raw 32-bit word replace | only seen in `.lit`/`.data` — same idea as 29, apparently a separate type code reserved for pure-data sections |
 
 A symbol resolves to a real address when its `scnum` is a normal section
 (section base + `value`) or `-1` (`N_ABS`, `value` already absolute);
@@ -135,6 +136,16 @@ inline `; RELOC ...` comments (original placeholder bytes/immediates left
 untouched — byte-exact verification still passes 0 missing/0 mismatched):
 **1,684 of 4,714 symbol-bearing `.text` relocations resolve (35.7%)**; the
 rest are marked "unresolved external" rather than guessed at.
+
+`.lit` (literal pool, 662 relocations) and `.data` (initialised data, 101
+relocations) aren't Am29000 code, so there's nothing to disassemble — instead
+[`disasm/lit.asm`](disasm/) and [`disasm/data.asm`](disasm/) are plain word
+dumps (`obj_XXXXX:` labels from the symbol table, an ASCII-hint column, and
+the same `; RELOC ...` annotations). Notably **0 of the 662+101 relocations
+in these two sections resolve** — every one references an external symbol,
+unlike `.text` where over a third do. The ASCII column also shows `.lit`
+isn't pure numeric literals: e.g. offset `$0` reads `"Bogu"`/`"s\x00\x03\x60"`
+— a literal string constant sitting right next to the pointer-table entries.
 
 ## Function naming — what was and wasn't achievable
 
