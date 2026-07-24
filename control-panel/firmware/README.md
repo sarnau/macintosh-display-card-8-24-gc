@@ -67,6 +67,16 @@ Sections span two address regions (`0x2000000` SRAM/cache and `0x4C000000`
 register/comm space), so they are kept as separate `.bin` files rather than one
 flat image.
 
+**No relocations to apply here.** Unlike `ACEF_100_Antelope`, this file's
+header carries `symptr=0`/`nsyms=0`, and every one of the 13 section headers
+decodes `nrel=0` — confirmed against `ACEF_1`'s own `vaddr` fields exactly
+matching the fixed hardware addresses above (e.g. `Boot` at `0x2003000`,
+`VidComm` at `0x4C007300`), so the decoder is reading real data, not garbage.
+This makes sense: `Runtime` is the always-resident kernel the card boots
+into, pre-linked to its fixed SRAM/register map, while `Antelope` is a
+loadable, relocatable accelerator module — which is exactly why *it* needed
+6,613+ relocation records and this one needs none.
+
 ## Disassembly
 
 These are **Am29000** (big-endian, 32-bit fixed instructions). Capstone and
