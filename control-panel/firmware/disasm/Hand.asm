@@ -82,6 +82,17 @@
 *    $44000000..$440000A0 card control registers (HW-ID bits +44/+48/+4C,
 *                    interrupt acks +50/+54/+58, status +64/+68/+70, +7C/+80)
 *    $46000000       interrupt mask/pending word;  $40003400 register spill area
+*
+*  HOST-WRITTEN FIELDS OF PublicIn ($4C006400), cross-checked with DRVR.s
+*  (see ../../HOST_CARD_PROTOCOL.md):
+*    +00 $42005300 boot go (Boot polls it)   +04 entry of the loaded program:
+*    the init code ends with PC1 <- [+04], iretinv   +08 top of card DRAM (heap
+*    end, service $20012AC)   +10 kernel heap pointer (written here by init)
+*    +18 host flags -> gr64 (bit 11 = mailbox disabled, bit 20 = DRAM > $0D000000)
+*    +20/24/28/2C/30 start/end/text/data/bss of the loaded program (init copies
+*    the data section)   +40 region start (stack = +40 - $10000)
+*    +3D4 RESTART REQUEST (tested by $2000C14 -> $2001FFC; doorbell = card
+*    $44000050)   VidComm +18 holds 'WY1`' ($57593160) = "Am29000 present"
 * ------------------------------------------------------------------
 *
 *  $2000000  VECTOR 0 / ENTRY: jmp $2002808 with reason $91 (illegal opcode),
@@ -2470,8 +2481,10 @@ L_2001fbc:
 *  CFG = $D0, CPS = $047F; gr64 <- PublicIn+$18 (host flags); acknowledges
 *  and clears $44000050/54; clears the region table ($4C003168), the
 *  interrupt handler words ($4C00617C..) and $4C006830.. counters; stores
-*  $A2 at $4C006A5C; clears VidComm ($4C007300..) and then sets up the
-*  vector/TLB state and falls into the main wait loop.
+*  $A2 at $4C006A5C; clears VidComm ($4C007300..), stores the 'WY1`' signature at
+*  VidComm+$18, copies the loaded program's data section, sets the stack from
+*  PublicIn+$40 and the break at PublicIn+$10, and ends ($20025E8-$2002644) by
+*  loading PC1 from PublicIn+$04 and iretinv: it STARTS the loaded program.
 * ==================================================================
 L_2001ffc:
   2001ffc:  040003d0  mtsrim   CFG, $00d0              

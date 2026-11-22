@@ -55,8 +55,9 @@ their bodies). There are two loaders, not one:
   then runs `ACEFLoad` on the **Runtime** ACEF. `ACEFLoad` special-cases the
   section named `PublicIn`: the out-parameter it returns (unit `+$130`) is
   that section's host-visible address. `Init29K` then reads **image+$400**
-  and demands `$32100456` — and that value is exactly the first word of the
-  Runtime's **`PublicOu`** section (`PublicIn`+`$400`), so the "image" the
+  and checks for `$32100456` — a constant that is the first word of the
+  *uploaded* Runtime's **`PublicOu`** section (so it proves the upload landed, not that
+  the card booted; the real card-ready handshake is `Boot` waiting for `$42005300`) (`PublicIn`+`$400`), so the "image" the
   host pokes is the `PublicIn`/`PublicOu` pair at card `0x4C006400/0x4C006800`.
   It writes `+$18` (feature flags), `+$00` (`$42005300`), `+$08` (top of
   DRAM) and `+$14` (engine region), then reads the card's **mailbox address**
@@ -67,8 +68,11 @@ their bodies). There are two loaders, not one:
   the same `ACEFLoad`, then writes four longwords into the same header
   (`+$18` flags, `+$0C` ACEFLoad's return value as a card address, `+$04` its
   out-parameter, `+$40` the engine RAM region) and sets the software
-  "firmware loaded" bit. Which of those four is a kick-off is not shown by
-  the 68k side; no reset/interrupt is issued, so the Am29000 must poll.
+  "firmware loaded" bit. The kick-off is not on the 68k side:
+  the card's kernel init jumps to the entry stored at `+$04` (it ends with
+  `PC1 <- [PublicIn+4]; iretinv`), and init is re-run by `PostLoadPoke` (restart
+  word `+$3D4` plus the `$04000050` doorbell) -- see
+  [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md).
 
 ACEFLoad's own message strings (now correctly decoded as data) confirm the
 ACEF layout: `Program '%s' version %08x date %d` (optional header `+$1C`

@@ -474,8 +474,10 @@ symbol, no relocation site and no particular instruction class in Antelope's
 
 What *is* solid:
 
-* `PublicOu` word 0 is the real constant **`$32100456`** — the "card is up"
-  signature `DRVR.s`'s `Init29K` waits for at `image+$400`. That fixes the
+* `PublicOu` word 0 is the real constant **`$32100456`** — what `DRVR.s`'s
+  `Init29K` checks at `image+$400`. (It is a constant of the *uploaded* file,
+  not a "card is up" report: the real card-ready handshake is `Boot` waiting for
+  `$42005300`; see `../HOST_CARD_PROTOCOL.md`.) That fixes the
   host-side image base as the `PublicIn` section (`0x4C006400`; the host
   reaches it at slot-base `+0x0C006400`), so every handshake offset in
   `DRVR.s` (`+$18`, `+$00`, `+$08`, `+$14`, `+$40`, `+$3D4`, `+$40C`) is a

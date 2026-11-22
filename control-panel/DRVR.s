@@ -3547,9 +3547,11 @@ ClassifyTrapNum:
 * Only after all four writes does it set bit 1 of the unit's state flags
 * (+$8; 'firmware loaded' -- a pure SOFTWARE flag, not a hardware trigger)
 * and return.  Only card types $2C/$7E are handled (others return -1).
-* The Runtime's code is already running (Init29K got its $32100456 ready
-* signature before this point) and the most consistent picture is that it
-* polls these header words rather than being kicked explicitly.
+* Resolved from the card firmware (HOST_CARD_PROTOCOL.md): nothing here starts
+* the program.  The Runtime's kernel init ($2001FFC) ends with PC1 <- [image+$04]
+* and an iretinv, i.e. it jumps to the entry address LoadFirmware stored at +$04;
+* init is re-run when PostLoadPoke (called from cs13/cs48 via cs3's follow-up)
+* sets the restart word image+$3D4 and rings the doorbell $04000050.
 LoadFirmware:
   02926:  4e 56 ff f8          link.w   a6, #$fff8
   0292a:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
@@ -3648,12 +3650,13 @@ LoadFirmware:
 * PostLoadPoke(unit): for card types $2C/$7E with state bit 1 set:
 * writes the unit's flags $168 to image+$18, $FF to image+$3D4 and $FF to
 * hardware reg $04000050, then sets state bit 2 ($4).  (Called by cs13/cs48
-* and several other paths.)  State bit 2 is what cs51 (mailbox send) and
-* the enable path require, so this is the step that tells the card the host
-* flags are in place and arms the mailbox: 'PublishFlags' would be a more
-* descriptive name; $04000050 is probably a doorbell/enable register (the
-* only other registers of this block seen are $04000028 <- 0 in Init29K and
-* the three ready-bit regs $0400004C/48/44).  Name kept for continuity.
+* and several other paths.)  Verified against the card firmware (see
+* HOST_CARD_PROTOCOL.md): the card's kernel init reloads gr64 from image+$18,
+* image+$3D4 is a RESTART REQUEST word that the video-command service
+* ($2000C14, run when $04000050 / card $44000050 is rung) tests before jumping
+* to kernel init, and $04000050 is the doorbell the video driver also uses.  So
+* this routine asks the card to restart with the new flags; state bit 2 is what
+* cs51 (mailbox send) and the enable path require.  Name kept for continuity.
   02a38:  4e 56 00 00          link.w   a6, #$0
   02a3c:  2f 0c                move.l   a4, -(a7)
   02a3e:  28 6e 00 08          movea.l  $8(a6), a4
