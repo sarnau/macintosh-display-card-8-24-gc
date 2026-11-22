@@ -314,44 +314,65 @@ What the high bits look like: `key >> 16` runs `00 02 1c 1e 19 1b 15 17 16 10
 `0 1 2 3 c d e f` over the section, and the low nibble falls with small jitter
 inside each step, like `Hand`'s negated `-(r>>16)` field.
 
-### Antelope mask: deeper levels (bits 13-15)
+### Antelope mask: deeper levels (bits 13-17)
 
-The same shape repeats one level up, with a longer table. Each line is exact
-on all 4,620 samples. Each is also tested by fitting the table on about 3,700
-random samples and predicting the rest:
+The same shape repeats at every level, with a longer table. Each line is
+exact on all 4,620 full samples. Each is also tested by fitting the table on
+about 3,700 random full samples and predicting the rest:
 
-| bits | model | table classes covered | held-out |
-|---|---|---|---|
-| 0-12 | `J13[k mod 384] + $0400*(k div 384)` | 384/384 | 920/920 |
-| 0-14 | `J15[k mod 1536] + $7000*(k div 1536)` | 1,472/1,536 (96%) | 851/851 |
-| 0-15 | `J16[k mod 6144] + $4000*(k div 6144)` | 3,353/6,144 (55%) | 397/397 |
+| bits | model | held-out |
+|---|---|---|
+| 0-12 | `J13[k mod 384] + $00400*(k div 384)` | 920/920 |
+| 0-14 | `J15[k mod 1536] + $07000*(k div 1536)` | 851/851 |
+| 0-15 | `J16[k mod 6144] + $04000*(k div 6144)` | 397/397 |
+| 0-16 | `J17[k mod 12288] + $18000*(k div 12288)` | 218/218 |
+| 0-17 | `J18[k mod 24576] + $10000*(k div 24576)` | 98/98 |
 
-The steps are consistent with each other: `$7000*4 = $1C000`, which is
-`$4000` mod 2^16 per 6144 words. The steps also agree with a slope of
-`$18` (24) per word mod 32. Only the per-class tables are unknown, and they
-grow with each bit (tried and failed: a 48-entry table plus linear or
-XOR-combined counters, and affine functions of the bits of `k div 48`). A
-closed form for the tables is not found, so the upper levels are filled only
-where the samples reach.
+Each step is fixed by the level below up to one new bit, and only one of the
+two choices fits. The steps also agree with a slope of `$18` (24) per word
+mod 32. Only the per-class tables are unknown, and they grow with each bit
+(tried and failed: a 48-entry table plus linear or XOR-combined counters, and
+affine functions of the bits of `k div 48`). A closed form for the tables is
+not found, so each level is filled only where the samples reach. From bit 16
+up the period is a fifth of the section or more, so a sample there fixes only
+the two to four words at `k + n*P`.
 
-`unmask_antelope_low.py` now unmasks each word as far as its class is
-covered:
+**Partial samples from register patterns.** Many instructions are fixed by
+their opcode and low 13 bits: for example `$16`/`$0060` has RA's top bits = 3
+(RA in `gr96..gr127`) in 432 of 433 words where they are plain. I took the
+121 (opcode, low 13) patterns with at least 20 such words, of which at least
+99% agree. Then I predicted bits 13-15 for the pattern's other words.
 
-* bits 0-12 for all 62,134 `.text` words;
-* bits 0-14 for 59,550;
-* bits 0-15 for 33,837.
+* Held out: on words where bits 13-14 were already plain, the prediction was
+  right in 4,369 of 4,383 cases (99.7%).
+* That gives 5,043 **partial samples** (`pattern16` in `mask_samples.tsv`, 4th
+  column `bits` = 16; I dropped 7 that conflicted within a class). They feed
+  only the levels up to bit 15, after two rounds.
+* Result: `J13` and `J15` are complete, and `J16` covers 5,916 of 6,144
+  classes.
+
+`unmask_antelope_low.py` unmasks each word as far as its class is covered.
+For the 62,134 `.text` words:
+
+* bits 0-14 for all;
+* bits 0-15 for 59,697 (96%);
+* bits 0-16 for 20,060;
+* bits 0-17 for 11,315.
 
 It writes `text.partial.bin` / `lit.partial.bin` plus a `.known` sidecar (one
 byte per word: the number of plain low bits). Bits 13-15 are RA's top three
-bits, so RA is now complete (local vs global) for more than half of all
-instructions.
+bits, so **RA is complete for 96% of instructions**. Bits 16-17 are RC's low
+two bits.
 
-Independent check, on words that are not samples: for `add` with an immediate
-and all 16 low bits plain, RA decodes to `gr125` (446; `msp`, the memory stack
-pointer in the AMD calling convention), `gr96` (402), `lr10`, `lr8`, `lr2`,
-`lr3`, `lr11`, `lr9`, `gr98`, `gr97`, `gr100`, `lr16`, ... These are the
-return, temporary, argument and local registers that compiled 29K code uses.
-Random bits would spread over all 256 register numbers.
+Independent checks, on words that are not samples of any kind:
+
+* **No impossible registers.** The Am29000 has no `gr2..gr63`. Of 34,502
+  decoded RA fields of ALU-class instructions (opcodes `$10..$9F`), **none**
+  falls in that range. Random bits would put 24% there.
+* **Plausible registers.** For `add` with an immediate, RA is `gr125` (817;
+  `msp`, the memory stack pointer in the AMD calling convention), `gr96`
+  (633), then `lr8`, `lr2`, `lr10`, `lr3`, `lr11`, `gr97`, `gr98`, `lr4`, ...:
+  the return, temporary, argument and local registers compiled 29K code uses.
 
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 
