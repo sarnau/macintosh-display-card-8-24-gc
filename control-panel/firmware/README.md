@@ -492,6 +492,20 @@ is `0x4000`, and for `Hand` the edges appear to be `0x14000`, `0x24000`, ...
 reproduces all 200 high-bit samples, so bits 15-23 remain masked in
 `unmask_runtime.py`.
 
+**Smooth-ramp view and Antelope's keystream.** Removing the exactly-known
+jitter, `s(k) = key - 0x80*ROW - COL = 0x8000*N(k) - 0x80*k` falls by exactly
+0x80 per word inside every plateau (checked over 80 samples), and only jumps by
+multiples of 0x8000. Between samples the jumps are `+0x20000` (k 64..284),
+`-0x8000` (365..400), `+0x8000` (452..551), `+0x18000` (643..648), `+0x8000`
+(747..1054), `+0x18000` (1145..1160), `+0x8000` (1284..1302); the `+0x18000`
+steps happen where `s` falls to about `0x13e00` and `0x24000`, but the
+`+0x8000` steps do not sit at one fixed `s`, so a single threshold rule does
+not reproduce them. Antelope's `Apple` section, decoded the same way with the
+text "32-Bit Antelope Copyright (c) 1989, Apple Computer, Inc. All Rights
+Reserved", gives a keystream of 0x93, 0x3c4, 0x3e6, 0x259, 0x2bc, 0x1d70,
+0x1de3, 0x1cc0, ... (not 4-aligned, no 0x80 ramp), so Antelope uses a different
+generator from `Runtime` and does not help pin `Hand`'s rule.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
