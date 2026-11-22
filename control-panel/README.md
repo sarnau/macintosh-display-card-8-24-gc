@@ -187,7 +187,9 @@ data tables decoded). Structure:
   absolute/relative branch-target relocations ("Loading %d sections", "Not in
   ACEF format!", "…Branch Target … Out of Range…", "Load Complete."). So the
   high-entropy `ACEF` resources are *relocatable Am29000 object code*, not
-  encrypted — and the code that parses them is right here.
+  encrypted by the loader — and the code that parses them is right here. (The
+  unpacked bytes carry a further position-dependent mask on top; see
+  `firmware/README.md`.)
 
 ### Labels
 
@@ -315,11 +317,11 @@ the fully-disassembled **`gc24`** engine, the unpacked **`ACEF`** Am29000
 firmware, the fully-disassembled **`.GraphAccel`** (`DRVR`), and both
 boot-time **`INIT`**s. Remaining, on request:
 
-* **Am29000 disassembly depth** — `am29k_dasm.py` lifts `ACEF_100`'s `.text`
-  cleanly (see [`firmware/`](firmware/)); COFF relocations are now decoded
-  and applied where resolvable (35.7% — see `firmware/README.md`), but
-  individual functions still aren't named/commented (no evidence survives
-  to do so honestly — see the same file for why).
+* **Am29000 side** — see [`firmware/`](firmware/) and
+  [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md): the kernel (`Boot`, `Hand`) is
+  unmasked and disassembled and the host/card protocol is cross-checked; the
+  accelerator (`ACEF 100`) is still masked, so its code and the firmware side of
+  the 106 `gc24` command codes are open.
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
   be: an embedded credit block right after the function (previously
