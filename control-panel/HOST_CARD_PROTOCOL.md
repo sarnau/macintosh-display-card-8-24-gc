@@ -115,7 +115,7 @@ Checked against the relocation table of `ACEF_100` (Antelope):
   `asleu` words to `65` (`asleu 65,lr2,gr127`, the fill check). They land in the
   kernel's spill/fill handlers `$2001184`/`$20011B8` (**verified**; these
   are vectors 64/65, not 61/62 as an earlier note said).
-* **No kernel calls, no hardware addresses.** Antelope's `.text` has no
+* **No kernel calls, no hardware addresses in `.text`.** Antelope's `.text` has no
   `asneq`/`aseq` service-call words, no `consth $0200` kernel-routine pointers and no
   `consth $4C00/$4400/$4600` constants outside relocations, so it does not call
   the service entries (vector 66/69) or touch the card registers itself.
@@ -126,6 +126,47 @@ Checked against the relocation table of `ACEF_100` (Antelope):
   side must know their addresses (via `unit +$130`/`ACEFLoad`'s return), which is
   why `LoadFirmware` publishes `+$0C`.
 
-So the kernel services (`sbrk`, `InpArgs`, time) are there for programs that
-use them, but the accelerator does not; naming Antelope's functions from kernel
+The one exception is the small entry stub, Antelope's `Code` section (38 words
+at `$F000`, the thing the kernel jumps to via `PublicIn+$04`): it is **also
+masked** with the same generator (own tables; only its first three words decode
+as written). Decoded with `Hand`'s or `Boot`'s tables it becomes recognisable
+start-up code -- stack setup, `const`/`consth` pointer loads, `calli` calls and
+`asneq trap69,..` (the host-interface service call, used for exit) -- but the
+tables are not right for it, so its register fields are unreliable and it is
+not decoded here. So the kernel services (`sbrk`, `InpArgs`, time) are used,
+at most, by that stub; the accelerator proper does not call them; naming Antelope's functions from kernel
 anchors is therefore not possible beyond the spill/fill convention.
+
+## 7. The accelerated-QuickDraw command queue (`gc24.s` -> Antelope)
+
+`gc24.s`'s generic issue routine (`EngineDispatch` `$49C4`, with the parameter
+copy `CopyParamsToQueue` `$5FF2`) uses the same unit record as the driver
+(`A4`): it picks it up through low-memory `$888` -> globals `+$214`. Read from
+the code:
+
+1. It requires the unit's state flags (`+$08`) to show "firmware loaded" and
+   no `$600` bits, then calls `sub_6F4E` if a previous request is still
+   outstanding (`+$1C` bits).
+2. It sets `A3 = [A4+$18]` (the queue/parameter write pointer on the card),
+   `header = [A4+$0C]` (the card-side command header, slot space base `+ $8C00`,
+   set in `BuildUnitRecords`) and `flag = [A4+$10]` (a host-memory flag word
+   per slot: `globals+$234 + slot*4`). If the flag word has bit 3 set it takes
+   the "busy" path (`+$1C |= $10`); otherwise it sets `+$1C |= 4`, clears the
+   flag word and writes to the header: `+$18 <- 0`, **`+$48 <- command code`**,
+   `+$4C <- sequence number` (`A4+$20`, incremented), `+$50 <- parameter count`.
+3. It copies the parameters with an unrolled loop (8 longwords at a time, then
+   the remainder through the jump table at `$5FF6`) to `[A3]`,
+   then stores `$FFFFFFFF` at `header+$14` (the "go" word), sets `+$1C |= $C`
+   and `A4+$170 <- command code`, and waits on the host flag word:
+   bits 0-1 = completion/status, bit 2 = "reply to fetch" (it then calls
+   `sub_6442(header, A4+$24)`), looping until the flag word clears.
+
+What is **not** verified: the card-side consumer. The kernel (`Hand`/`Boot`)
+never references the header region (`$4C008C00` is not touched by it), and
+Antelope's `.text` has no fixed addresses, so the consumer must find the
+header through data the loader gives it (its common variables, or `PublicIn`
+fields), and the writer of the host flag word `+$10` (which is in host RAM)
+must be the card as a bus master or the driver's interrupt path; neither was
+located. The 106 command codes (`+$48`) and parameter layouts are in
+`gc24.s`'s dispatch table; matching them to Antelope's dispatcher is the next
+step, and needs Antelope's `Code` stub decoded first.
