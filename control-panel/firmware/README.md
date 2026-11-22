@@ -410,6 +410,28 @@ header). Antelope's own `Apple` section (88 bytes) holds the same text with
 the same plaintext high halves but a *different* low-half keystream, so each
 ACEF has its own.
 
+**The keystream's structure (partial).** For `k >= 5`, `Vec[k]` is exactly
+`J[(k-5) mod 24] - 0x80*k`, plus `0x18000` once `k >= 133`, where `J` is this
+24-entry table (the values from `k = 5`):
+
+    7f18 7f90 806c 8078 8248 8384 8508 8540 7f0c 7f88 8058 8004
+    8198 8250 83ac 8478 8588 8644 7f88 8000 824c 8388 8518 8544
+
+(`Vec[4] = 0x344` fits the same formula with `J = 0x8344`.) So the keystream
+is a 128-byte-stride address ramp with a fixed 24-entry jitter; the `+0x18000`
+step at `k = 133` is where the ramp passes below `0x4000`.
+
+The same family shows up in `Hand`. If each of its 74 `iret` words (whose
+operand bits must be zero in real code) is read as `key = low24(word)`, then
+`(key + 0x80*k - J[(k-5) mod 24]) / 0x8000` is within about 0.06 of an integer
+for all 74 -- 4, 7, 8, 11, 12, then 255/256 for the last ones -- so the mask
+on `Hand` is `0x8000*n(k) - 0x80*k + jitter`, with `n` a slowly varying
+step function and the 24-entry jitter close to, but not exactly, `J`. The
+step function `n(k)` and the exact jitter for `Hand` are not yet determined,
+so `Hand`/`Boot` still cannot be unmasked. Next step: fit `n(k)` and the
+jitter from the `iret` (and `mfsr`/`mtsr` RB/RC) samples, then check that the
+unmasked words disassemble with zero don't-care fields.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
