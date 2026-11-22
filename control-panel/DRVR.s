@@ -2915,6 +2915,17 @@ ClassifyTrapNum:
 * bit 8) and probes the DRAM banks at $0C000000.. with TestRAMLong ($273C) /
 * AliasCheck ($2800).  Result is stored in unit record +$164.  Names are mine;
 * the register meanings are inferred from the shape of the reads only.
+* Result layout (traced to the end of the routine): low byte = board
+* generation (2 = $0400009C bit31 clear, 3 = nibble 0, 4 = nibble 1), bit 8
+* set if the full $20000-byte SRAM pattern passed, and bits 16+ = (DRAM
+* configuration code + 2) << 16, where the code (0..5 or 8) records which of
+* the DRAM windows $0C000000/$0C1FFFF0, $0C200000, $0C300000 (aliased against
+* $0D100000/$0D400000/$0D500000 with AliasCheck) respond: 0 = only the first
+* 2 MB window, 1/2 = the next one or two 1 MB windows, 4/5/8 = the larger
+* configurations behind the alias windows.  Errors: $FFFFD8EA = SRAM below
+* $10000 good bytes or no DRAM at $0C000000/$0C1FFFF0; $FFFFD8E8 = the DRAM
+* windows are inconsistent.  Callers treat the carry/error return as failure
+* and copy it to +$17C.
   021de:  4e 56 00 00          link.w   a6, #$0
   021e2:  48 e7 0f 00          movem.l  d4-d7, -(a7)
   021e6:  2c 2e 00 08          move.l   $8(a6), d6
@@ -3636,7 +3647,13 @@ LoadFirmware:
   02a36:  4e 75                rts      
 * PostLoadPoke(unit): for card types $2C/$7E with state bit 1 set:
 * writes the unit's flags $168 to image+$18, $FF to image+$3D4 and $FF to
-* hardware reg $04000050, then sets state bit 2 ($4).  (Called by cs13/cs48.)
+* hardware reg $04000050, then sets state bit 2 ($4).  (Called by cs13/cs48
+* and several other paths.)  State bit 2 is what cs51 (mailbox send) and
+* the enable path require, so this is the step that tells the card the host
+* flags are in place and arms the mailbox: 'PublishFlags' would be a more
+* descriptive name; $04000050 is probably a doorbell/enable register (the
+* only other registers of this block seen are $04000028 <- 0 in Init29K and
+* the three ready-bit regs $0400004C/48/44).  Name kept for continuity.
   02a38:  4e 56 00 00          link.w   a6, #$0
   02a3c:  2f 0c                move.l   a4, -(a7)
   02a3e:  28 6e 00 08          movea.l  $8(a6), a4
@@ -3731,13 +3748,22 @@ LoadFirmware:
   02b56:  28 6e ff fc          movea.l  -$4(a6), a4
   02b5a:  4e 5e                unlk     a6
   02b5c:  4e 75                rts      
-* ReserveEngineRegion(sizeA, countB, arg, unitHandle): computes where
-* in card RAM the engine's working areas go, counting down from the top of
-* DRAM (+$138): +$134 = ((+$138 - (arg + 2*countB + round1K(sizeA) + $400))
+* ReserveEngineRegion(textSize, dataSize, bssSize, unitHandle) -> text base
+* (0 = no room).  Called from exactly one place, ACEFLoad ($333E), when its
+* flags argument has $800000 set ("load into the card's top-of-DRAM").  The
+* three sizes are the ACEF optional header's text, data and bss sizes (the
+* three consecutive longs at -$C2/-$BE/-$BA of ACEFLoad's frame, directly
+* followed by the entry point at -$B6); ACEFLoad rounds the text size up to
+* 1 KB first, logs the result as 'Text base = %X' ($4408), and on 0 logs 'Not
+* enough memory to load program' ($4418) and fails.  Computes where
+* in card RAM the program and its working areas go, counting down from the
+* top of DRAM (+$138): +$134 = ((+$138 - (bss + 2*data + round1K(text) + $400))
 * rounded to 1 KB); below $0C000000 it gives up and stores 0.  Then, via the
-* image base +$130, publishes the layout: +$20 = superslot(+$134), +$24 =
-* superslot(+$134 + sizeA + countB + arg), +$28 = sizeA, +$2C = countB, +$30 =
-* arg, +$40 = superslot(+$134).
+* image base +$130, publishes the layout to the card: +$20 = superslot(+$134),
+* +$24 = superslot(+$134 + text + data + bss), +$28 = text size, +$2C = data
+* size, +$30 = bss size, +$40 = superslot(+$134).  The returned value (d5) is
+* the +$134 start, so the loaded text lands at the TOP of card DRAM and the
+* Am29000 side learns the sizes from image +$20..+$40.
   02b5e:  4e 56 00 00          link.w   a6, #$0
   02b62:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   02b66:  28 2e 00 0c          move.l   $c(a6), d4
