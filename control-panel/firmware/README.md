@@ -516,8 +516,9 @@ looked at this field, so it is a held-out test of both the key and the
 decomposition (bit 15 of `RA` is still masked, so an SPR >= 128 would show as
 its low 7 bits; none appear). `Hand` is therefore real interrupt/trap-handler
 code: 80 `iret`/`iretinv` words terminate its handlers (the first at word 64),
-and the SPRs it touches are mostly OPS, CPS, CHC and TMC-family registers
-saved/restored around traps. `unmask_runtime.py --sprs` prints them.
+and the SPRs it touches are mostly CHC (38), OPS (32), CPS (19), CHA (17) and
+PC0/PC1 (16 each) -- the channel and program-counter state a trap handler
+saves and restores. `unmask_runtime.py --sprs` prints them.
 
 **`Boot` uses the same mask.** Its five SPR instructions, read with the same
 key (word index counted from the start of `Boot.bin`), become `mtsrim CHA`,
