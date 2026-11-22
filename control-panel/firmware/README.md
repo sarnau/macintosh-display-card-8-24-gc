@@ -150,6 +150,78 @@ opcode bytes were chosen and the operands filled with noise -- and the `Apple` s
 (`Vec` as keystream, next section), so `Boot`/`Hand` are probably real code
 that is still masked. They should not be labelled as handlers until unmasked.
 
+### The second mask -- solved for `Hand` (the Am29000 kernel is readable)
+
+Every 32-bit word of `Hand.bin` is XORed with a 23-bit key that depends only
+on the word's index `k` from the start of the section. The key is an address-
+like ramp with a small fixed jitter:
+
+    r   = 0x4000 + 0x80*(ROW[k mod 48] - k) + COL[k mod 24]
+    key = signext19( ((-(r >> 16)) & 7) << 16  |  ((r & 0xFFFF) ^ 0x4000) ) & 0x7FFFFF
+
+`COL` (24 entries) and `ROW` (48 signed entries) are in
+[`../unmask_runtime.py`](../unmask_runtime.py); `unmask_runtime.py Hand.bin
+OUT.bin` writes the unmasked image (stored here as
+[`ACEF_1_Runtime/Hand.unmasked.bin`](ACEF_1_Runtime/Hand.unmasked.bin)). How it was
+found: the 80 `iret`/`iretinv` words (operands must be 0) and the 120 `mtsr`
+words (RC must be 0) fixed `COL`, 38 of the 48 `ROW` values and the high-bit
+rule exactly; the other ten `ROW` entries (2, 4, 17, 18, 22, 34, 37, 38, 40, 43)
+come from three independent constraints -- adjacent `const`/`consth` words
+share their register field (161 of 175 pairs where both phases were already
+known), `mfsr` words have RB = 0, and the SPR numbers must be valid (and for
+`ROW[37]`, the `mtsrim RBP` immediates must be contiguous bit masks).
+
+Checks that were *not* used in the fit and pass after unmasking:
+
+* all 113 `mfsr` have RB = 0 and all 120 `mtsr` have RC = 0; their SPR numbers
+  are exactly the architectural ones: 0-14 (VAB .. LRU) and 128-135 (IPC .. CR);
+* all 80 `iret`/`iretinv` words have zero operands;
+* **all 351 direct `jmp`/`call` targets land on an instruction inside `Hand`**
+  (before unmasking they pointed all over the address space);
+* the mnemonic mix is that of real handler code (`const` 428, `add` 324,
+  `consth` 237, `store` 219, `load` 205, `sll` 137, `mtsr` 120, `jmpt` 118,
+  `mfsr` 113, `cpeq` 103, `jmpf` 102, `aseq` 100 -- all NOPs, `aseq trap64,gr1,gr1`,
+  `jmp` 78, `iret` 74, `mttlb` 20, `mftlb` 9, `call` 19, ...), with only four
+  `or gr0,...` instructions.
+
+The earlier hand fits (the `N(k)` tables, the failed threshold rules and the
+note that bits 15-23 were unknown) are superseded by this formula; the
+`hand_mask_samples.tsv` data are no longer needed.
+
+**`Boot` does not use these tables.** Its five SPR instructions fit the same
+formula only if `ROW`/`COL` are shifted, and no shift reproduces more than half
+of its `const`/`consth` register pairs, so `Boot.bin` has its own `COL`/`ROW`
+(the generator is the same). `disasm/Boot.asm` is therefore still the masked
+decode.
+
+#### What `Hand` contains
+
+`disasm/Hand.asm` is now the real disassembly. A first reading:
+
+* **`$2000000`: `jmp $2002808`** -- the entry point (with `gr77 = $91`, a
+  reason code that `$2002808` stores into the saved context).
+* **`$2000008 ...` trap entry/return**: `mfsr` PC0/PC1/OPS, `mtsrim CPS,$7F`,
+  set `CFG |= $20`, save CHA/CHC/CHD, test CHA/CHC bits, `call $2001C2C`,
+  restore, `iret` -- the usual handler skeleton. About 75 handlers end in `iret`.
+* **`$2001C2C`** (called nine times): a table walker over (address, size)
+  entries starting at `$4C00316C` -- find or split a block for a request, with
+  interrupts masked (`mtsrim CPS,$47F`) around it. It looks like the
+  kernel's block allocator.
+* **`$2002650`** (four callers): reads the host mailbox word at **`$4C007000`**
+  (`HifComm`) and compares it with **`$73333337`** (`'s337'`) and **`$96666669`**,
+  the first being exactly what `DRVR.s` writes in `cs51`/`Init29K`; on a match it
+  stores the reason code (`gr77`) at `$4C007004`. This is the Am29000-side
+  mailbox polling code that was missing from the earlier analysis.
+* **`$2000C14`** (three callers): handshake with the video command block at
+  `$4C007300` (`VidComm`) and a word at `$44000064` / `$44000050`.
+* **`$2002808 ...`: context save** into `$4C006748` (inside `PublicIn`): VAB, OPS,
+  CPS, CFG, CHA, CHD, CHC, RBP, TMC, ... -- the same 14-register set the
+  last routine restores in the order VAB, OPS, CPS, CFG, CHA, CHD, CHC, RBP,
+  TMC, TMR, PC0, PC1, PC2, LRU.
+* **`$2002794`**: increments a counter at `$4C0061C0` (limit `$80`) and records
+  PC1 into a table at `$4C006A7C + 4*count`, a trace of trap return addresses;
+  on overflow it calls `$2002650`.
+
 ## Disassembly
 
 These are **Am29000** (big-endian, 32-bit fixed instructions). Capstone and
