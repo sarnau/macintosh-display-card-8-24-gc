@@ -473,6 +473,25 @@ not RC (the register field) -- so a full disassembly is still out of reach.
 `Boot` has not been checked against these constants (it has almost no
 `mfsr`/`iret` words to test with).
 
+**Bits 15-23 (partial).** Writing `key = 0x8000*N(k) + 0x80*(ROW[k mod 48] - k)
++ COL[k mod 24]` with `ROW` taken as a signed small number, the remainder is
+exactly 0 for all 80 `iret`/`iretinv` samples with a known phase, so the
+decomposition is exact and only `N(k)` is left. Its values, by k:
+
+    64:1   284-365:5   400-452:4   551-643:5   648-747:8   1054-1145:9
+    1160-1284:12   1302-1646:13 (1537: 12)   1681-1775:256   1802:257   2449:260
+
+`N` is not monotone (5, 4, 5 around k = 400), jumps by 3 at k ~ 646 and
+~ 1150 and by 243 at k ~ 1660, and has a one-word excursion at k = 1537. The
+`mtsr` words (RC must be 0) show that `key >> 16` is a clean staircase 0, 1, 2,
+3 with plateaus of about 512 words whose edges fall near k = 128, 646 and 1152,
+so the mask's high bits follow a rule of the same address-ramp kind as `Vec`'s
+(`+0x18000` whenever the ramp drops below a window edge); the edge for `Vec`
+is `0x4000`, and for `Hand` the edges appear to be `0x14000`, `0x24000`, ...
+(rising by `0x10000` per jump). I have not turned that into a generator that
+reproduces all 200 high-bit samples, so bits 15-23 remain masked in
+`unmask_runtime.py`.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
