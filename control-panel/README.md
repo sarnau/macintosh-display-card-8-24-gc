@@ -267,10 +267,18 @@ multi-card behaviour: *"you can have as many 8•24 GC boards as you want...
 only one will function as a graphics accelerator; any other becomes a
 glorified display card"* — `DSInit` is very plausibly the code that finds
 and reconciles those "other" cards as ordinary Color QuickDraw devices
-(via a `'scrn'` calibration-resource lookup and two private `_Control`
-calls — `$A204`, confirmed identical to `_Control`/`$A004` by tracing
-Apple's own live trap dispatcher, see `INIT_DSInit.s` — sent directly to
-that card's own driver).
+(via a `'scrn'` calibration-resource lookup and two standard video-driver
+`_Control` calls — `$A204`, confirmed identical to `_Control`/`$A004` by
+tracing Apple's own live trap dispatcher — `cscSetGamma` (csCode 4) then
+`cscSetEntries` (csCode 3), sent to the slot's ROM video driver; the record
+layouts match `extracted-source/VideoDriver.s` exactly, see `INIT_DSInit.s`).
+An earlier revision of this README called them private selectors of
+`.GraphAccel`; that was wrong — `DoControl`'s csCode 3/4 there are
+`LoadFirmware` and a field setter.
+
+`.GraphAccel`'s own `DoControl` csCode map (InitAccel, LoadFirmware,
+Enable/DisableAccel, a mailbox-send to the Am29000, …) is documented at the
+cascade in `DRVR.s`, and `INIT_main.s`'s boot handshake is decoded against it.
 
 ## Status / what's next
 

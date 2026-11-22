@@ -737,6 +737,32 @@ DoControl:
   007ba:  20 6e ff f0          movea.l  -$10(a6), a0
   007be:  28 50                movea.l  (a0), a4
   007c0:  20 6e 00 0c          movea.l  $c(a6), a0
+* csCode dispatch (subq/subi cascade below, decoded case by case).  Frame:
+*   A3 = globals (*dCtlStorage), A4 = this unit's record = globals+$214[D7]
+*   (0 if that slot is empty -> most cases fail with controlErr -17),
+*   csParam word 0 = unit index D7 (bounds-checked against globals+$10),
+*   csParam+2 = the long argument.  A4+$8 = per-unit STATE FLAGS: bit 2 ($4)
+*   set/cleared by cs5/cs6; bit 1 ($2) = 'firmware loaded' (set by
+*   LoadFirmware); bits 0-2 all set (&7 == 7) = fully initialised;
+*   bit 5 ($20) = accelerator ACTIVE; $400/$800 set by cs20/cs21; any of
+*   $600 set makes cs13/17/50/51 refuse.  Failure paths store $FFFFD8DA in
+*   A4+$17C (the 'last error' long Status cs21 reads back) and return -17.
+*     cs2  Ctl_InitAccel      ACEF Handle in csParam+2 (cached in A4+$148,
+*                             or cloned from a sibling unit of the same card
+*                             type A4+$162); runs Init29K ($23CC)
+*     cs3  Ctl_LoadFirmware   LoadFirmware(unitRec, csParam+2)
+*     cs4  A4+$12C <- csParam+2
+*     cs5  state |= 4   cs6  state &= ~4
+*     cs13 EnableAccel   cs14 DisableAccel   cs17/cs50 reconfigure variants
+*     cs16 globals+$250 <- arg    cs18 A4+$2 <- csParam+4 (word)
+*     cs19 globals+$24C <- arg
+*     cs20 A4+$17C <- arg (report an error code), state |= $400
+*     cs21 state |= $800
+*     cs48 / cs52 / cs53  small setters (see each)   cs49  $2D44(...) helper
+*     cs51 mailbox send to the Am29000   cs54 invoke client hook #3
+*     cs99 ($63) ping -> noErr;  cs10/11/12 and everything else -> -17
+*   Decoded from how INIT_main.s drives them (its boot handshake is mapped
+*   onto these cases in that file's header).
   007c4:  30 28 00 1a          move.w   $1a(a0), d0
   007c8:  55 40                subq.w   #$2, d0
   007ca:  67 00 01 3e          beq.w    $90a
@@ -787,15 +813,20 @@ DoControl:
   0084e:  04 40 00 2d          subi.w   #$2d, d0
   00852:  67 00 07 1a          beq.w    $f6e
   00856:  60 00 07 0c          bra.w    $f64
+* cs53 helper $18AE(&globals+$AAA, csParam+2).
   0085a:  20 6e ff f4          movea.l  -$c(a6), a0
   0085e:  2f 28 00 02          move.l   $2(a0), -(a7)
   00862:  48 6b 0a aa          pea.l    $aaa(a3)
   00866:  61 ff 00 00 10 46    bsr.l    $18ae
   0086c:  50 4f                addq.w   #$8, a7
   0086e:  60 00 06 fe          bra.w    $f6e
+* cs52 globals+$AA6 <- csParam+4 (word) -- the same per-op scratch word
+* gc24.s calls StoreCtxWord_AA6.
   00872:  20 6e ff f4          movea.l  -$c(a6), a0
   00876:  37 68 00 04 0a a6    move.w   $4(a0), $aa6(a3)
   0087c:  60 00 06 f0          bra.w    $f6e
+* cs16 globals+$250 <- csParam+2; if globals+$257 is set, re-runs the
+* $1436/$14B0 helpers.
   00880:  20 6e ff f4          movea.l  -$c(a6), a0
   00884:  27 68 00 02 02 50    move.l   $2(a0), $250(a3)
   0088a:  4a 2b 02 57          tst.b    $257(a3)
@@ -810,6 +841,9 @@ DoControl:
   008ac:  61 ff 00 00 0c 02    bsr.l    $14b0
   008b2:  50 4f                addq.w   #$8, a7
   008b4:  60 00 06 b8          bra.w    $f6e
+* cs20 report an error: A4+$17C <- csParam+2, state |= $400, then $1436 (if
+* globals+$257) and $1D8E(unit).  INIT_main uses it with $FFFFD8DB when its
+* 'PupS' preferences resource is missing.
   008b8:  20 0c                move.l   a4, d0
   008ba:  67 00 06 c0          beq.w    $f7c
   008be:  20 6e ff f4          movea.l  -$c(a6), a0
@@ -826,10 +860,19 @@ DoControl:
   008ec:  61 ff 00 00 14 a0    bsr.l    $1d8e
   008f2:  58 4f                addq.w   #$4, a7
   008f4:  60 00 06 78          bra.w    $f6e
+* cs21 state |= $800.
   008f8:  20 0c                move.l   a4, d0
   008fa:  67 00 06 80          beq.w    $f7c
   008fe:  00 ac 00 00 08 00 00 08 ori.l    #$800, $8(a4)
   00906:  60 00 06 66          bra.w    $f6e
+* cs2  Ctl_InitAccel: unit must exist.  csParam+2 = ACEF Handle.  If a
+* handle is given and A4+$148 has no cached copy yet, duplicates it into the
+* system heap (_NewHandle+_BlockMove -> A4+$148); then Init29K($23CC)(unit,
+* handle).  No handle given: scans the OTHER units for one with the same card
+* type (A4+$162) that already caches an ACEF and clones that; none found ->
+* logs 'GA_DRVRcontrol: no ACEF given for init call' ($FAC).  Init29K failure
+* logs 'GA_DrvrControl: Init29K error' ($F8E).  Most failure paths also set
+* A4+$17C=$FFFFD8DA.  ('Init29K' is the name implied by that error string.)
   0090a:  20 0c                move.l   a4, d0
   0090c:  67 00 06 6e          beq.w    $f7c
   00910:  2f 0b                move.l   a3, -(a7)
@@ -949,6 +992,8 @@ DoControl:
   00a8a:  61 ff 00 00 26 10    bsr.l    $309c
   00a90:  58 4f                addq.w   #$4, a7
   00a92:  60 00 04 e0          bra.w    $f74
+* cs49 helper $2D44(csParam+2, csParam+6, unit index word, A4+$130 =
+* the loaded image's base address) -- operates on the loaded firmware image.
   00a96:  20 0c                move.l   a4, d0
   00a98:  67 00 04 e2          beq.w    $f7c
   00a9c:  2f 2c 01 30          move.l   $130(a4), -(a7)
@@ -964,6 +1009,9 @@ DoControl:
   00abe:  67 00 04 ae          beq.w    $f6e
   00ac2:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00aca:  60 00 04 a8          bra.w    $f74
+* cs3  Ctl_LoadFirmware: LoadFirmware(unit record handle, csParam+2 = ACEF
+* Handle) -- see LoadFirmware's header for what it does.  This is the private
+* 're-flash the Am29000' selector.
   00ace:  20 0c                move.l   a4, d0
   00ad0:  67 00 04 aa          beq.w    $f7c
   00ad4:  2f 0b                move.l   a3, -(a7)
@@ -980,6 +1028,7 @@ DoControl:
   00af8:  67 00 04 74          beq.w    $f6e
   00afc:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00b04:  60 00 04 6e          bra.w    $f74
+* cs4  A4+$12C <- csParam+2 (a per-unit configuration long).
   00b08:  20 0c                move.l   a4, d0
   00b0a:  67 00 04 70          beq.w    $f7c
   00b0e:  2f 0b                move.l   a3, -(a7)
@@ -989,9 +1038,11 @@ DoControl:
   00b1e:  29 68 00 02 01 2c    move.l   $2(a0), $12c(a4)
   00b24:  50 4f                addq.w   #$8, a7
   00b26:  60 00 04 46          bra.w    $f6e
+* cs19 globals+$24C <- csParam+2.
   00b2a:  20 6e ff f4          movea.l  -$c(a6), a0
   00b2e:  27 68 00 02 02 4c    move.l   $2(a0), $24c(a3)
   00b34:  60 00 04 38          bra.w    $f6e
+* cs5  state |= 4 after two helper calls ($2AD2, $1DDC).
   00b38:  20 0c                move.l   a4, d0
   00b3a:  67 00 04 40          beq.w    $f7c
   00b3e:  2f 0b                move.l   a3, -(a7)
@@ -1002,6 +1053,7 @@ DoControl:
   00b54:  00 ac 00 00 00 04 00 08 ori.l    #$4, $8(a4)
   00b5c:  4f ef 00 0c          lea.l    $c(a7), a7
   00b60:  60 00 04 0c          bra.w    $f6e
+* cs6  state &= ~4, then helper $1D8E(unit).
   00b64:  20 0c                move.l   a4, d0
   00b66:  67 00 04 14          beq.w    $f7c
   00b6a:  02 ac ff ff ff fb 00 08 andi.l   #$fffffffb, $8(a4)
@@ -1009,6 +1061,7 @@ DoControl:
   00b76:  61 ff 00 00 12 16    bsr.l    $1d8e
   00b7c:  58 4f                addq.w   #$4, a7
   00b7e:  60 00 03 ee          bra.w    $f6e
+* cs48 two helper calls ($2AD2, $2A38) on the unit.
   00b82:  20 0c                move.l   a4, d0
   00b84:  67 00 03 f6          beq.w    $f7c
   00b88:  2f 0b                move.l   a3, -(a7)
@@ -1018,6 +1071,13 @@ DoControl:
   00b98:  61 ff 00 00 1e 9e    bsr.l    $2a38
   00b9e:  4f ef 00 0c          lea.l    $c(a7), a7
   00ba2:  60 00 03 ca          bra.w    $f6e
+* cs51 MAILBOX SEND to the Am29000: refuses if A4+$168&$800, if state bit 2
+* is clear, or if state&$600.  Clears the word at A4+$13C (the ack/flag word),
+* then PokeHardwareLong(A4+$144 + 8, csParam+2) -- the payload -- and only
+* THEN PokeHardwareLong(A4+$144, $73333337 = ASCII 's337') to commit it:
+* payload first, signature last, the standard mailbox-publish order.  A4+$144
+* is presumably the card-side mailbox address (Status cs16 reads a field at
+* that same offset); its exact target isn't traced here.
   00ba6:  20 0c                move.l   a4, d0
   00ba8:  67 00 03 d2          beq.w    $f7c
   00bac:  20 3c 00 00 08 00    move.l   #$800, d0
@@ -1050,6 +1110,8 @@ DoControl:
   00c08:  61 ff 00 00 23 be    bsr.l    $2fc8  ; -> PokeHardwareLong
   00c0e:  4f ef 00 18          lea.l    $18(a7), a7
   00c12:  60 00 03 5a          bra.w    $f6e
+* cs50 like cs17 but sets bit $100 in A4+$128 (a 'reconfigure requested'
+* flag) instead of loading it; refuses if state&$600.
   00c16:  20 0c                move.l   a4, d0
   00c18:  67 00 03 62          beq.w    $f7c
   00c1c:  20 3c 00 00 06 00    move.l   #$600, d0
@@ -1118,6 +1180,9 @@ DoControl:
   00d0a:  61 ff 00 00 1d 2c    bsr.l    $2a38
   00d10:  4f ef 00 14          lea.l    $14(a7), a7
   00d14:  60 00 02 58          bra.w    $f6e
+* cs17 reconfigure: refuses if state&$600; A4+$128 <- csParam+2; if the
+* unit is fully initialised (&7==7) tears down the active state (hook
+* globals+$A80, clear $20) and brings it back up (hook globals+$A7C, set $20).
   00d18:  20 0c                move.l   a4, d0
   00d1a:  67 00 02 60          beq.w    $f7c
   00d1e:  20 3c 00 00 06 00    move.l   #$600, d0
@@ -1187,6 +1252,9 @@ DoControl:
   00e0e:  61 ff 00 00 1c 28    bsr.l    $2a38
   00e14:  4f ef 00 14          lea.l    $14(a7), a7
   00e18:  60 00 01 54          bra.w    $f6e
+* cs13 Ctl_EnableAccel: needs state&7==7 and no $600 bits; already active
+* ($20) -> noErr.  Else HideCursor, run $14B0/$1CDC/$2AD2 (+$2A38 if bit 2),
+* state |= $20, call hook globals+$A7C(unit, 0), ShowCursor.
   00e1c:  20 0c                move.l   a4, d0
   00e1e:  67 00 01 5c          beq.w    $f7c
   00e22:  70 07                moveq    #$7, d0
@@ -1242,6 +1310,8 @@ DoControl:
   00ed0:  a8 53                dc.w     $a853  ; _ShowCursor
   00ed2:  50 4f                addq.w   #$8, a7
   00ed4:  60 00 00 98          bra.w    $f6e
+* cs14 Ctl_DisableAccel: if active ($20): HideCursor, call hook
+* globals+$A80(unit), $1436, clear $20, ShowCursor.
   00ed8:  20 0c                move.l   a4, d0
   00eda:  67 00 00 a0          beq.w    $f7c
   00ede:  70 20                moveq    #$20, d0
@@ -1257,6 +1327,9 @@ DoControl:
   00f04:  a8 53                dc.w     $a853  ; _ShowCursor
   00f06:  50 4f                addq.w   #$8, a7
   00f08:  60 64                bra.b    $f6e
+* cs54 invoke client hook #3 (globals+$A84) with (csParam+2, csParam+6,
+* &globals+$AA0), with A4+$2 temporarily forced to $7D0 around the call;
+* the Control-side twin of Status cs54 (Sts_InvokeHook3).
   00f0a:  7a 00                moveq    #$0, d5
   00f0c:  3a 2c 00 02          move.w   $2(a4), d5
   00f10:  39 7c 07 d0 00 02    move.w   #$7d0, $2(a4)
@@ -1269,19 +1342,23 @@ DoControl:
   00f2c:  39 45 00 02          move.w   d5, $2(a4)
   00f30:  4f ef 00 0c          lea.l    $c(a7), a7
   00f34:  60 38                bra.b    $f6e
+* cs18 A4+$2 <- csParam+4 (word).
   00f36:  20 0c                move.l   a4, d0
   00f38:  67 42                beq.b    $f7c
   00f3a:  20 6e ff f4          movea.l  -$c(a6), a0
   00f3e:  39 68 00 04 00 02    move.w   $4(a0), $2(a4)
   00f44:  60 28                bra.b    $f6e
+* cs10 unsupported -> controlErr (-17); cs11 ($F50) and cs12 ($F5A) too.
   00f46:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00f4e:  60 24                bra.b    $f74
   00f50:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00f58:  60 1a                bra.b    $f74
   00f5a:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00f62:  60 10                bra.b    $f74
+* default: any other csCode -> controlErr (-17).
   00f64:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00f6c:  60 06                bra.b    $f74
+* common success exit (also the cs99/$63 'ping' target): result noErr.
   00f6e:  42 6e 00 10          clr.w    $10(a6)
   00f72:  60 0e                bra.b    $f82
   00f74:  3d 7c ff ef 00 10    move.w   #$ffef, $10(a6)
@@ -3386,10 +3463,10 @@ ClassifyTrapNum:
 *
 * After a successful ACEFLoad, on the SUCCESS path this writes FOUR
 * longwords into fixed offsets of the just-loaded image (base =
-* engine-globals+$130) via PokeHardwareLong -- i.e. a parameter/
+* the unit record's +$130 field) via PokeHardwareLong -- i.e. a parameter/
 * handshake header the Am29000 side must read once it starts running,
 * not some separate reset/interrupt trigger (none is issued here):
-*   +$18  <- engine-globals+$168
+*   +$18  <- unit record +$168
 *   +$0C  <- MakeSuperslotAddr(0, ACEF-magic-byte)  (a bare super-slot
 *           base address $s000'0000, s = the low nibble of the ACEF
 *           magic $12A/$12B just parsed -- an odd reuse of the magic
@@ -3397,9 +3474,10 @@ ClassifyTrapNum:
 *   +$04  <- ACEFLoad's own out-parameter (the value it wrote back
 *           through the pointer passed at call time -- most plausibly
 *           a relocated entry point or final load size, not proven)
-*   +$40  <- engine-globals+$134
-* Only after all four writes does it mark dCtlStorage+$8 bit 1 (a pure
-* SOFTWARE ready flag, not a hardware trigger) and return. Given the
+*   +$40  <- unit record +$134
+* Only after all four writes does it set bit 1 of the unit's state flags
+* (+$8; 'firmware loaded' -- a pure SOFTWARE flag, not a hardware trigger)
+* and return. Given the
 * Am29000's Boot code (../firmware/disasm/Boot.asm) is already running
 * continuously and reads a great deal of state before branching, the
 * most consistent picture is that the coprocessor POLLS this header

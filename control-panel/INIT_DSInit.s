@@ -140,16 +140,17 @@ EntryStub:
 * trap; bit 9 only matters to GetTrapAddress/SetTrapAddress's own,
 * unrelated 'new numbering' convention).  Each call builds a CntrlParam
 * on the stack (ioCRefNum=D6, the slot's OWN driver refnum from the
-* Unit Table chase above; csParam=A2), so this is FindGCSlot issuing
-* PRIVATE Control selectors DIRECTLY to that non-primary card's own
-* '.GraphAccel'-family driver -- csCode 4 with a small built record,
-* then csCode 3 with a colour-table handle pulled out of the matching
-* GDevice.  (The specific csCode 3/4 semantics aren't named -- DRVR.s's
-* DoControl doesn't label its csCode cases the way DoStatus's getters
-* are -- but the *mechanism* is now fully resolved: this is the
-* reconciled card being told, via its own driver's Control interface,
-* to pick up its colour table / device state now that it's been
-* identified as non-primary.)
+* Unit Table chase above; csParam=A2).  These are NOT private selectors:
+* the records match the standard Apple video-driver Control calls exactly
+* (compare ../extracted-source/VideoDriver.s): csCode 4 = cscSetGamma with
+* (A2) -> GammaTbl (first word 0, as Ctl_SetGamma validates), then csCode
+* 3 = cscSetEntries with (A2) -> ColorSpec array, $4(A2) = start index (0),
+* $6(A2) = count-1 (copied from the GDevice's ColorTable ctSize, array at
+* ctTable = ct+8).  The target is the slot's ROM video driver
+* (.Display_Video_Apple_MDCGC), not .GraphAccel -- DRVR.s's DoControl
+* uses csCode 3/4 for LoadFirmware / a field setter, which these record
+* shapes could not feed.  So FindGCSlot reloads each non-primary card's
+* gamma table and CLUT from the system's own colour table.
 *
 * This lines up precisely with the develop-magazine description of
 * the 8*24 GC's multi-card behaviour ("you can have as many 8*24 GC

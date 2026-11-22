@@ -50,15 +50,29 @@
 *      chime/blinking-icon notification.
 *   5. OpenDriverByName('.GraphAccel', &refNum) -- opens the low-level
 *      accelerator driver disassembled in DRVR.s.
-*   6. Issues a short, hard-coded sequence of Control/Status calls to
-*      it (csCode values 0x63, 0x15, 0x05, 0x0E, 0x05 again, 0x14,
-*      0x0D) via ControlDriverSync/StatusDriverSync, branching on bits
-*      of the Status results -- effectively a scripted 'bring the
-*      accelerator up' handshake.  (Cross-referencing DRVR.s: Status
-*      csCode 0x15=21 -> Sts_GetField_24c, csCode 5 -> Sts_GetField_008
-*      -- the true meaning of those two globals fields isn't known,
-*      so this handshake's exact semantics aren't claimed beyond
-*      'success/failure gates the rest of the sequence'.)
+*   6. Drives '.GraphAccel' through a short Control/Status handshake via
+*      ControlDriverSync/StatusDriverSync.  Decoded against DRVR.s's
+*      DoControl/DoStatus tables (csCode meanings per those headers):
+*        Control $63            ping (noErr)
+*        Status  $15 (21)       the unit's last-error long (A4+$17C);
+*                               negative -> bail out
+*        Status  $05            the unit's state-flag long (A4+$8); bit 0
+*                               must be set; if bits 0-2 aren't all set yet
+*                               it polls once more
+*        -- if the accelerator isn't ACTIVE yet (flag bit 5 = $20 clear):
+*        Get1Resource('PupS', 0) -- the control panel's preference record;
+*          missing/empty -> Control $14 (20) with csParam+2 = $FFFFD8DB
+*          (report that error) and stop;
+*          else its first long nonzero -> Control $0D (13, EnableAccel),
+*          zero -> Control $0E (14, DisableAccel)
+*          (that long is plausibly the 'accelerator on' preference);
+*        GetKeys: key code $38 = Shift held -> Control $0E again (force
+*          the accelerator off -- the usual hold-Shift-at-boot convention;
+*          inferred from the key code, not otherwise confirmed);
+*        Status  $05 again: flag bit 5 still clear -> Control $15 (21,
+*          sets flag $800) and stop quietly; set -> step 7.
+*      (Earlier revisions of this comment mis-mapped Status $15 to
+*      Sts_GetField_24c; it is Sts_GetField_17c -- $24C is Status $14.)
 *   7. On success: ShowIconOrAlert(mode=0, id=50) (the 'ok' chime,
 *      using resource id 50 directly rather than a message string) and
 *      CloseDriverSync -- the driver is NOT kept open by this INIT;
