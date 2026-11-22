@@ -226,31 +226,40 @@ code, and the code does exactly what the host side of the protocol expects
 
 #### What `Hand` contains
 
-`disasm/Hand.asm` is now the real disassembly. A first reading:
+`disasm/Hand.asm` is the real disassembly and now carries a reading guide
+(registers, vector table, reason codes, card address map) plus a banner on each
+routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
 
-* **`$2000000`: `jmp $2002808`** -- the entry point (with `gr77 = $91`, a
-  reason code that `$2002808` stores into the saved context).
-* **`$2000008 ...` trap entry/return**: `mfsr` PC0/PC1/OPS, `mtsrim CPS,$7F`,
-  set `CFG |= $20`, save CHA/CHC/CHD, test CHA/CHC bits, `call $2001C2C`,
-  restore, `iret` -- the usual handler skeleton. About 75 handlers end in `iret`.
-* **`$2001C2C`** (called nine times): a table walker over (address, size)
-  entries starting at `$4C00316C` -- find or split a block for a request, with
-  interrupts masked (`mtsrim CPS,$47F`) around it. It looks like the
-  kernel's block allocator.
-* **`$2002650`** (four callers): reads the host mailbox word at **`$4C007000`**
-  (`HifComm`) and compares it with **`$73333337`** (`'s337'`) and **`$96666669`**,
-  the first being exactly what `DRVR.s` writes in `cs51`/`Init29K`; on a match it
-  stores the reason code (`gr77`) at `$4C007004`. This is the Am29000-side
-  mailbox polling code that was missing from the earlier analysis.
-* **`$2000C14`** (three callers): handshake with the video command block at
-  `$4C007300` (`VidComm`) and a word at `$44000064` / `$44000050`.
-* **`$2002808 ...`: context save** into `$4C006748` (inside `PublicIn`): VAB, OPS,
-  CPS, CFG, CHA, CHD, CHC, RBP, TMC, ... -- the same 14-register set the
-  last routine restores in the order VAB, OPS, CPS, CFG, CHA, CHD, CHC, RBP,
-  TMC, TMR, PC0, PC1, PC2, LRU.
-* **`$2002794`**: increments a counter at `$4C0061C0` (limit `$80`) and records
-  PC1 into a table at `$4C006A7C + 4*count`, a trace of trap return addresses;
-  on overflow it calls `$2002650`.
+* **Trap vector table.** `Boot` installs it at `VAB = $4C000000` (the `Vec`
+  section): vectors 0-21 point at the handlers below, 22-60 at a default that
+  reports reason `$A3`, 61/62 are the register-stack spill/fill handlers, 63
+  and 66 are two **service-call** entry points, 65 an assertion, 64 the NOP
+  assert. Vectors 8/10 and 9/11 share the instruction and data **software TLB
+  refill** handlers (1 KB pages, a 32-bucket hash at `$4C002818`, a region
+  table at `$4C00316C`), with a pager at `$2001D10` behind them.
+* **Interrupt handling.** INTR0-3 and the timer, trace and TRAP handlers
+  dispatch to handler words in `$4C00617C..$4C00618C` (via `$20010A4`); the
+  timer reloads `TMR` and counts ticks in `$4C006830/34`; INTR2 also runs the
+  **video command service** `$2000C14`, which executes the `VidComm`
+  (`$4C007300`) block. A PC trace ring lives at `$4C006A7C`.
+* **Service calls.** Vector 63 dispatches `gr121 - $B6` through the table at
+  `$4C002500`; vector 66 handles services such as `sbrk` (`$101`).
+* **Fatal-trap reporter and mailbox (`$2002808`, `$2002650`).** Any
+  unrecoverable trap stores a reason code (`$8F`..`$B5`, table in the file),
+  dumps the register state to `$4C006748`, and calls `$2002650`, which posts
+  the reason and a 16-word register dump in the `HifComm` mailbox
+  (`$4C007000`: `$96666669` = posted, `$73333337` = `'s337'` = the host's
+  acknowledge) and waits for the host. This is the card side of the
+  `cs51`/`Init29K` mailbox in `DRVR.s`.
+* **Kernel init (`$2001FFC`)**, entered from `Boot`: sets `CFG`/`CPS`, loads
+  the host flags from `PublicIn+$18` into `gr64`, clears the interrupt and
+  region tables and the video block, and starts the wait loop.
+
+What is still only roughly read: the exact `VidComm` command codes (`$2000C14`
+copies and re-initialises state depending on the command), the pager at
+`$2001D10`, the services behind vector 63, and the data structures at
+`$4C002810..$4C002E48`. The routine banners say "reading" where a role is
+inferred from the loads and compares and not confirmed against a caller.
 
 ## Disassembly
 
