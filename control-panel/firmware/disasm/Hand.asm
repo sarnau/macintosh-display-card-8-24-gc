@@ -49,7 +49,7 @@
 *    16 INTR0 $2000B08  17 INTR1 $2000B48  18 INTR2 $2000B98  19 INTR3 $2001064
 *    20 TRAP0 $2001144  21 TRAP1 $2001164  22..63 default ........ $2001D08
 *    64 register spill ....... $2001184   65 register fill ........ $20011B8
-*         (Antelope's loader patches 293 'asgeu 64,gr1,gr126' and 454 'asleu 65,lr2,gr127')
+*         (Antelope's loader patches 293 'asgeu 64,gr1,gr126' and 454 'asleu 65,lr1,gr127')
 *    66 SERVICE CALL (jump table) $20011E8   67 default
 *    68 assertion / breakpoint $2000AE8   69 SERVICE CALL (HIF-style: 'asneq 69,gr1,gr1')
 *                                         $2001A70

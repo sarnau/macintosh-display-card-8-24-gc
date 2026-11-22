@@ -122,7 +122,7 @@ relocation table and not in the instruction bytes:
 
 * **Register stack.** The loader patches the vector byte of 293 `asgeu` words
   with `64` (the spill check `asgeu 64,gr1,gr126`) and of 454 `asleu` words with
-  `65` (`asleu 65,lr2,gr127`), which match the kernel's spill/fill handlers
+  `65` (`asleu 65,lr1,gr127`), which match the kernel's spill/fill handlers
   `$2001184`/`$20011B8` (vectors 64/65) (**verified**).
 * **Externals.** 21 undefined symbols, all common (bss) variables of 4-424 bytes
   (one 152-byte block referenced 536 times); names stripped.
@@ -133,7 +133,7 @@ relocation table and not in the instruction bytes:
   (word 35) before the exit `jmp`, consistent with a `$1xx` service call (maybe
   `$104`, the `InpArgs` pointer) and `exit`.
 
-**Mask status.** The 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr2,gr127` words
+**Mask status.** The 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr1,gr127` words
 are known plaintext spread over the whole section, so key values at 747 positions
 are recoverable (`firmware/ACEF_100_Antelope/mask_samples.tsv`, key =
 file word XOR the known word, with a zero RC placeholder). They show: key bits
@@ -202,6 +202,46 @@ rather than more fitting of samples, or a larger known-plaintext set such as the
   at an address `ReserveEngineRegion` chooses), so one hypothesis is that each
   generator is a function of the load region's address mapping; no test of it
   was possible without a way to obtain more plaintext.
+
+### Antelope mask: third attempt (a T-function, partly modelled)
+
+**Correction.** The fill-check plaintext used for the 454 `asleu` samples was
+wrong: it was taken as `asleu 65,lr2,gr127` (`$5600827F`), but the kernel's fill
+idiom is `asleu 65,lr1,gr127` (`$5600817F`). All 454 of those keys were off in
+bits 8-9, which is where the "plateau jumps" and "jitter not a function of
+`k mod 48`" in the attempts above came from. `mask_samples.tsv` now holds the
+corrected keys. The other 3,272 samples are unchanged.
+
+With the corrected samples the generator has a clean structure:
+
+* **Each key bit `b` is an exact function of `k mod 48*2^(b-6)`** (period 48
+  for bits 0-6, then 96, 192, 384, ... doubling per bit). There are no conflicts
+  for any bit 0-16. Through bit 12 almost every residue class holds several
+  samples, so this is a strong result there. From bit 13 up most classes hold one
+  sample, so the test says little. A period that doubles with each higher bit is
+  the signature of a **T-function**: bit `b` depends only on bit `b` and lower
+  bits of a counter. An example is an adder `R = J(k) + M*k`, whose carries
+  propagate upward only.
+* Bits 7-9 within each phase `p = k mod 48`, across 48-word blocks
+  `j = k div 48`, follow `a_p + j + c_p*(j & 1) (mod 8)`. The jitter part
+  therefore has period 96, not 48.
+* A linear model `R = J[k mod P] + M*k` with a free table `J` reproduces the
+  samples exactly:
+  * through bit 10 with `P = 96` (`M mod 32 = $18`);
+  * through bit 11 with `P = 192`;
+  * through bit 13 with `P = 384` (`M mod 64 = $18`).
+
+  Each extra level seems to double the table period, so the jitter term is
+  itself a deeper counter (like `Hand`'s `ROW`/`COL` pair, but with more
+  levels). The step `M`'s higher bits and the jitter's growth beyond bit 13 are
+  not determined.
+* A constant second difference (`R` quadratic in `k`) does not fit for any
+  spacing of 48 to 480 words.
+
+What this buys: the low 13-14 bits of every key in `.text` can be predicted
+from a 384-entry table plus a slope. Most register fields sit in bits 0-15, so a
+partial unmask (bits 0-13 of each operand) is in reach. The top bits would still
+be missing. The tables are not yet extracted into a tool.
 
 ## 8. The kernel's service table (vector 66)
 

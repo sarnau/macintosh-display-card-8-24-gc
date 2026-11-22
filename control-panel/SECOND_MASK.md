@@ -70,13 +70,20 @@ used in the fit.
 `Antelope`'s `.text` (62,134 words) is masked too; its apparent regularity was
 the opcode byte again. Zero `jmpi lr0` returns and zero `sub gr1,gr1,N`
 prologues were the tell. Known-plaintext idioms give 3,726 full key values
-(293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr2,gr127` -- the vector bytes are
+(293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr1,gr127` -- the vector bytes are
 patched by the loader -- the 2,064 `aseq trap64,gr1,gr1` NOP words and 915
 `jmpi lr0`), saved in `firmware/ACEF_100_Antelope/mask_samples.tsv`. They show a
-48-entry low-bit table, a generator shared across Antelope's sections (checked
-on ~700 `.lit` words), and a multi-level staircase in the upper bits that the
-`Hand` model does not reproduce. Several modelling attempts failed (see
-`HOST_CARD_PROTOCOL.md` section 6).
+48-entry low-bit table, and a generator shared across Antelope's sections
+(checked on ~700 `.lit` words). The "multi-level staircase" seen in the upper
+bits at first was largely an artefact: the `asleu` samples had been computed
+from the wrong plaintext (`lr2` instead of `lr1`). With that fixed, every key
+bit `b` is an exact function of `k mod 48*2^(b-6)`, the signature of a
+T-function. A table-plus-slope model `J[k mod 384] + M*k` reproduces the
+samples exactly through bit 13. The top bits are still open (see
+`HOST_CARD_PROTOCOL.md` section 6, "third attempt").
+
+Lesson added: check each known-plaintext idiom against the code it is supposed
+to match. One wrong register field made a structured generator look chaotic.
 
 ## 6. Lessons
 

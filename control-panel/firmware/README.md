@@ -134,7 +134,7 @@ routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
 * **Trap vector table.** `Boot` installs it at `VAB = $4C000000` (the `Vec`
   section): vectors 0-21 point at the handlers below, 22-63 at a default that
   reports reason `$A3`, 64/65 are the register-stack spill/fill handlers (the
-  `Antelope` loader patches 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr2,gr127`
+  `Antelope` loader patches 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr1,gr127`
   with exactly these vector numbers), 66 and 69 are the two **service-call**
   entry points (66 a jump table, 69 the host-interface style), 68 an
   assertion/breakpoint, 67 a default. Vectors 8/10 and 9/11 share the instruction and data **software TLB
