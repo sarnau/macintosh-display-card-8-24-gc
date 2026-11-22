@@ -200,3 +200,146 @@ regions), so the card keeps its own copy of the drawing state; the text
 the Am29000 side must parse; they are exact for the handlers listed, from the
 code, but the meaning of the verb values and of the replies beyond `1`/`2` is
 inferred from QuickDraw's own conventions.
+
+## Direct card calls per handler (`EngineDispatch(count, params, cmd)`)
+
+Extracted from every handler's own code (calls made through helpers are not
+included): `cmd:count` pairs in the order they appear. `$26:0` is the
+synchronise / "state changed" command issued through the small wrapper
+`sub_4822` (its argument is a mode value, not a parameter count). Handlers with
+no direct call either do nothing on the card (they run the original routine
+only) or reach it through a shared helper.
+
+| # | routine | direct calls |
+|--:|---|---|
+| 0 | `GA_Translate24To32` | - |
+| 1 | `GACursorTask` | - |
+| 2 | `GA_CopyBits` | $17:1 |
+| 3 | `GA_StdLine` | $20:1 |
+| 4 | `GA_StdArc` | $23:4 |
+| 5 | `GA_StdText` | $21:4 $21:4 |
+| 6 | `GA_TrapAB27` | $15:1 |
+| 7 | `GA_LowMem0800` | - |
+| 8 | `GA_LowMem0804` | - |
+| 9 | `GA_LowMem0808` | - |
+| 10 | `GA_TrapAB9A` | $2A:2 |
+| 11 | `GA_SetPenState` | $35:1 $2A:2 |
+| 12 | `GA_PenSize` | $35:1 |
+| 13 | `GA_PenMode` | - |
+| 14 | `GA_PenNormal` | $35:1 $2A:1 |
+| 15 | `GA_TrapAB23` | - |
+| 16 | `GA_ForeColor` | $36:1 |
+| 17 | `GA_RGBForeColor` | $36:1 |
+| 18 | `GA_PmForeColor` | $36:1 |
+| 19 | `GA_PmBackColor` | $37:1 $26:0 $3C:1 |
+| 20 | `GA_StdRect` | $24:2 |
+| 21 | `GA_StdOval` | $2F:2 |
+| 22 | `GA_StdRRect` | $2E:4 |
+| 23 | `GA_StdPoly` | $31:2 $21:4 $21:4 |
+| 24 | `GA_StdRgn` | $18:2 |
+| 25 | `GA_AddSearch` | $26:0 $29:1 |
+| 26 | `GA_DelSearch` | $26:0 $29:1 |
+| 27 | `GA_AddComp` | $26:0 $29:1 |
+| 28 | `GA_DelComp` | $26:0 $29:1 |
+| 29 | `GA_DisposPixPat` | $2C:1 |
+| 30 | `GA_CopyPixPat` | $2A:2 |
+| 31 | `GA_MakeRGBPat` | $2A:2 |
+| 32 | `GA_TrapAB11` | $2A:2 $2A:2 |
+| 33 | `GA_SetPBits` | $26:0 |
+| 34 | `GA_PortSize` | $26:0 |
+| 35 | `GA_MovePortTo` | $26:0 |
+| 36 | `GA_SetOrigin` | $26:0 |
+| 37 | `GA_SetClip` | $32:1 |
+| 38 | `GA_ClipRect` | $32:1 |
+| 39 | `GA_HidePen` | - |
+| 40 | `GA_ShowPen` | - |
+| 41 | `GA_BackColor` | $37:1 |
+| 42 | `GA_ColorBit` | $26:0 |
+| 43 | `GA_OpenRgn` | - |
+| 44 | `GA_OpenPicture` | - |
+| 45 | `GA_OpenPoly` | - |
+| 46 | `GA_CopyRgn` | $10:1 $32:1 |
+| 47 | `GA_SetRecRgn` | $10:1 $32:1 |
+| 48 | `GA_RectRgn` | $10:1 $32:1 |
+| 49 | `GA_OffsetRgn` | $10:1 $32:1 |
+| 50 | `GA_InsetRgn` | $10:1 $32:1 |
+| 51 | `GA_SectRgn` | $10:1 $32:1 |
+| 52 | `GA_UnionRgn` | $10:1 $32:1 |
+| 53 | `GA_DiffRgn` | $10:1 $32:1 |
+| 54 | `GA_XOrRgn` | $10:1 $32:1 |
+| 55 | `GA_MapRgn` | $10:1 $32:1 |
+| 56 | `GA_RGBBackColor` | $37:1 |
+| 57 | `GA_CopyPixMap` | $26:0 |
+| 58 | `GA_PenPixPat` | $2A:2 |
+| 59 | `GA_BackPixPat` | $2A:2 |
+| 60 | `GA_SetPortPix` | $26:0 |
+| 61 | `GA_OpColor` | $26:0 |
+| 62 | `GA_HiliteColor` | $26:0 $33:1 $0F:1 |
+| 63 | `GA_SetEmptyRgn` | $10:1 $32:1 |
+| 64 | `GA_PenPat` | $2A:2 |
+| 65 | `GA_BackPat` | $2A:2 |
+| 66 | `GA_QDExtensions` | - |
+| 67 | `GA_GetForeColor` | $36:1 |
+| 68 | `GA_GetBackColor` | $37:1 |
+| 69 | `GA_LowMem0814` | - |
+| 70 | `GA_LowMem0818` | - |
+| 71 | `GA_LowMem081C` | - |
+| 72 | `GA_LowMem0890` | - |
+| 73 | `GA_SetDeviceAttribute` | $26:0 $29:1 |
+| 74 | `GA_DisposGDevice` | $2B:1 |
+| 75 | `GA_DrawPicture` | - |
+| 76 | `GA_NewPixMap` | - |
+| 77 | `GA_SetEntries` | $29:1 $1A:1 |
+| 78 | `GA_SectRect` | $10:1 $32:1 |
+| 79 | `GA_CloseCPort` | - |
+| 80 | `GA_GetCPixel` | - |
+| 81 | `GA_GetPixel` | - |
+| 82 | `GA_SeedCFill` | - |
+| 83 | `GA_CalcCMask` | - |
+| 84 | `GA_SaveEntries` | $1A:1 |
+| 85 | `GA_RestoreEntries` | $1A:1 |
+| 86 | `GA_GetSubTable` | $1A:1 |
+| 87 | `GA_GETCTSEED` | - |
+| 88 | `GA_PMGR` | - |
+| 89 | `GA_ActivatePalette` | $26:0 |
+| 90 | `GA_SetPalette` | $26:0 |
+| 91 | `GA_Palette2CTab` | $26:0 |
+| 92 | `GA_MakeITable` | $1B:1 |
+| 93 | `GA_InitGraf` | - |
+| 94 | `GA_InitPort` | - |
+| 95 | `GA_OpenPort` | - |
+| 96 | `GA_InitCPort` | - |
+| 97 | `GA_OpenCPort` | - |
+| 98 | `GA_CloseCPort` | - |
+| 99 | `GA_InitGDevice` | $26:0 $29:1 $29:1 |
+| 100 | `GA_BitMapRgn` | - |
+| 101 | `GA_CharExtra` | $26:0 $2A:2 $26:0 |
+| 102 | `GA_MoveHHi` | - |
+| 103 | `GA_ControlFFFFFFFF` | $00:0 $02:1 $00:0 |
+| 104 | `GA_ControlFFFFFFFE` | $26:14 $11:0 $00:0 |
+| 105 | `GA_ControlFFFFFFFD` | - |
+
+## Command groups
+
+| command | used by | params (longs) | meaning (inferred) |
+|---|---|--:|---|
+| `$10` + `$32` | `CopyRgn`, `SetRecRgn`, `RectRgn`, `OffsetRgn`, `InsetRgn`, `SectRgn`, `UnionRgn`, `DiffRgn`, `XOrRgn`, `MapRgn`, `SetEmptyRgn`, `SectRect` | 1 + 1 | region/rectangle arithmetic: a region operation on the host followed by a clip/region update on the card |
+| `$32` | `SetClip`, `ClipRect` | 1 | clip region changed |
+| `$35` | `PenSize`, `SetPenState`, `PenNormal` | 1 | pen state (size, mode, location) |
+| `$36` | `ForeColor`, `RGBForeColor`, `PmForeColor`, `GetForeColor` | 1 | foreground colour |
+| `$37` | `BackColor`, `RGBBackColor`, `PmBackColor`, `GetBackColor` | 1 | background colour |
+| `$2A` | `PenPat`, `BackPat`, `PenPixPat`, `BackPixPat`, `CopyPixPat`, `MakeRGBPat`, `SetPenState`, `CharExtra` | 2 | pattern / pixel-pattern (pointer plus a second long) |
+| `$2C` | `DisposPixPat` | 1 | pixel pattern disposed (release the card's copy) |
+| `$29` | `AddSearch`, `DelSearch`, `AddComp`, `DelComp`, `SetDeviceAttribute`, `SetEntries`, `InitGDevice` | 1 | search/complement procs and device attributes |
+| `$1A` | `SetEntries`, `SaveEntries`, `RestoreEntries`, `GetSubTable` | 1 | colour-table / palette entries |
+| `$1B` | `MakeITable` | 1 | inverse colour table |
+| `$2B` | `DisposGDevice` | 1 | graphics device released |
+| `$33`, `$0F` | `HiliteColor` | 1 | highlight colour state |
+| `$26` | `ColorBit`, `CopyPixMap`, `SetPortPix`, `OpColor`, `ActivatePalette`, `SetPalette`, `Palette2CTab`, `InitGDevice`, `CharExtra`, ... | 0 | synchronise / flush before software handles the call |
+| `$00`, `$02`, `$11`, `$26:14` | the three control records (`$FFFFFFFF`, `$FFFFFFFE`) | 0-1 | engine start-up / shut-down and mode handshakes (not QuickDraw traps) |
+
+Every command above is a *state-mirroring* call except the shape and text
+commands in the previous table: the card keeps shadow copies of the pen,
+colours, patterns, clip and device state, so the shape handlers only have to
+send the geometry and a verb.
+
