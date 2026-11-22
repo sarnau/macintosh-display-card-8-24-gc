@@ -11,7 +11,7 @@
 *                    +$00  dc.l  Am29000 command code / firmware offset
 *                    +$04  stub  (GlobalsAccessor) - fetch engine globals via
 *                                low-mem [$888] and tail-jump through them
-*                    +$28  bra.l handler_NN   (the 68k handler for this op)
+*                    +$28  bra.l GA_<trap>    (the 68k handler for this op)
 *    $13E4..$C27C  handler + engine code.
 *
 *  Engine globals: reached everywhere as [[ [$888] stripped ]].
@@ -51,9 +51,14 @@
 *  CopyParamsToQueue, GestaltSelectorTable, ACEFLoad).  A dozen leaf routines
 *  carry their REAL names, recovered from the embedded MacsBug symbols that
 *  the compiler placed after each function (GA_MoveHHi, FixScale, GetD2,
-*  GACursorTask, GA_PMGR, ...).  The 106 op-handlers keep generic names
-*  (handler_NN, with their Am29000 command code in the table): pinning each
-*  to a specific QuickDraw op needs the (still packed) ACEF firmware.
+*  GACursorTask, GA_PMGR, ...).  The 106 dispatch entries are named after the
+*  QuickDraw/Toolbox traps they patch: the first long of each entry is the
+*  address of the trap-table slot ((v - $E00) >> 2 = tool trap number, as
+*  DRVR.s's ClassifyTrapNum computes), looked up in Apple's Traps.h; see
+*  QUICKDRAW_PATCHES.md.  Handlers are GA_<TrapName> (the same GA_ prefix as
+*  the MacsBug names GA_MoveHHi / GA_PMGR / GA_GETCTSEED), GA_Trap<word> where
+*  Traps.h has no name and GA_LowMem<addr> for low-memory vector patches; each
+*  carries a comment with the EngineDispatch command codes it issues.
 *  Embedded strings (log messages + MacsBug symbols) are shown as data.
 *
 *  Trap names from Apple CIncludes/Traps.h.  Disassembled by recursive

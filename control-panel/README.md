@@ -169,7 +169,7 @@ data tables decoded). Structure:
   * `+$00  dc.l` — the **Am29000 command code / firmware offset** for this op
   * `+$04` — a stub that fetches the engine's globals through low-memory
     `[$888]` and tail-jumps through them (`GlobalsAccessor`)
-  * `+$28  bra.l handler_NN` — the 68k handler
+  * `+$28  bra.l GA_<trap>` — the 68k handler
   These are the patched QuickDraw/CQD bottlenecks and related entry points; the
   106 command codes are the host→coprocessor opcodes.
 * **`$13E4..$C27C` — handler + engine code.** Each handler marshals its
@@ -199,8 +199,9 @@ GestaltSelectorTable, ACEFLoad) and recovers a dozen leaf-routine names from
 the **MacsBug symbols the compiler embedded after each function** (`GA_MoveHHi`,
 `FixScale`, `GetD2`, `SetD2`, `GetA5`, `GACursorTask`, `GA_PMGR`,
 `GA_GETCTSEED`, `BitFieldExtract`, `EqualFontOutput`, `WidthTableCheckSum`).
-The 106 op-handlers stay `handler_NN` (their Am29000 command code is shown in
-the dispatch table). The dispatch table, switch jump-tables, Gestalt table and
+The 106 op-handlers are named after the QuickDraw/Toolbox traps they patch
+(`GA_StdLine`, `GA_CopyBits`, ... -- see [`QUICKDRAW_PATCHES.md`](QUICKDRAW_PATCHES.md))
+and annotated with the card command codes they issue. The dispatch table, switch jump-tables, Gestalt table and
 embedded strings/symbols render as structured data; everything else is code.
 
 ## The .GraphAccel driver (`DRVR.s`)
