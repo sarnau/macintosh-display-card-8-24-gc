@@ -183,3 +183,22 @@ Conclusion: Antelope's 243 KB stays masked; a solution would need the real
 generator (probably the same structure as `Hand`'s, with several more levels)
 rather than more fitting of samples, or a larger known-plaintext set such as the
 `.data`/`.lit` sections' repeating constants.
+
+### Antelope mask: what else was tried (negative results)
+
+* The key's two lowest bits are **not** zero as in `Hand`/`Boot`: with period 6
+  in the word index they read `00 00 11 00 00 01` (phases 2, 8, 14, ... give
+  `$6F` in the low 7 bits, phases 5, 11, 17, 23 give `01` in the low two bits),
+  so the table `C48` (all 48 phases, no conflicts, in the samples file) has
+  entries that are not multiples of 4. Antelope's generator therefore differs
+  from `Hand`'s in the lowest bits too.
+* A regression of the 23-bit key on the bits of `k` (with or without a mod-3
+  term) leaves a residual of about half the key's spread, so the key is not a
+  weighted sum of the bits of the word index; the +64-row jump positions are
+  not periodic in `k` and are not aligned to multiples of 8, 16, 24, 32 or 48.
+* The mixed-radix look (weights 1, 8, 64, 320 rows) is reminiscent of a DRAM
+  row/column address multiplex, and the three code images sit at different
+  physical places (`Hand`/`Boot` in on-card SRAM at `$2000000`, Antelope in DRAM
+  at an address `ReserveEngineRegion` chooses), so one hypothesis is that each
+  generator is a function of the load region's address mapping; no test of it
+  was possible without a way to obtain more plaintext.
