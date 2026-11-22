@@ -45,6 +45,8 @@ bytes look plausible at the opcode level but not above it.
 
 ## The second mask
 
+(A narrative of how it was found and how to reproduce it: [`../SECOND_MASK.md`](../SECOND_MASK.md).)
+
 The low 23 bits of every 32-bit word of the code sections are XORed with a key
 that depends on the word index `k` (counted from the start of the section):
 

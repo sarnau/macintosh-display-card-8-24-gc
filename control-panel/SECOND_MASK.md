@@ -99,5 +99,5 @@ python3 am29k_dasm.py Hand.unmasked.bin 2000000 --labels
 
 Data: `firmware/ACEF_1_Runtime/{Hand,Boot}.unmasked.bin`,
 `firmware/ACEF_100_Antelope/mask_samples.tsv`,
-`firmware/ACEF_1_Runtime/hand_mask_samples.tsv` (the early partial samples).
+`firmware/hand_mask_samples.tsv` (the early partial samples, superseded).
 Tables: `COL`, `ROW`, `COL_BOOT`, `ROW_BOOT` in `unmask_runtime.py`.
