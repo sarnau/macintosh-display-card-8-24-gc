@@ -529,6 +529,45 @@ masked values, and the earlier note that they were not in the name table is
 explained. The rest of `Boot` and `Hand` (registers and immediates in bits
 15-23) is still masked.
 
+### Reading `Hand`'s structure from the SPR sequences
+
+Cutting `Hand` after each `iret`/`iretinv` (plus its delay slot) and listing the
+special registers each piece touches -- the only fields readable today --
+gives routines that are recognisable even with registers masked
+(word index `k`, address `0x2000000 + 4k`; `unmask_runtime.py --sprs` prints
+the raw sequence):
+
+* **k 0-64, the entry/exit stub (0x2000000).** `mfsr PC0`, `mtsrim CPS`,
+  `mfsr/mtsr CFG`, `mfsr CHA`/`CHC`/`CHD`, `mtsr VAB`, `mtsr CHC`, then
+  `mtsr PC1`, `PC0`, `OPS` before the `iret`: save the channel state, adjust
+  CPS/CFG/VAB, restore PC and OPS -- a generic trap entry/return path.
+* **k 66-284 (219 words) and k 296-365:** the same save/restore skeleton with
+  `RBP` and `VAB` toggles (`mfsr VAB; mtsr VAB; mtsr VAB` repeated) around an
+  `OPS` save: trap handlers that switch register-bank protection.
+* **k 774-1054 (281 words):** only `CFG` and `CHC` touched -- a longer routine
+  that works with the channel registers but does little special-register
+  traffic; the shorter pieces between k 1105 and 1750 mostly touch `OPS`/`CHC`/
+  `TMR` once or not at all (small handlers, possibly just a few instructions).
+* **k 1804-2449 (646 words, 0x2001c10-0x2002624): the reset/initialisation
+  routine.** `mtsrim CPS`, `mtsr CPS` x2, `mtsrim RBP` x3-4, `mtsrim TMR`/`TMC`,
+  `mtsrim MMU` x3, `mtsrim/mtsr CFG` x5, `mtsrim CHC`, ending with `mtsr PC1/PC0`:
+  program the processor status, register-bank pointer, timer, MMU and
+  configuration registers, then return -- the structure of a processor reset
+  routine, and `Boot`'s jump targets into `Hand` ($2001c10..$2002624 region)
+  would land here.
+* **k 2451-2884 (434 words, 0x2002624-0x2002d14): a full context
+  save/restore.** It reads `PC0, OPS, CHC, CHA, CHD, VAB, CPS, RBP, TMR, PC2,
+  MMU, CFG, LRU` (in that order, twice) and ends with a long run of `mtsr` that
+  writes back `VAB, OPS, CPS, CFG, CHA, CHD, CHC, RBP, TMC, TMR, PC0, PC1,
+  PC2, LRU`: saving and restoring the whole protected-SPR set, i.e. a context
+  switch or a "dump and return" handler.
+
+What this does *not* establish: registers, immediates and jump targets are
+still masked (bits 15-23), so which trap number each handler serves, what it
+loads or stores, and how the routines call each other is unknown. Labels in
+`disasm/Hand.asm` would therefore be guesses; the routine boundaries above are
+from `iret` positions, whose opcode byte is not masked.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
