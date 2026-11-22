@@ -33,3 +33,15 @@ n = os.path.basename(src)[:-4]
 open(os.path.join(out, n + '.low15.bin'), 'wb').write(struct.pack('>%dI' % len(dec), *dec))
 open(os.path.join(out, n + '.known.bin'), 'wb').write(struct.pack('>%dI' % len(known), *known))
 print(n, len(w), 'words;', sum(1 for k in range(len(w)) if k % 48 in ROW), 'with bits 0-14 known')
+
+# Validation / reading aid: with the partial unmask, the RA field of
+# mfsr/mtsr/mtsrim is a protected special-register number.  Its low 7 bits are
+# known wherever the phase is; real code must give 0..14 (Am29000 protected SPRs).
+if '--sprs' in sys.argv:
+    NAMES = 'VAB OPS CPS CFG CHA CHD CHC RBP TMC TMR PC0 PC1 PC2 MMU LRU'.split()
+    for k, x in enumerate(w):
+        if x >> 24 in (0xC6, 0xCE, 0x04) and k % 48 in ROW:
+            key = ((((ROW[k % 48] - k) & 0xFF) << 7) | COL[k % 24]) & 0x7FFF
+            ra = ((x ^ key) >> 8) & 0x7F
+            op = {0xC6: 'mfsr', 0xCE: 'mtsr', 0x04: 'mtsrim'}[x >> 24]
+            print('%5d  %-6s %s' % (k, op, NAMES[ra] if ra < 15 else 'spr%d?' % ra))

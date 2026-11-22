@@ -506,6 +506,28 @@ Reserved", gives a keystream of 0x93, 0x3c4, 0x3e6, 0x259, 0x2bc, 0x1d70,
 0x1de3, 0x1cc0, ... (not 4-aligned, no 0x80 ramp), so Antelope uses a different
 generator from `Runtime` and does not help pin `Hand`'s rule.
 
+**Independent confirmation: the SPR numbers become real.** Applying the
+partial unmask to the `RA` field (bits 8-14) of every `mfsr`/`mtsr`/`mtsrim`
+whose phase is known gives **217 samples in `Hand`, every one in 0..14** --
+exactly the Am29000's protected special registers (0 VAB, 1 OPS, 2 CPS, 3 CFG,
+4 CHA, 5 CHD, 6 CHC, 7 RBP, 8 TMC, 9 TMR, 10 PC0, 11 PC1, 12 PC2, 13 MMU,
+14 LRU) -- where the masked values had been spread over 0..255. The fit never
+looked at this field, so it is a held-out test of both the key and the
+decomposition (bit 15 of `RA` is still masked, so an SPR >= 128 would show as
+its low 7 bits; none appear). `Hand` is therefore real interrupt/trap-handler
+code: 80 `iret`/`iretinv` words terminate its handlers (the first at word 64),
+and the SPRs it touches are mostly OPS, CPS, CHC and TMC-family registers
+saved/restored around traps. `unmask_runtime.py --sprs` prints them.
+
+**`Boot` uses the same mask.** Its five SPR instructions, read with the same
+key (word index counted from the start of `Boot.bin`), become `mtsrim CHA`,
+`mtsrim CPS, $04f7`, `mtsr VAB`, `mtsr CFG` (one more is in an unknown phase) --
+a plausible early-boot sequence, where the old reading had `spr124`, `spr122`,
+`spr89`, `spr88`. This retracts "unreliable SPR numbers" for `Boot`: they were
+masked values, and the earlier note that they were not in the name table is
+explained. The rest of `Boot` and `Hand` (registers and immediates in bits
+15-23) is still masked.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
