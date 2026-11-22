@@ -231,10 +231,12 @@ code, and the code does exactly what the host side of the protocol expects
 routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
 
 * **Trap vector table.** `Boot` installs it at `VAB = $4C000000` (the `Vec`
-  section): vectors 0-21 point at the handlers below, 22-60 at a default that
-  reports reason `$A3`, 61/62 are the register-stack spill/fill handlers, 63
-  and 66 are two **service-call** entry points, 65 an assertion, 64 the NOP
-  assert. Vectors 8/10 and 9/11 share the instruction and data **software TLB
+  section): vectors 0-21 point at the handlers below, 22-63 at a default that
+  reports reason `$A3`, 64/65 are the register-stack spill/fill handlers (the
+  `Antelope` loader patches 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr2,gr127`
+  with exactly these vector numbers), 66 and 69 are the two **service-call**
+  entry points (66 a jump table, 69 the host-interface style), 68 an
+  assertion/breakpoint, 67 a default. Vectors 8/10 and 9/11 share the instruction and data **software TLB
   refill** handlers (1 KB pages, a 32-bucket hash at `$4C002818`, a region
   table at `$4C00316C`), with a pager at `$2001D10` behind them.
 * **Interrupt handling.** INTR0-3 and the timer, trace and TRAP handlers
@@ -242,8 +244,10 @@ routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
   timer reloads `TMR` and counts ticks in `$4C006830/34`; INTR2 also runs the
   **video command service** `$2000C14`, which executes the `VidComm`
   (`$4C007300`) block. A PC trace ring lives at `$4C006A7C`.
-* **Service calls.** Vector 63 dispatches `gr121 - $B6` through the table at
-  `$4C002500`; vector 66 handles services such as `sbrk` (`$101`).
+* **Service calls.** Vector 66 dispatches `gr121 - $B6` through the table at
+  `$4C002500`; vector 69 (the AMD host-interface style `asneq 69,gr1,gr1`)
+  handles services such as `sbrk` (`$101`), the `InpArgs` pointer (`$104`),
+  ticks and cycle time (`$111`/`$112`) and exit (`1`).
 * **Fatal-trap reporter and mailbox (`$2002808`, `$2002650`).** Any
   unrecoverable trap stores a reason code (`$8F`..`$B5`, table in the file),
   dumps the register state to `$4C006748`, and calls `$2002650`, which posts
@@ -257,7 +261,7 @@ routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
 
 What is still only roughly read: the exact `VidComm` command codes (`$2000C14`
 copies and re-initialises state depending on the command), the pager at
-`$2001D10`, the services behind vector 63, and the data structures at
+`$2001D10`, the services behind vector 66, and the data structures at
 `$4C002810..$4C002E48`. The routine banners say "reading" where a role is
 inferred from the loads and compares and not confirmed against a caller.
 

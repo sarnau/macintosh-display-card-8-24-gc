@@ -22,7 +22,7 @@
 * ------------------------------------------------------------------
 *  Conventions seen throughout
 *    gr1/gr126/gr127/lr1..   AMD register-stack convention (gr1 = frame,
-*                            gr126/gr127 = spill bounds; vectors 61/62 below)
+*                            gr126/gr127 = spill bounds; vectors 64/65 below)
 *    gr64                    kernel FLAGS word, loaded at init from
 *                            PublicIn+$18 ($4C006418) = the unit flags
 *                            DRVR.s's SetFeatureFlags/PostLoadPoke publish
@@ -47,16 +47,19 @@
 *    12 instr TLB prot viol ... $20008A0  13 data TLB prot viol ... $20008A8
 *    14 timer ................. $2000960  15 trace ................ $2000A24
 *    16 INTR0 $2000B08  17 INTR1 $2000B48  18 INTR2 $2000B98  19 INTR3 $2001064
-*    20 TRAP0 $2001144  21 TRAP1 $2001164  22..60 default ........ $2001D08
-*    61 register spill ....... $2001184   62 register fill ........ $20011B8
-*    63 SERVICE CALL ......... $20011E8   64 default (the NOP assert)
-*    65 assertion ............ $2000AE8   66 SERVICE CALL (HIF-like) $2001A70
+*    20 TRAP0 $2001144  21 TRAP1 $2001164  22..63 default ........ $2001D08
+*    64 register spill ....... $2001184   65 register fill ........ $20011B8
+*         (Antelope's loader patches 293 'asgeu 64,gr1,gr126' and 454 'asleu 65,lr2,gr127')
+*    66 SERVICE CALL (jump table) $20011E8   67 default
+*    68 assertion / breakpoint $2000AE8   69 SERVICE CALL (HIF-style: 'asneq 69,gr1,gr1')
+*                                         $2001A70
+*    (Boot's loop 'jmpfdec' runs N+2 times, so there are 42 defaults, 22..63.)
 *
 *  REASON CODES (gr77 -> $2002808 -> mailbox word $4C007004)
 *    8F no-coprocessor   90 data access        91 vector 0        92 unaligned
 *    93 out-of-range     95 instr access/TLB   96..99 INTR0..3 with no handler
 *    9A TRAP0  9B TRAP1  9C protection         9D coprocessor     9E,A1 pager
-*    9F trace (unexpected)   A0 assert 65      A3 unknown vector  A5 stack bound
+*    9F trace (unexpected)   A0 vector 68      A3 unknown vector  A5 stack bound
 *    A6 TLB miss outside any mapped region     B4,B5 report/trace overflow
 *
 *  CARD ADDRESS MAP USED BY THIS CODE (inferred)
@@ -915,7 +918,7 @@ L_2000ad4:
   2000adc:  15464601  add      gr70, gr70, $01         
   2000ae0:  1e004644  store    0, 0, gr70, gr68        
   2000ae4:  88000000  iret                             
-*  VECTOR 65 -- ASSERTION: backs PC0/PC1 up by one instruction, reason $A0
+*  VECTOR 68 -- ASSERTION / BREAKPOINT: backs PC0/PC1 up by one instruction, reason $A0
   2000ae8:  c6430a00  mfsr     gr67, PC0                  ; [delay slot]
   2000aec:  25434304  sub      gr67, gr67, $04         
   2000af0:  ce000a43  mtsr     PC0, gr67               
@@ -1406,7 +1409,7 @@ L_200115c:
 L_200117c:
   200117c:  a00500a3  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   2001180:  03004d9b  const    gr77, $009b                ; [delay slot]
-*  VECTOR 61 -- REGISTER STACK SPILL (overflow): checks the new bound
+*  VECTOR 64 -- REGISTER STACK SPILL (overflow): checks the new bound
 *  against the stack limit (reason $A5 if exceeded), then storem's
 *  lr0.. into the memory stack and moves gr126/gr127.
   2001184:  24797e01  sub      gr121, gr126, gr1       
@@ -1423,7 +1426,7 @@ L_200117c:
 L_20011b0:
   20011b0:  a0050096  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   20011b4:  03004da5  const    gr77, $00a5                ; [delay slot]
-*  VECTOR 62 -- REGISTER STACK FILL (underflow): loadm refills lr0.. from the memory stack
+*  VECTOR 65 -- REGISTER STACK FILL (underflow): loadm refills lr0.. from the memory stack
   20011b8:  03027900  const    gr121, $0200            
   20011bc:  9279797f  or       gr121, gr121, gr127     
   20011c0:  ce008179  mtsr     IPA, gr121              
@@ -1437,7 +1440,7 @@ L_20011b0:
   20011e0:  36000079  loadm    0, 0, gr0, gr121        
   20011e4:  88000000  iret                             
 * ==================================================================
-*  VECTOR 63 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
+*  VECTOR 66 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
 *  $B6+$D5 index the jump table at $4C002500 (probably the PrivNZ section,
 *  pointers to the stubs below); anything else returns gr96 = $FFFFFFD6, gr121 = 0.
 *  Arguments in lr2/lr3, result in gr96.  Service stubs that follow:
@@ -2059,11 +2062,17 @@ L_2001a44:
   2001a68:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
   2001a6c:  88000000  iret                             
 * ==================================================================
-*  VECTOR 66 -- SERVICE CALL (second set).  gr121 = service:
+*  VECTOR 69 -- SERVICE CALL (HIF-style set; trap 69 is the usual AMD host-interface
+*  call, 'asneq 69,gr1,gr1').  Services seen: $101 sbrk, $104 InpArgs pointer,
+*  $111/$112 time, $121 set globals, 1 exit.  gr121 = service:
 *    $101  sbrk:  gr96 = old break (gr65), break += lr2 rounded up to 4;
 *                 fails ($0C in gr121) if it would cross gr127 - $3000
 *    $102  compares lr2 with the limit at $4C006410; gr96 = 0
 *    $103  gr96 = $400 (page / unit size)
+*    $104  gr96 = $4C007800 (the InpArgs block)    $111  gr96 = tick count [$4C006830]
+*    $112  gr96/gr97 = cycle time from TMC + [$4C006834]
+*    $001  exit: posts the request to the host (reason = service) and parks the
+*          CPU after storing 'BSBB' ($42534242) at VidComm+$18 and 1 at $4C006A5C
 *    $121  lr2 = $40 -> gr92 = lr3, lr2 = $41 -> gr93 = lr3 (set globals)
 *  further numbers are handled below and end in $2002650 (report to host).
 * ==================================================================
@@ -2264,7 +2273,7 @@ L_2001cf8:
   2001d00:  c0000045  jmpi     gr69                    
   2001d04:  03004700  const    gr71, $0000                ; [delay slot]
 * ==================================================================
-*  VECTORS 22..60 (default): any unexpected vector -> reason $A3.
+*  VECTORS 22..63, 67 (default): any unexpected vector -> reason $A3.
 *  $2001D10  PAGER (a reading): reached when the TLB miss handlers find no
 *  entry.  Takes a slot from the pools at $4C002810 / $4C002818 / $4C002898 / $4C002CA8 /
 *  $4C002D78 / $4C002E48 (20-byte entries; 0x34 slots), links it into the

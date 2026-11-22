@@ -105,3 +105,27 @@ trigger the bulk word copies ($2000DBC.. / $2000E8C..), other values skip them
   direction (`Boot` waits for `$42005300`).
 * The earlier statement that the Am29000-side mailbox code was not in the files
   was wrong: it is `$2002650` in `Hand`.
+
+## 6. What Antelope uses from the kernel (and what it does not)
+
+Checked against the relocation table of `ACEF_100` (Antelope):
+
+* **Register stack.** The loader patches the vector byte of 293 `asgeu` words to
+  `64` (`asgeu 64,gr1,gr126`, the spill check in function prologues) and of 454
+  `asleu` words to `65` (`asleu 65,lr2,gr127`, the fill check). They land in the
+  kernel's spill/fill handlers `$2001184`/`$20011B8` (**verified**; these
+  are vectors 64/65, not 61/62 as an earlier note said).
+* **No kernel calls, no hardware addresses.** Antelope's `.text` has no
+  `asneq`/`aseq` service-call words, no `consth $0200` kernel-routine pointers and no
+  `consth $4C00/$4400/$4600` constants outside relocations, so it does not call
+  the service entries (vector 66/69) or touch the card registers itself.
+* **Its only externals are 21 common (bss) variables** with sizes 4-424 bytes
+  (one 152-byte block is referenced 536 times, a 264-byte block 44 times, a 68-byte
+  one 58 times). They are allocated by the loader; names are stripped. These
+  and the entry address at `PublicIn+$04` are therefore the interface; the 68k
+  side must know their addresses (via `unit +$130`/`ACEFLoad`'s return), which is
+  why `LoadFirmware` publishes `+$0C`.
+
+So the kernel services (`sbrk`, `InpArgs`, time) are there for programs that
+use them, but the accelerator does not; naming Antelope's functions from kernel
+anchors is therefore not possible beyond the spill/fill convention.
