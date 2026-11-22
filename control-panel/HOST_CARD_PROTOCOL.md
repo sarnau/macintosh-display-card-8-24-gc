@@ -106,80 +106,39 @@ trigger the bulk word copies ($2000DBC.. / $2000E8C..), other values skip them
 * The earlier statement that the Am29000-side mailbox code was not in the files
   was wrong: it is `$2002650` in `Hand`.
 
-## 6. What Antelope uses from the kernel (and what it does not)
+## 6. What Antelope uses from the kernel (and what is still unknown)
 
-Checked against the relocation table of `ACEF_100` (Antelope):
+**Correction.** Antelope's `.text` (243 KB) is **itself masked** with the same
+kind of generator as `Hand`/`Boot`; everything earlier in this project that read
+it as plain compiled code (`disasm/text.asm`, opcode statistics, "no service
+calls", function boundaries by prologue) used the masked bytes and is
+unreliable. Tell-tales: zero `jmpi lr0` returns and zero `sub gr1,gr1,N`
+prologues in 62,134 words (compiled code would have thousands), and register
+fields that are uniformly random. Only the opcode byte is intact (and the RC byte
+in the first ~100 words).
 
-* **Register stack.** The loader patches the vector byte of 293 `asgeu` words to
-  `64` (`asgeu 64,gr1,gr126`, the spill check in function prologues) and of 454
-  `asleu` words to `65` (`asleu 65,lr2,gr127`, the fill check). They land in the
-  kernel's spill/fill handlers `$2001184`/`$20011B8` (**verified**; these
-  are vectors 64/65, not 61/62 as an earlier note said).
-* **No kernel calls, no hardware addresses in `.text`.** Antelope's `.text` has no
-  `asneq`/`aseq` service-call words, no `consth $0200` kernel-routine pointers and no
-  `consth $4C00/$4400/$4600` constants outside relocations, so it does not call
-  the service entries (vector 66/69) or touch the card registers itself.
-* **Its only externals are 21 common (bss) variables** with sizes 4-424 bytes
-  (one 152-byte block is referenced 536 times, a 264-byte block 44 times, a 68-byte
-  one 58 times). They are allocated by the loader; names are stripped. These
-  and the entry address at `PublicIn+$04` are therefore the interface; the 68k
-  side must know their addresses (via `unit +$130`/`ACEFLoad`'s return), which is
-  why `LoadFirmware` publishes `+$0C`.
+What survives from the loader's own view of it, because it lives in the
+relocation table and not in the instruction bytes:
 
-The one exception is the small entry stub, Antelope's `Code` section (38 words
-at `$F000`, the thing the kernel jumps to via `PublicIn+$04`): it is **also
-masked** with the same generator (own tables; only its first three words decode
-as written). Decoded with `Hand`'s or `Boot`'s tables it becomes recognisable
-start-up code -- stack setup, `const`/`consth` pointer loads, `calli` calls and
-`asneq trap69,..` (the host-interface service call, used for exit) -- but the
-tables are not right for it, so its register fields are unreliable and it is
-not decoded here. What *can* be read without the tables: in the first 128
-words the mask's bits 15-23 are zero (the key is a small ramp there), so the
-opcode and RC bytes are plain, and the loader's byte patches (`asgeu` vector
-`$40`) land on plain fields. That gives the stub's outline: `sub gr1,gr1,$18`;
-`asgeu 64`; `add lr1,gr1,..`; a `const`/`consth` pair with an unresolved external
-(a 4-8 byte common variable); a `const` whose plain high byte is `$01`
-followed by **`asneq trap69`** (word 9) -- a service number `$1xx` through the
-host-interface call, plausibly `$104` (the `InpArgs` pointer, `$4C007800`)
-since only `$101`-`$104`, `$111`, `$112`, `$121` exist; then three `calli`
-calls, one of them to a function at `.text+$3AC88` (via a lo16/hi16 relocation,
-the program's main routine), and at the end a `const` whose plain high byte is
-`$00` followed by a second **`asneq trap69`** (word 35) and a `jmp`: the
-`exit` (service 1) path. All register numbers and low bytes in the stub stay
-unreliable. So the kernel services (`sbrk`, `InpArgs`, time) are used,
-at most, by that stub; the accelerator proper does not call them; naming Antelope's functions from kernel
-anchors is therefore not possible beyond the spill/fill convention.
+* **Register stack.** The loader patches the vector byte of 293 `asgeu` words
+  with `64` (the spill check `asgeu 64,gr1,gr126`) and of 454 `asleu` words with
+  `65` (`asleu 65,lr2,gr127`), which match the kernel's spill/fill handlers
+  `$2001184`/`$20011B8` (vectors 64/65) (**verified**).
+* **Externals.** 21 undefined symbols, all common (bss) variables of 4-424 bytes
+  (one 152-byte block referenced 536 times); names stripped.
+* Whether Antelope calls the kernel services (`asneq 69`) or touches hardware
+  addresses is **unknown**: its operand fields cannot be read until the mask is
+  solved. The entry stub (`Code`, 38 words) also shows an `asneq trap69` and a
+  `const` with plain high byte `$01` before it (words 8-9), and a second one
+  (word 35) before the exit `jmp`, consistent with a `$1xx` service call (maybe
+  `$104`, the `InpArgs` pointer) and `exit`.
 
-## 7. The accelerated-QuickDraw command queue (`gc24.s` -> Antelope)
-
-`gc24.s`'s generic issue routine (`EngineDispatch` `$49C4`, with the parameter
-copy `CopyParamsToQueue` `$5FF2`) uses the same unit record as the driver
-(`A4`): it picks it up through low-memory `$888` -> globals `+$214`. Read from
-the code:
-
-1. It requires the unit's state flags (`+$08`) to show "firmware loaded" and
-   no `$600` bits, then calls `sub_6F4E` if a previous request is still
-   outstanding (`+$1C` bits).
-2. It sets `A3 = [A4+$18]` (the queue/parameter write pointer on the card),
-   `header = [A4+$0C]` (the card-side command header, slot space base `+ $8C00`,
-   set in `BuildUnitRecords`) and `flag = [A4+$10]` (a host-memory flag word
-   per slot: `globals+$234 + slot*4`). If the flag word has bit 3 set it takes
-   the "busy" path (`+$1C |= $10`); otherwise it sets `+$1C |= 4`, clears the
-   flag word and writes to the header: `+$18 <- 0`, **`+$48 <- command code`**,
-   `+$4C <- sequence number` (`A4+$20`, incremented), `+$50 <- parameter count`.
-3. It copies the parameters with an unrolled loop (8 longwords at a time, then
-   the remainder through the jump table at `$5FF6`) to `[A3]`,
-   then stores `$FFFFFFFF` at `header+$14` (the "go" word), sets `+$1C |= $C`
-   and `A4+$170 <- command code`, and waits on the host flag word:
-   bits 0-1 = completion/status, bit 2 = "reply to fetch" (it then calls
-   `sub_6442(header, A4+$24)`), looping until the flag word clears.
-
-What is **not** verified: the card-side consumer. The kernel (`Hand`/`Boot`)
-never references the header region (`$4C008C00` is not touched by it), and
-Antelope's `.text` has no fixed addresses, so the consumer must find the
-header through data the loader gives it (its common variables, or `PublicIn`
-fields), and the writer of the host flag word `+$10` (which is in host RAM)
-must be the card as a bus master or the driver's interrupt path; neither was
-located. The 106 command codes (`+$48`) and parameter layouts are in
-`gc24.s`'s dispatch table; matching them to Antelope's dispatcher is the next
-step, and needs Antelope's `Code` stub decoded first.
+**Mask status.** The 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr2,gr127` words
+are known plaintext spread over the whole section, so key values at 747 positions
+are recoverable (`firmware/ACEF_100_Antelope/mask_samples.tsv`, key =
+file word XOR the known word, with a zero RC placeholder). They show: key bits
+0-6 are a clean table with period 48 (all 48 phases covered, no conflicts);
+bits 7 and up do **not** follow `Hand`'s `0x80*(ROW-k)` ramp with a per-phase
+table (the jitter amplitude is several hundred rows, with plateau jumps), so
+Antelope's generator has additional structure that is not yet modelled and
+`text.bin` cannot be unmasked yet.

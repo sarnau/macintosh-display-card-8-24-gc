@@ -5,6 +5,13 @@ The `ACEF` resources in the 8•24 GC control-panel software are the on-card
 folder holds the unpacked firmware, produced by [`../acef_unpack.py`](../acef_unpack.py),
 which was reverse-engineered from the `ACEFLoad` loaders in `gc24` and the DRVR.
 
+> **Correction (read first).** `ACEF_100_Antelope`'s `.text`, `.lit`, `.data`
+> (and the `Code` stub) are masked like `ACEF_1_Runtime`'s code (see "The second
+> mask" below); the disassembly in `disasm/text.asm`, `Code.asm` and the
+> function-boundary/prologue statistics earlier in this file were made from the
+> masked bytes and are **not reliable beyond the opcode byte**. See
+> `../HOST_CARD_PROTOCOL.md` section 6 for what is known.
+
 ## The ACEF format (reverse-engineered)
 
 ```
