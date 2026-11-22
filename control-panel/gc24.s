@@ -60,7 +60,7 @@
 *  descent + linear sweep; tables shown as structured data, rest as code.
 *
 disp_00:
-  000000:  00 00 06 44          dc.l     $00000644  ; dispatch #0, Am29000 cmd/offset $644
+  000000:  00 00 06 44          dc.l     $00000644  ; dispatch #0, trap $A091 _Translate24To32; table addr $644
 * GlobalsAccessor  -  every dispatch stub tail-jumps through here.
 * Fetches the engine globals via low-mem [$888] (a handle), derefs and
 * 24-bit-strips it, then dispatches through globals+$14.  The engine
@@ -81,10 +81,10 @@ GlobalsAccessor:
   000022:  2e 9f                move.l   (a7)+, (a7)
   000024:  4e 75                rts      
   000026:  4e 71                nop      
-  000028:  60 ff 00 00 7f 26    bra.l    $7f50  ; -> handler_00
+  000028:  60 ff 00 00 7f 26    bra.l    $7f50  ; -> GA_Translate24To32
   00002e:  4e 71                nop      
 disp_01:
-  000030:  00 00 08 ee          dc.l     $000008EE  ; dispatch #1, Am29000 cmd/offset $8EE
+  000030:  00 00 08 ee          dc.l     $000008EE  ; dispatch #1, low-memory vector $8EE; table addr $8EE
 L34:
   000034:  2f 08                move.l   a0, -(a7)
   000036:  20 78 08 88          movea.l  $888.w, a0
@@ -103,7 +103,7 @@ L34:
   000058:  60 ff 00 00 7f c2    bra.l    $801c  ; -> GACursorTask
   00005e:  4e 71                nop      
 disp_02:
-  000060:  00 00 11 b0          dc.l     $000011B0  ; dispatch #2, Am29000 cmd/offset $11B0
+  000060:  00 00 11 b0          dc.l     $000011B0  ; dispatch #2, trap $A8EC _CopyBits; table addr $11B0
 L64:
   000064:  2f 08                move.l   a0, -(a7)
   000066:  20 78 08 88          movea.l  $888.w, a0
@@ -119,10 +119,10 @@ L64:
   000080:  20 6f 00 04          movea.l  $4(a7), a0
   000084:  2e 9f                move.l   (a7)+, (a7)
   000086:  4e 75                rts      
-  000088:  60 ff 00 00 47 b2    bra.l    $483c  ; -> handler_02
+  000088:  60 ff 00 00 47 b2    bra.l    $483c  ; -> GA_CopyBits
   00008e:  4e 71                nop      
 disp_03:
-  000090:  00 00 10 40          dc.l     $00001040  ; dispatch #3, Am29000 cmd/offset $1040
+  000090:  00 00 10 40          dc.l     $00001040  ; dispatch #3, trap $A890 _StdLine; table addr $1040
 L94:
   000094:  2f 08                move.l   a0, -(a7)
   000096:  20 78 08 88          movea.l  $888.w, a0
@@ -138,10 +138,10 @@ L94:
   0000b0:  20 6f 00 04          movea.l  $4(a7), a0
   0000b4:  2e 9f                move.l   (a7)+, (a7)
   0000b6:  4e 75                rts      
-  0000b8:  60 ff 00 00 35 c8    bra.l    $3682  ; -> handler_03
+  0000b8:  60 ff 00 00 35 c8    bra.l    $3682  ; -> GA_StdLine
   0000be:  4e 71                nop      
 disp_04:
-  0000c0:  00 00 10 f4          dc.l     $000010F4  ; dispatch #4, Am29000 cmd/offset $10F4
+  0000c0:  00 00 10 f4          dc.l     $000010F4  ; dispatch #4, trap $A8BD _StdArc; table addr $10F4
 Lc4:
   0000c4:  2f 08                move.l   a0, -(a7)
   0000c6:  20 78 08 88          movea.l  $888.w, a0
@@ -157,10 +157,10 @@ Lc4:
   0000e0:  20 6f 00 04          movea.l  $4(a7), a0
   0000e4:  2e 9f                move.l   (a7)+, (a7)
   0000e6:  4e 75                rts      
-  0000e8:  60 ff 00 00 3c f2    bra.l    $3ddc  ; -> handler_04
+  0000e8:  60 ff 00 00 3c f2    bra.l    $3ddc  ; -> GA_StdArc
   0000ee:  4e 71                nop      
 disp_05:
-  0000f0:  00 00 10 08          dc.l     $00001008  ; dispatch #5, Am29000 cmd/offset $1008
+  0000f0:  00 00 10 08          dc.l     $00001008  ; dispatch #5, trap $A882 _StdText; table addr $1008
 Lf4:
   0000f4:  2f 08                move.l   a0, -(a7)
   0000f6:  20 78 08 88          movea.l  $888.w, a0
@@ -176,10 +176,10 @@ Lf4:
   000110:  20 6f 00 04          movea.l  $4(a7), a0
   000114:  2e 9f                move.l   (a7)+, (a7)
   000116:  4e 75                rts      
-  000118:  60 ff 00 00 39 82    bra.l    $3a9c  ; -> handler_05
+  000118:  60 ff 00 00 39 82    bra.l    $3a9c  ; -> GA_StdText
   00011e:  4e 71                nop      
 disp_06:
-  000120:  00 00 1a 9c          dc.l     $00001A9C  ; dispatch #6, Am29000 cmd/offset $1A9C
+  000120:  00 00 1a 9c          dc.l     $00001A9C  ; dispatch #6, trap $AB27 (name unknown); table addr $1A9C
 L124:
   000124:  2f 08                move.l   a0, -(a7)
   000126:  20 78 08 88          movea.l  $888.w, a0
@@ -195,10 +195,10 @@ L124:
   000140:  20 6f 00 04          movea.l  $4(a7), a0
   000144:  2e 9f                move.l   (a7)+, (a7)
   000146:  4e 75                rts      
-  000148:  60 ff 00 00 31 72    bra.l    $32bc  ; -> handler_06
+  000148:  60 ff 00 00 31 72    bra.l    $32bc  ; -> GA_TrapAB27
   00014e:  4e 71                nop      
 disp_07:
-  000150:  00 00 08 00          dc.l     $00000800  ; dispatch #7, Am29000 cmd/offset $800
+  000150:  00 00 08 00          dc.l     $00000800  ; dispatch #7, low-memory vector $800; table addr $800
 L154:
   000154:  2f 08                move.l   a0, -(a7)
   000156:  20 78 08 88          movea.l  $888.w, a0
@@ -214,10 +214,10 @@ L154:
   000170:  20 6f 00 04          movea.l  $4(a7), a0
   000174:  2e 9f                move.l   (a7)+, (a7)
   000176:  4e 75                rts      
-  000178:  60 ff 00 00 41 3e    bra.l    $42b8  ; -> handler_07
+  000178:  60 ff 00 00 41 3e    bra.l    $42b8  ; -> GA_LowMem0800
   00017e:  4e 71                nop      
 disp_08:
-  000180:  00 00 08 04          dc.l     $00000804  ; dispatch #8, Am29000 cmd/offset $804
+  000180:  00 00 08 04          dc.l     $00000804  ; dispatch #8, low-memory vector $804; table addr $804
 L184:
   000184:  2f 08                move.l   a0, -(a7)
   000186:  20 78 08 88          movea.l  $888.w, a0
@@ -233,10 +233,10 @@ L184:
   0001a0:  20 6f 00 04          movea.l  $4(a7), a0
   0001a4:  2e 9f                move.l   (a7)+, (a7)
   0001a6:  4e 75                rts      
-  0001a8:  60 ff 00 00 40 62    bra.l    $420c  ; -> handler_08
+  0001a8:  60 ff 00 00 40 62    bra.l    $420c  ; -> GA_LowMem0804
   0001ae:  4e 71                nop      
 disp_09:
-  0001b0:  00 00 08 08          dc.l     $00000808  ; dispatch #9, Am29000 cmd/offset $808
+  0001b0:  00 00 08 08          dc.l     $00000808  ; dispatch #9, low-memory vector $808; table addr $808
 L1b4:
   0001b4:  2f 08                move.l   a0, -(a7)
   0001b6:  20 78 08 88          movea.l  $888.w, a0
@@ -252,10 +252,10 @@ L1b4:
   0001d0:  20 6f 00 04          movea.l  $4(a7), a0
   0001d4:  2e 9f                move.l   (a7)+, (a7)
   0001d6:  4e 75                rts      
-  0001d8:  60 ff 00 00 42 ea    bra.l    $44c4  ; -> handler_09
+  0001d8:  60 ff 00 00 42 ea    bra.l    $44c4  ; -> GA_LowMem0808
   0001de:  4e 71                nop      
 disp_10:
-  0001e0:  00 00 1c 68          dc.l     $00001C68  ; dispatch #10, Am29000 cmd/offset $1C68
+  0001e0:  00 00 1c 68          dc.l     $00001C68  ; dispatch #10, trap $AB9A (name unknown); table addr $1C68
 L1e4:
   0001e4:  2f 08                move.l   a0, -(a7)
   0001e6:  20 78 08 88          movea.l  $888.w, a0
@@ -271,10 +271,10 @@ L1e4:
   000200:  20 6f 00 04          movea.l  $4(a7), a0
   000204:  2e 9f                move.l   (a7)+, (a7)
   000206:  4e 75                rts      
-  000208:  60 ff 00 00 90 6e    bra.l    $9278  ; -> handler_10
+  000208:  60 ff 00 00 90 6e    bra.l    $9278  ; -> GA_TrapAB9A
   00020e:  4e 71                nop      
 disp_11:
-  000210:  00 00 10 64          dc.l     $00001064  ; dispatch #11, Am29000 cmd/offset $1064
+  000210:  00 00 10 64          dc.l     $00001064  ; dispatch #11, trap $A899 _SetPenState; table addr $1064
 L214:
   000214:  2f 08                move.l   a0, -(a7)
   000216:  20 78 08 88          movea.l  $888.w, a0
@@ -290,10 +290,10 @@ L214:
   000230:  20 6f 00 04          movea.l  $4(a7), a0
   000234:  2e 9f                move.l   (a7)+, (a7)
   000236:  4e 75                rts      
-  000238:  60 ff 00 00 9c ca    bra.l    $9f04  ; -> handler_11
+  000238:  60 ff 00 00 9c ca    bra.l    $9f04  ; -> GA_SetPenState
   00023e:  4e 71                nop      
 disp_12:
-  000240:  00 00 10 6c          dc.l     $0000106C  ; dispatch #12, Am29000 cmd/offset $106C
+  000240:  00 00 10 6c          dc.l     $0000106C  ; dispatch #12, trap $A89B _PenSize; table addr $106C
 L244:
   000244:  2f 08                move.l   a0, -(a7)
   000246:  20 78 08 88          movea.l  $888.w, a0
@@ -309,10 +309,10 @@ L244:
   000260:  20 6f 00 04          movea.l  $4(a7), a0
   000264:  2e 9f                move.l   (a7)+, (a7)
   000266:  4e 75                rts      
-  000268:  60 ff 00 00 9d 66    bra.l    $9fd0  ; -> handler_12
+  000268:  60 ff 00 00 9d 66    bra.l    $9fd0  ; -> GA_PenSize
   00026e:  4e 71                nop      
 disp_13:
-  000270:  00 00 10 70          dc.l     $00001070  ; dispatch #13, Am29000 cmd/offset $1070
+  000270:  00 00 10 70          dc.l     $00001070  ; dispatch #13, trap $A89C _PenMode; table addr $1070
 L274:
   000274:  2f 08                move.l   a0, -(a7)
   000276:  20 78 08 88          movea.l  $888.w, a0
@@ -328,10 +328,10 @@ L274:
   000290:  20 6f 00 04          movea.l  $4(a7), a0
   000294:  2e 9f                move.l   (a7)+, (a7)
   000296:  4e 75                rts      
-  000298:  60 ff 00 00 9d c6    bra.l    $a060  ; -> handler_13
+  000298:  60 ff 00 00 9d c6    bra.l    $a060  ; -> GA_PenMode
   00029e:  4e 71                nop      
 disp_14:
-  0002a0:  00 00 10 78          dc.l     $00001078  ; dispatch #14, Am29000 cmd/offset $1078
+  0002a0:  00 00 10 78          dc.l     $00001078  ; dispatch #14, trap $A89E _PenNormal; table addr $1078
 L2a4:
   0002a4:  2f 08                move.l   a0, -(a7)
   0002a6:  20 78 08 88          movea.l  $888.w, a0
@@ -347,10 +347,10 @@ L2a4:
   0002c0:  20 6f 00 04          movea.l  $4(a7), a0
   0002c4:  2e 9f                move.l   (a7)+, (a7)
   0002c6:  4e 75                rts      
-  0002c8:  60 ff 00 00 9f 18    bra.l    $a1e2  ; -> handler_14
+  0002c8:  60 ff 00 00 9f 18    bra.l    $a1e2  ; -> GA_PenNormal
   0002ce:  4e 71                nop      
 disp_15:
-  0002d0:  00 00 1a 8c          dc.l     $00001A8C  ; dispatch #15, Am29000 cmd/offset $1A8C
+  0002d0:  00 00 1a 8c          dc.l     $00001A8C  ; dispatch #15, trap $AB23 (name unknown); table addr $1A8C
 L2d4:
   0002d4:  2f 08                move.l   a0, -(a7)
   0002d6:  20 78 08 88          movea.l  $888.w, a0
@@ -366,10 +366,10 @@ L2d4:
   0002f0:  20 6f 00 04          movea.l  $4(a7), a0
   0002f4:  2e 9f                move.l   (a7)+, (a7)
   0002f6:  4e 75                rts      
-  0002f8:  60 ff 00 00 7a b2    bra.l    $7dac  ; -> handler_15
+  0002f8:  60 ff 00 00 7a b2    bra.l    $7dac  ; -> GA_TrapAB23
   0002fe:  4e 71                nop      
 disp_16:
-  000300:  00 00 0f 88          dc.l     $00000F88  ; dispatch #16, Am29000 cmd/offset $F88
+  000300:  00 00 0f 88          dc.l     $00000F88  ; dispatch #16, trap $A862 _ForeColor; table addr $F88
 L304:
   000304:  2f 08                move.l   a0, -(a7)
   000306:  20 78 08 88          movea.l  $888.w, a0
@@ -385,10 +385,10 @@ L304:
   000320:  20 6f 00 04          movea.l  $4(a7), a0
   000324:  2e 9f                move.l   (a7)+, (a7)
   000326:  4e 75                rts      
-  000328:  60 ff 00 00 aa c6    bra.l    $adf0  ; -> handler_16
+  000328:  60 ff 00 00 aa c6    bra.l    $adf0  ; -> GA_ForeColor
   00032e:  4e 71                nop      
 disp_17:
-  000330:  00 00 16 50          dc.l     $00001650  ; dispatch #17, Am29000 cmd/offset $1650
+  000330:  00 00 16 50          dc.l     $00001650  ; dispatch #17, trap $AA14 _RGBForeColor; table addr $1650
 L334:
   000334:  2f 08                move.l   a0, -(a7)
   000336:  20 78 08 88          movea.l  $888.w, a0
@@ -404,10 +404,10 @@ L334:
   000350:  20 6f 00 04          movea.l  $4(a7), a0
   000354:  2e 9f                move.l   (a7)+, (a7)
   000356:  4e 75                rts      
-  000358:  60 ff 00 00 aa fc    bra.l    $ae56  ; -> handler_17
+  000358:  60 ff 00 00 aa fc    bra.l    $ae56  ; -> GA_RGBForeColor
   00035e:  4e 71                nop      
 disp_18:
-  000360:  00 00 18 5c          dc.l     $0000185C  ; dispatch #18, Am29000 cmd/offset $185C
+  000360:  00 00 18 5c          dc.l     $0000185C  ; dispatch #18, trap $AA97 _PmForeColor; table addr $185C
 L364:
   000364:  2f 08                move.l   a0, -(a7)
   000366:  20 78 08 88          movea.l  $888.w, a0
@@ -423,10 +423,10 @@ L364:
   000380:  20 6f 00 04          movea.l  $4(a7), a0
   000384:  2e 9f                move.l   (a7)+, (a7)
   000386:  4e 75                rts      
-  000388:  60 ff 00 00 ab 76    bra.l    $af00  ; -> handler_18
+  000388:  60 ff 00 00 ab 76    bra.l    $af00  ; -> GA_PmForeColor
   00038e:  4e 71                nop      
 disp_19:
-  000390:  00 00 18 60          dc.l     $00001860  ; dispatch #19, Am29000 cmd/offset $1860
+  000390:  00 00 18 60          dc.l     $00001860  ; dispatch #19, trap $AA98 _PmBackColor; table addr $1860
 L394:
   000394:  2f 08                move.l   a0, -(a7)
   000396:  20 78 08 88          movea.l  $888.w, a0
@@ -442,10 +442,10 @@ L394:
   0003b0:  20 6f 00 04          movea.l  $4(a7), a0
   0003b4:  2e 9f                move.l   (a7)+, (a7)
   0003b6:  4e 75                rts      
-  0003b8:  60 ff 00 00 ac f6    bra.l    $b0b0  ; -> handler_19
+  0003b8:  60 ff 00 00 ac f6    bra.l    $b0b0  ; -> GA_PmBackColor
   0003be:  4e 71                nop      
 disp_20:
-  0003c0:  00 00 10 80          dc.l     $00001080  ; dispatch #20, Am29000 cmd/offset $1080
+  0003c0:  00 00 10 80          dc.l     $00001080  ; dispatch #20, trap $A8A0 _StdRect; table addr $1080
 L3c4:
   0003c4:  2f 08                move.l   a0, -(a7)
   0003c6:  20 78 08 88          movea.l  $888.w, a0
@@ -461,10 +461,10 @@ L3c4:
   0003e0:  20 6f 00 04          movea.l  $4(a7), a0
   0003e4:  2e 9f                move.l   (a7)+, (a7)
   0003e6:  4e 75                rts      
-  0003e8:  60 ff 00 00 3d 2c    bra.l    $4116  ; -> handler_20
+  0003e8:  60 ff 00 00 3d 2c    bra.l    $4116  ; -> GA_StdRect
   0003ee:  4e 71                nop      
 disp_21:
-  0003f0:  00 00 10 d8          dc.l     $000010D8  ; dispatch #21, Am29000 cmd/offset $10D8
+  0003f0:  00 00 10 d8          dc.l     $000010D8  ; dispatch #21, trap $A8B6 _StdOval; table addr $10D8
 L3f4:
   0003f4:  2f 08                move.l   a0, -(a7)
   0003f6:  20 78 08 88          movea.l  $888.w, a0
@@ -480,10 +480,10 @@ L3f4:
   000410:  20 6f 00 04          movea.l  $4(a7), a0
   000414:  2e 9f                move.l   (a7)+, (a7)
   000416:  4e 75                rts      
-  000418:  60 ff 00 00 3c 06    bra.l    $4020  ; -> handler_21
+  000418:  60 ff 00 00 3c 06    bra.l    $4020  ; -> GA_StdOval
   00041e:  4e 71                nop      
 disp_22:
-  000420:  00 00 10 bc          dc.l     $000010BC  ; dispatch #22, Am29000 cmd/offset $10BC
+  000420:  00 00 10 bc          dc.l     $000010BC  ; dispatch #22, trap $A8AF _StdRRect; table addr $10BC
 L424:
   000424:  2f 08                move.l   a0, -(a7)
   000426:  20 78 08 88          movea.l  $888.w, a0
@@ -499,10 +499,10 @@ L424:
   000440:  20 6f 00 04          movea.l  $4(a7), a0
   000444:  2e 9f                move.l   (a7)+, (a7)
   000446:  4e 75                rts      
-  000448:  60 ff 00 00 3a b0    bra.l    $3efa  ; -> handler_22
+  000448:  60 ff 00 00 3a b0    bra.l    $3efa  ; -> GA_StdRRect
   00044e:  4e 71                nop      
 disp_23:
-  000450:  00 00 11 14          dc.l     $00001114  ; dispatch #23, Am29000 cmd/offset $1114
+  000450:  00 00 11 14          dc.l     $00001114  ; dispatch #23, trap $A8C5 _StdPoly; table addr $1114
 L454:
   000454:  2f 08                move.l   a0, -(a7)
   000456:  20 78 08 88          movea.l  $888.w, a0
@@ -518,10 +518,10 @@ L454:
   000470:  20 6f 00 04          movea.l  $4(a7), a0
   000474:  2e 9f                move.l   (a7)+, (a7)
   000476:  4e 75                rts      
-  000478:  60 ff 00 00 32 f2    bra.l    $376c  ; -> handler_23
+  000478:  60 ff 00 00 32 f2    bra.l    $376c  ; -> GA_StdPoly
   00047e:  4e 71                nop      
 disp_24:
-  000480:  00 00 11 44          dc.l     $00001144  ; dispatch #24, Am29000 cmd/offset $1144
+  000480:  00 00 11 44          dc.l     $00001144  ; dispatch #24, trap $A8D1 _StdRgn; table addr $1144
 L484:
   000484:  2f 08                move.l   a0, -(a7)
   000486:  20 78 08 88          movea.l  $888.w, a0
@@ -537,10 +537,10 @@ L484:
   0004a0:  20 6f 00 04          movea.l  $4(a7), a0
   0004a4:  2e 9f                move.l   (a7)+, (a7)
   0004a6:  4e 75                rts      
-  0004a8:  60 ff 00 00 30 e2    bra.l    $358c  ; -> handler_24
+  0004a8:  60 ff 00 00 30 e2    bra.l    $358c  ; -> GA_StdRgn
   0004ae:  4e 71                nop      
 disp_25:
-  0004b0:  00 00 16 e8          dc.l     $000016E8  ; dispatch #25, Am29000 cmd/offset $16E8
+  0004b0:  00 00 16 e8          dc.l     $000016E8  ; dispatch #25, trap $AA3A _AddSearch; table addr $16E8
 L4b4:
   0004b4:  2f 08                move.l   a0, -(a7)
   0004b6:  20 78 08 88          movea.l  $888.w, a0
@@ -556,10 +556,10 @@ L4b4:
   0004d0:  20 6f 00 04          movea.l  $4(a7), a0
   0004d4:  2e 9f                move.l   (a7)+, (a7)
   0004d6:  4e 75                rts      
-  0004d8:  60 ff 00 00 91 de    bra.l    $96b8  ; -> handler_25
+  0004d8:  60 ff 00 00 91 de    bra.l    $96b8  ; -> GA_AddSearch
   0004de:  4e 71                nop      
 disp_26:
-  0004e0:  00 00 17 30          dc.l     $00001730  ; dispatch #26, Am29000 cmd/offset $1730
+  0004e0:  00 00 17 30          dc.l     $00001730  ; dispatch #26, trap $AA4C _DelSearch; table addr $1730
 L4e4:
   0004e4:  2f 08                move.l   a0, -(a7)
   0004e6:  20 78 08 88          movea.l  $888.w, a0
@@ -575,10 +575,10 @@ L4e4:
   000500:  20 6f 00 04          movea.l  $4(a7), a0
   000504:  2e 9f                move.l   (a7)+, (a7)
   000506:  4e 75                rts      
-  000508:  60 ff 00 00 92 8a    bra.l    $9794  ; -> handler_26
+  000508:  60 ff 00 00 92 8a    bra.l    $9794  ; -> GA_DelSearch
   00050e:  4e 71                nop      
 disp_27:
-  000510:  00 00 16 ec          dc.l     $000016EC  ; dispatch #27, Am29000 cmd/offset $16EC
+  000510:  00 00 16 ec          dc.l     $000016EC  ; dispatch #27, trap $AA3B _AddComp; table addr $16EC
 L514:
   000514:  2f 08                move.l   a0, -(a7)
   000516:  20 78 08 88          movea.l  $888.w, a0
@@ -594,10 +594,10 @@ L514:
   000530:  20 6f 00 04          movea.l  $4(a7), a0
   000534:  2e 9f                move.l   (a7)+, (a7)
   000536:  4e 75                rts      
-  000538:  60 ff 00 00 92 a8    bra.l    $97e2  ; -> handler_27
+  000538:  60 ff 00 00 92 a8    bra.l    $97e2  ; -> GA_AddComp
   00053e:  4e 71                nop      
 disp_28:
-  000540:  00 00 17 34          dc.l     $00001734  ; dispatch #28, Am29000 cmd/offset $1734
+  000540:  00 00 17 34          dc.l     $00001734  ; dispatch #28, trap $AA4D _DelComp; table addr $1734
 L544:
   000544:  2f 08                move.l   a0, -(a7)
   000546:  20 78 08 88          movea.l  $888.w, a0
@@ -613,10 +613,10 @@ L544:
   000560:  20 6f 00 04          movea.l  $4(a7), a0
   000564:  2e 9f                move.l   (a7)+, (a7)
   000566:  4e 75                rts      
-  000568:  60 ff 00 00 92 c6    bra.l    $9830  ; -> handler_28
+  000568:  60 ff 00 00 92 c6    bra.l    $9830  ; -> GA_DelComp
   00056e:  4e 71                nop      
 disp_29:
-  000570:  00 00 16 20          dc.l     $00001620  ; dispatch #29, Am29000 cmd/offset $1620
+  000570:  00 00 16 20          dc.l     $00001620  ; dispatch #29, trap $AA08 _DisposPixPat; table addr $1620
 L574:
   000574:  2f 08                move.l   a0, -(a7)
   000576:  20 78 08 88          movea.l  $888.w, a0
@@ -632,10 +632,10 @@ L574:
   000590:  20 6f 00 04          movea.l  $4(a7), a0
   000594:  2e 9f                move.l   (a7)+, (a7)
   000596:  4e 75                rts      
-  000598:  60 ff 00 00 92 e4    bra.l    $987e  ; -> handler_29
+  000598:  60 ff 00 00 92 e4    bra.l    $987e  ; -> GA_DisposPixPat
   00059e:  4e 71                nop      
 disp_30:
-  0005a0:  00 00 16 24          dc.l     $00001624  ; dispatch #30, Am29000 cmd/offset $1624
+  0005a0:  00 00 16 24          dc.l     $00001624  ; dispatch #30, trap $AA09 _CopyPixPat; table addr $1624
 L5a4:
   0005a4:  2f 08                move.l   a0, -(a7)
   0005a6:  20 78 08 88          movea.l  $888.w, a0
@@ -651,10 +651,10 @@ L5a4:
   0005c0:  20 6f 00 04          movea.l  $4(a7), a0
   0005c4:  2e 9f                move.l   (a7)+, (a7)
   0005c6:  4e 75                rts      
-  0005c8:  60 ff 00 00 92 e8    bra.l    $98b2  ; -> handler_30
+  0005c8:  60 ff 00 00 92 e8    bra.l    $98b2  ; -> GA_CopyPixPat
   0005ce:  4e 71                nop      
 disp_31:
-  0005d0:  00 00 16 34          dc.l     $00001634  ; dispatch #31, Am29000 cmd/offset $1634
+  0005d0:  00 00 16 34          dc.l     $00001634  ; dispatch #31, trap $AA0D _MakeRGBPat; table addr $1634
 L5d4:
   0005d4:  2f 08                move.l   a0, -(a7)
   0005d6:  20 78 08 88          movea.l  $888.w, a0
@@ -670,10 +670,10 @@ L5d4:
   0005f0:  20 6f 00 04          movea.l  $4(a7), a0
   0005f4:  2e 9f                move.l   (a7)+, (a7)
   0005f6:  4e 75                rts      
-  0005f8:  60 ff 00 00 93 4e    bra.l    $9948  ; -> handler_31
+  0005f8:  60 ff 00 00 93 4e    bra.l    $9948  ; -> GA_MakeRGBPat
   0005fe:  4e 71                nop      
 disp_32:
-  000600:  00 00 1a 44          dc.l     $00001A44  ; dispatch #32, Am29000 cmd/offset $1A44
+  000600:  00 00 1a 44          dc.l     $00001A44  ; dispatch #32, trap $AB11 (name unknown); table addr $1A44
 L604:
   000604:  2f 08                move.l   a0, -(a7)
   000606:  20 78 08 88          movea.l  $888.w, a0
@@ -689,10 +689,10 @@ L604:
   000620:  20 6f 00 04          movea.l  $4(a7), a0
   000624:  2e 9f                move.l   (a7)+, (a7)
   000626:  4e 75                rts      
-  000628:  60 ff 00 00 93 ac    bra.l    $99d6  ; -> handler_32
+  000628:  60 ff 00 00 93 ac    bra.l    $99d6  ; -> GA_TrapAB11
   00062e:  4e 71                nop      
 disp_33:
-  000630:  00 00 0f d4          dc.l     $00000FD4  ; dispatch #33, Am29000 cmd/offset $FD4
+  000630:  00 00 0f d4          dc.l     $00000FD4  ; dispatch #33, trap $A875 _SetPBits; table addr $FD4
 L634:
   000634:  2f 08                move.l   a0, -(a7)
   000636:  20 78 08 88          movea.l  $888.w, a0
@@ -708,10 +708,10 @@ L634:
   000650:  20 6f 00 04          movea.l  $4(a7), a0
   000654:  2e 9f                move.l   (a7)+, (a7)
   000656:  4e 75                rts      
-  000658:  60 ff 00 00 95 70    bra.l    $9bca  ; -> handler_33
+  000658:  60 ff 00 00 95 70    bra.l    $9bca  ; -> GA_SetPBits
   00065e:  4e 71                nop      
 disp_34:
-  000660:  00 00 0f d8          dc.l     $00000FD8  ; dispatch #34, Am29000 cmd/offset $FD8
+  000660:  00 00 0f d8          dc.l     $00000FD8  ; dispatch #34, trap $A876 _PortSize; table addr $FD8
 L664:
   000664:  2f 08                move.l   a0, -(a7)
   000666:  20 78 08 88          movea.l  $888.w, a0
@@ -727,10 +727,10 @@ L664:
   000680:  20 6f 00 04          movea.l  $4(a7), a0
   000684:  2e 9f                move.l   (a7)+, (a7)
   000686:  4e 75                rts      
-  000688:  60 ff 00 00 95 d8    bra.l    $9c62  ; -> handler_34
+  000688:  60 ff 00 00 95 d8    bra.l    $9c62  ; -> GA_PortSize
   00068e:  4e 71                nop      
 disp_35:
-  000690:  00 00 0f dc          dc.l     $00000FDC  ; dispatch #35, Am29000 cmd/offset $FDC
+  000690:  00 00 0f dc          dc.l     $00000FDC  ; dispatch #35, trap $A877 _MovePortTo; table addr $FDC
 L694:
   000694:  2f 08                move.l   a0, -(a7)
   000696:  20 78 08 88          movea.l  $888.w, a0
@@ -746,10 +746,10 @@ L694:
   0006b0:  20 6f 00 04          movea.l  $4(a7), a0
   0006b4:  2e 9f                move.l   (a7)+, (a7)
   0006b6:  4e 75                rts      
-  0006b8:  60 ff 00 00 96 38    bra.l    $9cf2  ; -> handler_35
+  0006b8:  60 ff 00 00 96 38    bra.l    $9cf2  ; -> GA_MovePortTo
   0006be:  4e 71                nop      
 disp_36:
-  0006c0:  00 00 0f e0          dc.l     $00000FE0  ; dispatch #36, Am29000 cmd/offset $FE0
+  0006c0:  00 00 0f e0          dc.l     $00000FE0  ; dispatch #36, trap $A878 _SetOrigin; table addr $FE0
 L6c4:
   0006c4:  2f 08                move.l   a0, -(a7)
   0006c6:  20 78 08 88          movea.l  $888.w, a0
@@ -765,10 +765,10 @@ L6c4:
   0006e0:  20 6f 00 04          movea.l  $4(a7), a0
   0006e4:  2e 9f                move.l   (a7)+, (a7)
   0006e6:  4e 75                rts      
-  0006e8:  60 ff 00 00 96 62    bra.l    $9d4c  ; -> handler_36
+  0006e8:  60 ff 00 00 96 62    bra.l    $9d4c  ; -> GA_SetOrigin
   0006ee:  4e 71                nop      
 disp_37:
-  0006f0:  00 00 0f e4          dc.l     $00000FE4  ; dispatch #37, Am29000 cmd/offset $FE4
+  0006f0:  00 00 0f e4          dc.l     $00000FE4  ; dispatch #37, trap $A879 _SetClip; table addr $FE4
 L6f4:
   0006f4:  2f 08                move.l   a0, -(a7)
   0006f6:  20 78 08 88          movea.l  $888.w, a0
@@ -784,10 +784,10 @@ L6f4:
   000710:  20 6f 00 04          movea.l  $4(a7), a0
   000714:  2e 9f                move.l   (a7)+, (a7)
   000716:  4e 75                rts      
-  000718:  60 ff 00 00 96 a4    bra.l    $9dbe  ; -> handler_37
+  000718:  60 ff 00 00 96 a4    bra.l    $9dbe  ; -> GA_SetClip
   00071e:  4e 71                nop      
 disp_38:
-  000720:  00 00 0f ec          dc.l     $00000FEC  ; dispatch #38, Am29000 cmd/offset $FEC
+  000720:  00 00 0f ec          dc.l     $00000FEC  ; dispatch #38, trap $A87B _ClipRect; table addr $FEC
 L724:
   000724:  2f 08                move.l   a0, -(a7)
   000726:  20 78 08 88          movea.l  $888.w, a0
@@ -803,10 +803,10 @@ L724:
   000740:  20 6f 00 04          movea.l  $4(a7), a0
   000744:  2e 9f                move.l   (a7)+, (a7)
   000746:  4e 75                rts      
-  000748:  60 ff 00 00 96 ea    bra.l    $9e34  ; -> handler_38
+  000748:  60 ff 00 00 96 ea    bra.l    $9e34  ; -> GA_ClipRect
   00074e:  4e 71                nop      
 disp_39:
-  000750:  00 00 10 58          dc.l     $00001058  ; dispatch #39, Am29000 cmd/offset $1058
+  000750:  00 00 10 58          dc.l     $00001058  ; dispatch #39, trap $A896 _HidePen; table addr $1058
 L754:
   000754:  2f 08                move.l   a0, -(a7)
   000756:  20 78 08 88          movea.l  $888.w, a0
@@ -822,10 +822,10 @@ L754:
   000770:  20 6f 00 04          movea.l  $4(a7), a0
   000774:  2e 9f                move.l   (a7)+, (a7)
   000776:  4e 75                rts      
-  000778:  60 ff 00 00 97 56    bra.l    $9ed0  ; -> handler_39
+  000778:  60 ff 00 00 97 56    bra.l    $9ed0  ; -> GA_HidePen
   00077e:  4e 71                nop      
 disp_40:
-  000780:  00 00 10 5c          dc.l     $0000105C  ; dispatch #40, Am29000 cmd/offset $105C
+  000780:  00 00 10 5c          dc.l     $0000105C  ; dispatch #40, trap $A897 _ShowPen; table addr $105C
 L784:
   000784:  2f 08                move.l   a0, -(a7)
   000786:  20 78 08 88          movea.l  $888.w, a0
@@ -841,10 +841,10 @@ L784:
   0007a0:  20 6f 00 04          movea.l  $4(a7), a0
   0007a4:  2e 9f                move.l   (a7)+, (a7)
   0007a6:  4e 75                rts      
-  0007a8:  60 ff 00 00 97 40    bra.l    $9eea  ; -> handler_40
+  0007a8:  60 ff 00 00 97 40    bra.l    $9eea  ; -> GA_ShowPen
   0007ae:  4e 71                nop      
 disp_41:
-  0007b0:  00 00 0f 8c          dc.l     $00000F8C  ; dispatch #41, Am29000 cmd/offset $F8C
+  0007b0:  00 00 0f 8c          dc.l     $00000F8C  ; dispatch #41, trap $A863 _BackColor; table addr $F8C
 L7b4:
   0007b4:  2f 08                move.l   a0, -(a7)
   0007b6:  20 78 08 88          movea.l  $888.w, a0
@@ -860,10 +860,10 @@ L7b4:
   0007d0:  20 6f 00 04          movea.l  $4(a7), a0
   0007d4:  2e 9f                move.l   (a7)+, (a7)
   0007d6:  4e 75                rts      
-  0007d8:  60 ff 00 00 a7 c6    bra.l    $afa0  ; -> handler_41
+  0007d8:  60 ff 00 00 a7 c6    bra.l    $afa0  ; -> GA_BackColor
   0007de:  4e 71                nop      
 disp_42:
-  0007e0:  00 00 0f 90          dc.l     $00000F90  ; dispatch #42, Am29000 cmd/offset $F90
+  0007e0:  00 00 0f 90          dc.l     $00000F90  ; dispatch #42, trap $A864 _ColorBit; table addr $F90
 L7e4:
   0007e4:  2f 08                move.l   a0, -(a7)
   0007e6:  20 78 08 88          movea.l  $888.w, a0
@@ -879,10 +879,10 @@ L7e4:
   000800:  20 6f 00 04          movea.l  $4(a7), a0
   000804:  2e 9f                move.l   (a7)+, (a7)
   000806:  4e 75                rts      
-  000808:  60 ff 00 00 9a ae    bra.l    $a2b8  ; -> handler_42
+  000808:  60 ff 00 00 9a ae    bra.l    $a2b8  ; -> GA_ColorBit
   00080e:  4e 71                nop      
 disp_43:
-  000810:  00 00 11 68          dc.l     $00001168  ; dispatch #43, Am29000 cmd/offset $1168
+  000810:  00 00 11 68          dc.l     $00001168  ; dispatch #43, trap $A8DA _OpenRgn; table addr $1168
 L814:
   000814:  2f 08                move.l   a0, -(a7)
   000816:  20 78 08 88          movea.l  $888.w, a0
@@ -898,10 +898,10 @@ L814:
   000830:  20 6f 00 04          movea.l  $4(a7), a0
   000834:  2e 9f                move.l   (a7)+, (a7)
   000836:  4e 75                rts      
-  000838:  60 ff 00 00 9a e4    bra.l    $a31e  ; -> handler_43
+  000838:  60 ff 00 00 9a e4    bra.l    $a31e  ; -> GA_OpenRgn
   00083e:  4e 71                nop      
 disp_44:
-  000840:  00 00 11 cc          dc.l     $000011CC  ; dispatch #44, Am29000 cmd/offset $11CC
+  000840:  00 00 11 cc          dc.l     $000011CC  ; dispatch #44, trap $A8F3 _OpenPicture; table addr $11CC
 L844:
   000844:  2f 08                move.l   a0, -(a7)
   000846:  20 78 08 88          movea.l  $888.w, a0
@@ -917,10 +917,10 @@ L844:
   000860:  20 6f 00 04          movea.l  $4(a7), a0
   000864:  2e 9f                move.l   (a7)+, (a7)
   000866:  4e 75                rts      
-  000868:  60 ff 00 00 9a ce    bra.l    $a338  ; -> handler_44
+  000868:  60 ff 00 00 9a ce    bra.l    $a338  ; -> GA_OpenPicture
   00086e:  4e 71                nop      
 disp_45:
-  000870:  00 00 11 2c          dc.l     $0000112C  ; dispatch #45, Am29000 cmd/offset $112C
+  000870:  00 00 11 2c          dc.l     $0000112C  ; dispatch #45, trap $A8CB _OpenPoly; table addr $112C
 L874:
   000874:  2f 08                move.l   a0, -(a7)
   000876:  20 78 08 88          movea.l  $888.w, a0
@@ -936,10 +936,10 @@ L874:
   000890:  20 6f 00 04          movea.l  $4(a7), a0
   000894:  2e 9f                move.l   (a7)+, (a7)
   000896:  4e 75                rts      
-  000898:  60 ff 00 00 9a c4    bra.l    $a35e  ; -> handler_45
+  000898:  60 ff 00 00 9a c4    bra.l    $a35e  ; -> GA_OpenPoly
   00089e:  4e 71                nop      
 disp_46:
-  0008a0:  00 00 11 70          dc.l     $00001170  ; dispatch #46, Am29000 cmd/offset $1170
+  0008a0:  00 00 11 70          dc.l     $00001170  ; dispatch #46, trap $A8DC _CopyRgn; table addr $1170
 L8a4:
   0008a4:  2f 08                move.l   a0, -(a7)
   0008a6:  20 78 08 88          movea.l  $888.w, a0
@@ -955,10 +955,10 @@ L8a4:
   0008c0:  20 6f 00 04          movea.l  $4(a7), a0
   0008c4:  2e 9f                move.l   (a7)+, (a7)
   0008c6:  4e 75                rts      
-  0008c8:  60 ff 00 00 9b a8    bra.l    $a472  ; -> handler_46
+  0008c8:  60 ff 00 00 9b a8    bra.l    $a472  ; -> GA_CopyRgn
   0008ce:  4e 71                nop      
 disp_47:
-  0008d0:  00 00 11 78          dc.l     $00001178  ; dispatch #47, Am29000 cmd/offset $1178
+  0008d0:  00 00 11 78          dc.l     $00001178  ; dispatch #47, trap $A8DE _SetRecRgn; table addr $1178
 L8d4:
   0008d4:  2f 08                move.l   a0, -(a7)
   0008d6:  20 78 08 88          movea.l  $888.w, a0
@@ -974,10 +974,10 @@ L8d4:
   0008f0:  20 6f 00 04          movea.l  $4(a7), a0
   0008f4:  2e 9f                move.l   (a7)+, (a7)
   0008f6:  4e 75                rts      
-  0008f8:  60 ff 00 00 9c b0    bra.l    $a5aa  ; -> handler_47
+  0008f8:  60 ff 00 00 9c b0    bra.l    $a5aa  ; -> GA_SetRecRgn
   0008fe:  4e 71                nop      
 disp_48:
-  000900:  00 00 11 7c          dc.l     $0000117C  ; dispatch #48, Am29000 cmd/offset $117C
+  000900:  00 00 11 7c          dc.l     $0000117C  ; dispatch #48, trap $A8DF _RectRgn; table addr $117C
 L904:
   000904:  2f 08                move.l   a0, -(a7)
   000906:  20 78 08 88          movea.l  $888.w, a0
@@ -993,10 +993,10 @@ L904:
   000920:  20 6f 00 04          movea.l  $4(a7), a0
   000924:  2e 9f                move.l   (a7)+, (a7)
   000926:  4e 75                rts      
-  000928:  60 ff 00 00 9d 48    bra.l    $a672  ; -> handler_48
+  000928:  60 ff 00 00 9d 48    bra.l    $a672  ; -> GA_RectRgn
   00092e:  4e 71                nop      
 disp_49:
-  000930:  00 00 11 80          dc.l     $00001180  ; dispatch #49, Am29000 cmd/offset $1180
+  000930:  00 00 11 80          dc.l     $00001180  ; dispatch #49, trap $A8E0 _OfsetRgn; table addr $1180
 L934:
   000934:  2f 08                move.l   a0, -(a7)
   000936:  20 78 08 88          movea.l  $888.w, a0
@@ -1012,10 +1012,10 @@ L934:
   000950:  20 6f 00 04          movea.l  $4(a7), a0
   000954:  2e 9f                move.l   (a7)+, (a7)
   000956:  4e 75                rts      
-  000958:  60 ff 00 00 9d cc    bra.l    $a726  ; -> handler_49
+  000958:  60 ff 00 00 9d cc    bra.l    $a726  ; -> GA_OffsetRgn
   00095e:  4e 71                nop      
 disp_50:
-  000960:  00 00 11 84          dc.l     $00001184  ; dispatch #50, Am29000 cmd/offset $1184
+  000960:  00 00 11 84          dc.l     $00001184  ; dispatch #50, trap $A8E1 _InsetRgn; table addr $1184
 L964:
   000964:  2f 08                move.l   a0, -(a7)
   000966:  20 78 08 88          movea.l  $888.w, a0
@@ -1031,10 +1031,10 @@ L964:
   000980:  20 6f 00 04          movea.l  $4(a7), a0
   000984:  2e 9f                move.l   (a7)+, (a7)
   000986:  4e 75                rts      
-  000988:  60 ff 00 00 9e 96    bra.l    $a820  ; -> handler_50
+  000988:  60 ff 00 00 9e 96    bra.l    $a820  ; -> GA_InsetRgn
   00098e:  4e 71                nop      
 disp_51:
-  000990:  00 00 11 90          dc.l     $00001190  ; dispatch #51, Am29000 cmd/offset $1190
+  000990:  00 00 11 90          dc.l     $00001190  ; dispatch #51, trap $A8E4 _SectRgn; table addr $1190
 L994:
   000994:  2f 08                move.l   a0, -(a7)
   000996:  20 78 08 88          movea.l  $888.w, a0
@@ -1050,10 +1050,10 @@ L994:
   0009b0:  20 6f 00 04          movea.l  $4(a7), a0
   0009b4:  2e 9f                move.l   (a7)+, (a7)
   0009b6:  4e 75                rts      
-  0009b8:  60 ff 00 00 9f 60    bra.l    $a91a  ; -> handler_51
+  0009b8:  60 ff 00 00 9f 60    bra.l    $a91a  ; -> GA_SectRgn
   0009be:  4e 71                nop      
 disp_52:
-  0009c0:  00 00 11 94          dc.l     $00001194  ; dispatch #52, Am29000 cmd/offset $1194
+  0009c0:  00 00 11 94          dc.l     $00001194  ; dispatch #52, trap $A8E5 _UnionRgn; table addr $1194
 L9c4:
   0009c4:  2f 08                move.l   a0, -(a7)
   0009c6:  20 78 08 88          movea.l  $888.w, a0
@@ -1069,10 +1069,10 @@ L9c4:
   0009e0:  20 6f 00 04          movea.l  $4(a7), a0
   0009e4:  2e 9f                move.l   (a7)+, (a7)
   0009e6:  4e 75                rts      
-  0009e8:  60 ff 00 00 a0 20    bra.l    $aa0a  ; -> handler_52
+  0009e8:  60 ff 00 00 a0 20    bra.l    $aa0a  ; -> GA_UnionRgn
   0009ee:  4e 71                nop      
 disp_53:
-  0009f0:  00 00 11 98          dc.l     $00001198  ; dispatch #53, Am29000 cmd/offset $1198
+  0009f0:  00 00 11 98          dc.l     $00001198  ; dispatch #53, trap $A8E6 _DiffRgn; table addr $1198
 L9f4:
   0009f4:  2f 08                move.l   a0, -(a7)
   0009f6:  20 78 08 88          movea.l  $888.w, a0
@@ -1088,10 +1088,10 @@ L9f4:
   000a10:  20 6f 00 04          movea.l  $4(a7), a0
   000a14:  2e 9f                move.l   (a7)+, (a7)
   000a16:  4e 75                rts      
-  000a18:  60 ff 00 00 a0 e0    bra.l    $aafa  ; -> handler_53
+  000a18:  60 ff 00 00 a0 e0    bra.l    $aafa  ; -> GA_DiffRgn
   000a1e:  4e 71                nop      
 disp_54:
-  000a20:  00 00 11 9c          dc.l     $0000119C  ; dispatch #54, Am29000 cmd/offset $119C
+  000a20:  00 00 11 9c          dc.l     $0000119C  ; dispatch #54, trap $A8E7 _XOrRgn; table addr $119C
 La24:
   000a24:  2f 08                move.l   a0, -(a7)
   000a26:  20 78 08 88          movea.l  $888.w, a0
@@ -1107,10 +1107,10 @@ La24:
   000a40:  20 6f 00 04          movea.l  $4(a7), a0
   000a44:  2e 9f                move.l   (a7)+, (a7)
   000a46:  4e 75                rts      
-  000a48:  60 ff 00 00 a1 a0    bra.l    $abea  ; -> handler_54
+  000a48:  60 ff 00 00 a1 a0    bra.l    $abea  ; -> GA_XOrRgn
   000a4e:  4e 71                nop      
 disp_55:
-  000a50:  00 00 11 ec          dc.l     $000011EC  ; dispatch #55, Am29000 cmd/offset $11EC
+  000a50:  00 00 11 ec          dc.l     $000011EC  ; dispatch #55, trap $A8FB _MapRgn; table addr $11EC
 La54:
   000a54:  2f 08                move.l   a0, -(a7)
   000a56:  20 78 08 88          movea.l  $888.w, a0
@@ -1126,10 +1126,10 @@ La54:
   000a70:  20 6f 00 04          movea.l  $4(a7), a0
   000a74:  2e 9f                move.l   (a7)+, (a7)
   000a76:  4e 75                rts      
-  000a78:  60 ff 00 00 a2 60    bra.l    $acda  ; -> handler_55
+  000a78:  60 ff 00 00 a2 60    bra.l    $acda  ; -> GA_MapRgn
   000a7e:  4e 71                nop      
 disp_56:
-  000a80:  00 00 16 54          dc.l     $00001654  ; dispatch #56, Am29000 cmd/offset $1654
+  000a80:  00 00 16 54          dc.l     $00001654  ; dispatch #56, trap $AA15 _RGBBackColor; table addr $1654
 La84:
   000a84:  2f 08                move.l   a0, -(a7)
   000a86:  20 78 08 88          movea.l  $888.w, a0
@@ -1145,10 +1145,10 @@ La84:
   000aa0:  20 6f 00 04          movea.l  $4(a7), a0
   000aa4:  2e 9f                move.l   (a7)+, (a7)
   000aa6:  4e 75                rts      
-  000aa8:  60 ff 00 00 a5 5c    bra.l    $b006  ; -> handler_56
+  000aa8:  60 ff 00 00 a5 5c    bra.l    $b006  ; -> GA_RGBBackColor
   000aae:  4e 71                nop      
 disp_57:
-  000ab0:  00 00 16 14          dc.l     $00001614  ; dispatch #57, Am29000 cmd/offset $1614
+  000ab0:  00 00 16 14          dc.l     $00001614  ; dispatch #57, trap $AA05 _CopyPixMap; table addr $1614
 Lab4:
   000ab4:  2f 08                move.l   a0, -(a7)
   000ab6:  20 78 08 88          movea.l  $888.w, a0
@@ -1164,10 +1164,10 @@ Lab4:
   000ad0:  20 6f 00 04          movea.l  $4(a7), a0
   000ad4:  2e 9f                move.l   (a7)+, (a7)
   000ad6:  4e 75                rts      
-  000ad8:  60 ff 00 00 aa a4    bra.l    $b57e  ; -> handler_57
+  000ad8:  60 ff 00 00 aa a4    bra.l    $b57e  ; -> GA_CopyPixMap
   000ade:  4e 71                nop      
 disp_58:
-  000ae0:  00 00 16 28          dc.l     $00001628  ; dispatch #58, Am29000 cmd/offset $1628
+  000ae0:  00 00 16 28          dc.l     $00001628  ; dispatch #58, trap $AA0A _PenPixPat; table addr $1628
 Lae4:
   000ae4:  2f 08                move.l   a0, -(a7)
   000ae6:  20 78 08 88          movea.l  $888.w, a0
@@ -1183,10 +1183,10 @@ Lae4:
   000b00:  20 6f 00 04          movea.l  $4(a7), a0
   000b04:  2e 9f                move.l   (a7)+, (a7)
   000b06:  4e 75                rts      
-  000b08:  60 ff 00 00 aa da    bra.l    $b5e4  ; -> handler_58
+  000b08:  60 ff 00 00 aa da    bra.l    $b5e4  ; -> GA_PenPixPat
   000b0e:  4e 71                nop      
 disp_59:
-  000b10:  00 00 16 2c          dc.l     $0000162C  ; dispatch #59, Am29000 cmd/offset $162C
+  000b10:  00 00 16 2c          dc.l     $0000162C  ; dispatch #59, trap $AA0B _BackPixPat; table addr $162C
 Lb14:
   000b14:  2f 08                move.l   a0, -(a7)
   000b16:  20 78 08 88          movea.l  $888.w, a0
@@ -1202,10 +1202,10 @@ Lb14:
   000b30:  20 6f 00 04          movea.l  $4(a7), a0
   000b34:  2e 9f                move.l   (a7)+, (a7)
   000b36:  4e 75                rts      
-  000b38:  60 ff 00 00 ab a4    bra.l    $b6de  ; -> handler_59
+  000b38:  60 ff 00 00 ab a4    bra.l    $b6de  ; -> GA_BackPixPat
   000b3e:  4e 71                nop      
 disp_60:
-  000b40:  00 00 16 18          dc.l     $00001618  ; dispatch #60, Am29000 cmd/offset $1618
+  000b40:  00 00 16 18          dc.l     $00001618  ; dispatch #60, trap $AA06 _SetPortPix; table addr $1618
 Lb44:
   000b44:  2f 08                move.l   a0, -(a7)
   000b46:  20 78 08 88          movea.l  $888.w, a0
@@ -1221,10 +1221,10 @@ Lb44:
   000b60:  20 6f 00 04          movea.l  $4(a7), a0
   000b64:  2e 9f                move.l   (a7)+, (a7)
   000b66:  4e 75                rts      
-  000b68:  60 ff 00 00 ac 6e    bra.l    $b7d8  ; -> handler_60
+  000b68:  60 ff 00 00 ac 6e    bra.l    $b7d8  ; -> GA_SetPortPix
   000b6e:  4e 71                nop      
 disp_61:
-  000b70:  00 00 16 84          dc.l     $00001684  ; dispatch #61, Am29000 cmd/offset $1684
+  000b70:  00 00 16 84          dc.l     $00001684  ; dispatch #61, trap $AA21 _OpColor; table addr $1684
 Lb74:
   000b74:  2f 08                move.l   a0, -(a7)
   000b76:  20 78 08 88          movea.l  $888.w, a0
@@ -1240,10 +1240,10 @@ Lb74:
   000b90:  20 6f 00 04          movea.l  $4(a7), a0
   000b94:  2e 9f                move.l   (a7)+, (a7)
   000b96:  4e 75                rts      
-  000b98:  60 ff 00 00 ac a4    bra.l    $b83e  ; -> handler_61
+  000b98:  60 ff 00 00 ac a4    bra.l    $b83e  ; -> GA_OpColor
   000b9e:  4e 71                nop      
 disp_62:
-  000ba0:  00 00 16 88          dc.l     $00001688  ; dispatch #62, Am29000 cmd/offset $1688
+  000ba0:  00 00 16 88          dc.l     $00001688  ; dispatch #62, trap $AA22 _HiliteColor; table addr $1688
 Lba4:
   000ba4:  2f 08                move.l   a0, -(a7)
   000ba6:  20 78 08 88          movea.l  $888.w, a0
@@ -1259,10 +1259,10 @@ Lba4:
   000bc0:  20 6f 00 04          movea.l  $4(a7), a0
   000bc4:  2e 9f                move.l   (a7)+, (a7)
   000bc6:  4e 75                rts      
-  000bc8:  60 ff 00 00 ac f4    bra.l    $b8be  ; -> handler_62
+  000bc8:  60 ff 00 00 ac f4    bra.l    $b8be  ; -> GA_HiliteColor
   000bce:  4e 71                nop      
 disp_63:
-  000bd0:  00 00 11 74          dc.l     $00001174  ; dispatch #63, Am29000 cmd/offset $1174
+  000bd0:  00 00 11 74          dc.l     $00001174  ; dispatch #63, trap $A8DD _SetEmptyRgn; table addr $1174
 Lbd4:
   000bd4:  2f 08                move.l   a0, -(a7)
   000bd6:  20 78 08 88          movea.l  $888.w, a0
@@ -1278,10 +1278,10 @@ Lbd4:
   000bf0:  20 6f 00 04          movea.l  $4(a7), a0
   000bf4:  2e 9f                move.l   (a7)+, (a7)
   000bf6:  4e 75                rts      
-  000bf8:  60 ff 00 00 99 0c    bra.l    $a506  ; -> handler_63
+  000bf8:  60 ff 00 00 99 0c    bra.l    $a506  ; -> GA_SetEmptyRgn
   000bfe:  4e 71                nop      
 disp_64:
-  000c00:  00 00 10 74          dc.l     $00001074  ; dispatch #64, Am29000 cmd/offset $1074
+  000c00:  00 00 10 74          dc.l     $00001074  ; dispatch #64, trap $A89D _PenPat; table addr $1074
 Lc04:
   000c04:  2f 08                move.l   a0, -(a7)
   000c06:  20 78 08 88          movea.l  $888.w, a0
@@ -1297,10 +1297,10 @@ Lc04:
   000c20:  20 6f 00 04          movea.l  $4(a7), a0
   000c24:  2e 9f                move.l   (a7)+, (a7)
   000c26:  4e 75                rts      
-  000c28:  60 ff 00 00 94 56    bra.l    $a080  ; -> handler_64
+  000c28:  60 ff 00 00 94 56    bra.l    $a080  ; -> GA_PenPat
   000c2e:  4e 71                nop      
 disp_65:
-  000c30:  00 00 0f f0          dc.l     $00000FF0  ; dispatch #65, Am29000 cmd/offset $FF0
+  000c30:  00 00 0f f0          dc.l     $00000FF0  ; dispatch #65, trap $A87C _BackPat; table addr $FF0
 Lc34:
   000c34:  2f 08                move.l   a0, -(a7)
   000c36:  20 78 08 88          movea.l  $888.w, a0
@@ -1316,10 +1316,10 @@ Lc34:
   000c50:  20 6f 00 04          movea.l  $4(a7), a0
   000c54:  2e 9f                move.l   (a7)+, (a7)
   000c56:  4e 75                rts      
-  000c58:  60 ff 00 00 94 e0    bra.l    $a13a  ; -> handler_65
+  000c58:  60 ff 00 00 94 e0    bra.l    $a13a  ; -> GA_BackPat
   000c5e:  4e 71                nop      
 disp_66:
-  000c60:  00 00 1a 74          dc.l     $00001A74  ; dispatch #66, Am29000 cmd/offset $1A74
+  000c60:  00 00 1a 74          dc.l     $00001A74  ; dispatch #66, trap $AB1D _QDExtensions; table addr $1A74
 Lc64:
   000c64:  2f 08                move.l   a0, -(a7)
   000c66:  20 78 08 88          movea.l  $888.w, a0
@@ -1335,10 +1335,10 @@ Lc64:
   000c80:  20 6f 00 04          movea.l  $4(a7), a0
   000c84:  2e 9f                move.l   (a7)+, (a7)
   000c86:  4e 75                rts      
-  000c88:  60 ff 00 00 74 8e    bra.l    $8118  ; -> handler_66
+  000c88:  60 ff 00 00 74 8e    bra.l    $8118  ; -> GA_QDExtensions
   000c8e:  4e 71                nop      
 disp_67:
-  000c90:  00 00 16 64          dc.l     $00001664  ; dispatch #67, Am29000 cmd/offset $1664
+  000c90:  00 00 16 64          dc.l     $00001664  ; dispatch #67, trap $AA19 _GetForeColor; table addr $1664
 Lc94:
   000c94:  2f 08                move.l   a0, -(a7)
   000c96:  20 78 08 88          movea.l  $888.w, a0
@@ -1354,10 +1354,10 @@ Lc94:
   000cb0:  20 6f 00 04          movea.l  $4(a7), a0
   000cb4:  2e 9f                move.l   (a7)+, (a7)
   000cb6:  4e 75                rts      
-  000cb8:  60 ff 00 00 a7 84    bra.l    $b43e  ; -> handler_67
+  000cb8:  60 ff 00 00 a7 84    bra.l    $b43e  ; -> GA_GetForeColor
   000cbe:  4e 71                nop      
 disp_68:
-  000cc0:  00 00 16 68          dc.l     $00001668  ; dispatch #68, Am29000 cmd/offset $1668
+  000cc0:  00 00 16 68          dc.l     $00001668  ; dispatch #68, trap $AA1A _GetBackColor; table addr $1668
 Lcc4:
   000cc4:  2f 08                move.l   a0, -(a7)
   000cc6:  20 78 08 88          movea.l  $888.w, a0
@@ -1373,10 +1373,10 @@ Lcc4:
   000ce0:  20 6f 00 04          movea.l  $4(a7), a0
   000ce4:  2e 9f                move.l   (a7)+, (a7)
   000ce6:  4e 75                rts      
-  000ce8:  60 ff 00 00 a7 e0    bra.l    $b4ca  ; -> handler_68
+  000ce8:  60 ff 00 00 a7 e0    bra.l    $b4ca  ; -> GA_GetBackColor
   000cee:  4e 71                nop      
 disp_69:
-  000cf0:  00 00 08 14          dc.l     $00000814  ; dispatch #69, Am29000 cmd/offset $814
+  000cf0:  00 00 08 14          dc.l     $00000814  ; dispatch #69, low-memory vector $814; table addr $814
 Lcf4:
   000cf4:  2f 08                move.l   a0, -(a7)
   000cf6:  20 78 08 88          movea.l  $888.w, a0
@@ -1392,10 +1392,10 @@ Lcf4:
   000d10:  20 6f 00 04          movea.l  $4(a7), a0
   000d14:  2e 9f                move.l   (a7)+, (a7)
   000d16:  4e 75                rts      
-  000d18:  60 ff 00 00 38 ba    bra.l    $45d4  ; -> handler_69
+  000d18:  60 ff 00 00 38 ba    bra.l    $45d4  ; -> GA_LowMem0814
   000d1e:  4e 71                nop      
 disp_70:
-  000d20:  00 00 08 18          dc.l     $00000818  ; dispatch #70, Am29000 cmd/offset $818
+  000d20:  00 00 08 18          dc.l     $00000818  ; dispatch #70, low-memory vector $818; table addr $818
 Ld24:
   000d24:  2f 08                move.l   a0, -(a7)
   000d26:  20 78 08 88          movea.l  $888.w, a0
@@ -1411,10 +1411,10 @@ Ld24:
   000d40:  20 6f 00 04          movea.l  $4(a7), a0
   000d44:  2e 9f                move.l   (a7)+, (a7)
   000d46:  4e 75                rts      
-  000d48:  60 ff 00 00 35 f4    bra.l    $433e  ; -> handler_70
+  000d48:  60 ff 00 00 35 f4    bra.l    $433e  ; -> GA_LowMem0818
   000d4e:  4e 71                nop      
 disp_71:
-  000d50:  00 00 08 1c          dc.l     $0000081C  ; dispatch #71, Am29000 cmd/offset $81C
+  000d50:  00 00 08 1c          dc.l     $0000081C  ; dispatch #71, low-memory vector $81C; table addr $81C
 Ld54:
   000d54:  2f 08                move.l   a0, -(a7)
   000d56:  20 78 08 88          movea.l  $888.w, a0
@@ -1430,10 +1430,10 @@ Ld54:
   000d70:  20 6f 00 04          movea.l  $4(a7), a0
   000d74:  2e 9f                move.l   (a7)+, (a7)
   000d76:  4e 75                rts      
-  000d78:  60 ff 00 00 36 50    bra.l    $43ca  ; -> handler_71
+  000d78:  60 ff 00 00 36 50    bra.l    $43ca  ; -> GA_LowMem081C
   000d7e:  4e 71                nop      
 disp_72:
-  000d80:  00 00 08 90          dc.l     $00000890  ; dispatch #72, Am29000 cmd/offset $890
+  000d80:  00 00 08 90          dc.l     $00000890  ; dispatch #72, low-memory vector $890; table addr $890
 Ld84:
   000d84:  2f 08                move.l   a0, -(a7)
   000d86:  20 78 08 88          movea.l  $888.w, a0
@@ -1449,10 +1449,10 @@ Ld84:
   000da0:  20 6f 00 04          movea.l  $4(a7), a0
   000da4:  2e 9f                move.l   (a7)+, (a7)
   000da6:  4e 75                rts      
-  000da8:  60 ff 00 00 36 9a    bra.l    $4444  ; -> handler_72
+  000da8:  60 ff 00 00 36 9a    bra.l    $4444  ; -> GA_LowMem0890
   000dae:  4e 71                nop      
 disp_73:
-  000db0:  00 00 16 b4          dc.l     $000016B4  ; dispatch #73, Am29000 cmd/offset $16B4
+  000db0:  00 00 16 b4          dc.l     $000016B4  ; dispatch #73, trap $AA2D _SetDeviceAttribute; table addr $16B4
 Ldb4:
   000db4:  2f 08                move.l   a0, -(a7)
   000db6:  20 78 08 88          movea.l  $888.w, a0
@@ -1468,10 +1468,10 @@ Ldb4:
   000dd0:  20 6f 00 04          movea.l  $4(a7), a0
   000dd4:  2e 9f                move.l   (a7)+, (a7)
   000dd6:  4e 75                rts      
-  000dd8:  60 ff 00 00 88 5a    bra.l    $9634  ; -> handler_73
+  000dd8:  60 ff 00 00 88 5a    bra.l    $9634  ; -> GA_SetDeviceAttribute
   000dde:  4e 71                nop      
 disp_74:
-  000de0:  00 00 16 c0          dc.l     $000016C0  ; dispatch #74, Am29000 cmd/offset $16C0
+  000de0:  00 00 16 c0          dc.l     $000016C0  ; dispatch #74, trap $AA30 _DisposGDevice; table addr $16C0
 Lde4:
   000de4:  2f 08                move.l   a0, -(a7)
   000de6:  20 78 08 88          movea.l  $888.w, a0
@@ -1487,10 +1487,10 @@ Lde4:
   000e00:  20 6f 00 04          movea.l  $4(a7), a0
   000e04:  2e 9f                move.l   (a7)+, (a7)
   000e06:  4e 75                rts      
-  000e08:  60 ff 00 00 88 7a    bra.l    $9684  ; -> handler_74
+  000e08:  60 ff 00 00 88 7a    bra.l    $9684  ; -> GA_DisposGDevice
   000e0e:  4e 71                nop      
 disp_75:
-  000e10:  00 00 11 d8          dc.l     $000011D8  ; dispatch #75, Am29000 cmd/offset $11D8
+  000e10:  00 00 11 d8          dc.l     $000011D8  ; dispatch #75, trap $A8F6 _DrawPicture; table addr $11D8
 Le14:
   000e14:  2f 08                move.l   a0, -(a7)
   000e16:  20 78 08 88          movea.l  $888.w, a0
@@ -1506,10 +1506,10 @@ Le14:
   000e30:  20 6f 00 04          movea.l  $4(a7), a0
   000e34:  2e 9f                move.l   (a7)+, (a7)
   000e36:  4e 75                rts      
-  000e38:  60 ff 00 00 38 f0    bra.l    $472a  ; -> handler_75
+  000e38:  60 ff 00 00 38 f0    bra.l    $472a  ; -> GA_DrawPicture
   000e3e:  4e 71                nop      
 disp_76:
-  000e40:  00 00 16 0c          dc.l     $0000160C  ; dispatch #76, Am29000 cmd/offset $160C
+  000e40:  00 00 16 0c          dc.l     $0000160C  ; dispatch #76, trap $AA03 _NewPixMap; table addr $160C
 Le44:
   000e44:  2f 08                move.l   a0, -(a7)
   000e46:  20 78 08 88          movea.l  $888.w, a0
@@ -1525,10 +1525,10 @@ Le44:
   000e60:  20 6f 00 04          movea.l  $4(a7), a0
   000e64:  2e 9f                move.l   (a7)+, (a7)
   000e66:  4e 75                rts      
-  000e68:  60 ff 00 00 a6 ec    bra.l    $b556  ; -> handler_76
+  000e68:  60 ff 00 00 a6 ec    bra.l    $b556  ; -> GA_NewPixMap
   000e6e:  4e 71                nop      
 disp_77:
-  000e70:  00 00 16 fc          dc.l     $000016FC  ; dispatch #77, Am29000 cmd/offset $16FC
+  000e70:  00 00 16 fc          dc.l     $000016FC  ; dispatch #77, trap $AA3F _SetEntries; table addr $16FC
 Le74:
   000e74:  2f 08                move.l   a0, -(a7)
   000e76:  20 78 08 88          movea.l  $888.w, a0
@@ -1544,10 +1544,10 @@ Le74:
   000e90:  20 6f 00 04          movea.l  $4(a7), a0
   000e94:  2e 9f                move.l   (a7)+, (a7)
   000e96:  4e 75                rts      
-  000e98:  60 ff 00 00 87 28    bra.l    $95c2  ; -> handler_77
+  000e98:  60 ff 00 00 87 28    bra.l    $95c2  ; -> GA_SetEntries
   000e9e:  4e 71                nop      
 disp_78:
-  000ea0:  00 00 10 a8          dc.l     $000010A8  ; dispatch #78, Am29000 cmd/offset $10A8
+  000ea0:  00 00 10 a8          dc.l     $000010A8  ; dispatch #78, trap $A8AA _SectRect; table addr $10A8
 Lea4:
   000ea4:  2f 08                move.l   a0, -(a7)
   000ea6:  20 78 08 88          movea.l  $888.w, a0
@@ -1563,10 +1563,10 @@ Lea4:
   000ec0:  20 6f 00 04          movea.l  $4(a7), a0
   000ec4:  2e 9f                move.l   (a7)+, (a7)
   000ec6:  4e 75                rts      
-  000ec8:  60 ff 00 00 94 b4    bra.l    $a37e  ; -> handler_78
+  000ec8:  60 ff 00 00 94 b4    bra.l    $a37e  ; -> GA_SectRect
   000ece:  4e 71                nop      
 disp_79:
-  000ed0:  00 00 0f f4          dc.l     $00000FF4  ; dispatch #79, Am29000 cmd/offset $FF4
+  000ed0:  00 00 0f f4          dc.l     $00000FF4  ; dispatch #79, trap $A87D _ClosePort; table addr $FF4
 Led4:
   000ed4:  2f 08                move.l   a0, -(a7)
   000ed6:  20 78 08 88          movea.l  $888.w, a0
@@ -1582,10 +1582,10 @@ Led4:
   000ef0:  20 6f 00 04          movea.l  $4(a7), a0
   000ef4:  2e 9f                move.l   (a7)+, (a7)
   000ef6:  4e 75                rts      
-  000ef8:  60 ff 00 00 ad 28    bra.l    $bc22  ; -> handler_79
+  000ef8:  60 ff 00 00 ad 28    bra.l    $bc22  ; -> GA_CloseCPort
   000efe:  4e 71                nop      
 disp_80:
-  000f00:  00 00 16 5c          dc.l     $0000165C  ; dispatch #80, Am29000 cmd/offset $165C
+  000f00:  00 00 16 5c          dc.l     $0000165C  ; dispatch #80, trap $AA17 _GetCPixel; table addr $165C
 Lf04:
   000f04:  2f 08                move.l   a0, -(a7)
   000f06:  20 78 08 88          movea.l  $888.w, a0
@@ -1601,10 +1601,10 @@ Lf04:
   000f20:  20 6f 00 04          movea.l  $4(a7), a0
   000f24:  2e 9f                move.l   (a7)+, (a7)
   000f26:  4e 75                rts      
-  000f28:  60 ff 00 00 a4 22    bra.l    $b34c  ; -> handler_80
+  000f28:  60 ff 00 00 a4 22    bra.l    $b34c  ; -> GA_GetCPixel
   000f2e:  4e 71                nop      
 disp_81:
-  000f30:  00 00 0f 94          dc.l     $00000F94  ; dispatch #81, Am29000 cmd/offset $F94
+  000f30:  00 00 0f 94          dc.l     $00000F94  ; dispatch #81, trap $A865 _GetPixel; table addr $F94
 Lf34:
   000f34:  2f 08                move.l   a0, -(a7)
   000f36:  20 78 08 88          movea.l  $888.w, a0
@@ -1620,10 +1620,10 @@ Lf34:
   000f50:  20 6f 00 04          movea.l  $4(a7), a0
   000f54:  2e 9f                move.l   (a7)+, (a7)
   000f56:  4e 75                rts      
-  000f58:  60 ff 00 00 a2 e4    bra.l    $b23e  ; -> handler_81
+  000f58:  60 ff 00 00 a2 e4    bra.l    $b23e  ; -> GA_GetPixel
   000f5e:  4e 71                nop      
 disp_82:
-  000f60:  00 00 17 40          dc.l     $00001740  ; dispatch #82, Am29000 cmd/offset $1740
+  000f60:  00 00 17 40          dc.l     $00001740  ; dispatch #82, trap $AA50 _SeedCFill; table addr $1740
 Lf64:
   000f64:  2f 08                move.l   a0, -(a7)
   000f66:  20 78 08 88          movea.l  $888.w, a0
@@ -1639,10 +1639,10 @@ Lf64:
   000f80:  20 6f 00 04          movea.l  $4(a7), a0
   000f84:  2e 9f                move.l   (a7)+, (a7)
   000f86:  4e 75                rts      
-  000f88:  60 ff 00 00 37 d8    bra.l    $4762  ; -> handler_82
+  000f88:  60 ff 00 00 37 d8    bra.l    $4762  ; -> GA_SeedCFill
   000f8e:  4e 71                nop      
 disp_83:
-  000f90:  00 00 17 3c          dc.l     $0000173C  ; dispatch #83, Am29000 cmd/offset $173C
+  000f90:  00 00 17 3c          dc.l     $0000173C  ; dispatch #83, trap $AA4F _CalcCMask; table addr $173C
 Lf94:
   000f94:  2f 08                move.l   a0, -(a7)
   000f96:  20 78 08 88          movea.l  $888.w, a0
@@ -1658,10 +1658,10 @@ Lf94:
   000fb0:  20 6f 00 04          movea.l  $4(a7), a0
   000fb4:  2e 9f                move.l   (a7)+, (a7)
   000fb6:  4e 75                rts      
-  000fb8:  60 ff 00 00 38 02    bra.l    $47bc  ; -> handler_83
+  000fb8:  60 ff 00 00 38 02    bra.l    $47bc  ; -> GA_CalcCMask
   000fbe:  4e 71                nop      
 disp_84:
-  000fc0:  00 00 17 24          dc.l     $00001724  ; dispatch #84, Am29000 cmd/offset $1724
+  000fc0:  00 00 17 24          dc.l     $00001724  ; dispatch #84, trap $AA49 _SaveEntries; table addr $1724
 Lfc4:
   000fc4:  2f 08                move.l   a0, -(a7)
   000fc6:  20 78 08 88          movea.l  $888.w, a0
@@ -1677,10 +1677,10 @@ Lfc4:
   000fe0:  20 6f 00 04          movea.l  $4(a7), a0
   000fe4:  2e 9f                move.l   (a7)+, (a7)
   000fe6:  4e 75                rts      
-  000fe8:  60 ff 00 00 84 dc    bra.l    $94c6  ; -> handler_84
+  000fe8:  60 ff 00 00 84 dc    bra.l    $94c6  ; -> GA_SaveEntries
   000fee:  4e 71                nop      
 disp_85:
-  000ff0:  00 00 17 28          dc.l     $00001728  ; dispatch #85, Am29000 cmd/offset $1728
+  000ff0:  00 00 17 28          dc.l     $00001728  ; dispatch #85, trap $AA4A _RestoreEntries; table addr $1728
 Lff4:
   000ff4:  2f 08                move.l   a0, -(a7)
   000ff6:  20 78 08 88          movea.l  $888.w, a0
@@ -1696,10 +1696,10 @@ Lff4:
   001010:  20 6f 00 04          movea.l  $4(a7), a0
   001014:  2e 9f                move.l   (a7)+, (a7)
   001016:  4e 75                rts      
-  001018:  60 ff 00 00 85 00    bra.l    $951a  ; -> handler_85
+  001018:  60 ff 00 00 85 00    bra.l    $951a  ; -> GA_RestoreEntries
   00101e:  4e 71                nop      
 disp_86:
-  001020:  00 00 16 dc          dc.l     $000016DC  ; dispatch #86, Am29000 cmd/offset $16DC
+  001020:  00 00 16 dc          dc.l     $000016DC  ; dispatch #86, trap $AA37 _GetSubTable; table addr $16DC
 L1024:
   001024:  2f 08                move.l   a0, -(a7)
   001026:  20 78 08 88          movea.l  $888.w, a0
@@ -1715,10 +1715,10 @@ L1024:
   001040:  20 6f 00 04          movea.l  $4(a7), a0
   001044:  2e 9f                move.l   (a7)+, (a7)
   001046:  4e 75                rts      
-  001048:  60 ff 00 00 85 24    bra.l    $956e  ; -> handler_86
+  001048:  60 ff 00 00 85 24    bra.l    $956e  ; -> GA_GetSubTable
   00104e:  4e 71                nop      
 disp_87:
-  001050:  00 00 16 a0          dc.l     $000016A0  ; dispatch #87, Am29000 cmd/offset $16A0
+  001050:  00 00 16 a0          dc.l     $000016A0  ; dispatch #87, trap $AA28 _GetCTSeed; table addr $16A0
 L1054:
   001054:  2f 08                move.l   a0, -(a7)
   001056:  20 78 08 88          movea.l  $888.w, a0
@@ -1737,7 +1737,7 @@ L1054:
   001078:  60 ff 00 00 70 1e    bra.l    $8098  ; -> GA_GETCTSEED
   00107e:  4e 71                nop      
 disp_88:
-  001080:  00 00 18 88          dc.l     $00001888  ; dispatch #88, Am29000 cmd/offset $1888
+  001080:  00 00 18 88          dc.l     $00001888  ; dispatch #88, trap $AAA2 _PaletteDispatch; table addr $1888
 L1084:
   001084:  2f 08                move.l   a0, -(a7)
   001086:  20 78 08 88          movea.l  $888.w, a0
@@ -1756,7 +1756,7 @@ L1084:
   0010a8:  60 ff 00 00 70 2a    bra.l    $80d4  ; -> GA_PMGR
   0010ae:  4e 71                nop      
 disp_89:
-  0010b0:  00 00 18 50          dc.l     $00001850  ; dispatch #89, Am29000 cmd/offset $1850
+  0010b0:  00 00 18 50          dc.l     $00001850  ; dispatch #89, trap $AA94 _ActivatePalette; table addr $1850
 L10b4:
   0010b4:  2f 08                move.l   a0, -(a7)
   0010b6:  20 78 08 88          movea.l  $888.w, a0
@@ -1772,10 +1772,10 @@ L10b4:
   0010d0:  20 6f 00 04          movea.l  $4(a7), a0
   0010d4:  2e 9f                move.l   (a7)+, (a7)
   0010d6:  4e 75                rts      
-  0010d8:  60 ff 00 00 83 1a    bra.l    $93f4  ; -> handler_89
+  0010d8:  60 ff 00 00 83 1a    bra.l    $93f4  ; -> GA_ActivatePalette
   0010de:  4e 71                nop      
 disp_90:
-  0010e0:  00 00 18 54          dc.l     $00001854  ; dispatch #90, Am29000 cmd/offset $1854
+  0010e0:  00 00 18 54          dc.l     $00001854  ; dispatch #90, trap $AA95 _SetPalette; table addr $1854
 L10e4:
   0010e4:  2f 08                move.l   a0, -(a7)
   0010e6:  20 78 08 88          movea.l  $888.w, a0
@@ -1791,10 +1791,10 @@ L10e4:
   001100:  20 6f 00 04          movea.l  $4(a7), a0
   001104:  2e 9f                move.l   (a7)+, (a7)
   001106:  4e 75                rts      
-  001108:  60 ff 00 00 82 ae    bra.l    $93b8  ; -> handler_90
+  001108:  60 ff 00 00 82 ae    bra.l    $93b8  ; -> GA_SetPalette
   00110e:  4e 71                nop      
 disp_91:
-  001110:  00 00 18 80          dc.l     $00001880  ; dispatch #91, Am29000 cmd/offset $1880
+  001110:  00 00 18 80          dc.l     $00001880  ; dispatch #91, trap $AAA0 _Palette2CTab; table addr $1880
 L1114:
   001114:  2f 08                move.l   a0, -(a7)
   001116:  20 78 08 88          movea.l  $888.w, a0
@@ -1810,10 +1810,10 @@ L1114:
   001130:  20 6f 00 04          movea.l  $4(a7), a0
   001134:  2e 9f                move.l   (a7)+, (a7)
   001136:  4e 75                rts      
-  001138:  60 ff 00 00 82 ee    bra.l    $9428  ; -> handler_91
+  001138:  60 ff 00 00 82 ee    bra.l    $9428  ; -> GA_Palette2CTab
   00113e:  4e 71                nop      
 disp_92:
-  001140:  00 00 16 e4          dc.l     $000016E4  ; dispatch #92, Am29000 cmd/offset $16E4
+  001140:  00 00 16 e4          dc.l     $000016E4  ; dispatch #92, trap $AA39 _MakeITable; table addr $16E4
 L1144:
   001144:  2f 08                move.l   a0, -(a7)
   001146:  20 78 08 88          movea.l  $888.w, a0
@@ -1829,10 +1829,10 @@ L1144:
   001160:  20 6f 00 04          movea.l  $4(a7), a0
   001164:  2e 9f                move.l   (a7)+, (a7)
   001166:  4e 75                rts      
-  001168:  60 ff 00 00 82 f6    bra.l    $9460  ; -> handler_92
+  001168:  60 ff 00 00 82 f6    bra.l    $9460  ; -> GA_MakeITable
   00116e:  4e 71                nop      
 disp_93:
-  001170:  00 00 0f b8          dc.l     $00000FB8  ; dispatch #93, Am29000 cmd/offset $FB8
+  001170:  00 00 0f b8          dc.l     $00000FB8  ; dispatch #93, trap $A86E _InitGraf; table addr $FB8
 L1174:
   001174:  2f 08                move.l   a0, -(a7)
   001176:  20 78 08 88          movea.l  $888.w, a0
@@ -1848,10 +1848,10 @@ L1174:
   001190:  20 6f 00 04          movea.l  $4(a7), a0
   001194:  2e 9f                move.l   (a7)+, (a7)
   001196:  4e 75                rts      
-  001198:  60 ff 00 00 34 be    bra.l    $4658  ; -> handler_93
+  001198:  60 ff 00 00 34 be    bra.l    $4658  ; -> GA_InitGraf
   00119e:  4e 71                nop      
 disp_94:
-  0011a0:  00 00 0f b4          dc.l     $00000FB4  ; dispatch #94, Am29000 cmd/offset $FB4
+  0011a0:  00 00 0f b4          dc.l     $00000FB4  ; dispatch #94, trap $A86D _InitPort; table addr $FB4
 L11a4:
   0011a4:  2f 08                move.l   a0, -(a7)
   0011a6:  20 78 08 88          movea.l  $888.w, a0
@@ -1867,10 +1867,10 @@ L11a4:
   0011c0:  20 6f 00 04          movea.l  $4(a7), a0
   0011c4:  2e 9f                move.l   (a7)+, (a7)
   0011c6:  4e 75                rts      
-  0011c8:  60 ff 00 00 34 b8    bra.l    $4682  ; -> handler_94
+  0011c8:  60 ff 00 00 34 b8    bra.l    $4682  ; -> GA_InitPort
   0011ce:  4e 71                nop      
 disp_95:
-  0011d0:  00 00 0f bc          dc.l     $00000FBC  ; dispatch #95, Am29000 cmd/offset $FBC
+  0011d0:  00 00 0f bc          dc.l     $00000FBC  ; dispatch #95, trap $A86F _OpenPort; table addr $FBC
 L11d4:
   0011d4:  2f 08                move.l   a0, -(a7)
   0011d6:  20 78 08 88          movea.l  $888.w, a0
@@ -1886,10 +1886,10 @@ L11d4:
   0011f0:  20 6f 00 04          movea.l  $4(a7), a0
   0011f4:  2e 9f                move.l   (a7)+, (a7)
   0011f6:  4e 75                rts      
-  0011f8:  60 ff 00 00 34 b2    bra.l    $46ac  ; -> handler_95
+  0011f8:  60 ff 00 00 34 b2    bra.l    $46ac  ; -> GA_OpenPort
   0011fe:  4e 71                nop      
 disp_96:
-  001200:  00 00 16 04          dc.l     $00001604  ; dispatch #96, Am29000 cmd/offset $1604
+  001200:  00 00 16 04          dc.l     $00001604  ; dispatch #96, trap $AA01 _InitCPort; table addr $1604
 L1204:
   001204:  2f 08                move.l   a0, -(a7)
   001206:  20 78 08 88          movea.l  $888.w, a0
@@ -1905,10 +1905,10 @@ L1204:
   001220:  20 6f 00 04          movea.l  $4(a7), a0
   001224:  2e 9f                move.l   (a7)+, (a7)
   001226:  4e 75                rts      
-  001228:  60 ff 00 00 34 ac    bra.l    $46d6  ; -> handler_96
+  001228:  60 ff 00 00 34 ac    bra.l    $46d6  ; -> GA_InitCPort
   00122e:  4e 71                nop      
 disp_97:
-  001230:  00 00 16 00          dc.l     $00001600  ; dispatch #97, Am29000 cmd/offset $1600
+  001230:  00 00 16 00          dc.l     $00001600  ; dispatch #97, trap $AA00 _OpenCPort; table addr $1600
 L1234:
   001234:  2f 08                move.l   a0, -(a7)
   001236:  20 78 08 88          movea.l  $888.w, a0
@@ -1924,10 +1924,10 @@ L1234:
   001250:  20 6f 00 04          movea.l  $4(a7), a0
   001254:  2e 9f                move.l   (a7)+, (a7)
   001256:  4e 75                rts      
-  001258:  60 ff 00 00 34 a6    bra.l    $4700  ; -> handler_97
+  001258:  60 ff 00 00 34 a6    bra.l    $4700  ; -> GA_OpenCPort
   00125e:  4e 71                nop      
 disp_98:
-  001260:  00 00 16 08          dc.l     $00001608  ; dispatch #98, Am29000 cmd/offset $1608
+  001260:  00 00 16 08          dc.l     $00001608  ; dispatch #98, trap $AA02 (name unknown); table addr $1608
 L1264:
   001264:  2f 08                move.l   a0, -(a7)
   001266:  20 78 08 88          movea.l  $888.w, a0
@@ -1943,10 +1943,10 @@ L1264:
   001280:  20 6f 00 04          movea.l  $4(a7), a0
   001284:  2e 9f                move.l   (a7)+, (a7)
   001286:  4e 75                rts      
-  001288:  60 ff 00 00 a9 98    bra.l    $bc22  ; -> handler_79
+  001288:  60 ff 00 00 a9 98    bra.l    $bc22  ; -> GA_CloseCPort
   00128e:  4e 71                nop      
 disp_99:
-  001290:  00 00 16 b8          dc.l     $000016B8  ; dispatch #99, Am29000 cmd/offset $16B8
+  001290:  00 00 16 b8          dc.l     $000016B8  ; dispatch #99, trap $AA2E _InitGDevice; table addr $16B8
 L1294:
   001294:  2f 08                move.l   a0, -(a7)
   001296:  20 78 08 88          movea.l  $888.w, a0
@@ -1962,10 +1962,10 @@ L1294:
   0012b0:  20 6f 00 04          movea.l  $4(a7), a0
   0012b4:  2e 9f                move.l   (a7)+, (a7)
   0012b6:  4e 75                rts      
-  0012b8:  60 ff 00 00 84 4c    bra.l    $9706  ; -> handler_99
+  0012b8:  60 ff 00 00 84 4c    bra.l    $9706  ; -> GA_InitGDevice
   0012be:  4e 71                nop      
 disp_100:
-  0012c0:  00 00 11 5c          dc.l     $0000115C  ; dispatch #100, Am29000 cmd/offset $115C
+  0012c0:  00 00 11 5c          dc.l     $0000115C  ; dispatch #100, trap $A8D7 _BitMapRgn; table addr $115C
 L12c4:
   0012c4:  2f 08                move.l   a0, -(a7)
   0012c6:  20 78 08 88          movea.l  $888.w, a0
@@ -1981,10 +1981,10 @@ L12c4:
   0012e0:  20 6f 00 04          movea.l  $4(a7), a0
   0012e4:  2e 9f                move.l   (a7)+, (a7)
   0012e6:  4e 75                rts      
-  0012e8:  60 ff 00 00 ac 22    bra.l    $bf0c  ; -> handler_100
+  0012e8:  60 ff 00 00 ac 22    bra.l    $bf0c  ; -> GA_BitMapRgn
   0012ee:  4e 71                nop      
 disp_101:
-  0012f0:  00 00 16 8c          dc.l     $0000168C  ; dispatch #101, Am29000 cmd/offset $168C
+  0012f0:  00 00 16 8c          dc.l     $0000168C  ; dispatch #101, trap $AA23 _CharExtra; table addr $168C
 L12f4:
   0012f4:  2f 08                move.l   a0, -(a7)
   0012f6:  20 78 08 88          movea.l  $888.w, a0
@@ -2000,10 +2000,10 @@ L12f4:
   001310:  20 6f 00 04          movea.l  $4(a7), a0
   001314:  2e 9f                move.l   (a7)+, (a7)
   001316:  4e 75                rts      
-  001318:  60 ff 00 00 a9 28    bra.l    $bc42  ; -> handler_101
+  001318:  60 ff 00 00 a9 28    bra.l    $bc42  ; -> GA_CharExtra
   00131e:  4e 71                nop      
 disp_102:
-  001320:  00 00 05 90          dc.l     $00000590  ; dispatch #102, Am29000 cmd/offset $590
+  001320:  00 00 05 90          dc.l     $00000590  ; dispatch #102, trap $A064 _MoveHHi; table addr $590
 L1324:
   001324:  2f 08                move.l   a0, -(a7)
   001326:  20 78 08 88          movea.l  $888.w, a0
@@ -2022,7 +2022,7 @@ L1324:
   001348:  60 ff 00 00 6a 92    bra.l    $7ddc  ; -> GA_MoveHHi
   00134e:  4e 71                nop      
 disp_103:
-  001350:  ff ff ff ff          dc.l     $FFFFFFFF  ; dispatch #103, Am29000 cmd/offset $FFFFFFFF
+  001350:  ff ff ff ff          dc.l     $FFFFFFFF  ; dispatch #103, control record $FFFFFFFF; table addr $FFFFFFFF
 L1354:
   001354:  2f 08                move.l   a0, -(a7)
   001356:  20 78 08 88          movea.l  $888.w, a0
@@ -2038,10 +2038,10 @@ L1354:
   001370:  20 6f 00 04          movea.l  $4(a7), a0
   001374:  2e 9f                move.l   (a7)+, (a7)
   001376:  4e 75                rts      
-  001378:  60 ff 00 00 59 10    bra.l    $6c8a  ; -> handler_103
+  001378:  60 ff 00 00 59 10    bra.l    $6c8a  ; -> GA_ControlFFFFFFFF
   00137e:  4e 71                nop      
 disp_104:
-  001380:  ff ff ff fe          dc.l     $FFFFFFFE  ; dispatch #104, Am29000 cmd/offset $FFFFFFFE
+  001380:  ff ff ff fe          dc.l     $FFFFFFFE  ; dispatch #104, control record $FFFFFFFE; table addr $FFFFFFFE
 L1384:
   001384:  2f 08                move.l   a0, -(a7)
   001386:  20 78 08 88          movea.l  $888.w, a0
@@ -2057,10 +2057,10 @@ L1384:
   0013a0:  20 6f 00 04          movea.l  $4(a7), a0
   0013a4:  2e 9f                move.l   (a7)+, (a7)
   0013a6:  4e 75                rts      
-  0013a8:  60 ff 00 00 59 74    bra.l    $6d1e  ; -> handler_104
+  0013a8:  60 ff 00 00 59 74    bra.l    $6d1e  ; -> GA_ControlFFFFFFFE
   0013ae:  4e 71                nop      
 disp_105:
-  0013b0:  ff ff ff fd          dc.l     $FFFFFFFD  ; dispatch #105, Am29000 cmd/offset $FFFFFFFD
+  0013b0:  ff ff ff fd          dc.l     $FFFFFFFD  ; dispatch #105, control record $FFFFFFFD; table addr $FFFFFFFD
 L13b4:
   0013b4:  2f 08                move.l   a0, -(a7)
   0013b6:  20 78 08 88          movea.l  $888.w, a0
@@ -2076,7 +2076,7 @@ L13b4:
   0013d0:  20 6f 00 04          movea.l  $4(a7), a0
   0013d4:  2e 9f                move.l   (a7)+, (a7)
   0013d6:  4e 75                rts      
-  0013d8:  60 ff 00 00 58 96    bra.l    $6c70  ; -> handler_105
+  0013d8:  60 ff 00 00 58 96    bra.l    $6c70  ; -> GA_ControlFFFFFFFD
   0013de:  4e 71                nop      
   0013e0:  00 00 00 00          ori.b    #$0, d0
   0013e4:  00 00 00 00          ori.b    #$0, d0
@@ -4689,7 +4689,8 @@ L3076:
   0032a6:  00 00 4e 6f          ori.b    #$6f, d0
   0032aa:  74 20 69 6e 20 41 43 45 46 20 66 6f 72 6d 61 74 dc.b     $74,$20,$69,$6e,$20,$41,$43,$45,$46,$20,$66,$6f,$72,$6d,$61,$74  ; t in ACEF format
   0032ba:  21 00                dc.b     $21,$00  ; !.
-handler_06:
+* Patch #6 replaces trap $AB27; card commands: $0D $15 $38
+GA_TrapAB27:
   0032bc:  4e 56 ff d4          link.w   a6, #$ffd4
   0032c0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   0032c4:  38 2e 00 08          move.w   $8(a6), d4
@@ -4915,7 +4916,8 @@ L3580:
   003580:  4c ee 18 f0 ff bc    movem.l  -$44(a6), d4-d7/a3-a4
   003586:  4e 5e                unlk     a6
   003588:  4e 74 00 2c          rtd      #$2c
-handler_24:
+* Patch #24 replaces _StdRgn ($A8D1); card commands: $0D $18 $26 $38
+GA_StdRgn:
   00358c:  4e 56 ff f2          link.w   a6, #$fff2
   003590:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003594:  26 6e 00 08          movea.l  $8(a6), a3
@@ -4999,7 +5001,8 @@ L3676:
   003676:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   00367c:  4e 5e                unlk     a6
   00367e:  4e 74 00 06          rtd      #$6
-handler_03:
+* Patch #3 replaces _StdLine ($A890); card commands: $0D $20 $26 $38
+GA_StdLine:
   003682:  4e 56 ff f6          link.w   a6, #$fff6
   003686:  48 e7 07 08          movem.l  d5-d7/a4, -(a7)
   00368a:  61 ff 00 00 49 84    bsr.l    $8010  ; -> GetA5
@@ -5076,7 +5079,8 @@ L3760:
   003760:  4c ee 10 e0 ff e6    movem.l  -$1a(a6), d5-d7/a4
   003766:  4e 5e                unlk     a6
   003768:  4e 74 00 04          rtd      #$4
-handler_23:
+* Patch #23 replaces _StdPoly ($A8C5); card commands: $0D $26 $31 $38
+GA_StdPoly:
   00376c:  4e 56 ff f2          link.w   a6, #$fff2
   003770:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003774:  26 6e 00 08          movea.l  $8(a6), a3
@@ -5338,7 +5342,8 @@ L385c:
   003a90:  4c ee 18 c0 ff d0    movem.l  -$30(a6), d6-d7/a3-a4
   003a96:  4e 5e                unlk     a6
   003a98:  4e 74 00 0c          rtd      #$c
-handler_05:
+* Patch #5 replaces _StdText ($A882); card commands: $0D $21 $26 $38
+GA_StdText:
   003a9c:  4e 56 ff 78          link.w   a6, #$ff78
   003aa0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003aa4:  3e 2e 00 14          move.w   $14(a6), d7
@@ -5600,7 +5605,8 @@ L3dd0:
   003dd0:  4c ee 18 f0 ff 60    movem.l  -$a0(a6), d4-d7/a3-a4
   003dd6:  4e 5e                unlk     a6
   003dd8:  4e 74 00 0e          rtd      #$e
-handler_04:
+* Patch #4 replaces _StdArc ($A8BD); card commands: $0D $23 $26 $38
+GA_StdArc:
   003ddc:  4e 56 ff e4          link.w   a6, #$ffe4
   003de0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003de4:  3a 2e 00 08          move.w   $8(a6), d5
@@ -5696,7 +5702,8 @@ L3eee:
   003eee:  4c ee 18 f0 ff cc    movem.l  -$34(a6), d4-d7/a3-a4
   003ef4:  4e 5e                unlk     a6
   003ef6:  4e 74 00 0a          rtd      #$a
-handler_22:
+* Patch #22 replaces _StdRRect ($A8AF); card commands: $0D $26 $2E $38
+GA_StdRRect:
   003efa:  4e 56 ff e4          link.w   a6, #$ffe4
   003efe:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003f02:  3a 2e 00 08          move.w   $8(a6), d5
@@ -5795,7 +5802,8 @@ L4014:
   004014:  4c ee 18 f0 ff cc    movem.l  -$34(a6), d4-d7/a3-a4
   00401a:  4e 5e                unlk     a6
   00401c:  4e 74 00 0a          rtd      #$a
-handler_21:
+* Patch #21 replaces _StdOval ($A8B6); card commands: $0D $26 $2F $38
+GA_StdOval:
   004020:  4e 56 ff f2          link.w   a6, #$fff2
   004024:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   004028:  26 6e 00 08          movea.l  $8(a6), a3
@@ -5879,7 +5887,8 @@ L410a:
   00410a:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   004110:  4e 5e                unlk     a6
   004112:  4e 74 00 06          rtd      #$6
-handler_20:
+* Patch #20 replaces _StdRect ($A8A0); card commands: $0D $24 $26 $38
+GA_StdRect:
   004116:  4e 56 ff f2          link.w   a6, #$fff2
   00411a:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00411e:  26 6e 00 08          movea.l  $8(a6), a3
@@ -5963,7 +5972,8 @@ L4200:
   004200:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   004206:  4e 5e                unlk     a6
   004208:  4e 74 00 06          rtd      #$6
-handler_08:
+* Patch #8 replaces special; no EngineDispatch command found
+GA_LowMem0804:
   00420c:  4e 56 00 00          link.w   a6, #$0
   004210:  48 e7 01 08          movem.l  d7/a4, -(a7)
   004214:  59 8f                subq.l   #$4, a7
@@ -6025,7 +6035,8 @@ L42ae:
   0042ae:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   0042b4:  4e 5e                unlk     a6
   0042b6:  4e 75                rts      
-handler_07:
+* Patch #7 replaces special; no EngineDispatch command found
+GA_LowMem0800:
   0042b8:  4e 56 00 00          link.w   a6, #$0
   0042bc:  48 e7 01 08          movem.l  d7/a4, -(a7)
   0042c0:  59 8f                subq.l   #$4, a7
@@ -6073,7 +6084,8 @@ L4334:
   004334:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   00433a:  4e 5e                unlk     a6
   00433c:  4e 75                rts      
-handler_70:
+* Patch #70 replaces special; no EngineDispatch command found
+GA_LowMem0818:
   00433e:  4e 56 00 00          link.w   a6, #$0
   004342:  48 e7 01 08          movem.l  d7/a4, -(a7)
   004346:  59 8f                subq.l   #$4, a7
@@ -6119,7 +6131,8 @@ L4390:
   0043be:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   0043c4:  4e 5e                unlk     a6
   0043c6:  4e 74 00 0e          rtd      #$e
-handler_71:
+* Patch #71 replaces special; no EngineDispatch command found
+GA_LowMem081C:
   0043ca:  4e 56 00 00          link.w   a6, #$0
   0043ce:  48 e7 01 08          movem.l  d7/a4, -(a7)
   0043d2:  59 8f                subq.l   #$4, a7
@@ -6161,7 +6174,8 @@ L441c:
   00443a:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   004440:  4e 5e                unlk     a6
   004442:  4e 75                rts      
-handler_72:
+* Patch #72 replaces special; no EngineDispatch command found
+GA_LowMem0890:
   004444:  4e 56 00 00          link.w   a6, #$0
   004448:  48 e7 01 08          movem.l  d7/a4, -(a7)
   00444c:  59 8f                subq.l   #$4, a7
@@ -6204,7 +6218,8 @@ L4496:
   0044b8:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   0044be:  4e 5e                unlk     a6
   0044c0:  4e 74 00 04          rtd      #$4
-handler_09:
+* Patch #9 replaces special; no EngineDispatch command found
+GA_LowMem0808:
   0044c4:  4e 56 ff fc          link.w   a6, #$fffc
   0044c8:  48 e7 0f 08          movem.l  d4-d7/a4, -(a7)
   0044cc:  38 2e 00 08          move.w   $8(a6), d4
@@ -6298,7 +6313,8 @@ L45c8:
   0045c8:  4c ee 10 f0 ff e8    movem.l  -$18(a6), d4-d7/a4
   0045ce:  4e 5e                unlk     a6
   0045d0:  4e 74 00 08          rtd      #$8
-handler_69:
+* Patch #69 replaces special; no EngineDispatch command found
+GA_LowMem0814:
   0045d4:  4e 56 00 00          link.w   a6, #$0
   0045d8:  48 e7 01 08          movem.l  d7/a4, -(a7)
   0045dc:  59 8f                subq.l   #$4, a7
@@ -6343,7 +6359,8 @@ L4630:
   00464e:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   004654:  4e 5e                unlk     a6
   004656:  4e 75                rts      
-handler_93:
+* Patch #93 replaces _InitGraf ($A86E); card commands: $26
+GA_InitGraf:
   004658:  4e 56 00 00          link.w   a6, #$0
   00465c:  70 1f                moveq    #$1f, d0
   00465e:  2f 00                move.l   d0, -(a7)
@@ -6357,7 +6374,8 @@ handler_93:
   00467a:  4e 90                jsr      (a0)
   00467c:  4e 5e                unlk     a6
   00467e:  4e 74 00 04          rtd      #$4
-handler_94:
+* Patch #94 replaces _InitPort ($A86D); card commands: $26
+GA_InitPort:
   004682:  4e 56 00 00          link.w   a6, #$0
   004686:  70 1e                moveq    #$1e, d0
   004688:  2f 00                move.l   d0, -(a7)
@@ -6371,7 +6389,8 @@ handler_94:
   0046a4:  4e 90                jsr      (a0)
   0046a6:  4e 5e                unlk     a6
   0046a8:  4e 74 00 04          rtd      #$4
-handler_95:
+* Patch #95 replaces _OpenPort ($A86F); card commands: $26
+GA_OpenPort:
   0046ac:  4e 56 00 00          link.w   a6, #$0
   0046b0:  70 1e                moveq    #$1e, d0
   0046b2:  2f 00                move.l   d0, -(a7)
@@ -6385,7 +6404,8 @@ handler_95:
   0046ce:  4e 90                jsr      (a0)
   0046d0:  4e 5e                unlk     a6
   0046d2:  4e 74 00 04          rtd      #$4
-handler_96:
+* Patch #96 replaces _InitCPort ($AA01); card commands: $26
+GA_InitCPort:
   0046d6:  4e 56 00 00          link.w   a6, #$0
   0046da:  70 1e                moveq    #$1e, d0
   0046dc:  2f 00                move.l   d0, -(a7)
@@ -6399,7 +6419,8 @@ handler_96:
   0046f8:  4e 90                jsr      (a0)
   0046fa:  4e 5e                unlk     a6
   0046fc:  4e 74 00 04          rtd      #$4
-handler_97:
+* Patch #97 replaces _OpenCPort ($AA00); card commands: $26
+GA_OpenCPort:
   004700:  4e 56 00 00          link.w   a6, #$0
   004704:  70 1e                moveq    #$1e, d0
   004706:  2f 00                move.l   d0, -(a7)
@@ -6413,7 +6434,8 @@ handler_97:
   004722:  4e 90                jsr      (a0)
   004724:  4e 5e                unlk     a6
   004726:  4e 74 00 04          rtd      #$4
-handler_75:
+* Patch #75 replaces _DrawPicture ($A8F6); card commands: $26
+GA_DrawPicture:
   00472a:  4e 56 00 00          link.w   a6, #$0
   00472e:  70 1a                moveq    #$1a, d0
   004730:  2f 00                move.l   d0, -(a7)
@@ -6431,7 +6453,8 @@ handler_75:
   004756:  61 ff 00 00 00 ca    bsr.l    $4822  ; -> sub_4822
   00475c:  4e 5e                unlk     a6
   00475e:  4e 74 00 08          rtd      #$8
-handler_82:
+* Patch #82 replaces _SeedCFill ($AA50); no EngineDispatch command found
+GA_SeedCFill:
   004762:  4e 56 00 00          link.w   a6, #$0
   004766:  2f 0c                move.l   a4, -(a7)
   004768:  59 8f                subq.l   #$4, a7
@@ -6458,7 +6481,8 @@ handler_82:
   0047b2:  28 6e ff fc          movea.l  -$4(a6), a4
   0047b6:  4e 5e                unlk     a6
   0047b8:  4e 74 00 1c          rtd      #$1c
-handler_83:
+* Patch #83 replaces _CalcCMask ($AA4F); no EngineDispatch command found
+GA_CalcCMask:
   0047bc:  4e 56 ff fa          link.w   a6, #$fffa
   0047c0:  2f 0c                move.l   a4, -(a7)
   0047c2:  20 6e 00 10          movea.l  $10(a6), a0
@@ -6500,7 +6524,8 @@ sub_4822:
   004832:  61 ff 00 00 01 90    bsr.l    $49c4  ; -> EngineDispatch
   004838:  4e 5e                unlk     a6
   00483a:  4e 75                rts      
-handler_02:
+* Patch #2 replaces _CopyBits ($A8EC); card commands: $0D $38
+GA_CopyBits:
   00483c:  4e 56 ff ee          link.w   a6, #$ffee
   004840:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   004844:  3e 2e 00 0c          move.w   $c(a6), d7
@@ -9533,7 +9558,8 @@ L6c4c:
   006c66:  4c ee 18 f0 ff 50    movem.l  -$b0(a6), d4-d7/a3-a4
   006c6c:  4e 5e                unlk     a6
   006c6e:  4e 75                rts      
-handler_105:
+* Patch #105 replaces special; no EngineDispatch command found
+GA_ControlFFFFFFFD:
   006c70:  4e 56 00 00          link.w   a6, #$0
   006c74:  2f 2e 00 10          move.l   $10(a6), -(a7)
   006c78:  2f 2e 00 0c          move.l   $c(a6), -(a7)
@@ -9541,7 +9567,8 @@ handler_105:
   006c80:  61 ff ff ff a7 82    bsr.l    $1404  ; -> sub_1404
   006c86:  4e 5e                unlk     a6
   006c88:  4e 75                rts      
-handler_103:
+* Patch #103 replaces special; card commands: $00 $02 $12 $13 $14 $16 $17 $29
+GA_ControlFFFFFFFF:
   006c8a:  4e 56 00 00          link.w   a6, #$0
   006c8e:  48 e7 01 08          movem.l  d7/a4, -(a7)
   006c92:  28 6e 00 08          movea.l  $8(a6), a4
@@ -9593,7 +9620,8 @@ L6d14:
   006d14:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   006d1a:  4e 5e                unlk     a6
   006d1c:  4e 75                rts      
-handler_104:
+* Patch #104 replaces special; card commands: $00 $11 $26
+GA_ControlFFFFFFFE:
   006d1e:  4e 56 00 00          link.w   a6, #$0
   006d22:  48 e7 11 08          movem.l  d3/d7/a4, -(a7)
   006d26:  59 8f                subq.l   #$4, a7
@@ -11054,7 +11082,8 @@ L7d96:
   007da2:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   007da8:  4e 5e                unlk     a6
   007daa:  4e 75                rts      
-handler_15:
+* Patch #15 replaces trap $AB23; no EngineDispatch command found
+GA_TrapAB23:
   007dac:  20 5f                movea.l  (a7)+, a0
   007dae:  3f 00                move.w   d0, -(a7)
   007db0:  2f 08                move.l   a0, -(a7)
@@ -11113,7 +11142,8 @@ WidthTableCheckSum:
   007f28:  d0 98 e2 98 d0 98 e2 98 d0 98 e2 98 d0 98 e2 98 dc.b     $d0,$98,$e2,$98,$d0,$98,$e2,$98,$d0,$98,$e2,$98,$d0,$98,$e2,$98  ; ................
   007f38:  51 c9 ff be 4e 75 57 69 64 74 68 54 61 62 6c 65 dc.b     $51,$c9,$ff,$be,$4e,$75,$57,$69,$64,$74,$68,$54,$61,$62,$6c,$65  ; Q...NuWidthTable
   007f48:  43 68 65 63 6b 53 75 6d dc.b     $43,$68,$65,$63,$6b,$53,$75,$6d  ; CheckSum
-handler_00:
+* Patch #0 replaces _Translate24To32 ($A091); no EngineDispatch command found
+GA_Translate24To32:
   007f50:  2f 08 2f 00 20 78 0d 62 20 10 a0 55 20 40 20 68 dc.b     $2f,$08,$2f,$00,$20,$78,$0d,$62,$20,$10,$a0,$55,$20,$40,$20,$68  ; /./. x.b ..U @ h
   007f60:  00 12 20 50 20 1f b0 88 67 10 20 78 08 88 2f 28 dc.b     $00,$12,$20,$50,$20,$1f,$b0,$88,$67,$10,$20,$78,$08,$88,$2f,$28  ; .. P ...g. x../(
   007f70:  00 14 20 6f 00 04 2e 9f 4e 75 48 e7 80 70 20 78 dc.b     $00,$14,$20,$6f,$00,$04,$2e,$9f,$4e,$75,$48,$e7,$80,$70,$20,$78  ; .. o....NuH..p x
@@ -11213,7 +11243,8 @@ L80f0:
   00810c:  58 8f                addq.l   #$4, a7
   00810e:  4e 75                rts      
   008110:  47 41 5f 50 4d 47 52 00 dc.b     $47,$41,$5f,$50,$4d,$47,$52,$00  ; GA_PMGR.
-handler_66:
+* Patch #66 replaces _QDExtensions ($AB1D); no EngineDispatch command found
+GA_QDExtensions:
   008118:  0c 40 00 0e          cmpi.w   #$e, d0
   00811c:  67 6e                beq.b    $818c  ; -> L818c
   00811e:  0c 40 00 08          cmpi.w   #$8, d0
@@ -12912,7 +12943,8 @@ L926e:
   00926e:  4c ee 18 c8 ff d8    movem.l  -$28(a6), d3/d6-d7/a3-a4
   009274:  4e 5e                unlk     a6
   009276:  4e 75                rts      
-handler_10:
+* Patch #10 replaces trap $AB9A; card commands: $2A
+GA_TrapAB9A:
   009278:  4e 56 ff e0          link.w   a6, #$ffe0
   00927c:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   009280:  70 00                moveq    #$0, d0
@@ -13027,7 +13059,8 @@ L93ac:
   0093ac:  4c ee 18 f0 ff c8    movem.l  -$38(a6), d4-d7/a3-a4
   0093b2:  4e 5e                unlk     a6
   0093b4:  4e 74 00 04          rtd      #$4
-handler_90:
+* Patch #90 replaces _SetPalette ($AA95); card commands: $26
+GA_SetPalette:
   0093b8:  4e 56 00 00          link.w   a6, #$0
   0093bc:  70 01                moveq    #$1, d0
   0093be:  2f 00                move.l   d0, -(a7)
@@ -13048,7 +13081,8 @@ handler_90:
   0093ec:  4e 90                jsr      (a0)
   0093ee:  4e 5e                unlk     a6
   0093f0:  4e 74 00 0a          rtd      #$a
-handler_89:
+* Patch #89 replaces _ActivatePalette ($AA94); card commands: $26
+GA_ActivatePalette:
   0093f4:  4e 56 00 00          link.w   a6, #$0
   0093f8:  70 01                moveq    #$1, d0
   0093fa:  2f 00                move.l   d0, -(a7)
@@ -13067,7 +13101,8 @@ handler_89:
   009420:  4e 90                jsr      (a0)
   009422:  4e 5e                unlk     a6
   009424:  4e 74 00 04          rtd      #$4
-handler_91:
+* Patch #91 replaces _Palette2CTab ($AAA0); card commands: $26
+GA_Palette2CTab:
   009428:  4e 56 00 00          link.w   a6, #$0
   00942c:  70 01                moveq    #$1, d0
   00942e:  2f 00                move.l   d0, -(a7)
@@ -13087,7 +13122,8 @@ handler_91:
   009458:  4e 90                jsr      (a0)
   00945a:  4e 5e                unlk     a6
   00945c:  4e 74 00 08          rtd      #$8
-handler_92:
+* Patch #92 replaces _MakeITable ($AA39); card commands: $1B
+GA_MakeITable:
   009460:  4e 56 ff fc          link.w   a6, #$fffc
   009464:  2f 0c                move.l   a4, -(a7)
   009466:  28 6e 00 0a          movea.l  $a(a6), a4
@@ -13123,7 +13159,8 @@ L94bc:
   0094bc:  28 6e ff f8          movea.l  -$8(a6), a4
   0094c0:  4e 5e                unlk     a6
   0094c2:  4e 74 00 0a          rtd      #$a
-handler_84:
+* Patch #84 replaces _SaveEntries ($AA49); card commands: $1A
+GA_SaveEntries:
   0094c6:  4e 56 00 00          link.w   a6, #$0
   0094ca:  2f 2e 00 10          move.l   $10(a6), -(a7)
   0094ce:  2f 2e 00 0c          move.l   $c(a6), -(a7)
@@ -13151,7 +13188,8 @@ L9500:
   00950e:  61 ff ff ff b4 b4    bsr.l    $49c4  ; -> EngineDispatch
   009514:  4e 5e                unlk     a6
   009516:  4e 74 00 0c          rtd      #$c
-handler_85:
+* Patch #85 replaces _RestoreEntries ($AA4A); card commands: $1A
+GA_RestoreEntries:
   00951a:  4e 56 00 00          link.w   a6, #$0
   00951e:  2f 2e 00 10          move.l   $10(a6), -(a7)
   009522:  2f 2e 00 0c          move.l   $c(a6), -(a7)
@@ -13179,7 +13217,8 @@ L9554:
   009562:  61 ff ff ff b4 60    bsr.l    $49c4  ; -> EngineDispatch
   009568:  4e 5e                unlk     a6
   00956a:  4e 74 00 0c          rtd      #$c
-handler_86:
+* Patch #86 replaces _GetSubTable ($AA37); card commands: $1A
+GA_GetSubTable:
   00956e:  4e 56 00 00          link.w   a6, #$0
   009572:  2f 2e 00 0e          move.l   $e(a6), -(a7)
   009576:  3f 2e 00 0c          move.w   $c(a6), -(a7)
@@ -13207,7 +13246,8 @@ L95a8:
   0095b6:  61 ff ff ff b4 0c    bsr.l    $49c4  ; -> EngineDispatch
   0095bc:  4e 5e                unlk     a6
   0095be:  4e 74 00 0a          rtd      #$a
-handler_77:
+* Patch #77 replaces _SetEntries ($AA3F); card commands: $1A $29
+GA_SetEntries:
   0095c2:  4e 56 ff fc          link.w   a6, #$fffc
   0095c6:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0095ca:  2f 2e 00 08          move.l   $8(a6), -(a7)
@@ -13246,7 +13286,8 @@ L960e:
   009628:  61 ff ff ff b3 9a    bsr.l    $49c4  ; -> EngineDispatch
   00962e:  4e 5e                unlk     a6
   009630:  4e 74 00 08          rtd      #$8
-handler_73:
+* Patch #73 replaces _SetDeviceAttribute ($AA2D); card commands: $26 $29
+GA_SetDeviceAttribute:
   009634:  4e 56 00 00          link.w   a6, #$0
   009638:  70 01                moveq    #$1, d0
   00963a:  2f 00                move.l   d0, -(a7)
@@ -13274,7 +13315,8 @@ handler_73:
   009678:  61 ff ff ff b3 4a    bsr.l    $49c4  ; -> EngineDispatch
   00967e:  4e 5e                unlk     a6
   009680:  4e 74 00 08          rtd      #$8
-handler_74:
+* Patch #74 replaces _DisposGDevice ($AA30); card commands: $2B
+GA_DisposGDevice:
   009684:  4e 56 00 00          link.w   a6, #$0
   009688:  70 01                moveq    #$1, d0
   00968a:  2f 00                move.l   d0, -(a7)
@@ -13292,7 +13334,8 @@ handler_74:
   0096b0:  4e 90                jsr      (a0)
   0096b2:  4e 5e                unlk     a6
   0096b4:  4e 74 00 04          rtd      #$4
-handler_25:
+* Patch #25 replaces _AddSearch ($AA3A); card commands: $26 $29
+GA_AddSearch:
   0096b8:  4e 56 ff fc          link.w   a6, #$fffc
   0096bc:  2d 78 0c c8 ff fc    move.l   $cc8.w, -$4(a6)
   0096c2:  70 01                moveq    #$1, d0
@@ -13319,7 +13362,8 @@ handler_25:
   0096fa:  61 ff ff ff b2 c8    bsr.l    $49c4  ; -> EngineDispatch
   009700:  4e 5e                unlk     a6
   009702:  4e 74 00 04          rtd      #$4
-handler_99:
+* Patch #99 replaces _InitGDevice ($AA2E); card commands: $12 $13 $14 $16 $26 $29
+GA_InitGDevice:
   009706:  4e 56 00 00          link.w   a6, #$0
   00970a:  2f 0c                move.l   a4, -(a7)
   00970c:  20 78 08 88          movea.l  $888.w, a0
@@ -13367,7 +13411,8 @@ handler_99:
   00978a:  28 6e ff fc          movea.l  -$4(a6), a4
   00978e:  4e 5e                unlk     a6
   009790:  4e 74 00 0a          rtd      #$a
-handler_26:
+* Patch #26 replaces _DelSearch ($AA4C); card commands: $26 $29
+GA_DelSearch:
   009794:  4e 56 ff fc          link.w   a6, #$fffc
   009798:  2d 78 0c c8 ff fc    move.l   $cc8.w, -$4(a6)
   00979e:  70 01                moveq    #$1, d0
@@ -13394,7 +13439,8 @@ handler_26:
   0097d6:  61 ff ff ff b1 ec    bsr.l    $49c4  ; -> EngineDispatch
   0097dc:  4e 5e                unlk     a6
   0097de:  4e 74 00 04          rtd      #$4
-handler_27:
+* Patch #27 replaces _AddComp ($AA3B); card commands: $26 $29
+GA_AddComp:
   0097e2:  4e 56 ff fc          link.w   a6, #$fffc
   0097e6:  2d 78 0c c8 ff fc    move.l   $cc8.w, -$4(a6)
   0097ec:  70 01                moveq    #$1, d0
@@ -13421,7 +13467,8 @@ handler_27:
   009824:  61 ff ff ff b1 9e    bsr.l    $49c4  ; -> EngineDispatch
   00982a:  4e 5e                unlk     a6
   00982c:  4e 74 00 04          rtd      #$4
-handler_28:
+* Patch #28 replaces _DelComp ($AA4D); card commands: $26 $29
+GA_DelComp:
   009830:  4e 56 ff fc          link.w   a6, #$fffc
   009834:  2d 78 0c c8 ff fc    move.l   $cc8.w, -$4(a6)
   00983a:  70 01                moveq    #$1, d0
@@ -13448,7 +13495,8 @@ handler_28:
   009872:  61 ff ff ff b1 50    bsr.l    $49c4  ; -> EngineDispatch
   009878:  4e 5e                unlk     a6
   00987a:  4e 74 00 04          rtd      #$4
-handler_29:
+* Patch #29 replaces _DisposPixPat ($AA08); card commands: $2C
+GA_DisposPixPat:
   00987e:  4e 56 00 00          link.w   a6, #$0
   009882:  70 01                moveq    #$1, d0
   009884:  2f 00                move.l   d0, -(a7)
@@ -13466,7 +13514,8 @@ handler_29:
   0098aa:  4e 90                jsr      (a0)
   0098ac:  4e 5e                unlk     a6
   0098ae:  4e 74 00 04          rtd      #$4
-handler_30:
+* Patch #30 replaces _CopyPixPat ($AA09); card commands: $2A
+GA_CopyPixPat:
   0098b2:  4e 56 ff f8          link.w   a6, #$fff8
   0098b6:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   0098ba:  26 6e 00 08          movea.l  $8(a6), a3
@@ -13522,7 +13571,8 @@ L993c:
   00993c:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   009942:  4e 5e                unlk     a6
   009944:  4e 74 00 08          rtd      #$8
-handler_31:
+* Patch #31 replaces _MakeRGBPat ($AA0D); card commands: $2A
+GA_MakeRGBPat:
   009948:  4e 56 ff f8          link.w   a6, #$fff8
   00994c:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   009950:  26 6e 00 0c          movea.l  $c(a6), a3
@@ -13576,7 +13626,8 @@ L99ca:
   0099ca:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   0099d0:  4e 5e                unlk     a6
   0099d2:  4e 74 00 08          rtd      #$8
-handler_32:
+* Patch #32 replaces trap $AB11; card commands: $2A
+GA_TrapAB11:
   0099d6:  4e 56 ff f8          link.w   a6, #$fff8
   0099da:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   0099de:  70 00                moveq    #$0, d0
@@ -13769,7 +13820,8 @@ L9bbe:
   009bbe:  4c ee 18 e8 ff dc    movem.l  -$24(a6), d3/d5-d7/a3-a4
   009bc4:  4e 5e                unlk     a6
   009bc6:  4e 74 00 06          rtd      #$6
-handler_33:
+* Patch #33 replaces _SetPBits ($A875); card commands: $26
+GA_SetPBits:
   009bca:  4e 56 ff fc          link.w   a6, #$fffc
   009bce:  48 e7 00 18          movem.l  a3-a4, -(a7)
   009bd2:  26 6e 00 08          movea.l  $8(a6), a3
@@ -13821,7 +13873,8 @@ L9c42:
   009c56:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   009c5c:  4e 5e                unlk     a6
   009c5e:  4e 74 00 04          rtd      #$4
-handler_34:
+* Patch #34 replaces _PortSize ($A876); card commands: $26
+GA_PortSize:
   009c62:  4e 56 00 00          link.w   a6, #$0
   009c66:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   009c6a:  3c 2e 00 08          move.w   $8(a6), d6
@@ -13875,7 +13928,8 @@ L9cd0:
   009ce6:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   009cec:  4e 5e                unlk     a6
   009cee:  4e 74 00 04          rtd      #$4
-handler_35:
+* Patch #35 replaces _MovePortTo ($A877); card commands: $26
+GA_MovePortTo:
   009cf2:  4e 56 00 00          link.w   a6, #$0
   009cf6:  2f 0c                move.l   a4, -(a7)
   009cf8:  70 00                moveq    #$0, d0
@@ -13908,7 +13962,8 @@ L9d2c:
   009d42:  28 6e ff fc          movea.l  -$4(a6), a4
   009d46:  4e 5e                unlk     a6
   009d48:  4e 74 00 04          rtd      #$4
-handler_36:
+* Patch #36 replaces _SetOrigin ($A878); card commands: $26
+GA_SetOrigin:
   009d4c:  4e 56 00 00          link.w   a6, #$0
   009d50:  48 e7 03 08          movem.l  d6-d7/a4, -(a7)
   009d54:  3c 2e 00 08          move.w   $8(a6), d6
@@ -13950,7 +14005,8 @@ L9db2:
   009db2:  4c ee 10 c0 ff f4    movem.l  -$c(a6), d6-d7/a4
   009db8:  4e 5e                unlk     a6
   009dba:  4e 74 00 04          rtd      #$4
-handler_37:
+* Patch #37 replaces _SetClip ($A879); card commands: $32
+GA_SetClip:
   009dbe:  4e 56 00 00          link.w   a6, #$0
   009dc2:  2f 0c                move.l   a4, -(a7)
   009dc4:  70 00                moveq    #$0, d0
@@ -13992,7 +14048,8 @@ L9e14:
   009e2a:  28 6e ff fc          movea.l  -$4(a6), a4
   009e2e:  4e 5e                unlk     a6
   009e30:  4e 74 00 04          rtd      #$4
-handler_38:
+* Patch #38 replaces _ClipRect ($A87B); card commands: $32
+GA_ClipRect:
   009e34:  4e 56 ff f8          link.w   a6, #$fff8
   009e38:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   009e3c:  26 6e 00 08          movea.l  $8(a6), a3
@@ -14049,7 +14106,8 @@ L9ec4:
   009ec4:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   009eca:  4e 5e                unlk     a6
   009ecc:  4e 74 00 04          rtd      #$4
-handler_39:
+* Patch #39 replaces _HidePen ($A896); no EngineDispatch command found
+GA_HidePen:
   009ed0:  4e 56 00 00          link.w   a6, #$0
   009ed4:  48 78 10 58          pea.l    $1058.w
   009ed8:  61 ff ff ff ce b8    bsr.l    $6d92  ; -> StoreCtxWord_AA6
@@ -14059,7 +14117,8 @@ handler_39:
   009ee4:  4e 90                jsr      (a0)
   009ee6:  4e 5e                unlk     a6
   009ee8:  4e 75                rts      
-handler_40:
+* Patch #40 replaces _ShowPen ($A897); no EngineDispatch command found
+GA_ShowPen:
   009eea:  4e 56 00 00          link.w   a6, #$0
   009eee:  48 78 10 5c          pea.l    $105c.w
   009ef2:  61 ff ff ff ce 9e    bsr.l    $6d92  ; -> StoreCtxWord_AA6
@@ -14069,7 +14128,8 @@ handler_40:
   009efe:  4e 90                jsr      (a0)
   009f00:  4e 5e                unlk     a6
   009f02:  4e 75                rts      
-handler_11:
+* Patch #11 replaces _SetPenState ($A899); card commands: $2A $35
+GA_SetPenState:
   009f04:  4e 56 ff f4          link.w   a6, #$fff4
   009f08:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   009f0c:  26 6e 00 08          movea.l  $8(a6), a3
@@ -14141,7 +14201,8 @@ L9fc4:
   009fc4:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   009fca:  4e 5e                unlk     a6
   009fcc:  4e 74 00 04          rtd      #$4
-handler_12:
+* Patch #12 replaces _PenSize ($A89B); card commands: $35
+GA_PenSize:
   009fd0:  4e 56 ff fc          link.w   a6, #$fffc
   009fd4:  48 e7 03 08          movem.l  d6-d7/a4, -(a7)
   009fd8:  3c 2e 00 08          move.w   $8(a6), d6
@@ -14191,7 +14252,8 @@ La054:
   00a054:  4c ee 10 c0 ff f0    movem.l  -$10(a6), d6-d7/a4
   00a05a:  4e 5e                unlk     a6
   00a05c:  4e 74 00 04          rtd      #$4
-handler_13:
+* Patch #13 replaces _PenMode ($A89C); no EngineDispatch command found
+GA_PenMode:
   00a060:  4e 56 00 00          link.w   a6, #$0
   00a064:  3f 2e 00 08          move.w   $8(a6), -(a7)
   00a068:  48 78 10 70          pea.l    $1070.w
@@ -14202,7 +14264,8 @@ handler_13:
   00a078:  4e 90                jsr      (a0)
   00a07a:  4e 5e                unlk     a6
   00a07c:  4e 74 00 02          rtd      #$2
-handler_64:
+* Patch #64 replaces _PenPat ($A89D); card commands: $2A
+GA_PenPat:
   00a080:  4e 56 ff f8          link.w   a6, #$fff8
   00a084:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00a088:  26 6e 00 08          movea.l  $8(a6), a3
@@ -14267,7 +14330,8 @@ La124:
   00a12e:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   00a134:  4e 5e                unlk     a6
   00a136:  4e 74 00 04          rtd      #$4
-handler_65:
+* Patch #65 replaces _BackPat ($A87C); card commands: $2A
+GA_BackPat:
   00a13a:  4e 56 ff f8          link.w   a6, #$fff8
   00a13e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a142:  26 6e 00 08          movea.l  $8(a6), a3
@@ -14327,7 +14391,8 @@ La1d6:
   00a1d6:  4c ee 18 00 ff f0    movem.l  -$10(a6), a3-a4
   00a1dc:  4e 5e                unlk     a6
   00a1de:  4e 74 00 04          rtd      #$4
-handler_14:
+* Patch #14 replaces _PenNormal ($A89E); card commands: $2A $35
+GA_PenNormal:
   00a1e2:  4e 56 ff f4          link.w   a6, #$fff4
   00a1e6:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00a1ea:  47 ee ff f8          lea.l    -$8(a6), a3
@@ -14402,7 +14467,8 @@ La2ae:
   00a2ae:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   00a2b4:  4e 5e                unlk     a6
   00a2b6:  4e 75                rts      
-handler_42:
+* Patch #42 replaces _ColorBit ($A864); card commands: $26
+GA_ColorBit:
   00a2b8:  4e 56 00 00          link.w   a6, #$0
   00a2bc:  48 e7 01 08          movem.l  d7/a4, -(a7)
   00a2c0:  3e 2e 00 08          move.w   $8(a6), d7
@@ -14438,7 +14504,8 @@ La2fe:
   00a312:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   00a318:  4e 5e                unlk     a6
   00a31a:  4e 74 00 02          rtd      #$2
-handler_43:
+* Patch #43 replaces _OpenRgn ($A8DA); no EngineDispatch command found
+GA_OpenRgn:
   00a31e:  4e 56 00 00          link.w   a6, #$0
   00a322:  48 78 11 68          pea.l    $1168.w
   00a326:  61 ff ff ff ca 6a    bsr.l    $6d92  ; -> StoreCtxWord_AA6
@@ -14448,7 +14515,8 @@ handler_43:
   00a332:  4e 90                jsr      (a0)
   00a334:  4e 5e                unlk     a6
   00a336:  4e 75                rts      
-handler_44:
+* Patch #44 replaces _OpenPicture ($A8F3); no EngineDispatch command found
+GA_OpenPicture:
   00a338:  4e 56 00 00          link.w   a6, #$0
   00a33c:  59 8f                subq.l   #$4, a7
   00a33e:  2f 2e 00 08          move.l   $8(a6), -(a7)
@@ -14461,7 +14529,8 @@ handler_44:
   00a354:  2d 5f 00 0c          move.l   (a7)+, $c(a6)
   00a358:  4e 5e                unlk     a6
   00a35a:  4e 74 00 04          rtd      #$4
-handler_45:
+* Patch #45 replaces _OpenPoly ($A8CB); no EngineDispatch command found
+GA_OpenPoly:
   00a35e:  4e 56 00 00          link.w   a6, #$0
   00a362:  59 8f                subq.l   #$4, a7
   00a364:  48 78 11 2c          pea.l    $112c.w
@@ -14473,7 +14542,8 @@ handler_45:
   00a376:  2d 5f 00 08          move.l   (a7)+, $8(a6)
   00a37a:  4e 5e                unlk     a6
   00a37c:  4e 75                rts      
-handler_78:
+* Patch #78 replaces _SectRect ($A8AA); card commands: $10 $32
+GA_SectRect:
   00a37e:  4e 56 ff f8          link.w   a6, #$fff8
   00a382:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00a386:  28 6e 00 08          movea.l  $8(a6), a4
@@ -14566,7 +14636,8 @@ La466:
   00a466:  4c ee 18 c0 ff e8    movem.l  -$18(a6), d6-d7/a3-a4
   00a46c:  4e 5e                unlk     a6
   00a46e:  4e 74 00 0c          rtd      #$c
-handler_46:
+* Patch #46 replaces _CopyRgn ($A8DC); card commands: $10 $32
+GA_CopyRgn:
   00a472:  4e 56 00 00          link.w   a6, #$0
   00a476:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a47a:  26 6e 00 0c          movea.l  $c(a6), a3
@@ -14618,7 +14689,8 @@ La4fa:
   00a4fa:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   00a500:  4e 5e                unlk     a6
   00a502:  4e 74 00 08          rtd      #$8
-handler_63:
+* Patch #63 replaces _SetEmptyRgn ($A8DD); card commands: $10 $32
+GA_SetEmptyRgn:
   00a506:  4e 56 ff fc          link.w   a6, #$fffc
   00a50a:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a50e:  20 78 08 88          movea.l  $888.w, a0
@@ -14675,7 +14747,8 @@ La59e:
   00a59e:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   00a5a4:  4e 5e                unlk     a6
   00a5a6:  4e 74 00 04          rtd      #$4
-handler_47:
+* Patch #47 replaces _SetRecRgn ($A8DE); card commands: $10 $32
+GA_SetRecRgn:
   00a5aa:  4e 56 ff fc          link.w   a6, #$fffc
   00a5ae:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00a5b2:  38 2e 00 08          move.w   $8(a6), d4
@@ -14744,7 +14817,8 @@ La666:
   00a666:  4c ee 18 f0 ff e4    movem.l  -$1c(a6), d4-d7/a3-a4
   00a66c:  4e 5e                unlk     a6
   00a66e:  4e 74 00 0c          rtd      #$c
-handler_48:
+* Patch #48 replaces _RectRgn ($A8DF); card commands: $10 $32
+GA_RectRgn:
   00a672:  4e 56 ff f8          link.w   a6, #$fff8
   00a676:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a67a:  28 6e 00 08          movea.l  $8(a6), a4
@@ -14806,7 +14880,8 @@ La71a:
   00a71a:  4c ee 18 00 ff f0    movem.l  -$10(a6), a3-a4
   00a720:  4e 5e                unlk     a6
   00a722:  4e 74 00 08          rtd      #$8
-handler_49:
+* Patch #49 replaces _OfsetRgn ($A8E0); card commands: $10 $32
+GA_OffsetRgn:
   00a726:  4e 56 00 00          link.w   a6, #$0
   00a72a:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00a72e:  3c 2e 00 08          move.w   $8(a6), d6
@@ -14902,7 +14977,8 @@ La814:
   00a814:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
   00a81a:  4e 5e                unlk     a6
   00a81c:  4e 74 00 08          rtd      #$8
-handler_50:
+* Patch #50 replaces _InsetRgn ($A8E1); card commands: $10 $32
+GA_InsetRgn:
   00a820:  4e 56 00 00          link.w   a6, #$0
   00a824:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00a828:  3c 2e 00 08          move.w   $8(a6), d6
@@ -14998,7 +15074,8 @@ La90e:
   00a90e:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
   00a914:  4e 5e                unlk     a6
   00a916:  4e 74 00 08          rtd      #$8
-handler_51:
+* Patch #51 replaces _SectRgn ($A8E4); card commands: $10 $32
+GA_SectRgn:
   00a91a:  4e 56 00 00          link.w   a6, #$0
   00a91e:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00a922:  20 78 08 88          movea.l  $888.w, a0
@@ -15087,7 +15164,8 @@ La9fe:
   00a9fe:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00aa04:  4e 5e                unlk     a6
   00aa06:  4e 74 00 0c          rtd      #$c
-handler_52:
+* Patch #52 replaces _UnionRgn ($A8E5); card commands: $10 $32
+GA_UnionRgn:
   00aa0a:  4e 56 00 00          link.w   a6, #$0
   00aa0e:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00aa12:  20 78 08 88          movea.l  $888.w, a0
@@ -15176,7 +15254,8 @@ Laaee:
   00aaee:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00aaf4:  4e 5e                unlk     a6
   00aaf6:  4e 74 00 0c          rtd      #$c
-handler_53:
+* Patch #53 replaces _DiffRgn ($A8E6); card commands: $10 $32
+GA_DiffRgn:
   00aafa:  4e 56 00 00          link.w   a6, #$0
   00aafe:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00ab02:  20 78 08 88          movea.l  $888.w, a0
@@ -15265,7 +15344,8 @@ Labde:
   00abde:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00abe4:  4e 5e                unlk     a6
   00abe6:  4e 74 00 0c          rtd      #$c
-handler_54:
+* Patch #54 replaces _XOrRgn ($A8E7); card commands: $10 $32
+GA_XOrRgn:
   00abea:  4e 56 00 00          link.w   a6, #$0
   00abee:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00abf2:  20 78 08 88          movea.l  $888.w, a0
@@ -15354,7 +15434,8 @@ Lacce:
   00acce:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00acd4:  4e 5e                unlk     a6
   00acd6:  4e 74 00 0c          rtd      #$c
-handler_55:
+* Patch #55 replaces _MapRgn ($A8FB); card commands: $10 $32
+GA_MapRgn:
   00acda:  4e 56 ff f8          link.w   a6, #$fff8
   00acde:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00ace2:  26 6e 00 08          movea.l  $8(a6), a3
@@ -15455,7 +15536,8 @@ Lade4:
   00ade4:  4c ee 18 c0 ff e8    movem.l  -$18(a6), d6-d7/a3-a4
   00adea:  4e 5e                unlk     a6
   00adec:  4e 74 00 0c          rtd      #$c
-handler_16:
+* Patch #16 replaces _ForeColor ($A862); card commands: $36
+GA_ForeColor:
   00adf0:  4e 56 ff fc          link.w   a6, #$fffc
   00adf4:  2f 0c                move.l   a4, -(a7)
   00adf6:  70 00                moveq    #$0, d0
@@ -15491,7 +15573,8 @@ Lae4c:
   00ae4c:  28 6e ff f8          movea.l  -$8(a6), a4
   00ae50:  4e 5e                unlk     a6
   00ae52:  4e 74 00 04          rtd      #$4
-handler_17:
+* Patch #17 replaces _RGBForeColor ($AA14); card commands: $36
+GA_RGBForeColor:
   00ae56:  4e 56 ff fc          link.w   a6, #$fffc
   00ae5a:  48 e7 13 18          movem.l  d3/d6-d7/a3-a4, -(a7)
   00ae5e:  26 6e 00 08          movea.l  $8(a6), a3
@@ -15556,7 +15639,8 @@ Laef4:
   00aef4:  4c ee 18 c8 ff e8    movem.l  -$18(a6), d3/d6-d7/a3-a4
   00aefa:  4e 5e                unlk     a6
   00aefc:  4e 74 00 04          rtd      #$4
-handler_18:
+* Patch #18 replaces _PmForeColor ($AA97); card commands: $36
+GA_PmForeColor:
   00af00:  4e 56 ff fc          link.w   a6, #$fffc
   00af04:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00af08:  3e 2e 00 08          move.w   $8(a6), d7
@@ -15613,7 +15697,8 @@ Laf94:
   00af94:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   00af9a:  4e 5e                unlk     a6
   00af9c:  4e 74 00 02          rtd      #$2
-handler_41:
+* Patch #41 replaces _BackColor ($A863); card commands: $37
+GA_BackColor:
   00afa0:  4e 56 ff fc          link.w   a6, #$fffc
   00afa4:  2f 0c                move.l   a4, -(a7)
   00afa6:  70 00                moveq    #$0, d0
@@ -15649,7 +15734,8 @@ Laffc:
   00affc:  28 6e ff f8          movea.l  -$8(a6), a4
   00b000:  4e 5e                unlk     a6
   00b002:  4e 74 00 04          rtd      #$4
-handler_56:
+* Patch #56 replaces _RGBBackColor ($AA15); card commands: $37
+GA_RGBBackColor:
   00b006:  4e 56 ff fc          link.w   a6, #$fffc
   00b00a:  48 e7 13 18          movem.l  d3/d6-d7/a3-a4, -(a7)
   00b00e:  26 6e 00 08          movea.l  $8(a6), a3
@@ -15714,7 +15800,8 @@ Lb0a4:
   00b0a4:  4c ee 18 c8 ff e8    movem.l  -$18(a6), d3/d6-d7/a3-a4
   00b0aa:  4e 5e                unlk     a6
   00b0ac:  4e 74 00 04          rtd      #$4
-handler_19:
+* Patch #19 replaces _PmBackColor ($AA98); card commands: $37
+GA_PmBackColor:
   00b0b0:  4e 56 ff fc          link.w   a6, #$fffc
   00b0b4:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00b0b8:  3e 2e 00 08          move.w   $8(a6), d7
@@ -15862,7 +15949,8 @@ sub_b1be:
   00b230:  4e 75                rts      
   00b232:  0a 44 41 ca          eori.w   #$41ca, d4
   00b236:  48 61 6e 64 6c 65 72 00 dc.b     $48,$61,$6e,$64,$6c,$65,$72,$00  ; Handler.
-handler_81:
+* Patch #81 replaces _GetPixel ($A865); card commands: $0D $29 $33
+GA_GetPixel:
   00b23e:  4e 56 ff f6          link.w   a6, #$fff6
   00b242:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00b246:  38 2e 00 08          move.w   $8(a6), d4
@@ -15955,7 +16043,8 @@ Lb340:
   00b340:  4c ee 18 f0 ff de    movem.l  -$22(a6), d4-d7/a3-a4
   00b346:  4e 5e                unlk     a6
   00b348:  4e 74 00 04          rtd      #$4
-handler_80:
+* Patch #80 replaces _GetCPixel ($AA17); card commands: $0D $29 $33
+GA_GetCPixel:
   00b34c:  4e 56 ff f6          link.w   a6, #$fff6
   00b350:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00b354:  3a 2e 00 0c          move.w   $c(a6), d5
@@ -16036,7 +16125,8 @@ Lb432:
   00b432:  4c ee 18 f0 ff de    movem.l  -$22(a6), d4-d7/a3-a4
   00b438:  4e 5e                unlk     a6
   00b43a:  4e 74 00 08          rtd      #$8
-handler_67:
+* Patch #67 replaces _GetForeColor ($AA19); card commands: $36
+GA_GetForeColor:
   00b43e:  4e 56 ff f6          link.w   a6, #$fff6
   00b442:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00b446:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16085,7 +16175,8 @@ Lb4be:
   00b4be:  4c ee 18 80 ff ea    movem.l  -$16(a6), d7/a3-a4
   00b4c4:  4e 5e                unlk     a6
   00b4c6:  4e 74 00 04          rtd      #$4
-handler_68:
+* Patch #68 replaces _GetBackColor ($AA1A); card commands: $37
+GA_GetBackColor:
   00b4ca:  4e 56 ff f6          link.w   a6, #$fff6
   00b4ce:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00b4d2:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16134,7 +16225,8 @@ Lb54a:
   00b54a:  4c ee 18 80 ff ea    movem.l  -$16(a6), d7/a3-a4
   00b550:  4e 5e                unlk     a6
   00b552:  4e 74 00 04          rtd      #$4
-handler_76:
+* Patch #76 replaces _NewPixMap ($AA03); no EngineDispatch command found
+GA_NewPixMap:
   00b556:  4e 56 00 00          link.w   a6, #$0
   00b55a:  2f 0c                move.l   a4, -(a7)
   00b55c:  59 8f                subq.l   #$4, a7
@@ -16149,7 +16241,8 @@ handler_76:
   00b576:  28 6e ff fc          movea.l  -$4(a6), a4
   00b57a:  4e 5e                unlk     a6
   00b57c:  4e 75                rts      
-handler_57:
+* Patch #57 replaces _CopyPixMap ($AA05); card commands: $26
+GA_CopyPixMap:
   00b57e:  4e 56 00 00          link.w   a6, #$0
   00b582:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00b586:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16185,7 +16278,8 @@ Lb5c0:
   00b5d8:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   00b5de:  4e 5e                unlk     a6
   00b5e0:  4e 74 00 08          rtd      #$8
-handler_58:
+* Patch #58 replaces _PenPixPat ($AA0A); card commands: $2A
+GA_PenPixPat:
   00b5e4:  4e 56 ff f4          link.w   a6, #$fff4
   00b5e8:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00b5ec:  70 00                moveq    #$0, d0
@@ -16275,7 +16369,8 @@ Lb6d2:
   00b6d2:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   00b6d8:  4e 5e                unlk     a6
   00b6da:  4e 74 00 04          rtd      #$4
-handler_59:
+* Patch #59 replaces _BackPixPat ($AA0B); card commands: $2A
+GA_BackPixPat:
   00b6de:  4e 56 ff f4          link.w   a6, #$fff4
   00b6e2:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00b6e6:  70 00                moveq    #$0, d0
@@ -16365,7 +16460,8 @@ Lb7cc:
   00b7cc:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   00b7d2:  4e 5e                unlk     a6
   00b7d4:  4e 74 00 04          rtd      #$4
-handler_60:
+* Patch #60 replaces _SetPortPix ($AA06); card commands: $26
+GA_SetPortPix:
   00b7d8:  4e 56 00 00          link.w   a6, #$0
   00b7dc:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00b7e0:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16401,7 +16497,8 @@ Lb81e:
   00b832:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   00b838:  4e 5e                unlk     a6
   00b83a:  4e 74 00 04          rtd      #$4
-handler_61:
+* Patch #61 replaces _OpColor ($AA21); card commands: $26
+GA_OpColor:
   00b83e:  4e 56 ff fc          link.w   a6, #$fffc
   00b842:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00b846:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16447,7 +16544,8 @@ Lb89e:
   00b8b2:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   00b8b8:  4e 5e                unlk     a6
   00b8ba:  4e 74 00 04          rtd      #$4
-handler_62:
+* Patch #62 replaces _HiliteColor ($AA22); card commands: $26
+GA_HiliteColor:
   00b8be:  4e 56 ff fc          link.w   a6, #$fffc
   00b8c2:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00b8c6:  26 6e 00 08          movea.l  $8(a6), a3
@@ -16741,7 +16839,8 @@ Lbbfa:
   00bc16:  4c ee 18 c0 ff ec    movem.l  -$14(a6), d6-d7/a3-a4
   00bc1c:  4e 5e                unlk     a6
   00bc1e:  4e 74 00 08          rtd      #$8
-handler_79:
+* Patch #79 replaces _ClosePort ($A87D); no EngineDispatch command found
+GA_CloseCPort:
   00bc22:  4e 56 00 00          link.w   a6, #$0
   00bc26:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00bc2a:  48 78 0f f4          pea.l    $ff4.w
@@ -16752,7 +16851,8 @@ handler_79:
   00bc3a:  4e 90                jsr      (a0)
   00bc3c:  4e 5e                unlk     a6
   00bc3e:  4e 74 00 04          rtd      #$4
-handler_101:
+* Patch #101 replaces _CharExtra ($AA23); card commands: $26
+GA_CharExtra:
   00bc42:  4e 56 00 00          link.w   a6, #$0
   00bc46:  48 e7 03 08          movem.l  d6-d7/a4, -(a7)
   00bc4a:  2e 2e 00 08          move.l   $8(a6), d7
@@ -17022,7 +17122,8 @@ Lbf00:
   00bf00:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   00bf06:  4e 5e                unlk     a6
   00bf08:  4e 74 00 04          rtd      #$4
-handler_100:
+* Patch #100 replaces _BitMapRgn ($A8D7); card commands: $0D $38
+GA_BitMapRgn:
   00bf0c:  4e 56 ff fa          link.w   a6, #$fffa
   00bf10:  48 e7 03 08          movem.l  d6-d7/a4, -(a7)
   00bf14:  28 6e 00 08          movea.l  $8(a6), a4
