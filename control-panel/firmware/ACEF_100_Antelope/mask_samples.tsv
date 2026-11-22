@@ -1,7 +1,19 @@
 k	key24	plaintext	bits
+0	000000	ihconst
+1	0000e8	ihconst
+4	000212	ihconst
+5	00022d	ihconst
 7	001d2c	nop
+8	001c6f	ihconst
+9	001f48	ihconst
+18	0018ac	ihconst
+19	001bcc	ihconst
 20	001bef	pattern16	16
 21	001a68	nop
+22	001a86	ihconst
+23	001575	ihconst
+29	00162d	ihconst
+30	0016cc	ihconst
 32	0011ef	nop
 37	001388	jmpi_lr0
 38	0012ef	nop
@@ -11,9 +23,15 @@ k	key24	plaintext	bits
 77	003e2d	nop
 78	00394c	jmpi_lr0
 79	0039ec	nop
+80	0039ef	ihconst
+81	003808	ihconst
 82	003b66	pattern16	16
 85	003a08	nop
+87	0035ec	ihconst
+88	0035b2	ihconst
 90	0034ec	nop
+91	00370c	ihconst
+92	00366f	ihconst
 144	00df80	jmpi_lr0
 145	00de68	nop
 163	00d04c	jmpi_lr0
@@ -21,6 +39,8 @@ k	key24	plaintext	bits
 205	00ff48	nop
 206	00ff6f	jmpi_lr0
 208	00fff2	jmpi_lr0
+246	00880c	ihconst
+247	0088ac	ihconst
 250	008a26	nop
 279	009bec	jmpi_lr0
 280	009bb2	nop
@@ -74,12 +94,26 @@ k	key24	plaintext	bits
 992	007fef	pattern16	16
 993	027f88	sub_gr1
 994	027ee6	asgeu64
+995	027eb5	ihconst
+996	0279e0	ihconst
+1001	027bed	ihconst
+1002	027a6c	ihconst
 1005	007528	pattern16	16
+1006	0275c6	ihconst
+1007	027475	ihconst
 1008	007480	pattern16	16
 1009	027768	nop
+1011	0276cc	ihconst
+1012	027692	ihconst
+1026	020e2c	ihconst
+1027	02094c	ihconst
+1043	0201b5	ihconst
+1044	020060	ihconst
 1053	021ca8	nop
 1057	021fe8	nop
 1063	00182c	pattern16	16
+1064	021b6f	ihconst
+1065	021a48	ihconst
 1066	001aa6	pattern16	16
 1067	021ab5	nop
 1071	00142c	pattern16	16
@@ -91,11 +125,27 @@ k	key24	plaintext	bits
 1077	021168	nop
 1078	021186	jmpi_lr0
 1079	021075	asleu65
+1080	0210c0	ihconst
+1081	021328	ihconst
+1082	02126f	ihconst
+1084	022d52	ihconst
 1086	022dcc	sub_gr1
 1087	022c6c	asgeu64
+1088	022cef	ihconst
+1089	022c88	ihconst
+1095	02286c	ihconst
+1096	022832	ihconst
+1100	022a6f	ihconst
+1101	022a28	ihconst
 1103	022575	nop
+1105	022468	ihconst
+1106	0224ef	ihconst
 1123	003e4c	pattern16	16
 1127	003875	pattern16	16
+1168	02c5f2	ihconst
+1169	02c4ed	ihconst
+1203	02d4cc	ihconst
+1204	02d492	ihconst
 1213	02d3c8	nop
 1217	02eded	nop
 1226	00eb6f	pattern16	16
@@ -105,11 +155,17 @@ k	key24	plaintext	bits
 1231	02e5ec	add_gr1
 1233	02e408	jmpi_lr0
 1234	02e766	asleu65
+1268	02f4ef	ihconst
+1269	02f768	ihconst
+1270	02f786	ihconst
+1271	02f675	ihconst
 1274	00f06f	pattern16	16
 1275	00f08c	pattern16	16
 1306	028126	sub_gr1
 1307	0281b5	asgeu64
 1308	028020	add_lr1
+1309	0280c8	ihconst
+1311	0283ac	ihconst
 1312	028272	add_gr1
 1313	0282ed	nop
 1314	029d2c	jmpi_lr0
@@ -131,6 +187,10 @@ k	key24	plaintext	bits
 1435	1d410c	add_gr1
 1437	1d40a8	jmpi_lr0
 1438	1d4346	asleu65
+1445	1d5d2d	ihconst
+1446	1d5d8c	ihconst
+1452	1d59a0	ihconst
+1453	1d5848	ihconst
 1485	1d6e28	nop
 1501	1d66c8	nop
 1511	1d7c75	nop
@@ -143,11 +203,17 @@ k	key24	plaintext	bits
 1580	1d1f6f	nop
 1581	001f28	pattern16	16
 1582	001fc6	pattern16	16
+1587	1d18cc	ihconst
+1588	1d1892	ihconst
 1592	1d156f	add_gr1
 1593	1d15c8	nop
 1594	1d1426	jmpi_lr0
 1595	1d14b5	asleu65
+1612	1d2fd2	ihconst
+1613	1d2e2d	ihconst
 1617	002808	pattern16	16
+1618	1d2b66	ihconst
+1619	1d2bb5	ihconst
 1623	1d25ec	nop
 1625	1d24ed	jmpi_lr0
 1627	00270c	pattern16	16
@@ -162,13 +228,21 @@ k	key24	plaintext	bits
 1684	1dc992	sub_gr1
 1685	1dc82d	asgeu64
 1686	1dcb0c	add_lr1
+1708	1ddcd2	ihconst
+1709	1ddf2d	ihconst
 1710	00de4c	pattern16	16
 1712	1ddeef	add_gr1
 1714	1dd866	jmpi_lr0
 1715	1dd8b5	asleu65
 1740	00eca0	pattern16	16
 1743	00ef2c	pattern16	16
+1757	1de42d	ihconst
+1759	1de76c	ihconst
 1762	00e6e6	pattern16	16
+1764	1de1e0	ihconst
+1765	1de188	ihconst
+1780	1dfe92	ihconst
+1782	1df80c	ihconst
 1783	00f8ac	pattern16	16
 1786	00fa26	pattern16	16
 1788	00f520	pattern16	16
@@ -178,17 +252,29 @@ k	key24	plaintext	bits
 1811	0089b5	pattern16	16
 1823	008775	pattern16	16
 1841	009fed	pattern16	16
+1845	1d9968	ihconst
+1846	1d9986	ihconst
+1865	1d90ed	ihconst
+1866	1d936c	ihconst
 1867	00938c	pattern16	16
 1873	1dac68	nop
 1875	1dafcc	nop
+1879	1da9ac	ihconst
+1880	1da86f	ihconst
 1881	00a8c8	pattern16	16
 1891	00a64c	pattern16	16
+1899	1da20c	ihconst
+1901	1dbd2d	ihconst
 1909	1db908	nop
 1911	1db8ec	nop
+1922	1db7ef	ihconst
+1923	1db64c	ihconst
 1924	00b612	pattern16	16
 1934	004d6f	pattern16	16
 1936	004df2	pattern16	16
 1956	0047e0	pattern16	16
+1958	1c46ef	ihconst
+1959	1c416c	ihconst
 1960	004132	pattern16	16
 1961	1c41ed	nop
 1964	00436f	pattern16	16
@@ -198,7 +284,11 @@ k	key24	plaintext	bits
 1980	1c5b20	nop
 1981	005bc8	pattern16	16
 1987	00574c	pattern16	16
+1997	1c522d	ihconst
 1998	006d4c	pattern16	16
+1999	1c6dec	ihconst
+2000	1c6def	ihconst
+2001	1c6c08	ihconst
 2018	1c64ef	nop
 2028	1c63a0	nop
 2039	007e75	pattern16	16
@@ -218,6 +308,8 @@ k	key24	plaintext	bits
 2287	1ce0ec	nop
 2299	1cfe0c	nop
 2311	1cf52c	nop
+2317	1cf148	ihconst
+2318	1cf16f	ihconst
 2319	00f12c	pattern16	16
 2320	00f1f2	pattern16	16
 2336	0089ef	pattern16	16
@@ -251,9 +343,13 @@ k	key24	plaintext	bits
 2576	0077ef	pattern16	16
 2595	1f094c	nop
 2624	1f1cef	nop
+2630	1f19ef	ihconst
+2631	1f186c	ihconst
 2632	001832	pattern16	16
 2633	0018ed	pattern16	16
 2641	001468	pattern16	16
+2650	1f1326	ihconst
+2651	1f13b5	ihconst
 2655	1f2dac	nop
 2666	1f2a6f	nop
 2675	1f26b5	nop
@@ -274,26 +370,46 @@ k	key24	plaintext	bits
 2805	1fe768	nop
 2811	00e08c	pattern16	16
 2818	1ffde6	nop
+2825	1ffeed	ihconst
+2826	1ff96c	ihconst
 2827	00f98c	pattern16	16
 2828	00f86f	pattern16	16
 2853	1f8ce8	nop
 2863	008aec	pattern16	16
 2877	1f83a8	nop
+2880	1f8200	ihconst
+2881	1f82e8	ihconst
 2883	1f9c4c	nop
 2885	1f9c2d	add_gr1
 2887	1f9f2c	jmpi_lr0
 2888	1f9e6f	asleu65
 2894	1f9b6f	nop
 2896	1f9bf2	nop
+2897	1f9aed	ihconst
+2899	1f95cc	ihconst
+2900	1f95ef	ihconst
+2902	1f9486	ihconst
+2903	1f9775	ihconst
+2905	1f9628	ihconst
+2906	1f916f	ihconst
+2908	1f9052	ihconst
+2912	1f93ef	ihconst
+2913	1f9388	ihconst
 2917	1fad88	nop
 2928	1fa880	nop
 2936	1fa76f	sub_gr1
 2937	1fa7c8	asgeu64
 2938	1fa626	add_lr1
+2950	1fbc06	ihconst
+2951	1fbf75	ihconst
 2952	00be40	pattern16	16
 2961	1fba08	nop
 2968	1fb7b2	nop
 2973	00b0a8	pattern16	16
+2980	1e4d12	ihconst
+2981	1e4d2d	ihconst
+2988	1e49a0	ihconst
+2989	1e4848	ihconst
 2990	00486f	pattern16	16
 2996	004aef	pattern16	16
 2997	1e4568	nop
@@ -327,6 +443,8 @@ k	key24	plaintext	bits
 3181	002e48	pattern16	16
 3189	002b68	pattern16	16
 3190	002b86	pattern16	16
+3213	1e3c28	ihconst
+3214	1e3cc6	ihconst
 3216	003f80	pattern16	16
 3218	1e3eef	nop
 3234	1e312c	jmpi_lr0
@@ -400,11 +518,21 @@ k	key24	plaintext	bits
 3598	1960c6	sub_gr1
 3599	196375	asgeu64
 3600	196380	add_lr1
+3604	197d92	ihconst
+3605	197c2d	ihconst
+3612	197820	ihconst
+3613	1978c8	ihconst
 3621	0074e8	pattern16	16
+3622	197706	ihconst
+3623	197675	ihconst
 3624	007140	pattern16	16
 3647	000a75	pattern16	16
+3655	19072c	ihconst
+3656	19066f	ihconst
 3659	0001b5	pattern16	16
 3660	1900a0	nop
+3663	19032c	ihconst
+3664	1903f2	ihconst
 3678	0018cc	pattern16	16
 3684	1915e0	nop
 3685	191588	add_gr1
@@ -421,7 +549,17 @@ k	key24	plaintext	bits
 3722	19216f	sub_gr1
 3723	19210c	asgeu64
 3724	1921d2	add_lr1
+3726	19234c	ihconst
+3727	1923ec	ihconst
 3728	0023ef	pattern16	16
+3734	193cef	ihconst
+3735	193fec	ihconst
+3744	193b00	ihconst
+3745	193be8	ihconst
+3762	1933ac	ihconst
+3763	1932cc	ihconst
+3770	19ce6f	ihconst
+3771	19ce8c	ihconst
 3772	00c952	pattern16	16
 3782	19c5ef	nop
 3783	19c46c	add_gr1
@@ -472,6 +610,8 @@ k	key24	plaintext	bits
 3945	009448	pattern16	16
 3948	0097a0	pattern16	16
 3949	009648	pattern16	16
+3956	1990ef	ihconst
+3957	199368	ihconst
 3961	19ad28	nop
 3973	19a888	nop
 3974	19abef	jmpi_lr0
@@ -507,10 +647,20 @@ k	key24	plaintext	bits
 4164	180ee0	sub_gr1
 4165	180e88	asgeu64
 4166	1809ef	add_lr1
+4178	1804ef	ihconst
+4179	1807cc	ihconst
 4180	000792	pattern16	16
+4187	1803b5	ihconst
+4188	180220	ihconst
 4196	001eef	pattern16	16
+4197	181ee8	ihconst
+4198	181906	ihconst
 4213	001108	pattern16	16
+4233	182b48	ihconst
+4234	182ba6	ihconst
 4238	18256f	nop
+4239	18252c	ihconst
+4241	1824ed	ihconst
 4248	1821c0	nop
 4265	1839ed	nop
 4290	18cc2c	nop
@@ -635,6 +785,8 @@ k	key24	plaintext	bits
 5073	004c08	pattern16	16
 5077	1a4e08	nop
 5081	0048ed	pattern16	16
+5084	1a4a6f	ihconst
+5085	1a4aa8	ihconst
 5094	00478c	pattern16	16
 5101	004248	pattern16	16
 5103	00422c	pattern16	16
@@ -808,6 +960,8 @@ k	key24	plaintext	bits
 6321	142908	nop
 6326	142bef	nop
 6356	1439ef	nop
+6366	1434cc	ihconst
+6367	14376c	ihconst
 6377	0033ed	pattern16	16
 6389	00c92d	pattern16	16
 6413	00dc2d	pattern16	16
@@ -838,10 +992,18 @@ k	key24	plaintext	bits
 6546	149cac	nop
 6548	149fef	sub_gr1
 6549	149e68	asgeu64
+6550	149e86	ihconst
+6551	149975	ihconst
+6553	149828	ihconst
+6554	149b6f	ihconst
 6557	009a2d	pattern16	16
 6559	00956c	pattern16	16
 6560	0095ef	pattern16	16
+6561	149588	ihconst
+6562	1494e6	ihconst
+6563	1494b5	ihconst
 6564	0097e0	pattern16	16
+6565	149788	ihconst
 6568	009132	pattern16	16
 6617	00b8ed	pattern16	16
 6626	00b4ef	pattern16	16
@@ -856,6 +1018,8 @@ k	key24	plaintext	bits
 6673	174268	sub_gr1
 6674	1742ef	asgeu64
 6675	175dcc	add_lr1
+6676	175d92	ihconst
+6677	175c2d	ihconst
 6678	005f0c	pattern16	16
 6683	1759b5	nop
 6686	175b6f	add_gr1
@@ -864,10 +1028,16 @@ k	key24	plaintext	bits
 6689	175aed	asleu65
 6691	17544c	sub_gr1
 6692	1754ef	asgeu64
+6693	1754e8	ihconst
+6694	175706	ihconst
+6704	1752ef	ihconst
+6705	176d08	ihconst
 6710	176fef	nop
 6712	176eb2	add_gr1
 6714	1769ec	jmpi_lr0
 6715	17680c	asleu65
+6720	176a00	ihconst
+6721	176ae8	ihconst
 6722	0065ef	pattern16	16
 6730	0061a6	pattern16	16
 6732	0060a0	pattern16	16
@@ -882,11 +1052,15 @@ k	key24	plaintext	bits
 6753	177b88	jmpi_lr0
 6754	177ae6	asleu65
 6759	00776c	pattern16	16
+6761	1777ed	ihconst
+6762	17766c	ihconst
 6763	00768c	pattern16	16
 6764	17716f	asgeu64
 6765	007128	pattern16	16
 6766	0071c6	pattern16	16
 6769	007368	pattern16	16
+6770	1773ef	ihconst
+6771	1772cc	ihconst
 6774	000c0c	pattern16	16
 6779	000eb5	pattern16	16
 6781	0009c8	pattern16	16
@@ -902,21 +1076,33 @@ k	key24	plaintext	bits
 6820	171512	add_gr1
 6822	17158c	jmpi_lr0
 6823	17142c	asleu65
+6824	17176f	ihconst
+6825	171648	ihconst
 6826	0016a6	pattern16	16
+6831	17102c	ihconst
+6832	1710f2	ihconst
+6834	1713ac	ihconst
+6835	1712cc	ihconst
 6838	172d86	add_gr1
 6839	172c75	nop
 6840	172cc0	jmpi_lr0
 6841	172f28	asleu65
 6843	002e8c	pattern16	16
+6846	1729cc	ihconst
+6847	17286c	ihconst
 6850	172be6	add_gr1
 6851	172bb5	nop
 6852	172ae0	jmpi_lr0
 6853	172a88	asleu65
 6854	0025ef	pattern16	16
 6855	00246c	pattern16	16
+6856	172432	ihconst
+6857	1724ed	ihconst
 6858	00276c	pattern16	16
 6859	17278c	asgeu64
 6863	002175	pattern16	16
+6865	172068	ihconst
+6866	1720ef	ihconst
 6867	0023cc	pattern16	16
 6870	003d0c	pattern16	16
 6872	173c6f	add_gr1
@@ -935,7 +1121,13 @@ k	key24	plaintext	bits
 6904	17ccb2	jmpi_lr0
 6907	17ce0c	sub_gr1
 6908	17c96f	asgeu64
+6914	17cbef	ihconst
+6915	17ca4c	ihconst
+6916	17ca12	ihconst
 6917	00ca2d	pattern16	16
+6918	17ca8c	ihconst
+6920	17c46f	ihconst
+6921	17c748	ihconst
 6935	00dd75	pattern16	16
 6937	00dc28	pattern16	16
 6939	00df8c	pattern16	16
@@ -946,46 +1138,132 @@ k	key24	plaintext	bits
 6949	00db88	pattern16	16
 6951	00d56c	pattern16	16
 6953	00d5ed	pattern16	16
+6974	17ee6f	ihconst
+6975	17eeac	ihconst
+6985	17e4a8	ihconst
+6986	17e76f	ihconst
 6987	00e70c	pattern16	16
+6994	17e366	ihconst
+6996	17e260	ihconst
+7000	17fdb2	ihconst
+7001	17fced	ihconst
 7002	00fcec	pattern16	16
+7017	17f448	ihconst
+7018	17f4a6	ihconst
 7023	00f62c	pattern16	16
+7030	17f386	ihconst
+7032	17f2c0	ihconst
+7036	178f52	ihconst
+7037	178f2d	ihconst
 7048	008a32	pattern16	16
+7049	178aed	ihconst
+7050	17856c	ihconst
 7051	00858c	pattern16	16
+7053	178428	ihconst
+7055	178775	ihconst
 7059	0081cc	pattern16	16
 7061	17802d	add_gr1
 7063	1783ac	jmpi_lr0
 7064	17826f	asleu65
+7092	179360	ihconst
+7093	179308	ihconst
 7094	0093ef	pattern16	16
+7098	17adec	ihconst
+7099	17ac0c	ihconst
 7106	17a9ef	add_gr1
 7108	17a812	jmpi_lr0
 7109	17a82d	asleu65
 7111	17ab2c	sub_gr1
 7112	17aa6f	asgeu64
 7113	17a548	add_lr1
+7118	17a76f	ihconst
+7119	17a72c	ihconst
+7120	17a7f2	ihconst
+7121	17a6ed	ihconst
+7131	17bd8c	ihconst
+7132	17bc52	ihconst
 7141	00b988	pattern16	16
 7148	00b56f	pattern16	16
+7167	164cac	ihconst
+7168	164f72	ihconst
+7172	1649ef	ihconst
+7173	1649e8	ihconst
+7174	164806	ihconst
+7175	164b75	ihconst
+7215	16542c	ihconst
+7216	1654f2	ihconst
+7219	1656cc	ihconst
+7220	1656ef	ihconst
+7229	166d2d	ihconst
+7230	166dcc	ihconst
 7234	166fe6	nop
+7256	16606f	ihconst
+7257	1660c8	ihconst
 7263	167dac	nop
 7265	007ced	pattern16	16
 7268	007eef	pattern16	16
+7271	167875	ihconst
+7272	167b40	ihconst
+7273	167ba8	ihconst
+7275	167a0c	ihconst
+7277	16752d	ihconst
+7279	1674ec	ihconst
+7285	167108	ihconst
+7286	1671ef	ihconst
 7290	1673ec	nop
 7322	00036f	pattern16	16
 7330	161ce6	nop
+7339	16188c	ihconst
+7340	161b6f	ihconst
 7344	161a80	nop
 7348	161492	nop
 7354	161026	nop
 7358	00126f	pattern16	16
 7359	1612ac	nop
+7361	162ded	ihconst
+7363	162f4c	ihconst
+7364	162fef	ihconst
 7365	002fe8	pattern16	16
+7366	162e06	ihconst
+7372	162bd2	ihconst
+7376	1625ef	ihconst
+7377	162408	ihconst
+7379	1627b5	ihconst
+7389	1622a8	ihconst
+7390	163d46	ihconst
+7392	163d00	ihconst
+7393	163de8	ihconst
+7394	163cef	ihconst
 7395	003f4c	pattern16	16
+7396	163f12	ihconst
+7400	16396f	ihconst
+7402	1638a6	ihconst
+7403	1638b5	ihconst
+7405	163a48	ihconst
+7411	1634cc	ihconst
 7412	0034ef	pattern16	16
+7413	163768	ihconst
+7418	16306f	ihconst
+7419	16308c	ihconst
 7425	003288	pattern16	16
 7426	00cde6	pattern16	16
 7430	00cfef	pattern16	16
 7444	00c592	pattern16	16
+7464	16d940	ihconst
+7465	16d9a8	ihconst
+7468	16d8d2	ihconst
+7469	16db2d	ihconst
 7470	00da4c	pattern16	16
+7474	16d466	ihconst
+7475	16d4b5	ihconst
+7481	16d1ed	ihconst
+7482	16d1ec	ihconst
 7490	00edef	pattern16	16
+7493	16ec2d	ihconst
+7494	16ec8c	ihconst
 7499	00e9b5	pattern16	16
+7501	16eb48	ihconst
+7502	16eb6f	ihconst
 7506	16eaac	nop
 7512	00e7c0	pattern16	16
 7516	00e052	pattern16	16
@@ -999,23 +1277,43 @@ k	key24	plaintext	bits
 7543	16f4ac	sub_gr1
 7544	16f76f	asgeu64
 7545	16f7c8	add_lr1
+7553	16f3ed	ihconst
+7554	16f22c	ihconst
 7560	008e40	pattern16	16
+7565	16882d	ihconst
+7566	168b4c	ihconst
 7567	008bec	pattern16	16
 7577	0086ed	pattern16	16
+7582	168346	ihconst
+7583	168375	ihconst
 7584	008300	pattern16	16
 7591	169c2c	nop
 7595	009eb5	pattern16	16
 7599	00982c	pattern16	16
+7605	169568	ihconst
+7606	169586	ihconst
 7618	0093e6	pattern16	16
 7621	169288	nop
+7623	16ac6c	ihconst
+7624	16ac32	ihconst
+7630	16aec6	ihconst
+7631	16a975	ihconst
 7654	00bd06	pattern16	16
+7669	16b508	ihconst
+7670	16b5ef	ihconst
 7671	00b4ec	pattern16	16
 7678	00b046	pattern16	16
+7682	16b3ef	ihconst
+7683	16b24c	ihconst
 7688	004c6f	pattern16	16
 7693	004948	pattern16	16
+7694	11496f	ihconst
+7695	11492c	ihconst
 7699	004bcc	pattern16	16
 7700	004bef	pattern16	16
 7706	00476f	pattern16	16
+7708	114652	ihconst
+7709	11462d	ihconst
 7713	004188	pattern16	16
 7726	005fc6	pattern16	16
 7745	0051ed	pattern16	16
@@ -1027,15 +1325,33 @@ k	key24	plaintext	bits
 7764	006a60	pattern16	16
 7804	007752	pattern16	16
 7833	110ac8	nop
+7845	1100e8	ihconst
+7846	110306	ihconst
+7852	111cd2	ihconst
+7853	111f2d	ihconst
 7854	001e4c	pattern16	16
 7860	001b60	pattern16	16
+7866	1115ec	ihconst
+7867	11140c	ihconst
 7868	00176f	pattern16	16
+7875	11104c	ihconst
+7881	112d48	ihconst
 7893	002868	pattern16	16
 7900	002452	pattern16	16
+7921	113f68	ihconst
+7922	113fef	ihconst
 7923	003ecc	pattern16	16
 7930	003a26	pattern16	16
 7934	00346f	pattern16	16
+7938	11362c	ihconst
+7939	11314c	ihconst
+7959	11cbec	ihconst
+7961	11caed	ihconst
 7962	00caec	pattern16	16
+7971	11c14c	ihconst
+7972	11c112	ihconst
+7978	11c2a6	ihconst
+7979	11c2b5	ihconst
 7980	00dda0	pattern16	16
 7981	11dc48	nop
 7988	11deef	nop
@@ -1045,6 +1361,8 @@ k	key24	plaintext	bits
 8013	00d228	pattern16	16
 8014	00d2c6	pattern16	16
 8035	00e64c	pattern16	16
+8055	11f8ec	ihconst
+8056	11f8b2	ihconst
 8057	00fbed	pattern16	16
 8058	11fbec	nop
 8060	11f56f	add_gr1
@@ -1058,10 +1376,20 @@ k	key24	plaintext	bits
 8096	0085ef	pattern16	16
 8098	0084e6	pattern16	16
 8101	118788	nop
+8117	119f2d	ihconst
+8118	119e0c	ihconst
 8124	119b20	nop
+8140	1193d2	ihconst
+8141	11922d	ihconst
 8157	11aaa8	nop
+8181	11bf68	ihconst
+8182	11bf86	ihconst
 8199	00b66c	pattern16	16
 8206	11b0c6	nop
+8211	104dcc	ihconst
+8212	104d92	ihconst
+8261	10542d	ihconst
+8262	10548c	ihconst
 8265	005148	pattern16	16
 8266	0051a6	pattern16	16
 8268	0050a0	pattern16	16
@@ -1070,13 +1398,21 @@ k	key24	plaintext	bits
 8303	106075	add_gr1
 8305	106368	jmpi_lr0
 8306	1063ef	asleu65
+8314	107e26	ihconst
+8315	107eb5	ihconst
+8322	107a2c	ihconst
+8323	10754c	ihconst
 8331	10710c	jmpi_lr0
 8334	00734c	pattern16	16
 8336	0073ef	pattern16	16
 8348	00086f	pattern16	16
 8352	000b00	pattern16	16
+8383	10186c	ihconst
+8384	1018ef	ihconst
 8385	001888	pattern16	16
 8388	101ae0	nop
+8392	101432	ihconst
+8393	1014ed	ihconst
 8396	00166f	pattern16	16
 8400	101180	nop
 8402	1010ef	jmpi_lr0
@@ -1096,6 +1432,12 @@ k	key24	plaintext	bits
 8461	003148	pattern16	16
 8463	00312c	pattern16	16
 8465	0030ed	pattern16	16
+8470	103286	ihconst
+8471	10cd75	ihconst
+8476	10ce52	ihconst
+8477	10ce2d	ihconst
+8482	10c8e6	ihconst
+8483	10c8b5	ihconst
 8484	00cbe0	pattern16	16
 8486	10caef	add_gr1
 8487	10c56c	nop
@@ -1108,7 +1450,11 @@ k	key24	plaintext	bits
 8503	10c2ac	nop
 8504	10dd6f	jmpi_lr0
 8505	10ddc8	asleu65
+8519	10d575	ihconst
+8520	10d440	ihconst
 8540	10ee6f	nop
+8548	10eb12	ihconst
+8549	10eb2d	ihconst
 8568	10e2c0	nop
 8573	10ff2d	add_gr1
 8574	10ffcc	nop
@@ -1126,42 +1472,80 @@ k	key24	plaintext	bits
 8601	00f2c8	pattern16	16
 8603	008db5	pattern16	16
 8607	008fac	pattern16	16
+8613	1088e8	ihconst
+8614	108b06	ihconst
+8626	108066	ihconst
+8627	1080b5	ihconst
 8628	008360	pattern16	16
 8632	0082b2	pattern16	16
 8638	009e46	pattern16	16
+8643	10984c	ihconst
+8644	109812	ihconst
 8649	009548	pattern16	16
 8652	1094a0	nop
+8664	1093c0	ihconst
+8665	109228	ihconst
 8673	00af88	pattern16	16
 8689	00a768	pattern16	16
+8690	10a7ef	ihconst
+8692	10a692	ihconst
+8698	10a226	ihconst
+8699	10a2b5	ihconst
 8701	10bdc8	nop
 8715	10b50c	nop
 8725	10b008	nop
+8732	134c6f	ihconst
+8733	134ca8	ihconst
 8737	134fe8	nop
 8749	134448	nop
 8758	134186	nop
 8767	135c6c	nop
+8775	13586c	ihconst
+8776	135832	ihconst
 8777	0058ed	pattern16	16
 8783	005575	pattern16	16
 8785	005468	pattern16	16
+8799	136dac	ihconst
+8800	136c72	ihconst
 8801	006ced	pattern16	16
 8804	136eef	nop
+8824	1360b2	ihconst
+8825	1363ed	ihconst
 8829	137da8	nop
 8853	007668	pattern16	16
+8863	130d6c	ihconst
+8864	130def	ihconst
+8869	130f88	ihconst
+8872	130932	ihconst
 8885	00072d	pattern16	16
 8892	000320	pattern16	16
 8900	001fef	pattern16	16
 8906	001b6f	pattern16	16
+8908	131bd2	ihconst
+8909	131a2d	ihconst
 8936	00296f	pattern16	16
 8939	1328b5	nop
 8947	1324cc	nop
+8952	1326c0	ihconst
+8954	13206f	ihconst
 8959	00226c	pattern16	16
 8981	13342d	nop
 9000	00c940	pattern16	16
+9004	13c8d2	ihconst
+9005	13cb2d	ihconst
 9006	00ca4c	pattern16	16
+9011	13c4b5	ihconst
+9012	13c760	ihconst
 9013	00c708	pattern16	16
 9019	00c00c	pattern16	16
+9025	13c2e8	ihconst
+9026	13ddef	ihconst
 9031	13df2c	nop
+9036	13d8a0	ihconst
 9041	00daed	pattern16	16
+9042	13daac	ihconst
+9062	13ecef	ihconst
+9063	13ef6c	ihconst
 9064	00ef32	pattern16	16
 9065	13efed	nop
 9085	13e1c8	nop
@@ -1169,9 +1553,19 @@ k	key24	plaintext	bits
 9108	13f460	nop
 9114	13f6ec	nop
 9116	13f06f	nop
+9123	138d4c	ihconst
+9124	138d12	ihconst
 9125	008d2d	pattern16	16
 9132	0089a0	pattern16	16
+9144	1384c0	ihconst
+9146	13866f	ihconst
+9156	1382e0	ihconst
+9157	138288	ihconst
+9166	139ec6	ihconst
+9167	139975	ihconst
 9174	00950c	pattern16	16
+9204	13a560	ihconst
+9205	13a508	ihconst
 9206	00a5ef	pattern16	16
 9207	13a4ec	nop
 9208	13a4b2	add_gr1
@@ -1194,6 +1588,14 @@ k	key24	plaintext	bits
 9286	124206	asleu65
 9289	005ca8	pattern16	16
 9302	005aef	pattern16	16
+9303	1255ec	ihconst
+9304	1255b2	ihconst
+9309	1256a8	ihconst
+9310	125146	ihconst
+9325	126e48	ihconst
+9326	126e6f	ihconst
+9336	126ac0	ihconst
+9337	126528	ihconst
 9338	00646f	pattern16	16
 9345	006688	pattern16	16
 9347	1261b5	add_gr1
@@ -1215,13 +1617,21 @@ k	key24	plaintext	bits
 9410	1201ef	jmpi_lr0
 9411	12004c	asleu65
 9413	00002d	pattern16	16
+9421	121f48	ihconst
+9422	121f6f	ihconst
+9427	1219cc	ihconst
+9428	1219ef	ihconst
 9429	001868	pattern16	16
 9441	121788	nop
+9442	1216e6	ihconst
+9443	1216b5	ihconst
 9444	0011e0	pattern16	16
 9446	1210ef	add_gr1
 9447	12136c	nop
 9448	121332	jmpi_lr0
 9449	1213ed	asleu65
+9453	122d28	ihconst
+9454	122dc6	ihconst
 9457	122f68	add_gr1
 9458	122fef	nop
 9459	122ecc	jmpi_lr0
@@ -1282,13 +1692,33 @@ k	key24	plaintext	bits
 9684	129e60	asgeu64
 9685	129e08	add_lr1
 9693	009aa8	pattern16	16
+9732	12a4e0	ihconst
+9733	12a488	ihconst
 9735	12a66c	nop
 9739	12a18c	nop
+9741	12a028	ihconst
+9743	12a375	ihconst
+9744	12a380	ihconst
+9745	12a268	ihconst
+9757	12b8c8	ihconst
+9759	12bbac	ihconst
+9760	12ba72	ihconst
+9761	12baed	ihconst
 9772	12b0d2	nop
 9792	004a00	pattern16	16
+9794	2d45ef	ihconst
+9795	2d444c	ihconst
 9797	2d442d	nop
 9801	2d4148	nop
+9803	2d41b5	ihconst
+9805	2d4348	ihconst
+9806	2d436f	ihconst
+9807	2d432c	ihconst
 9813	2d5c68	nop
+9815	2d5f75	ihconst
+9817	2d5e28	ihconst
+9818	2d596f	ihconst
+9819	2d598c	ihconst
 9823	005b6c	pattern16	16
 9826	2d5ae6	nop
 9827	005ab5	pattern16	16
@@ -1296,8 +1726,12 @@ k	key24	plaintext	bits
 9842	0053ef	pattern16	16
 9848	2d6f6f	nop
 9855	0068ac	pattern16	16
+9856	2d6b72	ihconst
+9857	2d6bed	ihconst
 9858	006a2c	pattern16	16
 9859	2d654c	nop
+9866	2d616f	ihconst
+9867	2d610c	ihconst
 9871	2d63ec	nop
 9879	2d7fec	nop
 9887	2d7b75	nop
@@ -1311,8 +1745,12 @@ k	key24	plaintext	bits
 9952	2d1872	nop
 9961	2d17a8	nop
 9969	2d1308	nop
+9973	2d2d08	ihconst
+9974	2d2def	ihconst
 9978	2d2fec	nop
 9980	00296f	pattern16	16
+9981	2d29a8	ihconst
+9982	2d2846	ihconst
 9984	2d2800	nop
 9985	2d28e8	add_gr1
 9986	2d2bef	nop
@@ -1508,73 +1946,221 @@ k	key24	plaintext	bits
 11076	2f36e0	nop
 11080	2f3032	asgeu64
 11086	0032c6	pattern16	16
+11093	2fce2d	ihconst
+11094	2fc90c	ihconst
+11149	2fed48	ihconst
+11150	2fed6f	ihconst
 11152	2fedf2	nop
+11173	2fe788	ihconst
+11174	2fe6ef	ihconst
+11176	2fe132	ihconst
+11177	2fe1ed	ihconst
+11183	2fe275	ihconst
+11185	2ffd68	ihconst
+11191	2ffeac	ihconst
+11192	2ff96f	ihconst
+11193	2ff9c8	ihconst
 11195	00f8b5	pattern16	16
+11196	2ffb20	ihconst
+11197	2ffbc8	ihconst
+11198	2ffa6f	ihconst
 11199	00faac	pattern16	16
 11200	2ff572	nop
 11202	2ff42c	nop
+11215	2f8dec	ihconst
+11216	2f8def	ihconst
 11217	008c08	pattern16	16
 11219	008fb5	pattern16	16
 11222	2f8eef	nop
 11227	2f8b0c	nop
+11228	2f8a6f	ihconst
+11229	2f8aa8	ihconst
+11232	2f8500	ihconst
+11233	2f85e8	ihconst
 11235	2f874c	nop
 11244	0083a0	pattern16	16
+11254	2f9f86	ihconst
+11255	2f9e75	ihconst
+11256	2f9ec0	ihconst
+11257	2f9928	ihconst
+11258	2f986f	ihconst
+11259	2f988c	ihconst
+11260	2f9b52	ihconst
+11261	2f9b2d	ihconst
+11262	2f9bcc	ihconst
+11263	2f9a6c	ihconst
+11265	2f9a88	ihconst
+11266	2f95e6	ihconst
+11268	2f94e0	ihconst
+11269	2f9488	ihconst
+11271	2f966c	ihconst
+11272	2f9632	ihconst
 11312	00a2ef	pattern16	16
 11328	00ba00	pattern16	16
 11350	004c86	pattern16	16
 11353	004e28	pattern16	16
 11356	2e4852	nop
+11365	2e4588	ihconst
+11366	2e44ef	ihconst
 11367	00476c	pattern16	16
 11368	004732	pattern16	16
 11374	0041c6	pattern16	16
 11378	0043ef	pattern16	16
+11404	2e51d2	ihconst
+11405	2e502d	ihconst
+11409	2e5208	ihconst
+11410	2e6d66	ihconst
+11416	2e6fb2	ihconst
+11417	2e6eed	ihconst
+11418	2e6eec	ihconst
+11419	2e690c	ihconst
+11420	2e686f	ihconst
+11421	2e68a8	ihconst
+11422	2e6b46	ihconst
+11423	2e6b75	ihconst
+11424	2e6b00	ihconst
+11425	2e6be8	ihconst
+11448	2e7cc0	ihconst
+11449	2e7f28	ihconst
 11452	007952	pattern16	16
+11453	2e792d	ihconst
+11460	2e7ae0	ihconst
 11461	007a88	pattern16	16
+11472	2e7180	ihconst
+11473	2e7068	ihconst
+11477	2e722d	ihconst
+11478	2e0d0c	ihconst
+11484	2e0e20	ihconst
+11485	2e0ec8	ihconst
+11486	2e096f	ihconst
+11487	2e09ac	ihconst
+11488	2e0872	ihconst
+11489	2e08ed	ihconst
+11490	2e0b2c	ihconst
+11491	2e0a4c	ihconst
+11492	2e0aef	ihconst
+11493	2e0ae8	ihconst
 11506	000266	pattern16	16
 11513	001fed	pattern16	16
+11516	2e196f	ihconst
+11517	2e19a8	ihconst
+11521	2e18e8	ihconst
 11524	001a12	pattern16	16
+11528	2e146f	ihconst
+11546	2e2f6f	ihconst
+11547	2e2f8c	ihconst
+11553	2e2988	ihconst
+11554	2e28e6	ihconst
+11555	2e28b5	ihconst
+11556	2e2be0	ihconst
+11557	2e2b88	ihconst
+11558	2e2aef	ihconst
+11559	2e256c	ihconst
+11560	2e2532	ihconst
+11561	2e25ed	ihconst
+11562	2e246c	ihconst
 11566	0027c6	pattern16	16
 11582	003e6f	pattern16	16
 11586	00382c	pattern16	16
 11590	003a06	pattern16	16
+11595	2e370c	ihconst
+11596	2e37d2	ihconst
 11598	2e314c	nop
+11603	2e33b5	ihconst
+11604	2e3260	ihconst
+11617	2ec9e8	ihconst
+11618	2ec8ef	ihconst
+11622	2ecb8c	ihconst
+11623	2eca2c	ihconst
+11629	2ec648	ihconst
+11630	2ec66f	ihconst
+11631	2ec62c	ihconst
+11632	2ec6f2	ihconst
+11633	2ec1ed	ihconst
+11634	2ec1ac	ihconst
+11635	2ec0cc	ihconst
+11636	2ec0ef	ihconst
+11637	2ec368	ihconst
+11638	2ec386	ihconst
 11654	00dbef	pattern16	16
+11671	2ed3ac	ihconst
+11672	2ed26f	ihconst
 11673	00d2c8	pattern16	16
 11674	2eed26	nop
 11678	00ef6f	pattern16	16
+11679	2eefac	ihconst
+11680	2eee72	ihconst
 11710	2efe46	nop
 11721	00f548	pattern16	16
 11747	008eb5	pattern16	16
 11754	2e8a6c	nop
+11760	2e8480	ihconst
+11761	2e8768	ihconst
 11772	2e9d20	nop
+11784	2e9a40	ihconst
+11785	2e9aa8	ihconst
 11786	00956f	pattern16	16
+11796	2e9060	ihconst
+11797	2e9008	ihconst
 11800	0093b2	pattern16	16
 11801	2e92ed	nop
+11809	2eafe8	ihconst
+11810	2eaeef	ihconst
 11811	00a94c	pattern16	16
+11815	2ea82c	ihconst
+11816	2eab6f	ihconst
 11821	00a448	pattern16	16
+11822	2ea46f	ihconst
+11824	2ea4f2	ihconst
 11830	2ea186	nop
 11832	2ea0c0	nop
 11837	00bd2d	pattern16	16
 11845	00be88	pattern16	16
+11847	2eb86c	ihconst
+11848	2eb832	ihconst
 11849	00b8ed	pattern16	16
 11861	00b62d	pattern16	16
+11872	294c72	ihconst
+11873	294ced	ihconst
+11878	294906	ihconst
+11880	294b40	ihconst
 11896	0040b2	pattern16	16
+11917	295548	ihconst
+11918	29556f	ihconst
 11919	00552c	pattern16	16
+11924	2957ef	ihconst
+11926	295686	ihconst
 11939	006cb5	pattern16	16
+11942	296eef	ihconst
+11943	29696c	ihconst
+11947	29688c	ihconst
+11948	296b6f	ihconst
 11949	006b28	pattern16	16
 11979	297b0c	nop
 11981	297a2d	nop
 11989	007608	pattern16	16
 11996	29726f	nop
+11999	290d75	ihconst
+12000	290d00	ihconst
 12002	000cef	pattern16	16
 12004	000f12	pattern16	16
+12008	29096f	ihconst
+12009	290848	ihconst
+12011	2908b5	ihconst
+12012	290ba0	ihconst
+12040	291e32	ihconst
+12041	291eed	ihconst
 12067	002c4c	pattern16	16
 12069	002ce8	pattern16	16
+12073	2929a8	ihconst
+12074	29286f	ihconst
 12075	00280c	pattern16	16
 12078	292a4c	nop
 12084	292760	nop
 12090	0021ec	pattern16	16
 12092	00236f	pattern16	16
+12095	292275	ihconst
+12096	292200	ihconst
 12097	0022e8	pattern16	16
 12100	293c12	nop
 12103	003f2c	pattern16	16
@@ -1590,7 +2176,9 @@ k	key24	plaintext	bits
 12189	00d0a8	pattern16	16
 12196	00ed12	pattern16	16
 12216	00e4c0	pattern16	16
+12220	29e152	ihconst
 12222	00e1cc	pattern16	16
+12223	29e06c	ihconst
 12232	00fc32	pattern16	16
 12236	00fe6f	pattern16	16
 12238	00fec6	pattern16	16
@@ -1599,16 +2187,28 @@ k	key24	plaintext	bits
 12251	00f7b5	pattern16	16
 12261	00f2e8	pattern16	16
 12264	008f40	pattern16	16
+12270	29884c	ihconst
+12271	2988ec	ihconst
 12272	0088ef	pattern16	16
+12274	298a66	ihconst
+12275	298ab5	ihconst
 12276	008560	pattern16	16
 12277	298508	nop
+12280	2984b2	ihconst
+12281	2987ed	ihconst
+12294	29828c	ihconst
+12295	299d2c	ihconst
 12299	299fb5	nop
 12308	009bef	pattern16	16
 12311	009575	pattern16	16
 12312	2995c0	nop
+12315	29978c	ihconst
+12316	299652	ihconst
 12317	00962d	pattern16	16
 12318	2996cc	nop
 12329	00aded	pattern16	16
+12333	29af28	ihconst
+12336	29ae80	ihconst
 12338	00a9ef	pattern16	16
 12344	00a56f	pattern16	16
 12348	00a720	pattern16	16
@@ -1618,44 +2218,124 @@ k	key24	plaintext	bits
 12368	00b9ef	pattern16	16
 12376	00b5b2	pattern16	16
 12379	00b70c	pattern16	16
+12381	29b6a8	ihconst
+12382	29b146	ihconst
 12383	00b175	pattern16	16
+12385	29b1e8	ihconst
+12386	29b0ef	ihconst
 12387	00b34c	pattern16	16
 12388	29b312	nop
 12404	2848ef	nop
 12409	004528	pattern16	16
 12417	284688	nop
+12419	2841b5	ihconst
+12420	2840e0	ihconst
 12421	004088	pattern16	16
 12422	2843ef	nop
 12424	284232	nop
+12428	285c6f	ihconst
+12429	285c28	ihconst
+12430	285cc6	ihconst
+12431	285f75	ihconst
+12432	285f80	ihconst
+12433	285e68	ihconst
+12434	285eef	ihconst
+12435	2859cc	ihconst
+12436	285992	ihconst
+12437	28582d	ihconst
+12438	285b0c	ihconst
+12439	285bac	ihconst
+12440	285a6f	ihconst
+12441	285ac8	ihconst
+12446	28576f	ihconst
+12449	2856ed	ihconst
 12456	006d40	pattern16	16
 12464	006eef	pattern16	16
 12549	0001e8	pattern16	16
+12550	280006	ihconst
+12551	280375	ihconst
+12555	281d0c	ihconst
+12556	281dd2	ihconst
 12559	001fec	pattern16	16
+12560	281fef	ihconst
+12561	281e08	ihconst
 12564	001860	pattern16	16
+12565	281808	ihconst
+12566	2818ef	ihconst
 12569	001aed	pattern16	16
+12570	281aec	ihconst
+12571	28150c	ihconst
+12575	281775	ihconst
+12576	281700	ihconst
+12580	281112	ihconst
+12581	28112d	ihconst
 12596	002eef	pattern16	16
+12599	282875	ihconst
+12600	2828c0	ihconst
 12601	002b28	pattern16	16
+12603	282a8c	ihconst
+12604	282552	ihconst
 12606	2825cc	nop
 12618	00236c	pattern16	16
 12624	003d80	pattern16	16
+12632	28386f	ihconst
+12633	2838c8	ihconst
+12687	28dd2c	ihconst
+12688	28ddf2	ihconst
 12690	28dcac	nop
 12692	28dfef	nop
 12722	00edef	pattern16	16
+12742	28e606	ihconst
+12743	28e175	ihconst
 12744	00e040	pattern16	16
 12753	28fc08	nop
 12775	00f62c	pattern16	16
 12809	0086ed	pattern16	16
+12853	28af08	ihconst
+12858	28a9ec	ihconst
+12860	28ab6f	ihconst
+12861	28aba8	ihconst
 12876	00a0a0	pattern16	16
 12877	00a348	pattern16	16
+12886	28bc86	ihconst
+12887	28bf75	ihconst
 12888	00bfc0	pattern16	16
+12890	28b96f	ihconst
+12891	28b98c	ihconst
 12893	28b82d	nop
+12909	28b128	ihconst
+12910	28b1c6	ihconst
 12920	2b4f6f	nop
+12923	2b4eb5	ihconst
+12924	2b4920	ihconst
 12934	2b4406	nop
+12936	2b4640	ihconst
+12937	2b46a8	ihconst
+12947	2b5db5	ihconst
+12948	2b5c60	ihconst
 12949	005c08	pattern16	16
 12950	2b5cef	nop
+12960	2b5b00	ihconst
+12961	2b5be8	ihconst
 12970	0056a6	pattern16	16
+12975	2b502c	ihconst
+12976	2b50f2	ihconst
 12981	006d68	pattern16	16
+12994	2b6be6	ihconst
+12995	2b6bb5	ihconst
 13000	006432	pattern16	16
+13002	2b676c	ihconst
+13003	2b678c	ihconst
+13004	2b666f	ihconst
+13005	2b6628	ihconst
+13006	2b66c6	ihconst
+13007	2b6175	ihconst
+13010	2b60ef	ihconst
+13011	2b63cc	ihconst
+13013	2b622d	ihconst
+13014	2b7d0c	ihconst
+13016	2b7c6f	ihconst
+13017	2b7cc8	ihconst
 13020	007e20	pattern16	16
 13025	0078ed	pattern16	16
 13039	0070ec	pattern16	16
@@ -1665,53 +2345,149 @@ k	key24	plaintext	bits
 13079	001d75	pattern16	16
 13083	001f8c	pattern16	16
 13086	001ecc	pattern16	16
+13095	2b156c	ihconst
+13096	2b1532	ihconst
 13097	0015ed	pattern16	16
+13099	2b148c	ihconst
+13100	2b176f	ihconst
 13102	2b17c6	nop
+13126	2b2a06	ihconst
+13128	2b2440	ihconst
 13131	00270c	pattern16	16
+13136	2b21ef	ihconst
+13137	2b2008	ihconst
 13138	002366	pattern16	16
 13139	0023b5	pattern16	16
+13149	2b3ea8	ihconst
+13150	2b3946	ihconst
+13161	2b3448	ihconst
+13163	2b34b5	ihconst
+13170	2b31ac	ihconst
+13171	2b30cc	ihconst
 13172	0030ef	pattern16	16
 13173	2b3368	nop
+13190	2bcbef	ihconst
+13192	2bca32	ihconst
 13195	00c58c	pattern16	16
+13204	2bc192	ihconst
+13205	2bc02d	ihconst
+13216	2bde72	ihconst
+13217	2bdeed	ihconst
+13235	2bd0b5	ihconst
+13237	2bd308	ihconst
+13246	2bee46	ihconst
+13247	2bee75	ihconst
+13259	2be5b5	ihconst
+13260	2be4a0	ihconst
+13271	2be375	ihconst
+13273	2be228	ihconst
+13280	2bffef	ihconst
+13281	2bff88	ihconst
 13283	2bfeb5	nop
+13300	2bf692	ihconst
+13302	2bf00c	ihconst
 13307	00f2b5	pattern16	16
+13314	2b8e2c	ihconst
+13315	2b894c	ihconst
 13319	2b8b75	nop
+13326	2b874c	ihconst
+13327	2b87ec	ihconst
 13328	0087ef	pattern16	16
+13331	2b81b5	ihconst
+13332	2b8060	ihconst
 13334	2b80ef	nop
 13336	2b83b2	nop
+13357	2b9448	ihconst
+13358	2b946f	ihconst
+13363	2b96cc	ihconst
+13364	2b96ef	ihconst
+13367	2b9075	ihconst
+13368	2b90c0	ihconst
 13369	009328	pattern16	16
 13370	2b926f	nop
+13385	2ba8ed	ihconst
+13386	2bab6c	ihconst
 13394	00a4ef	pattern16	16
 13396	00a792	pattern16	16
+13414	2bb906	ihconst
+13415	2bb875	ihconst
 13418	00ba6f	pattern16	16
 13420	00bad2	pattern16	16
 13423	00b4ec	pattern16	16
 13425	00b708	pattern16	16
 13464	0041c0	pattern16	16
+13465	2a4028	ihconst
 13467	00438c	pattern16	16
+13468	2a4252	ihconst
 13487	005a75	pattern16	16
+13488	2a5a80	ihconst
 13490	0055ef	pattern16	16
+13491	2a54cc	ihconst
 13524	006660	pattern16	16
 13528	0061b2	pattern16	16
+13532	2a626f	ihconst
 13534	007d46	pattern16	16
+13535	2a7d75	ihconst
 13536	007d00	pattern16	16
+13555	2a74cc	ihconst
+13558	2a7786	ihconst
 13559	007675	pattern16	16
 13591	0007ac	pattern16	16
 13598	00036f	pattern16	16
+13599	2a03ac	ihconst
+13602	2a1d2c	ihconst
 13620	2a1760	nop
 13621	001708	pattern16	16
+13622	2a17ef	ihconst
+13625	2a11ed	ihconst
 13626	0011ec	pattern16	16
+13646	2a2b6f	ihconst
+13647	2a2b2c	ihconst
 13649	2a2aed	nop
 13651	2a25cc	nop
+13657	2a2628	ihconst
+13658	2a216f	ihconst
+13662	2a20cc	ihconst
+13663	2a236c	ihconst
+13687	2a34ac	ihconst
+13688	2a376f	ihconst
 13696	003372	pattern16	16
 13715	2ac5b5	nop
+13716	2ac460	ihconst
+13717	2ac408	ihconst
 13720	00c7b2	pattern16	16
 13751	2ad475	nop
 13753	2ad728	nop
+13775	2ae975	ihconst
+13776	2ae980	ihconst
+13790	2ae16f	ihconst
+13791	2ae1ac	ihconst
 13792	00e072	pattern16	16
 13804	00fed2	pattern16	16
+13809	2afb08	ihconst
+13810	2afa66	ihconst
 13815	00f4ec	pattern16	16
+13819	2af60c	ihconst
+13820	2af16f	ihconst
+13821	2af1a8	ihconst
+13822	2af046	ihconst
+13823	2af075	ihconst
+13824	2af000	ihconst
+13825	2af0e8	ihconst
+13826	2af3ef	ihconst
+13827	2af24c	ihconst
+13828	2af212	ihconst
+13830	2af28c	ihconst
+13831	2a8d2c	ihconst
+13833	2a8f48	ihconst
+13834	2a8fa6	ihconst
+13839	2a892c	ihconst
+13840	2a89f2	ihconst
+13842	2a88ac	ihconst
 13844	008bef	pattern16	16
+13845	2a8a68	ihconst
+13870	2a9fc6	ihconst
+13871	2a9e75	ihconst
 13903	00a9ec	pattern16	16
 13905	00a808	pattern16	16
 13908	00aa60	pattern16	16
@@ -1727,40 +2503,120 @@ k	key24	plaintext	bits
 14043	00658c	pattern16	16
 14065	007f68	pattern16	16
 14071	0078ac	pattern16	16
+14075	257ab5	ihconst
+14076	257520	ihconst
 14089	0072a8	pattern16	16
 14092	000dd2	pattern16	16
 14094	000f4c	pattern16	16
 14101	000808	pattern16	16
+14103	250bec	ihconst
+14104	250bb2	ihconst
+14107	25050c	ihconst
+14108	25046f	ihconst
 14109	0004a8	pattern16	16
 14110	250746	nop
+14113	2507e8	ihconst
+14114	2506ef	ihconst
 14115	00014c	pattern16	16
 14116	250112	nop
+14122	2502a6	ihconst
+14123	2502b5	ihconst
+14124	251da0	ihconst
+14125	251c48	ihconst
+14126	251c6f	ihconst
+14127	251c2c	ihconst
+14128	251cf2	ihconst
+14129	251fed	ihconst
+14130	251fac	ihconst
+14131	251ecc	ihconst
+14132	251eef	ihconst
+14133	251968	ihconst
+14134	251986	ihconst
+14135	251875	ihconst
+14141	25152d	ihconst
+14144	2514ef	ihconst
 14155	00138c	pattern16	16
 14159	002d75	pattern16	16
 14205	2535a8	nop
 14207	253475	nop
+14208	253400	ihconst
+14209	2534e8	ihconst
+14210	2537ef	ihconst
 14212	003612	pattern16	16
+14213	25362d	ihconst
+14215	25312c	ihconst
+14216	25306f	ihconst
+14223	25cd2c	ihconst
+14224	25cdf2	ihconst
 14233	00c828	pattern16	16
+14234	25cb6f	ihconst
+14235	25cb8c	ihconst
 14236	00ca52	pattern16	16
+14246	25c6ef	ihconst
+14248	25c132	ihconst
+14250	25c06c	ihconst
+14251	25c08c	ihconst
 14252	00c36f	pattern16	16
 14255	00c275	pattern16	16
+14265	25d9c8	ihconst
+14267	25d8b5	ihconst
+14276	25d7ef	ihconst
+14277	25d7e8	ihconst
+14278	25d606	ihconst
+14279	25d175	ihconst
 14280	00d040	pattern16	16
 14281	25d0a8	nop
+14289	25ec08	ihconst
+14290	25ef66	ihconst
 14291	00efb5	pattern16	16
+14295	25e9ec	ihconst
+14296	25e9b2	ihconst
 14297	00e8ed	pattern16	16
+14301	25eaa8	ihconst
+14302	25e546	ihconst
 14303	00e575	pattern16	16
+14316	25e3a0	ihconst
+14317	25e248	ihconst
 14326	00ff86	pattern16	16
+14327	25fe75	ihconst
+14328	25fec0	ihconst
 14336	25faef	nop
 14337	25fa88	jmpi_lr0
 14338	25f5e6	asleu65
+14345	25f6ed	ihconst
+14346	25f16c	ihconst
 14347	00f18c	pattern16	16
+14363	2589b5	ihconst
+14364	258820	ihconst
+14368	258a72	ihconst
+14369	258aed	ihconst
 14372	0084ef	pattern16	16
+14373	2584e8	ihconst
+14374	258706	ihconst
+14378	25806f	ihconst
+14379	25800c	ihconst
+14383	2582ec	ihconst
+14384	2582ef	ihconst
+14388	259f60	ihconst
+14389	259f08	ihconst
+14393	2599ed	ihconst
+14394	2599ec	ihconst
 14411	0091b5	pattern16	16
 14433	00ab88	pattern16	16
+14443	25a68c	ihconst
+14444	25a16f	ihconst
+14467	25b54c	ihconst
+14468	25b5ef	ihconst
+14469	25b5e8	ihconst
+14470	25b406	ihconst
+14485	244c08	ihconst
+14486	244cef	ihconst
 14504	24476f	nop
 14506	2446a6	nop
 14512	2440f2	nop
 14514	2443ac	nop
+14519	245c75	ihconst
+14520	245cc0	ihconst
 14521	005f28	pattern16	16
 14524	245952	nop
 14529	005888	pattern16	16
@@ -1791,9 +2647,17 @@ k	key24	plaintext	bits
 14660	241bef	jmpi_lr0
 14661	241be8	asleu65
 14666	00176f	pattern16	16
+14672	2411ef	ihconst
+14673	241008	ihconst
+14678	2412ef	ihconst
+14679	242dec	ihconst
 14680	002db2	pattern16	16
+14694	242b8c	ihconst
+14695	242a2c	ihconst
 14696	00256f	pattern16	16
 14698	0024a6	pattern16	16
+14705	2421ed	ihconst
+14706	2421ac	ihconst
 14714	003c6f	pattern16	16
 14716	243f52	add_gr1
 14717	243f2d	nop
@@ -1836,8 +2700,12 @@ k	key24	plaintext	bits
 14849	24ffed	sub_gr1
 14850	24fe2c	asgeu64
 14855	00fb75	pattern16	16
+14859	24f50c	ihconst
+14860	24f5d2	ihconst
 14861	00f42d	pattern16	16
 14871	00f3ec	pattern16	16
+14872	24f3b2	ihconst
+14873	24f2ed	ihconst
 14874	00f2ec	pattern16	16
 14876	008c6f	pattern16	16
 14880	008f00	pattern16	16
@@ -1854,11 +2722,19 @@ k	key24	plaintext	bits
 14914	009fe6	pattern16	16
 14915	009fb5	pattern16	16
 14918	0099ef	pattern16	16
+14924	249a6f	ihconst
+14925	249a28	ihconst
 14926	009ac6	pattern16	16
+14933	24962d	ihconst
+14934	24910c	ihconst
 14935	0091ac	pattern16	16
 14938	249326	nop
+14951	24a875	ihconst
+14952	24ab40	ihconst
 14956	24aad2	nop
 14971	00a20c	pattern16	16
+14974	24bc46	ihconst
+14975	24bc75	ihconst
 14988	00baa0	pattern16	16
 14993	24b4ed	add_gr1
 14994	24b4ac	nop
@@ -1993,6 +2869,8 @@ k	key24	plaintext	bits
 15642	267aec	nop
 15646	007746	pattern16	16
 15648	007700	pattern16	16
+15649	2677e8	ihconst
+15650	2676ef	ihconst
 15651	00714c	pattern16	16
 15655	00702c	pattern16	16
 15657	007248	pattern16	16
@@ -2105,6 +2983,8 @@ k	key24	plaintext	bits
 16369	00d768	pattern16	16
 16407	21e3ec	nop
 16413	00fca8	pattern16	16
+16414	21ff46	ihconst
+16415	21ff75	ihconst
 16420	00f912	pattern16	16
 16441	00f328	pattern16	16
 16459	218b8c	add_gr1
@@ -2226,6 +3106,8 @@ k	key24	plaintext	bits
 17251	00064c	pattern16	16
 17267	001eb5	pattern16	16
 17271	2318ec	nop
+17281	2314e8	ihconst
+17282	2317ef	ihconst
 17304	0029c0	pattern16	16
 17311	00256c	pattern16	16
 17325	002328	pattern16	16
@@ -2254,62 +3136,144 @@ k	key24	plaintext	bits
 17489	23f2ed	nop
 17490	00f2ac	pattern16	16
 17501	00882d	pattern16	16
+17502	2388cc	ihconst
 17503	238b6c	jmpi_lr0
+17504	238bef	ihconst
+17505	238b88	ihconst
+17506	238ae6	ihconst
 17507	238ab5	jmpi_lr0
 17508	2385e0	nop
 17517	238128	jmpi_lr0
+17519	238075	ihconst
 17520	238080	jmpi_lr0
+17521	238368	ihconst
+17522	2383ef	ihconst
 17523	2382cc	jmpi_lr0
+17524	238292	ihconst
+17525	239d2d	ihconst
 17526	239c0c	jmpi_lr0
+17527	239cac	ihconst
+17528	239f6f	ihconst
 17529	239fc8	jmpi_lr0
+17530	239e26	ihconst
+17531	239eb5	ihconst
 17532	239920	jmpi_lr0
+17533	2399c8	ihconst
+17534	23986f	ihconst
 17535	2398ac	jmpi_lr0
+17536	239b72	ihconst
+17537	239bed	ihconst
 17538	239a2c	jmpi_lr0
+17539	23954c	ihconst
+17540	2395ef	ihconst
 17541	2395e8	jmpi_lr0
+17542	239406	ihconst
+17543	239775	ihconst
+17544	239640	ihconst
 17545	0096a8	pattern16	16
 17546	00916f	pattern16	16
 17547	00910c	pattern16	16
 17548	2391d2	nop
 17555	23adb5	jmpi_lr0
+17557	23ac08	ihconst
 17558	23acef	jmpi_lr0
+17559	23afec	ihconst
+17560	23afb2	ihconst
 17561	23aeed	jmpi_lr0
+17562	23aeec	ihconst
+17563	23a90c	ihconst
 17564	23a86f	jmpi_lr0
+17565	23a8a8	ihconst
+17566	23ab46	ihconst
 17567	23ab75	jmpi_lr0
+17568	23ab00	ihconst
+17569	23abe8	ihconst
 17570	23aaef	jmpi_lr0
+17571	23a54c	ihconst
+17572	23a512	ihconst
 17573	23a52d	jmpi_lr0
+17574	23a58c	ihconst
+17575	23a42c	ihconst
 17576	23a76f	jmpi_lr0
+17577	23a648	ihconst
+17578	23a6a6	ihconst
 17579	23a6b5	jmpi_lr0
+17580	23a1a0	ihconst
+17581	23a048	ihconst
+17582	23a06f	ihconst
 17583	00a02c	pattern16	16
 17586	23a3ac	nop
+17587	23a2cc	ihconst
 17588	23a2ef	jmpi_lr0
+17589	23bd68	ihconst
+17590	23bd86	ihconst
 17591	23bc75	jmpi_lr0
+17592	23bcc0	ihconst
+17593	23bf28	ihconst
 17594	23be6f	jmpi_lr0
+17595	23be8c	ihconst
+17596	23b952	ihconst
 17597	23b92d	jmpi_lr0
+17598	23b9cc	ihconst
+17599	23b86c	ihconst
 17600	23b8ef	jmpi_lr0
+17601	23b888	ihconst
+17602	23bbe6	ihconst
 17603	23bbb5	jmpi_lr0
+17604	23bae0	ihconst
+17605	23ba88	ihconst
 17606	23b5ef	jmpi_lr0
+17607	23b46c	ihconst
+17608	23b432	ihconst
 17609	23b4ed	jmpi_lr0
+17610	23b76c	ihconst
 17611	23b78c	jmpi_lr0
+17617	23b068	ihconst
+17618	23b0ef	ihconst
 17619	00b3cc	pattern16	16
 17620	00b392	pattern16	16
 17622	224d0c	nop
 17629	224ec8	jmpi_lr0
+17633	2248ed	ihconst
 17634	224b2c	jmpi_lr0
+17635	224a4c	ihconst
+17636	224aef	ihconst
+17637	224ae8	ihconst
 17638	224506	jmpi_lr0
 17639	224475	nop
+17640	224740	ihconst
 17641	2247a8	jmpi_lr0
+17642	22466f	ihconst
+17643	22460c	ihconst
 17644	2246d2	jmpi_lr0
+17645	22412d	ihconst
+17646	22404c	ihconst
 17647	2240ec	jmpi_lr0
+17648	2240ef	ihconst
+17649	224308	ihconst
+17650	224266	ihconst
 17651	0042b5	pattern16	16
 17652	005d60	pattern16	16
 17654	225def	nop
+17659	225e0c	ihconst
 17660	22596f	jmpi_lr0
+17661	2259a8	ihconst
+17662	225846	ihconst
+17663	225875	ihconst
 17664	225800	jmpi_lr0
 17665	2258e8	nop
+17666	225bef	ihconst
 17667	225a4c	jmpi_lr0
+17668	225a12	ihconst
+17669	225a2d	ihconst
 17670	225a8c	jmpi_lr0
+17671	22552c	ihconst
+17672	22546f	ihconst
 17673	225748	jmpi_lr0
+17674	2257a6	ihconst
 17675	2257b5	jmpi_lr0
+17681	2250ed	ihconst
+17682	2250ac	ihconst
 17686	225286	nop
 17687	006d75	pattern16	16
 17688	226dc0	sub_gr1
@@ -2325,8 +3289,16 @@ k	key24	plaintext	bits
 17709	006728	pattern16	16
 17711	006675	pattern16	16
 17714	0061ef	pattern16	16
+17715	2260cc	ihconst
+17716	226092	ihconst
+17721	227dc8	ihconst
+17722	227c26	ihconst
 17723	007cb5	pattern16	16
+17737	2274a8	ihconst
+17738	22776f	ihconst
 17739	00770c	pattern16	16
+17748	227260	ihconst
+17749	227208	ihconst
 17757	000ea8	pattern16	16
 17759	220975	add_gr1
 17760	220900	nop
@@ -2355,9 +3327,17 @@ k	key24	plaintext	bits
 17825	222eed	jmpi_lr0
 17826	22292c	asleu65
 17836	0024d2	pattern16	16
+17837	22272d	ihconst
+17838	22264c	ihconst
 17839	0026ec	pattern16	16
+17843	2220b5	ihconst
+17844	222360	ihconst
 17845	002308	pattern16	16
+17859	22384c	ihconst
+17860	223812	ihconst
 17861	00382d	pattern16	16
+17870	22376f	ihconst
+17871	22372c	ihconst
 17880	0033c0	pattern16	16
 17881	223228	add_gr1
 17882	22cd6f	nop
@@ -2371,11 +3351,19 @@ k	key24	plaintext	bits
 17906	22c7ef	sub_gr1
 17907	22c6cc	asgeu64
 17908	22c692	add_lr1
+17913	22c3c8	ihconst
+17914	22c226	ihconst
+17919	22dcac	ihconst
+17920	22df72	ihconst
+17934	22d74c	ihconst
+17935	22d7ec	ihconst
 17936	00d7ef	pattern16	16
 17938	22d166	add_gr1
 17939	22d1b5	nop
 17940	22d060	jmpi_lr0
 17941	22d008	asleu65
+17946	22d2ec	ihconst
+17947	22ed0c	ihconst
 17948	00ec6f	pattern16	16
 17950	22ef46	add_gr1
 17951	22ef75	nop
@@ -2401,13 +3389,21 @@ k	key24	plaintext	bits
 17990	22f9ef	sub_gr1
 17991	22f86c	asgeu64
 17992	22f832	add_lr1
+17997	22fa28	ihconst
+17998	22fac6	ihconst
 17999	00f575	pattern16	16
+18003	22f7cc	ihconst
+18004	22f792	ihconst
 18005	00f62d	pattern16	16
+18018	228f2c	ihconst
+18019	228e4c	ihconst
 18020	008eef	pattern16	16
 18022	228906	add_gr1
 18023	228875	nop
 18024	228b40	jmpi_lr0
 18025	228ba8	asleu65
+18030	22844c	ihconst
+18031	2284ec	ihconst
 18032	0084ef	pattern16	16
 18034	228666	add_gr1
 18035	2286b5	nop
@@ -2424,24 +3420,56 @@ k	key24	plaintext	bits
 18058	229ba6	jmpi_lr0
 18059	229bb5	asleu65
 18060	009aa0	pattern16	16
+18066	2294ac	ihconst
 18067	2297cc	jmpi_lr0
+18068	2297ef	ihconst
 18069	229668	jmpi_lr0
 18071	229175	jmpi_lr0
+18079	22ad6c	ihconst
 18080	22adef	jmpi_lr0
+18081	22ad88	ihconst
 18082	22ace6	jmpi_lr0
 18084	22afe0	jmpi_lr0
 18086	22aeef	jmpi_lr0
 18090	00a86c	pattern16	16
+18098	22a5ef	ihconst
 18099	22a4cc	jmpi_lr0
+18100	22a492	ihconst
 18104	22a16f	asgeu64
+18109	22a3c8	ihconst
+18110	22a26f	ihconst
 18111	00a2ac	pattern16	16
+18114	22bc2c	ihconst
+18115	22bf4c	ihconst
+18117	22bfe8	ihconst
+18118	22be06	ihconst
+18124	22bbd2	ihconst
+18125	22ba2d	ihconst
+18127	22b5ec	ihconst
+18128	22b5ef	ihconst
+18130	22b766	ihconst
+18131	22b7b5	ihconst
 18158	004a6f	pattern16	16
+18160	3d4af2	ihconst
+18161	3d45ed	ihconst
 18179	005db5	pattern16	16
+18181	3d5c88	ihconst
+18182	3d5fef	ihconst
 18208	005272	pattern16	16
+18219	3d680c	ihconst
+18220	3d68d2	ihconst
+18222	3d6a4c	ihconst
+18223	3d6aec	ihconst
 18231	0066ec	pattern16	16
 18241	0062e8	pattern16	16
 18245	007c2d	pattern16	16
+18255	3d7b2c	ihconst
+18256	3d7bf2	ihconst
 18264	0077c0	pattern16	16
+18274	3d72e6	ihconst
+18275	3d72b5	ihconst
+18279	3d0f6c	ihconst
+18280	3d0f32	ihconst
 18286	0009c6	pattern16	16
 18310	001c06	pattern16	16
 18330	0016ec	pattern16	16
@@ -2449,12 +3477,24 @@ k	key24	plaintext	bits
 18335	001375	pattern16	16
 18342	002d8c	pattern16	16
 18345	002e48	pattern16	16
+18346	3d2ea6	ihconst
+18347	3d2eb5	ihconst
 18348	0029a0	pattern16	16
+18358	3d2586	ihconst
+18359	3d2475	ihconst
 18360	0024c0	pattern16	16
+18375	3d3c6c	ihconst
+18376	3d3c32	ihconst
 18381	003e28	pattern16	16
 18387	003bcc	pattern16	16
+18392	3d346f	ihconst
+18393	3d34c8	ihconst
 18394	003726	pattern16	16
+18408	3dcf40	ihconst
+18409	3dcfa8	ihconst
 18411	00ce0c	pattern16	16
+18412	3dced2	ihconst
+18413	3dc92d	ihconst
 18421	3dc508	nop
 18422	00c5ef	pattern16	16
 18432	00c000	pattern16	16
@@ -2480,6 +3520,14 @@ k	key24	plaintext	bits
 18538	008ca6	pattern16	16
 18552	3d8ac0	nop
 18553	008528	pattern16	16
+18557	3d872d	ihconst
+18558	3d87cc	ihconst
+18569	3d82ed	ihconst
+18570	3d9d6c	ihconst
+18604	3dacd2	ihconst
+18605	3daf2d	ihconst
+18608	3daeef	ihconst
+18609	3da908	ihconst
 18610	00a866	pattern16	16
 18611	3da8b5	nop
 18649	3dba28	nop
@@ -2521,6 +3569,8 @@ k	key24	plaintext	bits
 19074	3c8a2c	nop
 19102	3c9b46	nop
 19228	3f5e52	nop
+19229	3f5e2d	ihconst
+19230	3f5ecc	ihconst
 19231	00596c	pattern16	16
 19249	005168	pattern16	16
 19252	005092	pattern16	16
@@ -2532,6 +3582,8 @@ k	key24	plaintext	bits
 19304	00756f	pattern16	16
 19309	3f7648	nop
 19323	000c8c	pattern16	16
+19327	3f0e6c	ihconst
+19328	3f0eef	ihconst
 19332	0008e0	pattern16	16
 19345	000668	pattern16	16
 19348	000192	pattern16	16
@@ -2543,6 +3595,10 @@ k	key24	plaintext	bits
 19418	003d6f	pattern16	16
 19435	003a8c	pattern16	16
 19437	003528	pattern16	16
+19464	3fca40	ihconst
+19465	3fcaa8	ihconst
+19471	3fc7ec	ihconst
+19472	3fc7ef	ihconst
 19482	00c2ec	pattern16	16
 19486	00df46	pattern16	16
 19494	3fd98c	nop
@@ -2553,7 +3609,11 @@ k	key24	plaintext	bits
 19553	00fced	pattern16	16
 19560	00fb40	pattern16	16
 19562	00fa6f	pattern16	16
+19582	3f8c46	ihconst
+19583	3f8c75	ihconst
 19584	008c00	pattern16	16
+19588	3f8e12	ihconst
+19590	3f8e8c	ihconst
 19596	008aa0	pattern16	16
 19611	00838c	pattern16	16
 19623	00996c	pattern16	16
@@ -2561,7 +3621,11 @@ k	key24	plaintext	bits
 19629	009b28	pattern16	16
 19633	009568	pattern16	16
 19635	0094cc	pattern16	16
+19646	3f926f	ihconst
+19647	3f92ac	ihconst
 19653	00afe8	pattern16	16
+19665	3fa408	ihconst
+19666	3fa766	ihconst
 19671	00a1ec	pattern16	16
 19673	00a0ed	pattern16	16
 19679	00bd75	pattern16	16
@@ -2570,23 +3634,37 @@ k	key24	plaintext	bits
 19704	00b6c0	pattern16	16
 19705	00b128	pattern16	16
 19708	3fb352	nop
+19709	3fb32d	ihconst
+19710	3fb3cc	ihconst
 19711	00b26c	pattern16	16
 19713	00b288	pattern16	16
 19716	3e4ce0	nop
 19729	004a68	pattern16	16
 19730	3e4aef	nop
+19736	3e466f	ihconst
+19737	3e46c8	ihconst
 19752	005940	pattern16	16
 19754	00586f	pattern16	16
+19769	3e51ed	ihconst
+19770	3e51ec	ihconst
 19771	00500c	pattern16	16
 19774	3e5246	nop
+19788	3e68a0	ihconst
+19789	3e6b48	ihconst
 19790	006b6f	pattern16	16
 19793	3e6aed	nop
+19796	3e65ef	ihconst
+19798	3e6486	ihconst
 19804	006052	pattern16	16
 19819	007e8c	pattern16	16
 19822	0079c6	pattern16	16
 19828	007a92	pattern16	16
 19834	007626	pattern16	16
 19840	007372	pattern16	16
+19852	3e09d2	ihconst
+19853	3e082d	ihconst
+19858	3e0566	ihconst
+19859	3e05b5	ihconst
 19861	3e0408	nop
 19866	3e06ec	nop
 19867	3e010c	jmpi_lr0
@@ -2597,8 +3675,14 @@ k	key24	plaintext	bits
 19888	0018f2	pattern16	16
 19889	3e1bed	sub_gr1
 19890	3e1bac	asgeu64
+19899	3e168c	ihconst
+19900	3e1152	ihconst
 19905	001088	pattern16	16
 19906	0013e6	pattern16	16
+19910	3e2def	ihconst
+19911	3e2c6c	ihconst
+19914	3e2f6c	ihconst
+19915	3e2f8c	ihconst
 19921	002868	pattern16	16
 19927	3e25ac	add_gr1
 19928	3e246f	nop
@@ -2607,50 +3691,126 @@ k	key24	plaintext	bits
 19932	3e2620	sub_gr1
 19933	3e26c8	asgeu64
 19934	3e216f	add_lr1
+19937	3e20ed	ihconst
+19938	3e232c	ihconst
+19941	3e22e8	ihconst
+19942	3e3d06	ihconst
+19949	3e392d	ihconst
+19950	3e384c	ihconst
+19954	3e3a66	ihconst
+19955	3e3ab5	ihconst
 19958	0035ef	pattern16	16
+19961	3e37ed	ihconst
+19962	3e37ec	ihconst
+19972	3e3212	ihconst
+19973	3e322d	ihconst
 19985	00c8ed	pattern16	16
+19992	3ec5c0	ihconst
+19993	3ec428	ihconst
 19994	00c76f	pattern16	16
 20001	00c188	pattern16	16
+20002	3ec0e6	ihconst
+20003	3ec0b5	ihconst
 20006	00c2ef	pattern16	16
+20007	3edd6c	ihconst
+20008	3edd32	ihconst
 20009	00dded	pattern16	16
 20017	00d968	pattern16	16
+20030	3ed66f	ihconst
+20031	3ed6ac	ihconst
 20032	00d172	pattern16	16
+20037	3ed3e8	ihconst
+20038	3ed206	ihconst
 20040	3eec40	nop
 20042	00ef6f	pattern16	16
+20046	3ee94c	ihconst
+20048	3ee9ef	ihconst
 20049	00e808	pattern16	16
 20051	00ebb5	pattern16	16
+20056	3ee5b2	ihconst
+20057	3ee4ed	ihconst
 20058	00e4ec	pattern16	16
+20063	3ee175	ihconst
+20064	3ee100	ihconst
+20066	3ee0ef	ihconst
+20067	3ee34c	ihconst
 20077	00fe48	pattern16	16
 20092	00f752	pattern16	16
+20112	3e8f80	ihconst
+20113	3e8e68	ihconst
 20120	008a6f	pattern16	16
+20133	3e80e8	ihconst
+20134	3e8306	ihconst
 20141	009f2d	pattern16	16
+20145	3e9908	ihconst
+20146	3e9866	ihconst
+20162	3e91ef	ihconst
 20164	009012	pattern16	16
+20165	3e902d	ihconst
+20166	3e908c	ihconst
+20168	3e926f	ihconst
+20169	3ead48	ihconst
+20170	3eada6	ihconst
 20172	00aca0	pattern16	16
+20188	3ea452	ihconst
+20189	3ea42d	ihconst
+20199	3ea36c	ihconst
+20200	3ea332	ihconst
 20201	00a3ed	pattern16	16
+20213	3eb92d	ihconst
+20214	3eb80c	ihconst
 20215	00b8ac	pattern16	16
+20218	3eba26	ihconst
+20219	3ebab5	ihconst
 20220	00b520	pattern16	16
+20226	3eb62c	ihconst
+20227	3eb14c	ihconst
+20241	394e08	ihconst
+20242	394966	ihconst
 20248	004bb2	pattern16	16
 20249	394aed	nop
 20255	004775	pattern16	16
 20256	394700	nop
 20268	005da0	pattern16	16
 20270	005c6f	pattern16	16
+20271	395c2c	ihconst
+20272	395cf2	ihconst
+20276	395eef	ihconst
+20277	395968	ihconst
 20278	005986	pattern16	16
 20279	395875	nop
+20280	3958c0	ihconst
+20281	395b28	ihconst
 20282	005a6f	pattern16	16
 20283	395a8c	nop
 20286	3955cc	add_gr1
 20288	3954ef	jmpi_lr0
 20289	395488	asleu65
+20295	39506c	ihconst
+20296	395032	ihconst
 20297	0050ed	pattern16	16
 20300	00526f	pattern16	16
 20308	006f92	pattern16	16
 20322	00672c	pattern16	16
+20328	396340	ihconst
+20329	3963a8	ihconst
 20337	007f08	pattern16	16
+20346	397bec	ihconst
+20347	397a0c	ihconst
 20367	000d2c	pattern16	16
+20368	390df2	ihconst
+20370	390cac	ihconst
+20371	390fcc	ihconst
+20372	390fef	ihconst
+20380	390a52	ihconst
+20381	390a2d	ihconst
 20385	000588	pattern16	16
 20401	001d68	pattern16	16
+20405	391f2d	ihconst
+20406	391e0c	ihconst
 20407	001eac	pattern16	16
+20409	3919c8	ihconst
+20410	391826	ihconst
 20411	0018b5	pattern16	16
 20412	391b20	nop
 20417	0015ed	pattern16	16
@@ -2659,6 +3819,8 @@ k	key24	plaintext	bits
 20437	392e08	sub_gr1
 20438	392eef	asgeu64
 20439	3929ec	add_lr1
+20440	3929b2	ihconst
+20441	3928ed	ihconst
 20448	392500	add_gr1
 20450	3924ef	jmpi_lr0
 20451	39274c	asleu65
@@ -2672,12 +3834,20 @@ k	key24	plaintext	bits
 20464	3922f2	jmpi_lr0
 20465	393ded	asleu65
 20466	003dac	pattern16	16
+20467	393ccc	ihconst
+20468	393cef	ihconst
 20469	393f68	jmpi_lr0
 20470	003f86	pattern16	16
 20471	003e75	pattern16	16
+20472	393ec0	ihconst
+20473	393928	ihconst
 20474	39386f	jmpi_lr0
 20475	00388c	pattern16	16
+20478	393bcc	ihconst
+20479	393a6c	ihconst
 20480	393aef	jmpi_lr0
+20483	3935b5	ihconst
+20484	3934e0	ihconst
 20485	393488	jmpi_lr0
 20486	0037ef	pattern16	16
 20487	00366c	pattern16	16
@@ -2687,10 +3857,18 @@ k	key24	plaintext	bits
 20493	393028	sub_gr1
 20494	3930c6	asgeu64
 20496	003380	pattern16	16
+20498	3932ef	ihconst
+20499	39cdcc	ihconst
+20500	39cd92	ihconst
+20502	39cf0c	ihconst
 20503	39cfac	add_gr1
 20504	39ce6f	nop
 20505	39cec8	jmpi_lr0
 20506	39c926	asleu65
+20513	39caed	ihconst
+20514	39c52c	ihconst
+20519	39c675	ihconst
+20520	39c140	ihconst
 20522	39c06f	add_gr1
 20523	39c00c	nop
 20524	39c0d2	jmpi_lr0
@@ -2702,11 +3880,17 @@ k	key24	plaintext	bits
 20530	00dc66	pattern16	16
 20531	39dcb5	sub_gr1
 20532	39df60	asgeu64
+20533	39df08	ihconst
+20534	39dfef	ihconst
 20540	00db6f	pattern16	16
 20541	00dba8	pattern16	16
 20545	00dae8	pattern16	16
 20547	00d44c	pattern16	16
 20549	00d42d	pattern16	16
+20551	39d72c	ihconst
+20552	39d66f	ihconst
+20557	39d348	ihconst
+20558	39d36f	ihconst
 20565	39ec68	add_gr1
 20566	39ec86	nop
 20567	39ef75	jmpi_lr0
@@ -2714,7 +3898,11 @@ k	key24	plaintext	bits
 20569	00ee28	pattern16	16
 20570	39e96f	sub_gr1
 20571	39e98c	asgeu64
+20575	39eb6c	ihconst
+20576	39ebef	ihconst
+20577	39eb88	ihconst
 20578	00eae6	pattern16	16
+20579	39eab5	ihconst
 20580	39e5e0	add_gr1
 20581	39e588	nop
 20582	39e4ef	jmpi_lr0
@@ -2731,6 +3919,10 @@ k	key24	plaintext	bits
 20606	39f86f	sub_gr1
 20607	39f8ac	asgeu64
 20609	00fbed	pattern16	16
+20611	39f54c	ihconst
+20612	39f5ef	ihconst
+20613	39f5e8	ihconst
+20615	39f775	ihconst
 20616	39f640	add_gr1
 20617	39f6a8	nop
 20618	39f16f	jmpi_lr0
@@ -2783,12 +3975,16 @@ k	key24	plaintext	bits
 20746	39b7a6	jmpi_lr0
 20747	39b7b5	asleu65
 20753	00b0ed	pattern16	16
+20756	39b3ef	ihconst
+20757	39b268	ihconst
 20761	384c28	add_gr1
 20762	384f6f	nop
 20763	384f8c	jmpi_lr0
 20764	384e52	asleu65
 20766	384ecc	sub_gr1
 20767	38496c	asgeu64
+20778	38446c	ihconst
+20779	38448c	ihconst
 20781	384728	nop
 20782	3847c6	add_gr1
 20783	384675	nop
@@ -2800,30 +3996,44 @@ k	key24	plaintext	bits
 20789	38432d	asleu65
 20796	005f20	pattern16	16
 20797	385fc8	nop
+20798	385e6f	ihconst
+20799	385eac	ihconst
+20800	385972	ihconst
 20801	0059ed	pattern16	16
+20802	38582c	ihconst
 20807	385575	nop
 20808	005440	pattern16	16
 20813	00562d	pattern16	16
 20814	00514c	pattern16	16
+20818	385366	ihconst
+20819	3853b5	ihconst
 20820	385260	jmpi_lr0
 20821	005208	pattern16	16
 20824	006db2	pattern16	16
 20825	386ced	sub_gr1
 20826	386cec	asgeu64
 20857	007d28	pattern16	16
+20868	3878e0	ihconst
+20869	387888	ihconst
 20890	000d26	pattern16	16
 20900	0008ef	pattern16	16
+20915	3800b5	ihconst
+20916	380360	ihconst
 20918	3803ef	nop
 20927	001e75	pattern16	16
 20929	381ee8	add_gr1
 20931	38184c	jmpi_lr0
 20932	381812	asleu65
+20937	381548	ihconst
+20938	3815a6	ihconst
 20940	3814a0	nop
 20947	0011cc	pattern16	16
 20949	381068	add_gr1
 20951	381375	jmpi_lr0
 20952	3813c0	asleu65
 20956	002c52	pattern16	16
+20957	382c2d	ihconst
+20958	382ccc	ihconst
 20960	382fef	nop
 20968	382b32	add_gr1
 20970	382a6c	jmpi_lr0
@@ -2879,8 +4089,14 @@ k	key24	plaintext	bits
 21248	38a2ef	add_gr1
 21250	38bde6	jmpi_lr0
 21251	38bdb5	asleu65
+21252	38bce0	ihconst
+21253	38bc88	ihconst
 21254	00bfef	pattern16	16
+21267	38b5cc	ihconst
+21269	38b42d	ihconst
 21270	00b70c	pattern16	16
+21278	38b36f	ihconst
+21279	38b3ac	ihconst
 21282	004d2c	pattern16	16
 21289	0049a8	pattern16	16
 21293	004b2d	pattern16	16
@@ -2889,6 +4105,8 @@ k	key24	plaintext	bits
 21302	0047ef	pattern16	16
 21303	0046ec	pattern16	16
 21306	0041ec	pattern16	16
+21307	3b400c	ihconst
+21308	3b436f	ihconst
 21310	3b4246	nop
 21322	0059a6	pattern16	16
 21328	3b5bf2	add_gr1
@@ -2904,6 +4122,12 @@ k	key24	plaintext	bits
 21353	3b6fed	add_gr1
 21355	3b6e8c	jmpi_lr0
 21356	3b696f	asleu65
+21358	3b69c6	ihconst
+21359	3b6875	ihconst
+21373	3b61c8	ihconst
+21374	3b606f	ihconst
+21385	3b7ea8	ihconst
+21386	3b796f	ihconst
 21391	3b7bec	nop
 21401	3b76ed	add_gr1
 21403	3b710c	jmpi_lr0
@@ -2912,6 +4136,8 @@ k	key24	plaintext	bits
 21421	3b0848	nop
 21423	00082c	pattern16	16
 21427	000acc	pattern16	16
+21429	3b0568	ihconst
+21430	3b0586	ihconst
 21432	3b04c0	nop
 21440	0000ef	pattern16	16
 21441	000088	pattern16	16
@@ -2925,6 +4151,10 @@ k	key24	plaintext	bits
 21466	3b1726	asgeu64
 21467	3b17b5	add_lr1
 21469	0016c8	pattern16	16
+21471	3b11ac	ihconst
+21472	3b1072	ihconst
+21473	3b10ed	ihconst
+21475	3b124c	ihconst
 21477	3b12e8	add_gr1
 21479	3b2c75	jmpi_lr0
 21480	3b2f40	asleu65
@@ -2932,6 +4162,8 @@ k	key24	plaintext	bits
 21490	3b2a66	jmpi_lr0
 21491	3b2ab5	asleu65
 21518	00396f	pattern16	16
+21521	3b38ed	ihconst
+21522	3b38ac	ihconst
 21526	003a86	pattern16	16
 21528	0035c0	pattern16	16
 21530	00376f	pattern16	16
@@ -2940,8 +4172,16 @@ k	key24	plaintext	bits
 21542	0032ef	pattern16	16
 21546	00cc6c	pattern16	16
 21554	00c9ef	pattern16	16
+21562	3bc426	ihconst
+21563	3bc4b5	ihconst
+21567	3bc6ac	ihconst
+21568	3bc172	ihconst
 21569	00c1ed	pattern16	16
+21572	3bc3ef	ihconst
+21573	3bc3e8	ihconst
 21578	00df6f	pattern16	16
+21579	3bdf0c	ihconst
+21580	3bdfd2	ihconst
 21584	3bd9ef	add_gr1
 21586	3bdb66	jmpi_lr0
 21587	3bdbb5	asleu65
@@ -2955,21 +4195,33 @@ k	key24	plaintext	bits
 21618	3be9ac	asgeu64
 21619	3be8cc	add_lr1
 21621	00eb68	pattern16	16
+21623	3bea75	ihconst
+21624	3beac0	ihconst
+21625	3be528	ihconst
 21626	00e46f	pattern16	16
+21627	3be48c	ihconst
 21629	3be72d	add_gr1
 21631	3be66c	jmpi_lr0
 21632	3be6ef	asleu65
 21640	3be232	add_gr1
 21642	3bfd6c	jmpi_lr0
 21643	3bfd8c	asleu65
+21651	3bf9cc	ihconst
+21652	3bf992	ihconst
 21653	00f82d	pattern16	16
+21665	3bf6ed	ihconst
+21666	3bf12c	ihconst
 21672	008d40	pattern16	16
 21673	008da8	pattern16	16
+21680	3b8eef	ihconst
+21681	3b8908	ihconst
 21685	008b08	pattern16	16
 21687	008aec	pattern16	16
 21700	008012	pattern16	16
 21702	00808c	pattern16	16
 21703	3b832c	nop
+21713	3b9eed	ihconst
+21714	3b9eac	ihconst
 21731	3b96b5	add_gr1
 21733	3b9188	jmpi_lr0
 21734	3b90ef	asleu65
@@ -2980,6 +4232,8 @@ k	key24	plaintext	bits
 21749	3ba92d	sub_gr1
 21750	3ba80c	asgeu64
 21751	3ba8ac	add_lr1
+21757	3ba5c8	ihconst
+21758	3ba46f	ihconst
 21771	00bd0c	pattern16	16
 21781	00b808	pattern16	16
 21789	00b4a8	pattern16	16
@@ -2987,33 +4241,63 @@ k	key24	plaintext	bits
 21811	3a4ecc	nop
 21815	3a4875	nop
 21816	0048c0	pattern16	16
+21825	3a4488	ihconst
+21826	3a47e6	ihconst
 21832	3a4032	add_gr1
 21834	3a436c	jmpi_lr0
 21835	3a438c	asleu65
 21840	005d80	pattern16	16
+21843	3a5fcc	ihconst
+21844	3a5f92	ihconst
 21845	005e2d	pattern16	16
+21850	3a5b26	ihconst
+21851	3a5bb5	ihconst
 21854	00556f	pattern16	16
+21857	3a54ed	ihconst
+21858	3a572c	ihconst
 21859	00564c	pattern16	16
+21864	3a5340	ihconst
+21865	3a53a8	ihconst
 21866	3a526f	jmpi_lr0
 21867	00520c	pattern16	16
 21869	3a6d2d	sub_gr1
 21870	3a6c4c	asgeu64
+21871	3a6cec	ihconst
+21872	3a6cef	ihconst
+21873	3a6f08	ihconst
+21874	3a6e66	ihconst
 21885	3a65a8	nop
 21894	3a668c	nop
 21901	3a7d48	nop
 21906	3a7cac	add_gr1
 21908	3a7fef	jmpi_lr0
 21909	3a7e68	asleu65
+21918	3a7acc	ihconst
+21919	3a756c	ihconst
 21931	3a708c	add_gr1
 21933	3a7328	jmpi_lr0
 21934	3a73c6	asleu65
+21937	3a0d68	ihconst
 21939	000ccc	pattern16	16
+21940	3a0c92	ihconst
+21941	3a0f2d	ihconst
+21944	3a096f	ihconst
 21951	000aac	pattern16	16
 21954	00042c	pattern16	16
 21957	0007e8	pattern16	16
 21959	000175	pattern16	16
 21962	3a036f	nop
 21970	3a1f66	nop
+21972	3a1e60	ihconst
+21973	3a1e08	ihconst
+21976	3a19b2	ihconst
+21977	3a18ed	ihconst
+21980	3a1a6f	ihconst
+21981	3a1aa8	ihconst
+21983	3a1575	ihconst
+21984	3a1500	ihconst
+21986	3a14ef	ihconst
+21987	3a174c	ihconst
 21991	3a162c	nop
 21993	3a1048	nop
 21998	00126f	pattern16	16
@@ -3026,15 +4310,25 @@ k	key24	plaintext	bits
 22018	3a25e6	sub_gr1
 22019	3a25b5	asgeu64
 22021	002488	pattern16	16
+22023	3a266c	ihconst
+22024	3a2632	ihconst
+22025	3a26ed	ihconst
+22027	3a218c	ihconst
 22028	3a206f	add_gr1
 22029	3a2028	nop
 22030	3a20c6	jmpi_lr0
 22031	3a2375	asleu65
+22033	3a2268	ihconst
+22034	3a22ef	ihconst
 22043	3a39b5	add_gr1
 22044	3a3820	nop
 22045	3a38c8	jmpi_lr0
 22046	3a3b6f	asleu65
+22049	3a3aed	ihconst
+22050	3a352c	ihconst
+22051	3a344c	ihconst
 22052	0034ef	pattern16	16
+22053	3a34e8	ihconst
 22055	003675	pattern16	16
 22058	3a306f	nop
 22062	3a324c	nop
@@ -3052,6 +4346,10 @@ k	key24	plaintext	bits
 22077	3acba8	sub_gr1
 22078	3aca46	asgeu64
 22080	00ca00	pattern16	16
+22082	3ac5ef	ihconst
+22083	3ac44c	ihconst
+22084	3ac412	ihconst
+22086	3ac48c	ihconst
 22087	3ac72c	add_gr1
 22088	3ac66f	nop
 22089	3ac148	jmpi_lr0
@@ -3063,6 +4361,8 @@ k	key24	plaintext	bits
 22102	3adc86	sub_gr1
 22103	3adf75	asgeu64
 22104	3adfc0	add_lr1
+22109	3ad82d	ihconst
+22110	3ad8cc	ihconst
 22122	00d66c	pattern16	16
 22126	00d1c6	pattern16	16
 22136	3aef6f	nop
@@ -3071,6 +4371,8 @@ k	key24	plaintext	bits
 22153	3ae6a8	jmpi_lr0
 22154	3ae16f	asleu65
 22162	00fd66	pattern16	16
+22165	3afc08	ihconst
+22166	3afcef	ihconst
 22170	3afeec	add_gr1
 22172	3af86f	jmpi_lr0
 22173	3af8a8	asleu65
@@ -3104,9 +4406,13 @@ k	key24	plaintext	bits
 22229	3a822d	nop
 22230	3a9d0c	jmpi_lr0
 22231	3a9dac	asleu65
+22235	3a9fb5	ihconst
+22236	3a9e20	ihconst
 22254	00904c	pattern16	16
 22255	0090ec	pattern16	16
 22263	00acec	pattern16	16
+22272	3aa800	ihconst
+22273	3aa8e8	ihconst
 22278	3aaa8c	add_gr1
 22279	3aa52c	nop
 22280	3aa46f	jmpi_lr0
@@ -3114,8 +4420,12 @@ k	key24	plaintext	bits
 22282	00a7a6	pattern16	16
 22283	3aa7b5	sub_gr1
 22284	3aa6a0	asgeu64
+22288	3aa1f2	ihconst
+22289	3aa0ed	ihconst
 22291	00a3cc	pattern16	16
 22301	00be2d	pattern16	16
+22302	3abecc	ihconst
+22303	3ab96c	ihconst
 22304	00b9ef	pattern16	16
 22305	3ab988	nop
 22310	3abaef	nop
@@ -3123,11 +4433,15 @@ k	key24	plaintext	bits
 22312	3ab532	nop
 22313	3ab5ed	jmpi_lr0
 22314	3ab46c	asleu65
+22320	3ab680	ihconst
+22321	3ab168	ihconst
 22342	354a06	nop
 22343	354575	jmpi_lr0
 22344	354440	nop
 22345	0044a8	pattern16	16
 22348	0047d2	pattern16	16
+22349	35462d	ihconst
+22350	35414c	ihconst
 22352	0041ef	pattern16	16
 22355	3543b5	nop
 22357	004208	pattern16	16
@@ -3139,6 +4453,8 @@ k	key24	plaintext	bits
 22369	3559e8	sub_gr1
 22370	3558ef	asgeu64
 22373	005b2d	pattern16	16
+22374	355b8c	ihconst
+22375	355a2c	ihconst
 22383	00562c	pattern16	16
 22392	3552c0	nop
 22393	356d28	add_gr1
@@ -3148,7 +4464,13 @@ k	key24	plaintext	bits
 22398	356fcc	sub_gr1
 22399	356e6c	asgeu64
 22400	356eef	add_lr1
+22402	3569e6	ihconst
+22403	3569b5	ihconst
 22411	35658c	nop
+22414	3564c6	ihconst
+22415	356775	ihconst
+22417	356668	ihconst
+22418	3566ef	ihconst
 22425	3562c8	nop
 22430	357f6f	add_gr1
 22431	357fac	nop
@@ -3157,6 +4479,8 @@ k	key24	plaintext	bits
 22435	35784c	sub_gr1
 22436	3578ef	asgeu64
 22437	3578e8	add_lr1
+22444	3574d2	ihconst
+22445	35772d	ihconst
 22446	00764c	pattern16	16
 22447	3576ec	nop
 22452	357360	add_gr1
@@ -3168,12 +4492,16 @@ k	key24	plaintext	bits
 22458	350dec	asgeu64
 22459	350c0c	add_lr1
 22462	000e46	pattern16	16
+22463	350e75	ihconst
+22464	350e00	ihconst
 22465	000ee8	pattern16	16
 22474	0005a6	pattern16	16
 22476	3504a0	add_gr1
 22478	35076f	jmpi_lr0
 22479	35072c	asleu65
 22481	0006ed	pattern16	16
+22482	3506ac	ihconst
+22483	3501cc	ihconst
 22484	0001ef	pattern16	16
 22485	350068	nop
 22499	001eb5	pattern16	16
@@ -3193,10 +4521,18 @@ k	key24	plaintext	bits
 22539	35250c	asleu65
 22541	35242d	sub_gr1
 22542	35274c	asgeu64
+22552	3523b2	ihconst
+22554	3522ec	ihconst
 22556	003c6f	pattern16	16
 22558	003f46	pattern16	16
+22559	353f75	ihconst
+22561	353fe8	ihconst
+22562	353eef	ihconst
+22563	35394c	ihconst
 22569	003a48	pattern16	16
 22571	003ab5	pattern16	16
+22576	3534f2	ihconst
+22577	3537ed	ihconst
 22579	3536cc	nop
 22581	003168	pattern16	16
 22590	35cdcc	add_gr1
@@ -3217,7 +4553,9 @@ k	key24	plaintext	bits
 22612	00c792	pattern16	16
 22613	00c62d	pattern16	16
 22617	00c0c8	pattern16	16
+22622	35dd6f	ihconst
 22623	00ddac	pattern16	16
+22624	35dc72	ihconst
 22631	35d875	add_gr1
 22633	35dba8	jmpi_lr0
 22634	35da6f	asleu65
@@ -3236,64 +4574,228 @@ k	key24	plaintext	bits
 22659	35ee4c	nop
 22663	35e92c	nop
 22665	35eb48	nop
+22666	35eba6	ihconst
+22667	35ebb5	ihconst
+22673	35e4ed	ihconst
+22674	35e4ac	ihconst
 22676	35e7ef	nop
+22677	35e668	ihconst
+22678	35e686	ihconst
 22679	00e175	pattern16	16
 22680	35e1c0	nop
+22681	35e028	ihconst
+22682	35e36f	ihconst
 22684	35e252	nop
+22685	35e22d	ihconst
+22686	35e2cc	ihconst
+22688	35fdef	ihconst
+22689	35fd88	ihconst
+22696	35f932	ihconst
+22697	35f9ed	ihconst
+22698	35f86c	ihconst
+22700	35fb6f	ihconst
 22701	35fb28	add_gr1
 22703	35fa75	jmpi_lr0
 22704	35fa80	asleu65
 22709	00f72d	pattern16	16
+22715	35f0b5	ihconst
+22716	35f320	ihconst
 22717	00f3c8	pattern16	16
 22718	35f26f	nop
+22719	35f2ac	ihconst
+22720	358d72	ihconst
+22723	358f4c	ihconst
+22724	358fef	ihconst
+22727	358975	ihconst
+22728	358840	ihconst
 22729	0088a8	pattern16	16
+22731	358b0c	ihconst
+22732	358bd2	ihconst
 22733	008a2d	pattern16	16
+22735	3585ec	ihconst
+22736	3585ef	ihconst
+22738	358766	ihconst
+22739	3587b5	ihconst
 22740	008660	pattern16	16
 22741	358608	nop
 22743	0081ec	pattern16	16
 22745	0080ed	pattern16	16
+22748	35826f	ihconst
+22749	3582a8	ihconst
 22750	009d46	pattern16	16
+22751	359d75	ihconst
+22752	359d00	ihconst
 22754	359cef	nop
+22755	359f4c	ihconst
+22756	359f12	ihconst
+22761	359848	ihconst
+22762	3598a6	ihconst
 22763	0098b5	pattern16	16
 22765	009a48	pattern16	16
 22767	009a2c	pattern16	16
+22768	359af2	ihconst
+22769	3595ed	ihconst
 22772	0094ef	pattern16	16
+22773	359768	ihconst
+22774	359786	ihconst
 22775	009675	pattern16	16
 22776	3596c0	nop
+22778	35906f	ihconst
+22779	35908c	ihconst
+22781	35932d	ihconst
+22782	3593cc	ihconst
+22796	35a86f	ihconst
+22797	35a828	ihconst
+22808	35a66f	ihconst
+22809	35a6c8	ihconst
 22816	00a272	pattern16	16
+22819	35bc4c	ihconst
+22820	35bcef	ihconst
 22822	00bf06	pattern16	16
+22823	35be75	ihconst
+22824	35b940	ihconst
 22831	00baec	pattern16	16
+22836	35b760	ihconst
+22837	35b708	ihconst
+22849	35b2e8	ihconst
+22850	344def	ihconst
+22863	344b2c	ihconst
+22864	344bf2	ihconst
 22871	004775	pattern16	16
+22874	34416f	ihconst
+22875	34418c	ihconst
+22878	3440cc	ihconst
+22879	34436c	ihconst
+22890	345e6c	ihconst
+22891	345e8c	ihconst
 22898	005bef	pattern16	16
 22899	005acc	pattern16	16
 22901	00552d	pattern16	16
+22904	34576f	ihconst
+22905	3457c8	ihconst
+22916	346def	ihconst
+22917	346de8	ihconst
 22924	0069d2	pattern16	16
 22933	006408	pattern16	16
 22935	3467ec	add_gr1
 22936	3467b2	nop
 22937	3466ed	jmpi_lr0
 22938	3466ec	asleu65
+22939	34610c	ihconst
+22940	34606f	ihconst
+22942	346346	ihconst
+22943	346375	ihconst
 22944	006300	pattern16	16
+22945	3463e8	ihconst
+22946	3462ef	ihconst
 22947	007d4c	pattern16	16
 22948	007d12	pattern16	16
+22948	347d12	ihconst
+22949	347d2d	ihconst
 22950	007d8c	pattern16	16
+22951	347c2c	ihconst
+22952	347f6f	ihconst
 22953	007e48	pattern16	16
+22954	347ea6	ihconst
+22955	347eb5	ihconst
+22956	3479a0	ihconst
+22958	34786f	ihconst
+22959	34782c	ihconst
+22960	3478f2	ihconst
+22962	347bac	ihconst
+22963	347acc	ihconst
 22964	007aef	pattern16	16
+22965	347568	ihconst
+22966	347586	ihconst
 22968	0074c0	pattern16	16
+22968	3474c0	ihconst
+22969	347728	ihconst
+22971	34768c	ihconst
+22972	347152	ihconst
 22973	00712d	pattern16	16
+22974	3471cc	ihconst
+22975	34706c	ihconst
+22976	3470ef	ihconst
+22978	3473e6	ihconst
+22981	347288	ihconst
+22982	340def	ihconst
+22986	340f6c	ihconst
+22987	340f8c	ihconst
+22991	340975	ihconst
+22992	340980	ihconst
+22994	3408ef	ihconst
+22995	340bcc	ihconst
+23000	34046f	ihconst
+23001	3404c8	ihconst
+23004	340620	ihconst
+23005	3406c8	ihconst
+23011	34024c	ihconst
+23012	3402ef	ihconst
+23015	341c75	ihconst
+23016	341f40	ihconst
 23017	001fa8	pattern16	16
 23018	341e6f	nop
 23020	001ed2	pattern16	16
+23025	341b08	ihconst
+23026	341a66	ihconst
 23027	001ab5	pattern16	16
+23030	3415ef	ihconst
+23031	3414ec	ihconst
 23032	0014b2	pattern16	16
+23033	3417ed	ihconst
+23034	3417ec	ihconst
 23035	00160c	pattern16	16
 23036	00116f	pattern16	16
+23037	3411a8	ihconst
+23038	341046	ihconst
+23041	3410e8	ihconst
+23042	3413ef	ihconst
 23044	001212	pattern16	16
+23045	34122d	ihconst
+23046	34128c	ihconst
+23049	342f48	ihconst
+23050	342fa6	ihconst
 23052	002ea0	pattern16	16
+23053	342948	ihconst
+23054	34296f	ihconst
+23057	3428ed	ihconst
+23058	3428ac	ihconst
+23061	342a68	ihconst
+23062	342a86	ihconst
 23064	0025c0	pattern16	16
+23065	342428	ihconst
+23066	34276f	ihconst
+23069	34262d	ihconst
+23070	3426cc	ihconst
 23072	0021ef	pattern16	16
+23073	342188	ihconst
+23074	3420e6	ihconst
+23077	342388	ihconst
+23078	3422ef	ihconst
+23081	343ded	ihconst
+23082	343c6c	ihconst
+23085	343f28	ihconst
+23086	343fc6	ihconst
+23089	343968	ihconst
+23090	3439ef	ihconst
+23093	343b2d	ihconst
+23094	343a0c	ihconst
 23096	00356f	pattern16	16
+23097	3435c8	ihconst
+23098	343426	ihconst
+23101	3437c8	ihconst
+23102	34366f	ihconst
+23105	3431ed	ihconst
+23106	34302c	ihconst
+23109	3433e8	ihconst
+23110	343206	ihconst
+23113	34cca8	ihconst
+23114	34cf6f	ihconst
 23116	00cfd2	pattern16	16
+23117	34ce2d	ihconst
+23118	34c94c	ihconst
+23121	34c808	ihconst
+23122	34cb66	ihconst
 23124	00ca60	pattern16	16
 23128	34c5b2	add_gr1
 23129	34c4ed	nop
@@ -3302,32 +4804,60 @@ k	key24	plaintext	bits
 23132	00c66f	pattern16	16
 23133	34c6a8	sub_gr1
 23134	34c146	asgeu64
+23135	34c175	ihconst
+23136	34c100	ihconst
 23137	00c1e8	pattern16	16
 23139	34c34c	add_gr1
 23140	34c312	nop
 23141	34c32d	jmpi_lr0
 23142	34c38c	asleu65
 23143	00c22c	pattern16	16
+23144	34dd6f	ihconst
+23145	34dc48	ihconst
 23146	00dca6	pattern16	16
 23148	34dfa0	jmpi_lr0
+23151	34de2c	ihconst
+23152	34def2	ihconst
 23155	34d8cc	jmpi_lr0
 23157	00db68	pattern16	16
+23158	34db86	ihconst
+23159	34da75	ihconst
 23164	00d752	pattern16	16
 23165	00d72d	pattern16	16
 23166	34d7cc	jmpi_lr0
 23169	34d688	sub_gr1
 23170	34d1e6	asgeu64
+23175	34d26c	ihconst
+23176	34d232	ihconst
+23177	34d2ed	ihconst
 23178	00ed6c	pattern16	16
+23179	34ed8c	ihconst
+23182	34ecc6	ihconst
+23183	34ef75	ihconst
+23184	34ef80	ihconst
+23185	34ee68	ihconst
 23186	00eeef	pattern16	16
 23188	34e992	add_gr1
 23190	34eb0c	jmpi_lr0
 23191	34ebac	asleu65
+23193	34eac8	ihconst
+23194	34e526	ihconst
 23212	34fcd2	nop
+23213	34ff2d	ihconst
+23214	34fe4c	ihconst
+23217	34f908	ihconst
+23218	34f866	ihconst
+23219	34f8b5	ihconst
 23220	00fb60	pattern16	16
+23221	34fb08	ihconst
 23222	34fbef	add_gr1
 23224	34fab2	jmpi_lr0
 23225	34f5ed	asleu65
 23241	008d48	pattern16	16
+23242	348da6	ihconst
+23243	348db5	ihconst
+23244	348ca0	ihconst
+23245	348f48	ihconst
 23248	348ff2	add_gr1
 23250	348eac	jmpi_lr0
 23251	3489cc	asleu65
@@ -3340,44 +4870,87 @@ k	key24	plaintext	bits
 23270	3480ef	asleu65
 23272	348332	sub_gr1
 23273	3483ed	asgeu64
+23274	34826c	ihconst
+23275	34828c	ihconst
+23276	349d6f	ihconst
+23277	349d28	ihconst
 23279	009c75	pattern16	16
 23280	009c80	pattern16	16
 23283	009ecc	pattern16	16
+23284	349e92	ihconst
+23285	34992d	ihconst
 23286	00980c	pattern16	16
 23287	3498ac	nop
 23293	3495c8	nop
+23294	34946f	ihconst
+23295	3494ac	ihconst
 23299	34914c	add_gr1
 23301	3491e8	jmpi_lr0
 23302	349006	asleu65
+23304	349240	ihconst
+23305	3492a8	ihconst
 23308	00add2	pattern16	16
 23311	34afec	jmpi_lr0
 23314	34a966	sub_gr1
 23315	34a9b5	asgeu64
 23316	34a860	add_lr1
+23324	34a46f	ihconst
+23325	34a4a8	ihconst
 23326	00a746	pattern16	16
 23329	34a7e8	nop
+23330	34a6ef	ihconst
+23331	34a14c	ihconst
 23332	00a112	pattern16	16
 23334	00a18c	pattern16	16
 23342	34bc6f	add_gr1
 23344	34bcf2	jmpi_lr0
 23345	34bfed	asleu65
+23353	34bb28	ihconst
+23354	34ba6f	ihconst
 23355	00ba8c	pattern16	16
+23362	34b7e6	ihconst
+23363	34b7b5	ihconst
+23368	34b032	ihconst
+23369	34b0ed	ihconst
 23370	00b36c	pattern16	16
 23379	004fcc	pattern16	16
+23387	374bb5	ihconst
 23388	004a20	pattern16	16
+23389	374ac8	ihconst
+23393	3744ed	ihconst
+23394	37472c	ihconst
 23395	00464c	pattern16	16
 23396	3746ef	nop
 23400	374340	add_gr1
 23402	37426f	jmpi_lr0
 23403	37420c	asleu65
+23404	3742d2	ihconst
+23405	375d2d	ihconst
+23407	375cec	ihconst
+23408	375cef	ihconst
 23409	005f08	pattern16	16
+23418	375bec	ihconst
+23419	375a0c	ihconst
+23427	37564c	ihconst
+23428	375612	ihconst
+23429	37562d	ihconst
+23430	37568c	ihconst
 23431	00512c	pattern16	16
+23439	376d2c	ihconst
+23453	376a2d	ihconst
+23454	376acc	ihconst
 23455	00656c	pattern16	16
 23464	376132	nop
 23473	377d68	nop
+23481	3779c8	ihconst
+23482	377826	ihconst
 23483	0078b5	pattern16	16
 23486	007a6f	pattern16	16
+23494	377606	ihconst
+23495	377175	ihconst
 23496	007040	pattern16	16
+23499	37730c	ihconst
+23500	3773d2	ihconst
 23504	370def	nop
 23506	370f66	add_gr1
 23508	370e60	jmpi_lr0
@@ -3390,16 +4963,22 @@ k	key24	plaintext	bits
 23560	371632	asgeu64
 23569	001268	pattern16	16
 23570	0012ef	pattern16	16
+23574	372f0c	ihconst
+23575	372fac	ihconst
 23578	372926	add_gr1
 23579	3729b5	nop
 23580	372820	jmpi_lr0
 23581	3728c8	asleu65
+23587	37244c	ihconst
+23588	3724ef	ihconst
 23592	372140	nop
 23608	003eb2	pattern16	16
 23634	0032ac	pattern16	16
 23638	00cc86	pattern16	16
 23649	00cb88	pattern16	16
 23656	00c732	pattern16	16
+23673	37dfc8	ihconst
+23674	37de26	ihconst
 23678	37d86f	nop
 23691	00d10c	pattern16	16
 23692	37d1d2	add_gr1
@@ -3416,10 +4995,14 @@ k	key24	plaintext	bits
 23717	37e52d	nop
 23718	37e58c	jmpi_lr0
 23719	37e42c	asleu65
+23731	37e2cc	ihconst
+23732	37e2ef	ihconst
 23735	37fc75	add_gr1
 23736	37fcc0	nop
 23737	37ff28	jmpi_lr0
 23738	37fe6f	asleu65
+23749	37fa88	ihconst
+23750	37f5ef	ihconst
 23751	00f46c	pattern16	16
 23754	37f76c	nop
 23761	00f068	pattern16	16
@@ -3428,6 +5011,8 @@ k	key24	plaintext	bits
 23813	009a2d	pattern16	16
 23818	0097a6	pattern16	16
 23836	00ae52	pattern16	16
+23840	37a9ef	ihconst
+23841	37a988	ihconst
 23843	00a8b5	pattern16	16
 23845	37ab88	nop
 23859	37a0cc	add_gr1
@@ -3447,9 +5032,13 @@ k	key24	plaintext	bits
 23885	37b62d	nop
 23886	37b14c	jmpi_lr0
 23887	37b1ec	asleu65
+23889	37b008	ihconst
+23890	37b366	ihconst
 23891	00b3b5	pattern16	16
 23902	004946	pattern16	16
 23909	004b2d	pattern16	16
+23923	3640cc	ihconst
+23924	3640ef	ihconst
 23936	365eef	nop
 23937	365e88	add_gr1
 23938	3659e6	nop
@@ -3466,8 +5055,12 @@ k	key24	plaintext	bits
 23983	0066ec	pattern16	16
 23985	006108	pattern16	16
 23989	006308	pattern16	16
+23990	3663ef	ihconst
+23991	3662ec	ihconst
 23992	0062b2	pattern16	16
 24001	007ee8	pattern16	16
+24006	36788c	ihconst
+24007	367b2c	ihconst
 24008	007a6f	pattern16	16
 24012	0074a0	pattern16	16
 24014	36776f	add_gr1
@@ -3478,6 +5071,8 @@ k	key24	plaintext	bits
 24069	0019e8	pattern16	16
 24070	001806	pattern16	16
 24087	0013ec	pattern16	16
+24096	362f00	ihconst
+24097	362fe8	ihconst
 24105	362a48	add_gr1
 24107	362ab5	jmpi_lr0
 24108	3625a0	asleu65
@@ -3485,15 +5080,29 @@ k	key24	plaintext	bits
 24111	36242c	asgeu64
 24112	3624f2	add_lr1
 24124	003d52	pattern16	16
+24128	363cef	ihconst
+24129	363c88	ihconst
 24130	003fe6	pattern16	16
+24132	363ee0	ihconst
+24133	363e88	ihconst
 24158	00cd6f	pattern16	16
+24177	36c708	ihconst
+24178	36c666	ihconst
 24184	00c0b2	pattern16	16
+24185	36c3ed	ihconst
+24186	36c3ec	ihconst
 24187	00c20c	pattern16	16
+24198	36de8c	ihconst
+24199	36d92c	ihconst
 24221	00d22d	pattern16	16
 24223	00ed6c	pattern16	16
+24233	36e9ed	ihconst
+24234	36e86c	ihconst
 24235	00e88c	pattern16	16
 24236	00eb6f	pattern16	16
 24238	36ebc6	nop
+24239	36ea75	ihconst
+24240	36ea80	ihconst
 24252	36e320	nop
 24257	00fded	pattern16	16
 24258	36fc2c	nop
@@ -3512,10 +5121,20 @@ k	key24	plaintext	bits
 24344	36966f	sub_gr1
 24345	3696c8	asgeu64
 24346	369126	add_lr1
+24347	3691b5	ihconst
+24348	369020	ihconst
 24357	00ace8	pattern16	16
+24364	36a8d2	ihconst
+24365	36ab2d	ihconst
+24374	36a7ef	ihconst
+24375	36a6ec	ihconst
 24390	00bc8c	pattern16	16
 24395	00b9b5	pattern16	16
+24399	36bb2c	ihconst
+24400	36bbf2	ihconst
 24401	00baed	pattern16	16
+24404	36b5ef	ihconst
+24405	36b468	ihconst
 24410	00b16f	pattern16	16
 24414	36b0cc	add_gr1
 24416	36b3ef	jmpi_lr0
@@ -3535,6 +5154,8 @@ k	key24	plaintext	bits
 24617	002ded	pattern16	16
 24620	002f6f	pattern16	16
 24626	0029ef	pattern16	16
+24633	3125c8	ihconst
+24634	312426	ihconst
 24674	3130ef	nop
 24681	31cc48	nop
 24691	31c8cc	nop
@@ -3547,22 +5168,52 @@ k	key24	plaintext	bits
 24735	31d7ac	asgeu64
 24736	31d672	add_lr1
 24738	00d12c	pattern16	16
+24740	31d0ef	ihconst
+24741	31d0e8	ihconst
 24742	00d306	pattern16	16
 24746	00ec6f	pattern16	16
 24748	31ecd2	add_gr1
 24750	31ee4c	jmpi_lr0
 24751	31eeec	asleu65
+24754	31e866	ihconst
+24755	31e8b5	ihconst
 24756	00eb60	pattern16	16
+24764	31e76f	ihconst
+24765	31e7a8	ihconst
 24766	00e646	pattern16	16
+24773	31e02d	ihconst
+24774	31e08c	ihconst
+24780	31fca0	ihconst
+24781	31ff48	ihconst
+24789	31f868	ihconst
+24790	31f886	ihconst
+24798	31f4cc	ihconst
+24799	31f76c	ihconst
 24800	00f7ef	pattern16	16
+24806	31f0ef	ihconst
+24807	31f36c	ihconst
 24808	00f332	pattern16	16
 24813	008d28	pattern16	16
+24813	318d28	ihconst
+24814	318dc6	ihconst
 24815	008c75	pattern16	16
+24818	318fef	ihconst
+24820	318e92	ihconst
 24821	00892d	pattern16	16
+24826	318a26	ihconst
+24827	318ab5	ihconst
+24833	3187ed	ihconst
+24834	31862c	ihconst
 24835	00814c	pattern16	16
+24843	319d0c	ihconst
+24844	319dd2	ihconst
 24845	009c2d	pattern16	16
+24852	319860	ihconst
+24853	319808	ihconst
 24854	0098ef	pattern16	16
 24865	0097e8	pattern16	16
+24875	3192b5	ihconst
+24876	31ada0	ihconst
 24892	00a552	pattern16	16
 24901	00a688	pattern16	16
 24906	00a36c	pattern16	16
@@ -3578,17 +5229,27 @@ k	key24	plaintext	bits
 24965	00462d	pattern16	16
 24973	005d48	pattern16	16
 24983	005975	pattern16	16
+24990	305acc	ihconst
+24991	30556c	ihconst
 24992	0055ef	pattern16	16
 24994	0054e6	pattern16	16
+24996	3057e0	ihconst
+24997	305788	ihconst
 24998	0056ef	pattern16	16
 25002	00506c	pattern16	16
 25005	305328	nop
+25039	307dec	ihconst
+25040	307def	ihconst
 25049	0078ed	pattern16	16
 25052	307a6f	nop
 25055	007575	pattern16	16
 25067	3070b5	nop
 25070	00726f	pattern16	16
 25088	000aef	pattern16	16
+25099	30018c	ihconst
+25100	30006f	ihconst
+25105	300268	ihconst
+25106	3002ef	ihconst
 25116	301820	add_gr1
 25118	301b6f	jmpi_lr0
 25119	301bac	asleu65
@@ -3600,17 +5261,33 @@ k	key24	plaintext	bits
 25137	302d08	sub_gr1
 25138	302c66	asgeu64
 25139	302cb5	add_lr1
+25142	302fef	ihconst
+25143	302eec	ihconst
+25148	302b6f	ihconst
+25149	302ba8	ihconst
 25155	00244c	pattern16	16
 25187	003ab5	pattern16	16
 25205	00cd2d	pattern16	16
 25212	00c920	pattern16	16
+25224	30c640	ihconst
+25225	30c6a8	ihconst
+25230	30c34c	ihconst
+25231	30c3ec	ihconst
+25236	30dc60	ihconst
+25237	30dc08	ihconst
+25242	30deec	ihconst
+25243	30d90c	ihconst
 25246	30db46	add_gr1
 25248	30db00	jmpi_lr0
 25249	30dbe8	asleu65
 25250	00daef	pattern16	16
 25256	00d76f	pattern16	16
+25258	30d6a6	ihconst
+25259	30d6b5	ihconst
 25277	30e92d	jmpi_lr0
 25278	30e9cc	nop
+25287	30e46c	ihconst
+25288	30e432	ihconst
 25294	00e6c6	pattern16	16
 25298	00e0ef	pattern16	16
 25303	00fdac	pattern16	16
@@ -3623,11 +5300,15 @@ k	key24	plaintext	bits
 25351	30852c	nop
 25358	00816f	pattern16	16
 25370	009f6f	pattern16	16
+25372	309e52	ihconst
+25373	309e2d	ihconst
 25374	009ecc	pattern16	16
 25388	30976f	jmpi_lr0
 25389	309728	nop
 25394	0091ef	pattern16	16
 25396	009092	pattern16	16
+25410	30a82c	ihconst
+25411	30ab4c	ihconst
 25412	00abef	pattern16	16
 25416	00a440	pattern16	16
 25424	30a1ef	jmpi_lr0
@@ -3639,8 +5320,12 @@ k	key24	plaintext	bits
 25451	30b4b5	nop
 25455	00b62c	pattern16	16
 25467	004c8c	pattern16	16
+25470	334fcc	ihconst
+25471	334e6c	ihconst
 25484	33446f	jmpi_lr0
 25485	334428	nop
+25487	334775	ihconst
+25488	334780	ihconst
 25518	33564c	jmpi_lr0
 25519	3356ec	nop
 25522	005066	pattern16	16
@@ -3688,25 +5373,41 @@ k	key24	plaintext	bits
 25756	33c252	sub_gr1
 25757	33c22d	asgeu64
 25758	33c2cc	add_lr1
+25765	33df88	ihconst
+25766	33deef	ihconst
 25767	00d96c	pattern16	16
 25772	00db6f	pattern16	16
+25777	33d568	ihconst
+25778	33d5ef	ihconst
 25779	00d4cc	pattern16	16
 25783	00d6ac	pattern16	16
 25785	00d1c8	pattern16	16
+25790	33d26f	ihconst
+25791	33d2ac	ihconst
 25792	00ed72	pattern16	16
 25796	00efef	pattern16	16
 25798	00ee06	pattern16	16
+25809	33e408	ihconst
+25810	33e766	ihconst
 25816	00e1b2	pattern16	16
 25823	00fd75	pattern16	16
 25846	33f786	nop
 25861	338c88	nop
 25866	33896c	nop
+25874	338aef	ihconst
+25875	3385cc	ihconst
 25876	008592	pattern16	16
+25897	3399a8	ihconst
+25898	33986f	ihconst
 25899	00980c	pattern16	16
 25904	009aef	pattern16	16
+25922	33adef	ihconst
+25923	33ac4c	ihconst
 25924	00ac12	pattern16	16
 25926	00ac8c	pattern16	16
 25927	33af2c	nop
+25929	33a948	ihconst
+25930	33a9a6	ihconst
 25949	00a02d	pattern16	16
 25956	00bde0	pattern16	16
 25957	33bd88	nop
@@ -3718,18 +5419,36 @@ k	key24	plaintext	bits
 26027	005eb5	pattern16	16
 26029	005848	pattern16	16
 26032	0058f2	pattern16	16
+26041	325728	ihconst
+26042	32566f	ihconst
+26055	326c6c	ihconst
+26056	326c32	ihconst
 26061	326e28	nop
 26068	006b92	pattern16	16
+26069	326a2d	ihconst
+26071	3265ac	ihconst
 26081	0060ed	pattern16	16
+26090	327e6f	ihconst
+26091	327e0c	ihconst
 26092	007ed2	pattern16	16
+26101	327508	ihconst
+26102	3275ef	ihconst
 26103	0074ec	pattern16	16
 26110	007046	pattern16	16
 26114	0073ef	pattern16	16
+26123	320fb5	ihconst
+26124	320ea0	ihconst
+26134	320a86	ihconst
+26135	320575	ihconst
+26141	32062d	ihconst
+26142	3206cc	ihconst
 26144	3201ef	nop
 26156	321f6f	nop
 26159	001e75	pattern16	16
 26170	321426	nop
 26172	321720	nop
+26176	321172	ihconst
+26181	3213e8	ihconst
 26182	001206	pattern16	16
 26186	002f6f	pattern16	16
 26188	002fd2	pattern16	16
@@ -3753,6 +5472,8 @@ k	key24	plaintext	bits
 26351	00fc75	pattern16	16
 26362	00fa26	pattern16	16
 26365	00f5c8	pattern16	16
+26382	328f4c	ihconst
+26383	328fec	ihconst
 26384	008fef	pattern16	16
 26389	008808	pattern16	16
 26397	0084a8	pattern16	16
@@ -3764,6 +5485,8 @@ k	key24	plaintext	bits
 26437	009688	pattern16	16
 26444	00926f	pattern16	16
 26449	32ac68	nop
+26452	32af92	ihconst
+26453	32ae2d	ihconst
 26455	32a9ac	nop
 26456	32a86f	add_gr1
 26458	32ab26	jmpi_lr0
@@ -3777,18 +5500,32 @@ k	key24	plaintext	bits
 26491	00ba0c	pattern16	16
 26496	00b400	pattern16	16
 26500	00b612	pattern16	16
+26510	cd4d6f	ihconst
+26511	cd4d2c	ihconst
 26512	004df2	pattern16	16
+26519	cd4975	ihconst
+26520	cd49c0	ihconst
 26521	004828	pattern16	16
+26534	cd46ef	ihconst
+26535	cd416c	ihconst
 26536	004132	pattern16	16
+26560	cd5572	ihconst
+26562	cd542c	ihconst
 26567	005175	pattern16	16
 26571	00530c	pattern16	16
+26578	cd6f66	ihconst
+26579	cd6fb5	ihconst
 26585	0068ed	pattern16	16
+26591	cd6575	ihconst
+26592	cd6500	ihconst
 26594	cd64ef	nop
 26619	00788c	pattern16	16
 26626	cd75e6	nop
 26645	cd0c2d	nop
 26651	0009b5	pattern16	16
 26663	cd0675	nop
+26673	cd1d08	ihconst
+26676	cd1f60	ihconst
 26684	001b6f	pattern16	16
 26691	00144c	pattern16	16
 26693	00142d	pattern16	16
@@ -3796,8 +5533,12 @@ k	key24	plaintext	bits
 26696	00166f	pattern16	16
 26752	003b72	pattern16	16
 26767	0033ec	pattern16	16
+26781	cdc8a8	ihconst
+26782	cdcb46	ihconst
 26793	cdc648	nop
 26795	cdc6b5	nop
+26808	cddcc0	ihconst
+26809	cddf28	ihconst
 26813	cdd92d	nop
 26860	cde6d2	nop
 26872	cdfcb2	nop
@@ -3838,6 +5579,8 @@ k	key24	plaintext	bits
 27258	cc23ec	nop
 27273	003b48	pattern16	16
 27287	cc3175	nop
+27292	cc3252	ihconst
+27293	cc322d	ihconst
 27314	ccc5ef	nop
 27318	00c60c	pattern16	16
 27335	ccd975	nop
@@ -3848,6 +5591,8 @@ k	key24	plaintext	bits
 27413	ccf42d	nop
 27424	ccf272	nop
 27435	cc880c	nop
+27440	cc8aef	ihconst
+27441	cc8508	ihconst
 27461	cc9c2d	nop
 27484	cc9052	nop
 27495	00af6c	pattern16	16
@@ -3860,6 +5605,10 @@ k	key24	plaintext	bits
 27582	cf41cc	nop
 27593	005ced	pattern16	16
 27594	cf5f6c	nop
+27599	cf5975	ihconst
+27600	cf5980	ihconst
+27618	cf532c	ihconst
+27619	cf524c	ihconst
 27623	cf6c75	nop
 27634	cf6a66	nop
 27648	cf6000	nop
@@ -3870,16 +5619,30 @@ k	key24	plaintext	bits
 27704	cf056f	nop
 27718	cf0206	nop
 27735	cf15ec	nop
+27743	cf1175	ihconst
+27744	cf1100	ihconst
 27757	002e48	pattern16	16
 27772	cf2752	nop
 27798	003b0c	pattern16	16
+27799	cf3bac	ihconst
+27800	cf3a6f	ihconst
 27802	cf3526	nop
 27804	cf3420	add_gr1
 27806	cf376f	jmpi_lr0
 27807	cf37ac	asleu65
 27813	cf30e8	nop
 27815	cf3275	nop
+27816	cfcd40	ihconst
+27818	cfcc6f	ihconst
+27819	cfcc0c	ihconst
+27821	cfcf2d	ihconst
+27822	cfce4c	ihconst
+27824	cfceef	ihconst
+27825	cfc908	ihconst
+27827	cfc8b5	ihconst
 27829	00cb08	pattern16	16
+27831	cfcaec	ihconst
+27832	cfcab2	ihconst
 27836	cfc76f	nop
 27849	cfdd48	nop
 27855	cfdf2c	sub_gr1
@@ -3905,11 +5668,17 @@ k	key24	plaintext	bits
 28039	cfa12c	sub_gr1
 28040	cfa06f	asgeu64
 28041	cfa348	add_lr1
+28044	cfa2a0	ihconst
+28045	cfbd48	ihconst
 28055	cfb975	nop
 28083	004ccc	pattern16	16
 28087	ce4eac	nop
 28095	004aac	pattern16	16
 28104	004040	pattern16	16
+28107	ce430c	ihconst
+28108	ce43d2	ihconst
+28115	ce5fb5	ihconst
+28116	ce5e60	ihconst
 28120	0059b2	pattern16	16
 28132	ce5712	add_gr1
 28133	ce572d	nop
@@ -3970,6 +5739,8 @@ k	key24	plaintext	bits
 28312	003fb2	pattern16	16
 28313	003eed	pattern16	16
 28318	003b46	pattern16	16
+28323	ce354c	ihconst
+28324	ce3512	ihconst
 28328	ce376f	nop
 28329	003648	pattern16	16
 28339	ce32cc	add_gr1
@@ -4055,14 +5826,24 @@ k	key24	plaintext	bits
 28838	c93eef	sub_gr1
 28839	c9396c	asgeu64
 28840	c93932	add_lr1
+28843	c9388c	ihconst
+28844	c93b6f	ihconst
+28850	c935ef	ihconst
+28851	c934cc	ihconst
 28859	0030b5	pattern16	16
+28860	c93320	ihconst
+28861	c933c8	ihconst
 28864	00cd72	pattern16	16
 28872	00c840	pattern16	16
 28888	00c1b2	pattern16	16
 28893	00c2a8	pattern16	16
 28897	c9dde8	nop
+28915	c9d4cc	ihconst
+28916	c9d4ef	ihconst
 28917	00d768	pattern16	16
 28919	00d675	pattern16	16
+28923	c9d08c	ihconst
+28924	c9d352	ihconst
 28928	00d2ef	pattern16	16
 28940	c9e86f	add_gr1
 28941	c9e828	nop
@@ -4116,6 +5897,8 @@ k	key24	plaintext	bits
 29193	006f48	pattern16	16
 29197	006948	pattern16	16
 29198	00696f	pattern16	16
+29204	c86bef	ihconst
+29205	c86a68	ihconst
 29209	c86428	nop
 29221	c86388	add_gr1
 29222	c862ef	nop
@@ -4124,10 +5907,20 @@ k	key24	plaintext	bits
 29226	c87c6c	sub_gr1
 29227	c87c8c	asgeu64
 29228	c87f6f	add_lr1
+29235	c878cc	ihconst
+29236	c87892	ihconst
+29242	c87426	ihconst
+29243	c874b5	ihconst
+29252	c873ef	ihconst
+29253	c873e8	ihconst
 29254	007206	pattern16	16
 29261	000e2d	pattern16	16
 29268	000a60	pattern16	16
 29295	c81e2c	nop
+29324	c82c6f	ihconst
+29325	c82c28	ihconst
+29330	c82eef	ihconst
+29332	c82992	ihconst
 29338	c82526	nop
 29341	0024c8	pattern16	16
 29354	c83c6f	nop
@@ -4363,6 +6156,8 @@ k	key24	plaintext	bits
 30774	c56a0c	nop
 30778	006426	pattern16	16
 30780	006720	pattern16	16
+30781	c567c8	ihconst
+30782	c5666f	ihconst
 30787	00634c	pattern16	16
 30789	0063e8	pattern16	16
 30791	007d75	pattern16	16
@@ -4668,6 +6463,8 @@ k	key24	plaintext	bits
 32657	c68ced	nop
 32661	008e68	pattern16	16
 32663	008975	pattern16	16
+32664	c689c0	ihconst
+32665	c68828	ihconst
 32666	008b6f	pattern16	16
 32670	008acc	pattern16	16
 32674	0084e6	pattern16	16
@@ -4684,6 +6481,8 @@ k	key24	plaintext	bits
 32735	00a575	pattern16	16
 32739	c6a74c	nop
 32743	00a62c	pattern16	16
+32746	c6a0a6	ihconst
+32747	c6a0b5	ihconst
 32756	00bcef	pattern16	16
 32758	00bf86	pattern16	16
 32763	00b88c	pattern16	16
@@ -4978,6 +6777,8 @@ k	key24	plaintext	bits
 34891	dd4b8c	nop
 34905	0040c8	pattern16	16
 34909	dd42c8	nop
+34919	dd5875	ihconst
+34920	dd5b40	ihconst
 34923	005a0c	pattern16	16
 34929	005708	pattern16	16
 34934	0051ef	pattern16	16
@@ -4990,6 +6791,8 @@ k	key24	plaintext	bits
 34999	dd76ac	nop
 35004	007320	pattern16	16
 35005	0073c8	pattern16	16
+35009	dd0ded	ihconst
+35010	dd0c2c	ihconst
 35013	000fe8	pattern16	16
 35019	000b0c	pattern16	16
 35024	0005ef	pattern16	16
@@ -5067,39 +6870,113 @@ k	key24	plaintext	bits
 35491	dc604c	sub_gr1
 35492	dc60ef	asgeu64
 35493	dc60e8	add_lr1
+35501	dc7f2d	ihconst
+35502	dc7e4c	ihconst
 35503	007eec	pattern16	16
 35504	007eef	pattern16	16
 35506	dc7866	nop
+35507	dc78b5	ihconst
+35508	dc7b60	ihconst
 35509	007b08	pattern16	16
+35511	dc7aec	ihconst
+35512	dc7ab2	ihconst
+35515	dc740c	ihconst
+35517	dc77a8	ihconst
+35518	dc7646	ihconst
+35519	dc7675	ihconst
+35534	dc0f6f	ihconst
 35543	000b75	pattern16	16
+35545	dc0a28	ihconst
+35554	dc06e6	ihconst
+35555	dc06b5	ihconst
 35563	00028c	pattern16	16
+35569	dc1f68	ihconst
+35570	dc1fef	ihconst
 35571	001ecc	pattern16	16
 35580	001520	pattern16	16
 35596	002dd2	pattern16	16
+35607	dc2bec	ihconst
+35608	dc2bb2	ihconst
 35612	00246f	pattern16	16
 35634	003fac	pattern16	16
 35636	003eef	pattern16	16
+35640	dc38c0	ihconst
+35641	dc3b28	ihconst
 35645	00352d	pattern16	16
 35648	dc34ef	nop
 35650	0037e6	pattern16	16
+35656	dc3032	ihconst
+35657	dc30ed	ihconst
 35658	00336c	pattern16	16
 35661	003228	pattern16	16
 35664	dccd80	nop
+35665	dccc68	ihconst
+35666	dcccef	ihconst
 35667	00cfcc	pattern16	16
 35669	00ce2d	pattern16	16
 35677	00cac8	pattern16	16
 35678	00c56f	pattern16	16
+35679	dcc5ac	ihconst
+35680	dcc472	ihconst
 35697	00df08	pattern16	16
+35707	dcda0c	ihconst
+35708	dcd56f	ihconst
 35709	00d5a8	pattern16	16
 35710	dcd446	nop
+35716	dcd612	ihconst
+35717	dcd62d	ihconst
+35722	dcd3a6	ihconst
+35724	dcd2a0	ihconst
+35725	dced48	ihconst
+35727	dced2c	ihconst
+35728	dcedf2	ihconst
+35730	dcecac	ihconst
+35731	dcefcc	ihconst
+35733	dcee68	ihconst
+35734	dcee86	ihconst
+35735	dce975	ihconst
+35736	dce9c0	ihconst
+35737	dce828	ihconst
 35741	dcea2d	nop
+35747	dce4b5	ihconst
+35748	dce7e0	ihconst
 35752	dce132	nop
 35754	00e06c	pattern16	16
+35755	dce08c	ihconst
+35756	dce36f	ihconst
+35757	dce328	ihconst
+35758	dce3c6	ihconst
 35759	00e275	pattern16	16
+35761	dcfd68	ihconst
+35762	dcfdef	ihconst
+35767	dcfeac	ihconst
+35768	dcf96f	ihconst
+35769	dcf9c8	ihconst
+35770	dcf826	ihconst
+35773	dcfbc8	ihconst
+35774	dcfa6f	ihconst
+35779	dcf74c	ihconst
+35780	dcf7ef	ihconst
+35783	dcf175	ihconst
+35784	dcf040	ihconst
 35788	00f3d2	pattern16	16
+35789	dcf22d	ihconst
+35790	dc8d4c	ihconst
+35793	dc8c08	ihconst
+35794	dc8f66	ihconst
+35799	dc89ec	ihconst
+35800	dc89b2	ihconst
+35803	dc8b0c	ihconst
+35804	dc8a6f	ihconst
+35807	dc8575	ihconst
+35808	dc8500	ihconst
+35809	dc85e8	ihconst
+35810	dc84ef	ihconst
 35840	009aef	pattern16	16
 35854	dc90c6	nop
 35856	009380	pattern16	16
+35857	dc9268	ihconst
+35858	dc92ef	ihconst
 35859	00adcc	pattern16	16
 35860	dcad92	nop
 35862	dcaf0c	add_gr1
@@ -5198,8 +7075,12 @@ k	key24	plaintext	bits
 36441	00b0c8	pattern16	16
 36444	00b220	pattern16	16
 36451	004e4c	pattern16	16
+36455	de4875	ihconst
+36456	de4b40	ihconst
 36464	0044ef	pattern16	16
 36474	0043ec	pattern16	16
+36494	de556f	ihconst
+36495	de552c	ihconst
 36497	0054ed	pattern16	16
 36508	005252	pattern16	16
 36513	006d88	pattern16	16
@@ -5216,8 +7097,12 @@ k	key24	plaintext	bits
 36568	0071b2	pattern16	16
 36571	00730c	pattern16	16
 36581	000f2d	pattern16	16
+36585	de0848	ihconst
+36586	de08a6	ihconst
 36590	000a6f	pattern16	16
 36609	000288	pattern16	16
+36625	de1a68	ihconst
+36626	de1aef	ihconst
 36628	001592	pattern16	16
 36639	0013ac	pattern16	16
 36644	002cef	pattern16	16
@@ -5233,9 +7118,13 @@ k	key24	plaintext	bits
 36679	003f2c	pattern16	16
 36703	00336c	pattern16	16
 36707	0032b5	pattern16	16
+36721	decb68	ihconst
+36722	decbef	ihconst
 36730	00c626	pattern16	16
 36740	00ddef	pattern16	16
 36745	00dea8	pattern16	16
+36760	ded7b2	ihconst
+36761	ded6ed	ihconst
 36763	00d10c	pattern16	16
 36769	00d3e8	pattern16	16
 36772	00ed12	pattern16	16
@@ -5254,12 +7143,16 @@ k	key24	plaintext	bits
 36810	00ff6c	pattern16	16
 36843	008e0c	pattern16	16
 36848	0088ef	pattern16	16
+36852	de8560	ihconst
+36853	de8508	ihconst
 36855	0084ec	pattern16	16
 36856	0084b2	pattern16	16
 36857	0087ed	pattern16	16
 36861	0081a8	pattern16	16
 36864	008000	pattern16	16
 36883	009bcc	pattern16	16
+36892	de9652	ihconst
+36893	de962d	ihconst
 36895	00916c	pattern16	16
 36897	009188	pattern16	16
 36904	00ad32	pattern16	16
@@ -5275,6 +7168,8 @@ k	key24	plaintext	bits
 36943	deb9ec	add_lr1
 36946	00bb66	pattern16	16
 36970	004ca6	pattern16	16
+36988	d94752	ihconst
+36989	d9472d	ihconst
 36990	0047cc	pattern16	16
 36991	00466c	pattern16	16
 36997	004088	pattern16	16
@@ -5287,6 +7182,8 @@ k	key24	plaintext	bits
 37030	005306	pattern16	16
 37033	006da8	pattern16	16
 37034	006c6f	pattern16	16
+37051	d9640c	ihconst
+37052	d9676f	ihconst
 37054	006646	pattern16	16
 37056	006600	pattern16	16
 37083	00758c	pattern16	16
@@ -5309,6 +7206,8 @@ k	key24	plaintext	bits
 37148	00146f	pattern16	16
 37149	0014a8	pattern16	16
 37153	0017e8	pattern16	16
+37167	d92c2c	ihconst
+37168	d92cf2	ihconst
 37172	002eef	pattern16	16
 37189	002688	pattern16	16
 37190	0021ef	pattern16	16
@@ -5323,6 +7222,8 @@ k	key24	plaintext	bits
 37216	003472	pattern16	16
 37222	003106	pattern16	16
 37223	003075	pattern16	16
+37231	d9ccec	ihconst
+37232	d9ccef	ihconst
 37234	00ce66	pattern16	16
 37240	00c8b2	pattern16	16
 37243	00ca0c	pattern16	16
@@ -5453,7 +7354,11 @@ k	key24	plaintext	bits
 38105	0060ed	pattern16	16
 38108	00626f	pattern16	16
 38110	007d46	pattern16	16
+38114	db7cef	ihconst
+38115	db7f4c	ihconst
 38120	00796f	pattern16	16
+38122	db78a6	ihconst
+38123	db78b5	ihconst
 38128	db7af2	add_gr1
 38129	db75ed	nop
 38130	db75ac	jmpi_lr0
@@ -5466,11 +7371,15 @@ k	key24	plaintext	bits
 38156	db086f	nop
 38157	db0828	jmpi_lr0
 38158	db08c6	asleu65
+38171	db01b5	ihconst
+38172	db0020	ihconst
 38178	db1d2c	add_gr1
 38179	db1c4c	nop
 38180	db1cef	jmpi_lr0
 38181	db1ce8	asleu65
 38185	0019a8	pattern16	16
+38187	db180c	ihconst
+38192	db1aef	ihconst
 38193	001508	pattern16	16
 38203	00100c	pattern16	16
 38205	db13a8	add_gr1
@@ -5478,6 +7387,8 @@ k	key24	plaintext	bits
 38207	db1275	jmpi_lr0
 38208	db1200	asleu65
 38212	002c12	pattern16	16
+38214	db2c8c	ihconst
+38219	db29b5	ihconst
 38222	002b6f	pattern16	16
 38230	db2486	nop
 38235	00218c	pattern16	16
@@ -5486,6 +7397,8 @@ k	key24	plaintext	bits
 38241	db2388	nop
 38242	db22e6	jmpi_lr0
 38243	db22b5	asleu65
+38260	db3a92	ihconst
+38261	db352d	ihconst
 38267	db36b5	add_gr1
 38268	db3120	nop
 38269	db31c8	jmpi_lr0
@@ -5493,17 +7406,61 @@ k	key24	plaintext	bits
 38288	dbcbef	nop
 38292	dbc460	nop
 38295	dbc7ec	nop
+38297	dbc6ed	ihconst
+38312	dbdf6f	ihconst
 38315	00deb5	pattern16	16
+38322	dbdbac	ihconst
+38323	dbdacc	ihconst
 38327	dbd475	nop
+38328	dbd4c0	ihconst
+38330	dbd66f	ihconst
+38331	dbd68c	ihconst
+38333	dbd12d	ihconst
+38334	dbd1cc	ihconst
+38336	dbd0ef	ihconst
+38337	dbd088	ihconst
 38338	00d3e6	pattern16	16
+38339	dbd3b5	ihconst
+38340	dbd2e0	ihconst
+38341	dbd288	ihconst
+38346	dbef6c	ihconst
+38347	dbef8c	ihconst
 38351	dbe975	nop
+38352	dbe980	ihconst
+38354	dbe8ef	ihconst
 38356	00eb92	pattern16	16
+38358	dbe50c	ihconst
+38360	dbe46f	ihconst
+38361	dbe4c8	ihconst
+38363	dbe7b5	ihconst
+38364	dbe620	ihconst
+38366	dbe16f	ihconst
+38367	dbe1ac	ihconst
+38368	dbe072	ihconst
+38376	dbff40	ihconst
+38377	dbffa8	ihconst
+38378	dbfe6f	ihconst
+38379	dbfe0c	ihconst
 38380	00fed2	pattern16	16
+38384	dbf8ef	ihconst
+38386	dbfa66	ihconst
+38387	dbfab5	ihconst
+38389	dbf508	ihconst
+38390	dbf5ef	ihconst
+38392	dbf4b2	ihconst
+38393	dbf7ed	ihconst
+38395	dbf60c	ihconst
+38396	dbf16f	ihconst
+38398	dbf046	ihconst
+38399	dbf075	ihconst
+38400	dbf000	ihconst
 38402	00f3ef	pattern16	16
 38404	dbf212	add_gr1
 38405	dbf22d	nop
 38406	dbf28c	jmpi_lr0
 38407	db8d2c	asleu65
+38409	db8f48	ihconst
+38410	db8fa6	ihconst
 38414	db896f	nop
 38417	0088ed	pattern16	16
 38426	00876f	pattern16	16
@@ -5522,10 +7479,14 @@ k	key24	plaintext	bits
 38504	dbbd6f	asleu65
 38506	dbbca6	sub_gr1
 38507	dbbcb5	asgeu64
+38514	dbb9ac	ihconst
+38515	dbb8cc	ihconst
 38518	dbbb86	add_gr1
 38519	dbba75	nop
 38520	dbbac0	jmpi_lr0
 38521	dbb528	asleu65
+38527	dbb66c	ihconst
+38528	dbb6ef	ihconst
 38531	dbb1b5	add_gr1
 38532	dbb0e0	nop
 38533	dbb088	jmpi_lr0
@@ -5613,6 +7574,8 @@ k	key24	plaintext	bits
 39112	d55432	nop
 39117	d55628	nop
 39127	d56dac	jmpi_lr0
+39129	d56cc8	ihconst
+39131	d56fb5	ihconst
 39159	007cec	pattern16	16
 39161	007fed	pattern16	16
 39173	007a2d	pattern16	16
@@ -5622,6 +7585,8 @@ k	key24	plaintext	bits
 39244	d517d2	nop
 39249	d51008	nop
 39259	d52f0c	jmpi_lr0
+39261	d52ea8	ihconst
+39263	d52975	ihconst
 39318	00330c	pattern16	16
 39319	d533ac	sub_gr1
 39320	d5326f	asgeu64
@@ -5645,6 +7610,8 @@ k	key24	plaintext	bits
 39375	d5d72c	nop
 39380	d5d1ef	nop
 39389	d5ec2d	jmpi_lr0
+39406	d5e5c6	ihconst
+39407	d5e475	ihconst
 39410	00e7ef	pattern16	16
 39411	00e6cc	pattern16	16
 39416	00e36f	pattern16	16
@@ -5662,6 +7629,8 @@ k	key24	plaintext	bits
 39485	009d2d	pattern16	16
 39488	d59cef	jmpi_lr0
 39496	009832	pattern16	16
+39505	d59468	ihconst
+39506	d594ef	ihconst
 39509	00962d	pattern16	16
 39510	00910c	pattern16	16
 39515	0093b5	pattern16	16
@@ -5731,18 +7700,24 @@ k	key24	plaintext	bits
 39946	d4ffa6	nop
 39948	d4fea0	nop
 39951	d4f92c	jmpi_lr0
+39956	d4fbef	ihconst
+39957	d4fa68	ihconst
 39965	00f62d	pattern16	16
 39968	00f1ef	pattern16	16
 39974	00f2ef	pattern16	16
 39978	008c6c	pattern16	16
 39981	008f28	pattern16	16
 39982	d48fc6	jmpi_lr0
+39987	d488cc	ihconst
+39988	d48892	ihconst
 39990	008a0c	pattern16	16
 40002	00802c	pattern16	16
 40009	009ca8	pattern16	16
 40010	009f6f	pattern16	16
 40012	009fd2	pattern16	16
 40013	d49e2d	jmpi_lr0
+40018	d49b66	ihconst
+40019	d49bb5	ihconst
 40021	009a08	pattern16	16
 40026	0094ec	pattern16	16
 40027	00970c	pattern16	16
@@ -5767,9 +7742,13 @@ k	key24	plaintext	bits
 40126	d74646	asgeu64
 40127	d74675	add_lr1
 40139	005db5	pattern16	16
+40151	d75b75	ihconst
+40152	d75bc0	ihconst
 40159	d7576c	add_gr1
 40161	d75788	jmpi_lr0
 40162	d756e6	asleu65
+40163	d756b5	ihconst
+40164	d751e0	ihconst
 40169	d753ed	add_gr1
 40170	00526c	pattern16	16
 40171	d7528c	jmpi_lr0
@@ -5785,6 +7764,8 @@ k	key24	plaintext	bits
 40210	d77966	sub_gr1
 40211	d779b5	asgeu64
 40222	007746	pattern16	16
+40224	d77700	ihconst
+40225	d777e8	ihconst
 40235	d772b5	add_gr1
 40237	d70c48	jmpi_lr0
 40238	d70c6f	asleu65
@@ -5811,36 +7792,76 @@ k	key24	plaintext	bits
 40374	d7ce0c	nop
 40377	d7c9c8	jmpi_lr0
 40379	00c8b5	pattern16	16
+40380	d7cb20	ihconst
 40381	d7cbc8	jmpi_lr0
+40382	d7ca6f	ihconst
 40386	00c42c	pattern16	16
+40388	d7c7ef	ihconst
+40389	d7c7e8	ihconst
+40396	d7c3d2	ihconst
 40397	d7c22d	jmpi_lr0
+40398	d7dd4c	ihconst
+40402	d7df66	ihconst
 40403	d7dfb5	jmpi_lr0
+40404	d7de60	ihconst
+40405	d7de08	ihconst
 40406	d7deef	jmpi_lr0
+40407	d7d9ec	ihconst
+40408	d7d9b2	ihconst
 40409	d7d8ed	jmpi_lr0
+40410	d7d8ec	ihconst
+40411	d7db0c	ihconst
 40412	d7da6f	jmpi_lr0
+40413	d7daa8	ihconst
+40414	d7d546	ihconst
 40415	d7d575	jmpi_lr0
+40416	d7d500	ihconst
+40417	d7d5e8	ihconst
 40418	d7d4ef	jmpi_lr0
+40419	d7d74c	ihconst
 40420	d7d712	jmpi_lr0
+40422	d7d78c	ihconst
 40423	d7d62c	jmpi_lr0
+40424	d7d16f	ihconst
+40425	d7d048	ihconst
 40426	d7d0a6	jmpi_lr0
+40427	d7d0b5	ihconst
 40441	d7e928	nop
 40443	d7e88c	nop
 40452	d7e4e0	nop
 40453	00e488	pattern16	16
 40454	d7e7ef	nop
 40469	d7fc2d	nop
+40471	d7ffac	ihconst
 40472	d7fe6f	jmpi_lr0
+40473	d7fec8	ihconst
+40474	d7f926	ihconst
 40475	d7f9b5	jmpi_lr0
+40476	d7f820	ihconst
 40479	00fbac	pattern16	16
+40480	d7fa72	ihconst
+40481	d7faed	ihconst
 40482	00f52c	pattern16	16
+40488	d7f140	ihconst
 40489	d7f1a8	jmpi_lr0
+40490	d7f06f	ihconst
+40494	d7f24c	ihconst
 40495	d7f2ec	jmpi_lr0
+40496	d7f2ef	ihconst
+40497	d78d08	ihconst
 40498	d78c66	jmpi_lr0
+40499	d78cb5	ihconst
+40500	d78f60	ihconst
 40501	d78f08	jmpi_lr0
+40502	d78fef	ihconst
+40503	d78eec	ihconst
 40504	d78eb2	jmpi_lr0
+40505	d789ed	ihconst
 40506	d789ec	jmpi_lr0
 40515	d7844c	nop
+40525	d78348	ihconst
 40526	d7836f	jmpi_lr0
+40527	d7832c	ihconst
 40533	d79c68	nop
 40542	0098cc	pattern16	16
 40543	009b6c	pattern16	16
@@ -5958,6 +7979,8 @@ k	key24	plaintext	bits
 41285	000c2d	pattern16	16
 41302	000486	pattern16	16
 41305	d10628	nop
+41312	d103ef	ihconst
+41313	d10388	ihconst
 41316	001de0	pattern16	16
 41324	00196f	pattern16	16
 41325	001928	pattern16	16
@@ -6043,6 +8066,8 @@ k	key24	plaintext	bits
 41980	00db52	pattern16	16
 41986	00d5e6	pattern16	16
 42028	00e0d2	pattern16	16
+42029	d0e32d	ihconst
+42030	d0e24c	ihconst
 42036	00ff60	pattern16	16
 42039	00feec	pattern16	16
 42082	d08ae6	nop
@@ -6130,6 +8155,8 @@ k	key24	plaintext	bits
 42486	00c00c	pattern16	16
 42507	00d50c	pattern16	16
 42511	d3d7ec	nop
+42518	d3d0ef	ihconst
+42519	d3d3ec	ihconst
 42520	00d3b2	pattern16	16
 42522	00d2ec	pattern16	16
 42524	00ec6f	pattern16	16
@@ -6179,6 +8206,8 @@ k	key24	plaintext	bits
 42690	d3bc2c	jmpi_lr0
 42691	d3bf4c	nop
 42692	00bfef	pattern16	16
+42698	d3bb6f	ihconst
+42699	d3bb0c	ihconst
 42700	00bbd2	pattern16	16
 42702	00b54c	pattern16	16
 42705	00b408	pattern16	16
@@ -6205,6 +8234,8 @@ k	key24	plaintext	bits
 42793	d269a8	jmpi_lr0
 42794	d2686f	nop
 42795	00680c	pattern16	16
+42796	d268d2	ihconst
+42797	d26b2d	ihconst
 42805	006708	pattern16	16
 42806	0067ef	pattern16	16
 42808	0066b2	pattern16	16
@@ -6215,6 +8246,8 @@ k	key24	plaintext	bits
 42830	d27b6f	jmpi_lr0
 42831	d27b2c	nop
 42832	007bf2	pattern16	16
+42837	d27468	ihconst
+42838	d27486	ihconst
 42839	007775	pattern16	16
 42843	00718c	pattern16	16
 42845	00702d	pattern16	16
@@ -6225,11 +8258,15 @@ k	key24	plaintext	bits
 42862	0009c6	pattern16	16
 42865	000b68	pattern16	16
 42872	d2076f	nop
+42874	d20626	ihconst
+42877	d201c8	ihconst
 42884	001def	pattern16	16
 42885	001de8	pattern16	16
 42886	001c06	pattern16	16
 42887	d21f75	jmpi_lr0
 42889	001ea8	pattern16	16
+42894	d21b4c	ihconst
+42895	d21bec	ihconst
 42896	001bef	pattern16	16
 42900	001460	pattern16	16
 42902	0014ef	pattern16	16
@@ -6247,6 +8284,8 @@ k	key24	plaintext	bits
 42934	002586	pattern16	16
 42935	d22475	nop
 42936	0024c0	pattern16	16
+42937	d22728	ihconst
+42940	d22152	ihconst
 42942	0021cc	pattern16	16
 42943	00206c	pattern16	16
 42948	0022e0	pattern16	16
@@ -6254,12 +8293,20 @@ k	key24	plaintext	bits
 42953	d23ced	jmpi_lr0
 42954	003f6c	pattern16	16
 42955	003f8c	pattern16	16
+42956	d23e6f	ihconst
+42957	d23e28	ihconst
+42958	d23ec6	ihconst
+42959	d23975	ihconst
+42960	d23980	ihconst
+42961	d23868	ihconst
 42965	003a2d	pattern16	16
 42970	003726	pattern16	16
 42979	00324c	pattern16	16
 42982	d2cd06	jmpi_lr0
 42983	d2cc75	nop
 42984	00cf40	pattern16	16
+42989	d2c92d	ihconst
+42990	d2c84c	ihconst
 42991	00c8ec	pattern16	16
 42995	00cab5	pattern16	16
 43001	00c7ed	pattern16	16
@@ -6267,11 +8314,19 @@ k	key24	plaintext	bits
 43008	00c000	pattern16	16
 43016	00dc6f	pattern16	16
 43032	d2d5c0	nop
+43035	d2d78c	ihconst
+43036	d2d652	ihconst
 43037	00d62d	pattern16	16
 43047	00ed6c	pattern16	16
 43052	00ef6f	pattern16	16
 43053	d2ef28	jmpi_lr0
 43054	00efc6	pattern16	16
+43055	d2ee75	ihconst
+43057	d2e968	ihconst
+43058	d2e9ef	ihconst
+43060	d2e892	ihconst
+43066	d2e426	ihconst
+43067	d2e4b5	ihconst
 43068	00e720	pattern16	16
 43072	00e172	pattern16	16
 43076	00e3ef	pattern16	16
@@ -6283,11 +8338,23 @@ k	key24	plaintext	bits
 43107	00f34c	pattern16	16
 43116	008fa0	pattern16	16
 43121	d289ed	nop
+43124	d288ef	ihconst
+43125	d28b68	ihconst
 43131	00848c	pattern16	16
 43132	008752	pattern16	16
 43141	008088	pattern16	16
 43150	009cc6	pattern16	16
 43151	d29f75	jmpi_lr0
+43153	d29e68	ihconst
+43155	d299cc	ihconst
+43156	d29992	ihconst
+43158	d29b0c	ihconst
+43160	d29a6f	ihconst
+43161	d29ac8	ihconst
+43162	d29526	ihconst
+43163	d295b5	ihconst
+43164	d29420	ihconst
+43165	d294c8	ihconst
 43170	00912c	pattern16	16
 43175	009275	pattern16	16
 43176	00ad40	pattern16	16
@@ -6296,12 +8363,16 @@ k	key24	plaintext	bits
 43186	00a866	pattern16	16
 43189	d2ab08	jmpi_lr0
 43190	d2abef	nop
+43192	d2aab2	ihconst
+43193	d2a5ed	ihconst
 43197	00a7a8	pattern16	16
 43198	00a646	pattern16	16
 43202	00a1ef	pattern16	16
 43203	00a04c	pattern16	16
 43210	d2bda6	jmpi_lr0
 43211	d2bdb5	nop
+43213	d2bf48	ihconst
+43214	d2bf6f	ihconst
 43215	00bf2c	pattern16	16
 43222	00b886	pattern16	16
 43226	00b56f	pattern16	16
@@ -6600,6 +8671,8 @@ k	key24	plaintext	bits
 44879	006d75	pattern16	16
 44884	006f92	pattern16	16
 44889	0068c8	pattern16	16
+44900	ee66ef	ihconst
+44901	ee66e8	ihconst
 44906	ee626f	nop
 44933	ee762d	nop
 44934	ee768c	add_gr1
@@ -6617,6 +8690,8 @@ k	key24	plaintext	bits
 44972	00036f	pattern16	16
 44974	0003c6	pattern16	16
 44976	000280	pattern16	16
+44985	ee19c8	ihconst
+44986	ee1826	ihconst
 44987	0018b5	pattern16	16
 44991	ee1aac	nop
 44997	0017e8	pattern16	16
@@ -6652,6 +8727,8 @@ k	key24	plaintext	bits
 45118	00da46	pattern16	16
 45120	00da00	pattern16	16
 45124	00d412	pattern16	16
+45133	eed348	ihconst
+45134	eed36f	ihconst
 45139	eeedcc	nop
 45145	00ee28	pattern16	16
 45150	00e8cc	pattern16	16
@@ -6662,6 +8739,8 @@ k	key24	plaintext	bits
 45162	eee66c	sub_gr1
 45163	eee68c	asgeu64
 45164	eee16f	add_lr1
+45168	eee080	ihconst
+45169	eee368	ihconst
 45184	00fb72	pattern16	16
 45185	00fbed	pattern16	16
 45203	008db5	pattern16	16
@@ -6676,6 +8755,8 @@ k	key24	plaintext	bits
 45257	ee94ed	sub_gr1
 45258	ee976c	asgeu64
 45259	ee978c	add_lr1
+45263	ee9175	ihconst
+45264	ee9180	ihconst
 45278	00a96f	pattern16	16
 45282	00ab2c	pattern16	16
 45290	00a66f	pattern16	16
@@ -6687,11 +8768,15 @@ k	key24	plaintext	bits
 45312	eeb800	asleu65
 45319	eeb52c	nop
 45348	004be0	pattern16	16
+45352	e94532	ihconst
+45353	e945ed	ihconst
 45354	00446c	pattern16	16
 45372	005f20	pattern16	16
 45375	e95eac	jmpi_lr0
 45376	e95972	nop
 45406	006946	pattern16	16
+45424	e966f2	ihconst
+45425	e961ed	ihconst
 45426	0061ac	pattern16	16
 45430	006386	pattern16	16
 45434	007c6f	pattern16	16
@@ -6717,6 +8802,8 @@ k	key24	plaintext	bits
 45623	00c075	pattern16	16
 45624	00c0c0	pattern16	16
 45626	00c26f	pattern16	16
+45627	e9c28c	ihconst
+45628	e9dd52	ihconst
 45634	00dfe6	pattern16	16
 45636	00dee0	pattern16	16
 45640	00d832	pattern16	16
@@ -6739,9 +8826,11 @@ k	key24	plaintext	bits
 45699	00fe4c	pattern16	16
 45701	00fe2d	pattern16	16
 45735	00896c	pattern16	16
+45740	e98b6f	ihconst
 45747	0084cc	pattern16	16
 45749	00872d	pattern16	16
 45751	0086ac	pattern16	16
+45752	e9816f	ihconst
 45758	00826f	pattern16	16
 45759	0082ac	pattern16	16
 45769	0098a8	pattern16	16
@@ -6754,6 +8843,8 @@ k	key24	plaintext	bits
 45813	e9a768	nop
 45816	00a6c0	pattern16	16
 45821	00a32d	pattern16	16
+45825	e9a288	ihconst
+45830	e9bfef	ihconst
 45836	00b86f	pattern16	16
 45838	00b8c6	pattern16	16
 45840	00bb80	pattern16	16
@@ -6775,6 +8866,8 @@ k	key24	plaintext	bits
 45891	e85c4c	add_lr1
 45898	0059a6	pattern16	16
 45901	005b48	pattern16	16
+45904	e85bf2	ihconst
+45905	e85aed	ihconst
 45935	006875	pattern16	16
 45956	007def	pattern16	16
 45974	e874ef	add_gr1
@@ -6785,6 +8878,8 @@ k	key24	plaintext	bits
 45980	e8706f	asgeu64
 45982	007346	pattern16	16
 45987	000d4c	pattern16	16
+45993	e80e48	ihconst
+45994	e80ea6	ihconst
 45995	000eb5	pattern16	16
 46006	000586	pattern16	16
 46024	001c32	pattern16	16
@@ -6803,10 +8898,14 @@ k	key24	plaintext	bits
 46222	e8fcc6	nop
 46224	00ff80	pattern16	16
 46270	e88646	nop
+46275	e8804c	ihconst
+46276	e88012	ihconst
 46280	e8826f	nop
 46284	e89ca0	nop
 46319	e8ac75	jmpi_lr0
 46320	e8ac80	nop
+46323	e8aecc	ihconst
+46324	e8ae92	ihconst
 46331	00aab5	pattern16	16
 46334	00a46f	pattern16	16
 46348	00bdd2	pattern16	16
@@ -6817,6 +8916,8 @@ k	key24	plaintext	bits
 46376	00b36f	pattern16	16
 46387	eb4ecc	jmpi_lr0
 46388	eb4eef	nop
+46391	eb4875	ihconst
+46392	eb48c0	ihconst
 46394	004a6f	pattern16	16
 46407	00406c	pattern16	16
 46413	eb4228	jmpi_lr0
@@ -6838,50 +8939,126 @@ k	key24	plaintext	bits
 46571	eb10b5	jmpi_lr0
 46572	eb13a0	nop
 46576	eb12f2	asgeu64
+46602	eb216c	ihconst
+46603	eb218c	ihconst
+46616	eb3e6f	ihconst
+46617	eb3ec8	ihconst
+46620	eb3820	ihconst
+46621	eb38c8	ihconst
+46645	ebcf08	ihconst
+46646	ebcfef	ihconst
 46655	00ca75	pattern16	16
+46696	ebd732	ihconst
+46697	ebd7ed	ihconst
+46699	ebd68c	ihconst
+46700	ebd16f	ihconst
 46705	00d368	pattern16	16
+46709	ebed2d	ihconst
+46710	ebec0c	ihconst
+46713	ebefc8	ihconst
+46714	ebee26	ihconst
 46716	00e920	pattern16	16
 46718	00e86f	pattern16	16
 46720	00eb72	pattern16	16
+46736	ebe3ef	ihconst
+46737	ebe208	ihconst
+46742	ebfcef	ihconst
+46743	ebffec	ihconst
+46747	ebf90c	ihconst
+46748	ebf86f	ihconst
 46762	00f6a6	pattern16	16
 46765	00f048	pattern16	16
 46766	ebf06f	nop
+46777	eb8f28	ihconst
+46778	eb8e6f	ihconst
 46782	eb89cc	nop
+46788	eb8ae0	ihconst
+46789	eb8a88	ihconst
+46800	eb8180	ihconst
+46801	eb8068	ihconst
 46802	0080ef	pattern16	16
 46805	eb822d	nop
+46813	eb9ec8	ihconst
+46814	eb996f	ihconst
 46815	0099ac	pattern16	16
 46817	0098ed	pattern16	16
 46818	eb9b2c	nop
+46826	eb966f	ihconst
+46827	eb960c	ihconst
 46833	eb9308	nop
+46839	ebacec	ihconst
+46840	ebacb2	ihconst
+46846	eba846	ihconst
+46847	eba875	ihconst
+46855	eba52c	ihconst
+46856	eba46f	ihconst
+46864	eba1f2	ihconst
+46865	eba0ed	ihconst
+46873	ebbc28	ihconst
+46874	ebbf6f	ihconst
 46880	00b9ef	pattern16	16
 46885	00bb88	pattern16	16
 46893	00b728	pattern16	16
+46894	ebb7c6	ihconst
+46895	ebb675	ihconst
 46899	00b0cc	pattern16	16
+46900	ebb092	ihconst
+46902	ebb20c	ihconst
+46903	ebb2ac	ihconst
+46904	ea4d6f	ihconst
 46905	004dc8	pattern16	16
+46915	ea4b4c	ihconst
+46916	ea4bef	ihconst
 46927	ea41ec	nop
 46937	005ced	pattern16	16
 46939	005f0c	pattern16	16
 46953	005448	pattern16	16
+46959	ea562c	ihconst
+46960	ea56f2	ihconst
+46963	ea50cc	ihconst
+46964	ea50ef	ihconst
 46966	ea5386	nop
+46973	ea6f2d	ihconst
+46974	ea6fcc	ihconst
+46975	ea6e6c	ihconst
+46976	ea6eef	ihconst
 46998	00630c	pattern16	16
 47002	ea7d26	nop
+47010	ea792c	ihconst
+47011	ea784c	ihconst
 47017	0075a8	pattern16	16
 47022	00764c	pattern16	16
 47032	0072b2	pattern16	16
+47037	ea0fa8	ihconst
+47038	ea0e46	ihconst
 47042	0009ef	pattern16	16
+47043	ea084c	ihconst
+47045	ea082d	ihconst
+47046	ea088c	ihconst
+47047	ea0b2c	ihconst
 47048	000a6f	pattern16	16
 47057	0006ed	pattern16	16
 47069	ea1c2d	nop
 47074	ea1ee6	nop
+47132	ea3c6f	ihconst
+47133	ea3ca8	ihconst
 47137	003fe8	pattern16	16
 47139	00394c	pattern16	16
 47141	00392d	pattern16	16
 47143	00382c	pattern16	16
+47144	ea3b6f	ihconst
+47145	ea3a48	ihconst
 47149	ea3448	nop
 47159	003075	pattern16	16
 47160	ea30c0	nop
 47185	00c468	pattern16	16
 47189	00c62d	pattern16	16
+47190	eac10c	ihconst
+47191	eac1ac	ihconst
+47196	eac220	ihconst
+47198	eadd6f	ihconst
+47199	eaddac	ihconst
+47200	eadc72	ihconst
 47202	eadf2c	nop
 47208	00db40	pattern16	16
 47214	00d44c	pattern16	16
@@ -6889,9 +9066,29 @@ k	key24	plaintext	bits
 47216	00d4ef	pattern16	16
 47218	00d666	pattern16	16
 47220	00d160	pattern16	16
+47221	ead108	ihconst
+47222	ead1ef	ihconst
 47223	00d0ec	pattern16	16
+47226	ead3ec	ihconst
+47227	ead20c	ihconst
+47231	eaec75	ihconst
+47234	eaefef	ihconst
+47236	eaee12	ihconst
+47237	eaee2d	ihconst
+47245	eae548	ihconst
+47246	eae56f	ihconst
+47248	eae5f2	ihconst
+47249	eae4ed	ihconst
 47253	00e668	pattern16	16
 47255	00e175	pattern16	16
+47256	eae1c0	ihconst
+47257	eae028	ihconst
+47263	eafd6c	ihconst
+47264	eafdef	ihconst
+47266	eafce6	ihconst
+47267	eafcb5	ihconst
+47272	eaf932	ihconst
+47273	eaf9ed	ihconst
 47285	00f72d	pattern16	16
 47295	00f2ac	pattern16	16
 47302	ea8e06	nop
@@ -6905,52 +9102,196 @@ k	key24	plaintext	bits
 47337	ea9848	nop
 47341	009a48	pattern16	16
 47342	ea9a6f	nop
+47346	ea95ac	ihconst
+47347	ea94cc	ihconst
+47349	ea9768	ihconst
+47350	ea9786	ihconst
 47351	009675	pattern16	16
 47360	0092ef	pattern16	16
 47363	00adb5	pattern16	16
+47366	eaafef	ihconst
+47367	eaae6c	ihconst
 47368	00ae32	pattern16	16
 47384	00a66f	pattern16	16
+47390	eaa36f	ihconst
+47391	eaa3ac	ihconst
 47392	00a272	pattern16	16
 47396	00bcef	pattern16	16
 47408	00baef	pattern16	16
+47414	eab7ef	ihconst
+47415	eab6ec	ihconst
+47436	e548a0	ihconst
+47437	e54b48	ihconst
 47457	e54388	nop
 47460	005de0	pattern16	16
 47463	e55f6c	nop
 47466	e55e6c	nop
 47482	e55626	nop
 47501	e5682d	nop
+47507	e565b5	ihconst
+47508	e56460	ihconst
+47529	e57e48	ihconst
+47530	e57ea6	ihconst
+47531	e57eb5	ihconst
+47532	e579a0	ihconst
+47537	e57bed	ihconst
+47539	e57acc	ihconst
+47544	e574c0	ihconst
+47545	e57728	ihconst
+47554	e573e6	ihconst
+47555	e573b5	ihconst
+47560	e50c32	ihconst
+47561	e50ced	ihconst
+47569	e50868	ihconst
+47571	e50bcc	ihconst
+47576	e5046f	ihconst
+47577	e504c8	ihconst
+47584	e50072	ihconst
+47585	e500ed	ihconst
 47586	00032c	pattern16	16
+47590	e51d06	ihconst
+47591	e51c75	ihconst
+47607	e514ec	ihconst
+47608	e514b2	ihconst
+47624	e52c6f	ihconst
+47625	e52f48	ihconst
+47636	e52bef	ihconst
+47637	e52a68	ihconst
+47642	e5276f	ihconst
+47643	e5278c	ihconst
+47653	e52388	ihconst
+47654	e522ef	ihconst
+47655	e53d6c	ihconst
+47656	e53d32	ihconst
+47657	e53ded	ihconst
+47658	e53c6c	ihconst
+47659	e53c8c	ihconst
+47660	e53f6f	ihconst
+47661	e53f28	ihconst
+47662	e53fc6	ihconst
+47663	e53e75	ihconst
+47664	e53e80	ihconst
 47670	003a0c	pattern16	16
 47674	003426	pattern16	16
 47692	00cfd2	pattern16	16
 47699	00cbb5	pattern16	16
 47701	00ca08	pattern16	16
+47712	e5c100	ihconst
+47713	e5c1e8	ihconst
 47733	00db68	pattern16	16
 47741	00d72d	pattern16	16
 47742	e5d7cc	nop
 47751	e5d26c	nop
 47761	e5ee68	nop
+47766	e5eb0c	ihconst
+47771	e5e5b5	ihconst
+47780	e5e0ef	ihconst
+47781	e5e0e8	ihconst
 47792	00feef	pattern16	16
 47796	00fb60	pattern16	16
 47812	00f012	pattern16	16
 47817	008d48	pattern16	16
 47818	e58da6	nop
+47825	e58eed	ihconst
+47826	e58eac	ihconst
 47828	0089ef	pattern16	16
 47830	e58886	nop
+47831	e58b75	ihconst
+47833	e58a28	ihconst
+47834	e5856f	ihconst
+47836	e58452	ihconst
+47837	e5842d	ihconst
+47839	e5876c	ihconst
+47840	e587ef	ihconst
+47842	e586e6	ihconst
+47843	e586b5	ihconst
+47845	e58188	ihconst
+47846	e580ef	ihconst
+47848	e58332	ihconst
+47849	e583ed	ihconst
+47851	e5828c	ihconst
+47852	e59d6f	ihconst
+47854	e59dc6	ihconst
+47855	e59c75	ihconst
+47857	e59f68	ihconst
+47858	e59fef	ihconst
+47860	e59e92	ihconst
+47861	e5992d	ihconst
+47863	e598ac	ihconst
+47864	e59b6f	ihconst
+47866	e59a26	ihconst
+47867	e59ab5	ihconst
+47869	e595c8	ihconst
+47870	e5946f	ihconst
+47872	e59772	ihconst
+47873	e597ed	ihconst
+47875	e5914c	ihconst
+47876	e591ef	ihconst
+47878	e59006	ihconst
+47879	e59375	ihconst
+47881	e592a8	ihconst
+47882	e5ad6f	ihconst
+47884	e5add2	ihconst
+47885	e5ac2d	ihconst
+47887	e5afec	ihconst
+47888	e5afef	ihconst
+47890	e5a966	ihconst
+47900	e5a46f	ihconst
+47901	e5a4a8	ihconst
 47902	00a746	pattern16	16
 47905	e5a7e8	nop
+47906	e5a6ef	ihconst
+47908	e5a112	ihconst
+47909	e5a12d	ihconst
 47910	00a18c	pattern16	16
+47911	e5a02c	ihconst
+47912	e5a36f	ihconst
+47914	e5a2a6	ihconst
+47915	e5a2b5	ihconst
+47917	e5bc48	ihconst
+47918	e5bc6f	ihconst
+47920	e5bcf2	ihconst
+47921	e5bfed	ihconst
+47922	e5bfac	ihconst
+47925	e5b968	ihconst
+47927	e5b875	ihconst
+47928	e5b8c0	ihconst
+47930	e5ba6f	ihconst
+47931	e5ba8c	ihconst
+47933	e5b52d	ihconst
+47934	e5b5cc	ihconst
+47936	e5b4ef	ihconst
+47937	e5b488	ihconst
+47939	e5b7b5	ihconst
+47940	e5b6e0	ihconst
 47941	00b688	pattern16	16
+47942	e5b1ef	ihconst
+47947	e5b38c	ihconst
+47948	e5b26f	ihconst
 47949	00b228	pattern16	16
 47950	00b2c6	pattern16	16
 47952	e44d80	nop
+47955	e44fcc	ihconst
+47956	e44f92	ihconst
+47961	e448c8	ihconst
+47962	e44b26	ihconst
+47974	e44106	ihconst
+47975	e44075	ihconst
+47977	e443a8	ihconst
+47978	e4426f	ihconst
 47982	005c4c	pattern16	16
 47986	e45e66	nop
 47992	e458b2	nop
 47996	e4556f	nop
 47997	0055a8	pattern16	16
 47998	e45446	nop
+48007	e4512c	ihconst
+48008	e4506f	ihconst
+48042	e4606c	ihconst
+48043	e4608c	ihconst
 48044	00636f	pattern16	16
+48059	e478b5	ihconst
+48060	e47b20	ihconst
 48061	007bc8	pattern16	16
 48064	e47572	nop
 48078	e40d4c	nop
@@ -6966,37 +9307,75 @@ k	key24	plaintext	bits
 48129	001a88	pattern16	16
 48132	e414e0	nop
 48137	e416ed	nop
+48161	e42aed	ihconst
+48163	e4244c	ihconst
 48177	003d08	pattern16	16
 48180	003f60	pattern16	16
 48184	003eb2	pattern16	16
+48208	e433f2	ihconst
+48209	e432ed	ihconst
 48210	0032ac	pattern16	16
 48211	e4cdcc	nop
 48214	00cc86	pattern16	16
+48215	e4cf75	ihconst
+48216	e4cfc0	ihconst
 48217	00ce28	pattern16	16
 48218	e4c96f	nop
 48224	00cbef	pattern16	16
+48227	e4cab5	ihconst
+48228	e4c5e0	ihconst
 48232	00c732	pattern16	16
+48234	e4c66c	ihconst
+48235	e4c68c	ihconst
+48241	e4c368	ihconst
+48242	e4c3ef	ihconst
+48248	e4df6f	ihconst
+48249	e4dfc8	ihconst
 48253	00d9c8	pattern16	16
+48255	e4d8ac	ihconst
+48256	e4db72	ihconst
 48257	00dbed	pattern16	16
 48260	00d5ef	pattern16	16
+48262	e4d406	ihconst
+48263	e4d775	ihconst
 48276	00ec60	pattern16	16
 48277	e4ec08	nop
+48278	e4ecef	ihconst
+48279	e4efec	ihconst
 48281	e4eeed	nop
 48293	e4e52d	nop
+48294	e4e58c	ihconst
+48295	e4e42c	ihconst
 48297	e4e648	nop
 48311	e4fc75	nop
+48312	e4fcc0	ihconst
+48313	e4ff28	ihconst
 48315	e4fe8c	nop
+48317	e4f92d	ihconst
+48318	e4f9cc	ihconst
 48319	00f86c	pattern16	16
 48320	e4f8ef	nop
+48321	e4f888	ihconst
+48322	e4fbe6	ihconst
 48324	e4fae0	nop
 48330	e4f76c	nop
 48331	e4f78c	jmpi_lr0
 48332	e4f66f	asleu65
 48333	00f628	pattern16	16
+48337	e4f068	ihconst
+48338	e4f0ef	ihconst
 48347	008fb5	pattern16	16
+48350	e4896f	ihconst
+48351	e489ac	ihconst
 48357	e48ae8	nop
+48376	e49cb2	ihconst
+48377	e49fed	ihconst
+48387	e49a4c	ihconst
 48388	009a12	pattern16	16
+48392	e4946f	ihconst
 48397	009148	pattern16	16
+48416	e4a9ef	ihconst
+48417	e4a988	ihconst
 48425	00a5ed	pattern16	16
 48451	00bb4c	pattern16	16
 48465	00b008	pattern16	16
@@ -7004,20 +9383,116 @@ k	key24	plaintext	bits
 48519	005a6c	pattern16	16
 48539	006db5	pattern16	16
 48540	006c20	pattern16	16
+48555	e7640c	ihconst
+48556	e764d2	ihconst
 48563	e760b5	nop
 48567	0062ec	pattern16	16
 48576	007e00	pattern16	16
+48578	e779ef	ihconst
+48580	e77812	ihconst
+48581	e7782d	ihconst
+48583	e77b2c	ihconst
+48589	e77748	ihconst
+48590	e7776f	ihconst
 48594	e776ac	nop
+48595	e771cc	ihconst
+48597	e77068	ihconst
+48598	e77086	ihconst
+48600	e773c0	ihconst
+48601	e77228	ihconst
+48603	e70d8c	ihconst
+48604	e70c52	ihconst
+48606	e70ccc	ihconst
+48607	e70f6c	ihconst
+48609	e70f88	ihconst
+48610	e70ee6	ihconst
+48612	e709e0	ihconst
+48613	e70988	ihconst
+48615	e70b6c	ihconst
+48616	e70b32	ihconst
+48618	e70a6c	ihconst
+48623	e70475	ihconst
+48624	e70480	ihconst
 48631	0000ac	pattern16	16
 48633	0003c8	pattern16	16
 48637	001dc8	pattern16	16
+48645	e719e8	ihconst
+48647	e71b75	ihconst
+48648	e71a40	ihconst
+48650	e7156f	ihconst
+48651	e7150c	ihconst
+48653	e7142d	ihconst
+48654	e7174c	ihconst
+48656	e717ef	ihconst
+48657	e71608	ihconst
+48659	e711b5	ihconst
+48660	e71060	ihconst
+48662	e710ef	ihconst
+48663	e713ec	ihconst
+48665	e712ed	ihconst
+48666	e712ec	ihconst
+48668	e72c6f	ihconst
+48669	e72ca8	ihconst
+48671	e72f75	ihconst
+48676	e72912	ihconst
+48677	e7292d	ihconst
+48698	e7226f	ihconst
+48700	e73d52	ihconst
+48701	e73d2d	ihconst
+48703	e73c6c	ihconst
+48704	e73cef	ihconst
+48706	e73fe6	ihconst
+48707	e73fb5	ihconst
+48709	e73e88	ihconst
+48710	e739ef	ihconst
+48712	e73832	ihconst
+48713	e738ed	ihconst
+48715	e73b8c	ihconst
+48716	e73a6f	ihconst
+48718	e73ac6	ihconst
+48719	e73575	ihconst
+48721	e73468	ihconst
+48722	e734ef	ihconst
+48724	e73792	ihconst
+48729	e730c8	ihconst
+48730	e73326	ihconst
+48735	e7cdac	ihconst
+48737	e7cced	ihconst
+48738	e7cf2c	ihconst
 48739	00ce4c	pattern16	16
+48740	e7ceef	ihconst
+48741	e7cee8	ihconst
+48743	e7c875	ihconst
+48744	e7cb40	ihconst
+48745	e7cba8	ihconst
+48755	e7c6b5	ihconst
+48756	e7c160	ihconst
+48761	e7c3ed	ihconst
 48762	00c3ec	pattern16	16
+48763	e7c20c	ihconst
+48764	e7dd6f	ihconst
+48766	e7dc46	ihconst
+48767	e7dc75	ihconst
+48768	e7dc00	ihconst
+48777	e7db48	ihconst
+48780	e7daa0	ihconst
+48783	e7d52c	ihconst
+48784	e7d5f2	ihconst
 48785	00d4ed	pattern16	16
 48786	00d4ac	pattern16	16
 48788	e7d7ef	nop
+48789	e7d668	ihconst
+48790	e7d686	ihconst
 48794	e7d36f	nop
+48795	e7d38c	ihconst
+48797	e7d22d	ihconst
+48798	e7d2cc	ihconst
 48799	00ed6c	pattern16	16
+48800	e7edef	ihconst
+48801	e7ed88	ihconst
+48803	e7ecb5	ihconst
+48804	e7efe0	ihconst
+48805	e7ef88	ihconst
 48808	00e932	pattern16	16
 48811	00e88c	pattern16	16
 48813	00eb28	pattern16	16
@@ -7025,15 +9500,27 @@ k	key24	plaintext	bits
 48820	00e492	pattern16	16
 48821	00e72d	pattern16	16
 48848	00f5ef	pattern16	16
+48855	e7f1ec	ihconst
+48856	e7f1b2	ihconst
 48863	e78d75	nop
+48868	e78f12	ihconst
+48870	e78f8c	ihconst
 48883	e784cc	nop
 48885	e78768	nop
 48899	009db5	pattern16	16
+48909	e79828	ihconst
+48910	e798c6	ihconst
 48917	e7942d	nop
+48918	e7970c	ihconst
+48919	e797ac	ihconst
+48929	e792ed	ihconst
+48930	e7ad2c	ihconst
 48952	00a6b2	pattern16	16
 48955	e7a00c	nop
 48958	e7a246	nop
 48966	00bc8c	pattern16	16
+48967	e7bf2c	ihconst
+48968	e7be6f	ihconst
 48969	00b948	pattern16	16
 48970	e7b9a6	nop
 48973	00bb48	pattern16	16
@@ -7052,6 +9539,8 @@ k	key24	plaintext	bits
 49134	e6084c	nop
 49154	e603ef	nop
 49158	00028c	pattern16	16
+49165	e61948	ihconst
+49167	e6192c	ihconst
 49187	e610b5	sub_gr1
 49188	e613e0	asgeu64
 49189	e61388	add_lr1
@@ -7060,33 +9549,59 @@ k	key24	plaintext	bits
 49207	002aac	pattern16	16
 49209	0025c8	pattern16	16
 49213	0027c8	pattern16	16
+49227	e63f0c	ihconst
+49228	e63fd2	ihconst
 49236	003a60	pattern16	16
 49238	003aef	pattern16	16
 49239	0035ec	pattern16	16
+49245	e636a8	ihconst
+49246	e63146	ihconst
 49247	003175	pattern16	16
 49254	00338c	pattern16	16
 49255	00322c	pattern16	16
 49261	00ce48	pattern16	16
 49263	00ce2c	pattern16	16
+49270	e6cb86	ihconst
+49271	e6ca75	ihconst
+49274	e6c46f	ihconst
+49275	e6c48c	ihconst
 49284	00c0e0	pattern16	16
 49287	00c26c	pattern16	16
 49300	00d992	pattern16	16
+49314	e6d12c	ihconst
+49315	e6d04c	ihconst
+49328	e6eeef	ihconst
+49329	e6e908	ihconst
 49330	00e866	pattern16	16
 49331	e6e8b5	nop
 49336	e6eab2	nop
 49338	00e5ec	pattern16	16
+49350	e6e08c	ihconst
+49351	e6e32c	ihconst
 49353	e6fd48	nop
 49358	e6ff6f	nop
+49359	e6ff2c	ihconst
+49360	e6fff2	ihconst
+49381	e6f188	ihconst
+49382	e6f0ef	ihconst
 49384	00f332	pattern16	16
 49385	00f3ed	pattern16	16
+49391	e68c75	ihconst
+49392	e68c80	ihconst
 49394	008fef	pattern16	16
 49397	00892d	pattern16	16
 49400	008b6f	pattern16	16
+49407	e684ac	ihconst
+49408	e68772	ihconst
 49410	e6862c	nop
+49447	e6902c	ihconst
+49448	e6936f	ihconst
 49450	e692a6	nop
 49452	e6ada0	add_gr1
 49454	e6ac6f	jmpi_lr0
 49455	e6ac2c	asleu65
+49456	e6acf2	ihconst
+49458	e6afac	ihconst
 49461	00a968	pattern16	16
 49462	e6a986	sub_gr1
 49463	e6a875	asgeu64
@@ -7095,10 +9610,18 @@ k	key24	plaintext	bits
 49481	e6a0ed	nop
 49483	e6a38c	nop
 49494	00b90c	pattern16	16
+49497	e6b8c8	ihconst
+49498	e6bb26	ihconst
 49504	00b472	pattern16	16
+49510	e6b106	ihconst
+49511	e6b075	ihconst
 49512	00b340	pattern16	16
 49521	004f08	pattern16	16
+49534	e14446	ihconst
+49535	e14475	ihconst
 49536	004400	pattern16	16
+49558	e15e86	ihconst
+49559	e15975	ihconst
 49569	005588	pattern16	16
 49571	0054b5	pattern16	16
 49572	0057e0	pattern16	16
@@ -7136,6 +9659,8 @@ k	key24	plaintext	bits
 49684	001d92	pattern16	16
 49686	001f0c	pattern16	16
 49688	001e6f	pattern16	16
+49703	e11675	ihconst
+49704	e11140	ihconst
 49706	00106f	pattern16	16
 49708	e110d2	nop
 49719	e12eec	add_gr1
@@ -7145,9 +9670,17 @@ k	key24	plaintext	bits
 49724	e12b6f	sub_gr1
 49725	e12ba8	asgeu64
 49726	e12a46	add_lr1
+49731	e1244c	ihconst
+49732	e12412	ihconst
 49747	003dcc	pattern16	16
 49750	e13c86	nop
+49762	e13ae6	ihconst
+49763	e13ab5	ihconst
+49779	e132cc	ihconst
+49780	e13292	ihconst
 49781	00cd2d	pattern16	16
+49787	e1ceb5	ihconst
+49790	e1c86f	ihconst
 49801	e1c6a8	add_gr1
 49802	e1c16f	nop
 49803	e1c10c	jmpi_lr0
@@ -7156,12 +9689,18 @@ k	key24	plaintext	bits
 49811	00ddb5	pattern16	16
 49815	00dfec	pattern16	16
 49818	e1deec	nop
+49830	e1d58c	ihconst
+49831	e1d42c	ihconst
 49839	00d02c	pattern16	16
 49857	00e888	pattern16	16
+49864	e1e432	ihconst
+49865	e1e4ed	ihconst
 49866	00e76c	pattern16	16
 49876	00e392	pattern16	16
 49877	00e22d	pattern16	16
 49884	00fe20	pattern16	16
+49887	e1f9ac	ihconst
+49888	e1f872	ihconst
 49889	00f8ed	pattern16	16
 49903	00f0ec	pattern16	16
 49905	00f308	pattern16	16
@@ -7222,6 +9761,8 @@ k	key24	plaintext	bits
 50019	00bb4c	pattern16	16
 50022	00bb8c	pattern16	16
 50023	00ba2c	pattern16	16
+50032	e1b6f2	ihconst
+50033	e1b1ed	ihconst
 50035	00b0cc	pattern16	16
 50037	e1b368	nop
 50048	e04eef	add_gr1
@@ -7232,16 +9773,34 @@ k	key24	plaintext	bits
 50053	e04888	sub_gr1
 50054	e04bef	asgeu64
 50055	e04a6c	add_lr1
+50060	e0446f	ihconst
+50061	e04428	ihconst
 50073	0042c8	pattern16	16
 50076	e05c20	nop
+50089	e055a8	ihconst
+50090	e0546f	ihconst
+50097	e05108	ihconst
+50098	e05066	ihconst
+50099	e050b5	ihconst
+50100	e05360	ihconst
+50139	e07d8c	ihconst
+50140	e07c52	ihconst
+50147	e07eb5	ihconst
+50148	e079e0	ihconst
 50162	e077ef	add_gr1
 50163	e076cc	nop
 50164	e07692	jmpi_lr0
 50165	e0712d	asleu65
+50170	e07226	ihconst
+50171	e072b5	ihconst
+50177	e00fed	ihconst
+50178	e00e2c	ihconst
 50181	e009e8	add_gr1
 50182	e00806	nop
 50183	e00b75	jmpi_lr0
 50184	e00a40	asleu65
+50192	e007ef	ihconst
+50193	e00608	ihconst
 50196	e00060	add_gr1
 50197	e00008	nop
 50198	e000ef	jmpi_lr0
@@ -7253,15 +9812,21 @@ k	key24	plaintext	bits
 50215	00182c	pattern16	16
 50223	00142c	pattern16	16
 50226	e017ac	nop
+50239	e02c6c	ihconst
+50240	e02cef	ihconst
 50248	002832	pattern16	16
 50267	0023b5	pattern16	16
 50270	003d6f	pattern16	16
+50274	e03f2c	ihconst
+50275	e03e4c	ihconst
 50276	003eef	pattern16	16
 50286	00344c	pattern16	16
 50287	0034ec	pattern16	16
 50288	0034ef	pattern16	16
 50292	003160	pattern16	16
 50294	0031ef	pattern16	16
+50297	e033ed	ihconst
+50298	e033ec	ihconst
 50310	00ce8c	pattern16	16
 50311	00c92c	pattern16	16
 50312	00c86f	pattern16	16
@@ -7311,6 +9876,8 @@ k	key24	plaintext	bits
 50432	00f2ef	pattern16	16
 50433	00f288	pattern16	16
 50435	008db5	pattern16	16
+50442	e0896c	ihconst
+50443	e0898c	ihconst
 50447	e08b75	nop
 50458	e08126	add_gr1
 50459	e081b5	nop
@@ -7324,11 +9891,19 @@ k	key24	plaintext	bits
 50481	009508	pattern16	16
 50482	e09466	nop
 50484	e09760	nop
+50497	e092e8	ihconst
+50498	e0adef	ihconst
 50499	00ac4c	pattern16	16
+50509	e0ab48	ihconst
+50510	e0ab6f	ihconst
 50511	00ab2c	pattern16	16
 50520	00a7c0	pattern16	16
+50532	e0bde0	ihconst
+50533	e0bd88	ihconst
 50547	00bacc	pattern16	16
 50548	00ba92	pattern16	16
+50556	e0b120	ihconst
+50557	e0b1c8	ihconst
 50570	00496f	pattern16	16
 50572	0049d2	pattern16	16
 50574	004b4c	pattern16	16
@@ -7356,6 +9931,8 @@ k	key24	plaintext	bits
 50680	0074b2	pattern16	16
 50686	007046	pattern16	16
 50690	0073ef	pattern16	16
+50701	e30948	ihconst
+50702	e3096f	ihconst
 50706	e308ac	nop
 50717	e3062d	add_gr1
 50718	e306cc	nop
@@ -7365,13 +9942,27 @@ k	key24	plaintext	bits
 50722	e300e6	sub_gr1
 50723	e300b5	asgeu64
 50724	e303e0	add_lr1
+50729	e31ded	ihconst
+50730	e31c6c	ihconst
 50748	e31720	nop
+50760	e32c40	ihconst
+50761	e32ca8	ihconst
+50777	e324ed	ihconst
+50778	e324ec	ihconst
 50779	00270c	pattern16	16
+50785	e321e8	ihconst
+50788	e32312	ihconst
 50799	e33e2c	add_gr1
 50800	e33ef2	nop
 50801	e339ed	jmpi_lr0
 50802	e339ac	asleu65
 50816	e336ef	nop
+50828	e3cc6f	ihconst
+50829	e3cc28	ihconst
+50862	e3de4c	ihconst
+50863	e3deec	ihconst
+50885	e3d02d	ihconst
+50886	e3d08c	ihconst
 50896	00eff2	pattern16	16
 50901	00e868	pattern16	16
 50905	00ea28	pattern16	16
@@ -7428,6 +10019,8 @@ k	key24	plaintext	bits
 51021	009228	pattern16	16
 51023	00ad75	pattern16	16
 51024	00ad80	pattern16	16
+51030	e3a90c	ihconst
+51031	e3a9ac	ihconst
 51033	00a8c8	pattern16	16
 51035	e3abb5	nop
 51046	e3a106	add_gr1
@@ -7437,46 +10030,118 @@ k	key24	plaintext	bits
 51051	e3a20c	sub_gr1
 51052	e3a2d2	asgeu64
 51053	e3bd2d	add_lr1
+51056	e3bcef	ihconst
+51057	e3bf08	ihconst
+51062	e3b9ef	ihconst
+51063	e3b8ec	ihconst
+51064	e3b8b2	ihconst
 51065	00bbed	pattern16	16
+51066	e3bbec	ihconst
+51067	e3ba0c	ihconst
+51068	e3b56f	ihconst
+51071	e3b475	ihconst
+51073	e3b4e8	ihconst
 51078	e3b68c	nop
 51080	e3b06f	sub_gr1
 51081	e3b348	asgeu64
 51082	e3b3a6	add_lr1
+51087	e24d2c	ihconst
+51088	e24df2	ihconst
 51091	004fcc	pattern16	16
 51097	004828	pattern16	16
+51097	e24828	ihconst
+51098	e24b6f	ihconst
+51100	e24a52	ihconst
+51103	e2456c	ihconst
 51106	0044e6	pattern16	16
+51112	e24132	ihconst
+51113	e241ed	ihconst
+51115	e2408c	ihconst
+51116	e2436f	ihconst
+51118	e243c6	ihconst
+51119	e24275	ihconst
 51120	004280	pattern16	16
 51124	005c92	pattern16	16
 51126	005e0c	pattern16	16
+51131	e258b5	ihconst
+51132	e25b20	ihconst
+51134	e25a6f	ihconst
+51135	e25aac	ihconst
 51146	00536f	pattern16	16
 51149	00522d	pattern16	16
 51152	e26def	nop
 51153	006c08	pattern16	16
+51160	e269b2	ihconst
+51161	e268ed	ihconst
+51167	e26575	ihconst
+51168	e26500	ihconst
 51170	e264ef	nop
 51176	00616f	pattern16	16
+51176	e2616f	ihconst
+51177	e26048	ihconst
+51183	e2622c	ihconst
+51184	e262f2	ihconst
+51187	e27ccc	ihconst
+51188	e27cef	ihconst
 51191	007e75	pattern16	16
 51193	e27928	nop
+51194	e2786f	ihconst
+51195	e2788c	ihconst
 51200	e27aef	nop
+51202	e275e6	ihconst
+51203	e275b5	ihconst
+51209	e276ed	ihconst
+51210	e2716c	ihconst
 51215	e27375	nop
 51216	007380	pattern16	16
+51216	e27380	ihconst
+51217	e27268	ihconst
+51219	e20dcc	ihconst
+51222	e20f0c	ihconst
 51227	0009b5	pattern16	16
 51231	e20bac	nop
+51232	e20a72	ihconst
+51233	e20aed	ihconst
 51236	0004ef	pattern16	16
+51238	e20706	ihconst
+51239	e20675	ihconst
 51240	000140	pattern16	16
 51241	e201a8	nop
+51242	e2006f	ihconst
+51243	e2000c	ihconst
 51249	e21d08	nop
+51250	e21c66	ihconst
+51251	e21cb5	ihconst
+51255	e21eec	ihconst
+51256	e21eb2	ihconst
 51258	e219ec	nop
 51264	001a00	pattern16	16
 51266	e215ef	nop
+51268	e21412	ihconst
+51269	e2142d	ihconst
 51270	00148c	pattern16	16
 51274	0011a6	pattern16	16
+51276	e210a0	ihconst
+51277	e21348	ihconst
 51278	00136f	pattern16	16
 51279	e2132c	nop
 51281	e212ed	nop
+51282	e212ac	ihconst
+51283	e22dcc	ihconst
+51289	e22e28	ihconst
+51290	e2296f	ihconst
 51295	e22b6c	nop
+51298	e22ae6	ihconst
+51299	e22ab5	ihconst
+51303	e2276c	ihconst
+51304	e22732	ihconst
 51305	0027ed	pattern16	16
 51306	e2266c	nop
 51310	0021c6	pattern16	16
+51310	e221c6	ihconst
+51311	e22075	ihconst
+51316	e22292	ihconst
+51317	e23d2d	ihconst
 51319	e23cac	nop
 51327	e238ac	nop
 51330	e23a2c	nop
@@ -7484,63 +10149,171 @@ k	key24	plaintext	bits
 51338	e2316f	nop
 51340	e231d2	nop
 51342	00334c	pattern16	16
+51346	e2cd66	ihconst
+51347	e2cdb5	ihconst
+51349	e2cc08	ihconst
+51352	e2cfb2	ihconst
 51362	00caef	pattern16	16
 51366	00c58c	pattern16	16
+51366	e2c58c	ihconst
+51367	e2c42c	ihconst
+51369	e2c648	ihconst
+51372	e2c1a0	ihconst
 51381	00dd68	pattern16	16
+51381	e2dd68	ihconst
+51382	e2dd86	ihconst
+51393	e2d888	ihconst
+51394	e2dbe6	ihconst
 51395	00dbb5	pattern16	16
 51399	e2d46c	nop
+51402	e2d76c	ihconst
+51408	e2d180	ihconst
 51409	00d068	pattern16	16
 51413	e2d22d	nop
 51415	e2edac	nop
+51418	e2ef26	ihconst
+51423	e2e9ac	ihconst
 51428	e2eaef	nop
+51431	e2e475	ihconst
+51436	e2e6d2	ihconst
 51441	e2e308	nop
 51443	e2e2b5	nop
+51446	e2fdef	ihconst
+51450	e2ffec	ihconst
 51455	e2f875	nop
 51457	e2f8e8	nop
 51458	00fbef	pattern16	16
+51458	e2fbef	ihconst
+51459	e2fa4c	ihconst
+51463	e2f52c	ihconst
+51474	e2f0ac	ihconst
 51479	e28d75	nop
 51481	e28c28	nop
+51482	e28f6f	ihconst
+51483	e28f8c	ihconst
+51488	e289ef	ihconst
+51489	e28988	ihconst
 51491	e288b5	nop
 51493	e28b88	nop
+51494	e28aef	ihconst
+51495	e2856c	ihconst
 51498	00846c	pattern16	16
+51500	e2876f	ihconst
+51501	e28728	ihconst
 51503	e28675	nop
 51505	e28168	nop
+51506	e281ef	ihconst
+51507	e280cc	ihconst
+51512	e29d6f	ihconst
+51513	e29dc8	ihconst
 51515	e29cb5	nop
 51517	e29fc8	nop
 51518	009e6f	pattern16	16
+51518	e29e6f	ihconst
+51519	e29eac	ihconst
+51524	e29bef	ihconst
+51525	e29be8	ihconst
 51526	009a06	pattern16	16
 51527	e29575	nop
 51529	e294a8	nop
 51530	00976f	pattern16	16
+51530	e2976f	ihconst
+51531	e2970c	ihconst
+51542	e292ef	ihconst
+51543	e2adec	ihconst
 51544	00adb2	pattern16	16
 51545	e2aced	nop
 51547	e2af0c	nop
+51548	e2ae6f	ihconst
+51549	e2aea8	ihconst
 51552	00a900	pattern16	16
+51554	e2a8ef	ihconst
+51555	e2ab4c	ihconst
 51556	00ab12	pattern16	16
 51557	e2ab2d	nop
 51559	e2aa2c	nop
 51560	00a56f	pattern16	16
+51560	e2a56f	ihconst
+51561	e2a448	ihconst
 51564	00a7a0	pattern16	16
+51566	e2a66f	ihconst
+51567	e2a62c	ihconst
 51568	00a6f2	pattern16	16
 51569	e2a1ed	nop
 51571	e2a0cc	nop
 51572	00a0ef	pattern16	16
+51572	e2a0ef	ihconst
+51573	e2a368	ihconst
+51578	e2bc6f	ihconst
+51579	e2bc8c	ihconst
 51581	e2bf2d	nop
 51583	e2be6c	nop
+51584	e2beef	ihconst
+51585	e2be88	ihconst
+51589	e2b888	ihconst
+51592	e2ba32	ihconst
 51593	00baed	pattern16	16
+51598	e2b4c6	ihconst
+51599	e2b775	ihconst
 51604	e2b192	nop
 51610	004d26	pattern16	16
+51611	fd4db5	ihconst
+51612	fd4c20	ihconst
 51615	004fac	pattern16	16
 51617	fd4eed	nop
+51618	fd492c	ihconst
+51619	fd484c	ihconst
+51624	fd4540	ihconst
+51625	fd45a8	ihconst
 51626	00446f	pattern16	16
+51631	fd46ec	ihconst
+51632	fd46ef	ihconst
 51637	fd4308	nop
+51642	fd5dec	ihconst
+51643	fd5c0c	ihconst
+51647	fd5e75	ihconst
+51648	fd5e00	ihconst
+51650	fd59ef	ihconst
+51651	fd584c	ihconst
+51653	fd582d	ihconst
+51654	fd588c	ihconst
 51655	005b2c	pattern16	16
+51656	fd5a6f	ihconst
+51657	fd5548	ihconst
 51658	0055a6	pattern16	16
+51660	fd54a0	ihconst
+51661	fd5748	ihconst
+51664	fd57f2	ihconst
+51665	fd56ed	ihconst
+51675	fd6d8c	ihconst
+51676	fd6c52	ihconst
+51680	fd6fef	ihconst
+51681	fd6f88	ihconst
+51683	fd6eb5	ihconst
+51684	fd69e0	ihconst
+51687	fd6b6c	ihconst
+51688	fd6b32	ihconst
+51692	fd656f	ihconst
+51694	fd65c6	ihconst
+51698	fd67ef	ihconst
+51699	fd66cc	ihconst
+51702	fd600c	ihconst
+51703	fd60ac	ihconst
 51709	fd7dc8	nop
+51710	fd7c6f	ihconst
+51711	fd7cac	ihconst
 51717	fd79e8	nop
+51718	fd7806	ihconst
+51719	fd7b75	ihconst
+51720	fd7a40	ihconst
+51721	fd7aa8	ihconst
 51722	00756f	pattern16	16
+51724	fd75d2	ihconst
+51725	fd742d	ihconst
 51729	007608	pattern16	16
 51731	fd71b5	nop
+51737	fd72ed	ihconst
+51738	fd72ec	ihconst
 51739	000d0c	pattern16	16
 51740	000c6f	pattern16	16
 51741	000ca8	pattern16	16
@@ -7550,18 +10323,32 @@ k	key24	plaintext	bits
 51749	fd092d	add_gr1
 51751	fd082c	jmpi_lr0
 51752	fd0b6f	asleu65
+51754	fd0aa6	ihconst
+51755	fd0ab5	ihconst
 51760	fd04f2	nop
 51762	fd07ac	sub_gr1
 51763	fd06cc	asgeu64
+51764	fd06ef	ihconst
+51765	fd0168	ihconst
 51767	000075	pattern16	16
+51774	fd1dcc	ihconst
+51775	fd1c6c	ihconst
 51779	001fb5	pattern16	16
 51781	001e88	pattern16	16
 51783	00186c	pattern16	16
 51785	0018ed	pattern16	16
+51787	fd1b8c	ihconst
+51788	fd1a6f	ihconst
 51789	001a28	pattern16	16
 51791	001575	pattern16	16
+51792	fd1580	ihconst
+51793	fd1468	ihconst
+51796	fd1792	ihconst
+51797	fd162d	ihconst
 51803	0013b5	pattern16	16
 51804	fd1220	nop
+51805	fd12c8	ihconst
+51806	fd2d6f	ihconst
 51810	fd2f2c	add_gr1
 51811	fd2e4c	nop
 51812	fd2eef	jmpi_lr0
@@ -7569,12 +10356,18 @@ k	key24	plaintext	bits
 51814	002906	pattern16	16
 51815	fd2875	sub_gr1
 51816	fd2b40	asgeu64
+51817	fd2ba8	ihconst
+51818	fd2a6f	ihconst
 51819	002a0c	pattern16	16
+51824	fd24ef	ihconst
+51825	fd2708	ihconst
 51828	002160	pattern16	16
 51829	002108	pattern16	16
 51844	003e12	pattern16	16
 51852	003aa0	pattern16	16
 51856	0035f2	pattern16	16
+51875	fdccb5	ihconst
+51876	fdcfe0	ihconst
 51877	00cf88	pattern16	16
 51881	fdc9ed	add_gr1
 51882	fdc86c	nop
@@ -7583,40 +10376,76 @@ k	key24	plaintext	bits
 51886	fdcbc6	sub_gr1
 51887	fdca75	asgeu64
 51889	00c568	pattern16	16
+51891	fdc4cc	ihconst
+51892	fdc492	ihconst
+51896	fdc16f	ihconst
+51897	fdc1c8	ihconst
 51900	00c320	pattern16	16
 51902	00c26f	pattern16	16
 51907	00df4c	pattern16	16
 51908	00dfef	pattern16	16
 51910	00de06	pattern16	16
+51911	fdd975	ihconst
+51912	fdd840	ihconst
 51913	00d8a8	pattern16	16
+51916	fddbd2	ihconst
+51917	fdda2d	ihconst
+51920	fdd5ef	ihconst
+51921	fdd408	ihconst
 51928	00d1b2	pattern16	16
 51929	fdd0ed	nop
+51930	fdd0ec	ihconst
+51931	fdd30c	ihconst
 51936	fded00	add_gr1
 51938	fdecef	jmpi_lr0
 51939	fdef4c	asleu65
 51940	00ef12	pattern16	16
 51941	fdef2d	jmpi_lr0
 51942	fdef8c	nop
+51944	fde96f	ihconst
+51945	fde848	ihconst
 51946	fde8a6	jmpi_lr0
+51949	fdea48	ihconst
+51950	fdea6f	ihconst
 51951	00ea2c	pattern16	16
 51954	fde5ac	jmpi_lr0
 51956	00e4ef	pattern16	16
+51957	fde768	ihconst
+51958	fde786	ihconst
 51962	00e06f	pattern16	16
 51965	00e32d	pattern16	16
 51967	00e26c	pattern16	16
 51969	fde288	jmpi_lr0
 51972	fdfce0	sub_gr1
 51973	fdfc88	asgeu64
+51974	fdffef	ihconst
+51975	fdfe6c	ihconst
+51977	fdfeed	ihconst
+51978	fdf96c	ihconst
 51980	00f86f	pattern16	16
 51982	00f8c6	pattern16	16
+51984	fdfb80	ihconst
+51985	fdfa68	ihconst
 51986	00faef	pattern16	16
 51990	00f70c	pattern16	16
 51998	00f36f	pattern16	16
 52002	008d2c	pattern16	16
+52015	fd8aec	ihconst
+52016	fd8aef	ihconst
 52017	008508	pattern16	16
 52019	0084b5	pattern16	16
+52026	fd81ec	ihconst
+52027	fd800c	ihconst
+52034	fd9def	ihconst
+52035	fd9c4c	ihconst
 52036	009c12	pattern16	16
+52044	fd98a0	ihconst
+52045	fd9b48	ihconst
+52052	fd95ef	ihconst
+52053	fd9468	ihconst
 52058	00916f	pattern16	16
+52069	fdad88	ihconst
+52070	fdacef	ihconst
 52071	00af6c	pattern16	16
 52079	00a875	pattern16	16
 52085	00a52d	pattern16	16
@@ -7624,56 +10453,120 @@ k	key24	plaintext	bits
 52105	00bea8	pattern16	16
 52108	00b9d2	pattern16	16
 52110	00bb4c	pattern16	16
+52113	fdba08	ihconst
+52114	fdb566	ihconst
 52115	00b5b5	pattern16	16
 52117	00b408	pattern16	16
+52121	fdb6ed	ihconst
+52122	fdb6ec	ihconst
+52130	fdb2ef	ihconst
+52131	fc4d4c	ihconst
 52132	004d12	pattern16	16
 52138	004ea6	pattern16	16
 52148	004aef	pattern16	16
+52149	fc4568	ihconst
+52150	fc4586	ihconst
 52153	fc4728	add_gr1
 52154	00466f	pattern16	16
 52155	fc468c	jmpi_lr0
 52156	fc4152	asleu65
 52158	fc41cc	sub_gr1
 52159	fc406c	asgeu64
+52160	fc40ef	ihconst
+52161	fc4088	ihconst
+52163	fc43b5	ihconst
+52164	fc42e0	ihconst
 52168	005c32	pattern16	16
+52170	fc5f6c	ihconst
+52171	fc5f8c	ihconst
 52198	006d06	pattern16	16
+52204	fc6ed2	ihconst
+52205	fc692d	ihconst
+52212	fc6560	ihconst
+52213	fc6508	ihconst
 52214	0065ef	pattern16	16
+52222	fc6046	ihconst
+52223	fc6075	ihconst
+52230	fc628c	ihconst
+52231	fc7d2c	ihconst
+52240	fc79f2	ihconst
+52241	fc78ed	ihconst
 52244	007bef	pattern16	16
 52245	007a68	pattern16	16
+52248	fc75c0	ihconst
+52249	fc7428	ihconst
 52250	00776f	pattern16	16
 52253	00762d	pattern16	16
 52266	000c6c	pattern16	16
 52269	000f28	pattern16	16
+52272	fc0e80	ihconst
+52273	fc0968	ihconst
 52274	0009ef	pattern16	16
+52280	fc056f	ihconst
+52281	fc05c8	ihconst
 52282	000426	pattern16	16
+52286	fc066f	ihconst
+52287	fc06ac	ihconst
 52290	00002c	pattern16	16
+52297	fc1ca8	ihconst
+52298	fc1f6f	ihconst
 52299	001f0c	pattern16	16
 52309	001a08	pattern16	16
 52316	00166f	pattern16	16
 52319	001175	pattern16	16
 52322	0010ef	pattern16	16
+52323	fc134c	ihconst
+52324	fc1312	ihconst
+52327	fc122c	ihconst
+52328	fc2d6f	ihconst
+52331	fc2cb5	ihconst
+52332	fc2fa0	ihconst
 52333	002e48	pattern16	16
+52335	fc2e2c	ihconst
+52336	fc2ef2	ihconst
 52342	002b86	pattern16	16
 52343	002a75	pattern16	16
+52344	fc2ac0	ihconst
+52345	fc2528	ihconst
 52346	00246f	pattern16	16
 52348	fc2752	add_gr1
 52350	fc27cc	jmpi_lr0
 52351	fc266c	asleu65
+52353	fc2688	ihconst
+52354	fc21e6	ihconst
 52363	fc3d8c	jmpi_lr0
 52364	fc3c6f	nop
 52365	003c28	pattern16	16
+52370	fc3eef	ihconst
+52371	fc39cc	ihconst
+52373	fc382d	ihconst
+52374	fc3b0c	ihconst
+52376	fc3a6f	ihconst
+52377	fc3ac8	ihconst
 52385	fc36ed	jmpi_lr0
 52386	fc312c	nop
+52387	fc304c	ihconst
+52388	fc30ef	ihconst
+52390	fc3306	ihconst
 52392	00cd40	pattern16	16
+52393	fccda8	ihconst
 52396	00ccd2	pattern16	16
+52397	fccf2d	ihconst
+52398	fcce4c	ihconst
 52399	00ceec	pattern16	16
+52401	fcc908	ihconst
+52402	fcc866	ihconst
 52406	00cbef	pattern16	16
 52412	fcc76f	nop
 52414	fcc646	jmpi_lr0
 52415	fcc675	nop
+52417	fcc6e8	ihconst
+52418	fcc1ef	ihconst
 52422	00c08c	pattern16	16
 52428	fcdca0	jmpi_lr0
 52429	fcdf48	nop
+52432	fcdff2	ihconst
+52433	fcdeed	ihconst
 52435	fcd9cc	asgeu64
 52440	fcdbc0	add_gr1
 52441	fcda28	nop
@@ -7682,18 +10575,30 @@ k	key24	plaintext	bits
 52444	00d452	pattern16	16
 52445	fcd42d	sub_gr1
 52446	fcd4cc	asgeu64
+52448	fcd7ef	ihconst
+52449	fcd788	ihconst
+52463	fcec75	ihconst
+52464	fcec80	ihconst
+52510	fcf746	ihconst
+52511	fcf775	ihconst
 52515	00f14c	pattern16	16
 52518	fcf18c	nop
 52519	00f02c	pattern16	16
 52527	fc8c2c	nop
+52528	fc8cf2	ihconst
+52529	fc8fed	ihconst
 52533	008968	pattern16	16
 52539	fc8a8c	add_gr1
 52540	fc8552	nop
 52541	fc852d	jmpi_lr0
 52542	fc85cc	asleu65
+52544	fc84ef	ihconst
+52545	fc8488	ihconst
 52548	0086e0	pattern16	16
 52549	fc8688	jmpi_lr0
 52551	00806c	pattern16	16
+52552	fc8032	ihconst
+52553	fc80ed	ihconst
 52558	fc82c6	jmpi_lr0
 52560	009d80	pattern16	16
 52561	fc9c68	sub_gr1
@@ -7707,6 +10612,8 @@ k	key24	plaintext	bits
 52583	fc9075	asleu65
 52585	fc93a8	sub_gr1
 52586	fc926f	asgeu64
+52587	fc920c	ihconst
+52588	fc92d2	ihconst
 52592	00acef	pattern16	16
 52595	fcaeb5	add_gr1
 52597	fca908	jmpi_lr0
@@ -7714,12 +10621,24 @@ k	key24	plaintext	bits
 52599	00a8ec	pattern16	16
 52600	fca8b2	sub_gr1
 52601	fcabed	asgeu64
+52602	fcabec	ihconst
+52603	fcaa0c	ihconst
+52608	fca400	ihconst
+52609	fca4e8	ihconst
+52613	fca62d	ihconst
+52614	fca68c	ihconst
 52615	fca12c	add_gr1
 52617	fca348	jmpi_lr0
 52618	fca3a6	asleu65
 52619	00a3b5	pattern16	16
 52620	fca2a0	sub_gr1
 52621	fcbd48	asgeu64
+52622	fcbd6f	ihconst
+52623	fcbd2c	ihconst
+52628	fcbfef	ihconst
+52629	fcbe68	ihconst
+52632	fcb9c0	ihconst
+52633	fcb828	ihconst
 52634	00bb6f	pattern16	16
 52635	fcbb8c	add_gr1
 52636	00ba52	pattern16	16
@@ -7728,6 +10647,20 @@ k	key24	plaintext	bits
 52640	fcb5ef	sub_gr1
 52641	fcb588	asgeu64
 52642	fcb4e6	add_lr1
+52645	fcb788	ihconst
+52646	fcb6ef	ihconst
+52654	fcb3c6	ihconst
+52657	ff4d68	ihconst
+52662	ff4e0c	ihconst
+52663	ff4eac	ihconst
+52668	ff4b20	ihconst
+52669	ff4bc8	ihconst
+52670	ff4a6f	ihconst
+52671	ff4aac	ihconst
+52673	ff45ed	ihconst
+52674	ff442c	ihconst
+52676	ff47ef	ihconst
+52677	ff47e8	ihconst
 52682	ff436f	add_gr1
 52683	ff430c	nop
 52684	ff43d2	jmpi_lr0
@@ -7735,38 +10668,94 @@ k	key24	plaintext	bits
 52687	ff5dec	sub_gr1
 52688	ff5def	asgeu64
 52689	ff5c08	add_lr1
+52693	ff5e08	ihconst
+52694	ff5eef	ihconst
+52695	ff59ec	ihconst
 52696	0059b2	pattern16	16
+52697	ff58ed	ihconst
+52700	ff5a6f	ihconst
+52701	ff5aa8	ihconst
+52708	ff5712	ihconst
+52709	ff572d	ihconst
+52717	ff5248	ihconst
+52718	ff526f	ihconst
+52722	ff6dac	ihconst
+52723	ff6ccc	ihconst
+52724	ff6cef	ihconst
+52728	ff6ec0	ihconst
+52729	ff6928	ihconst
+52733	ff6b2d	ihconst
 52753	ff6268	nop
 52756	ff7d92	nop
+52757	ff7c2d	ihconst
+52758	ff7f0c	ihconst
+52762	ff7926	ihconst
+52763	ff79b5	ihconst
 52765	ff78c8	nop
 52772	0074ef	pattern16	16
+52773	ff74e8	ihconst
+52774	ff7706	ihconst
 52775	007675	pattern16	16
+52792	ff0eb2	ihconst
+52795	ff080c	ihconst
 52796	000b6f	pattern16	16
+52799	ff0a75	ihconst
+52800	ff0a00	ihconst
+52825	ff1e28	ihconst
+52826	ff196f	ihconst
+52836	ff15e0	ihconst
+52837	ff1588	ihconst
 52864	002b72	pattern16	16
 52868	0025ef	pattern16	16
+52878	ff234c	ihconst
+52879	ff23ec	ihconst
 52880	0023ef	pattern16	16
 52881	ff2208	nop
+52882	ff3d66	ihconst
+52883	ff3db5	ihconst
 52884	003c60	pattern16	16
 52886	003cef	pattern16	16
+52887	ff3fec	ihconst
+52890	ff3eec	ihconst
 52894	003b46	pattern16	16
+52894	ff3b46	ihconst
+52895	ff3b75	ihconst
 52898	ff3aef	add_gr1
 52900	ff3512	jmpi_lr0
 52901	ff352d	asleu65
 52903	ff342c	sub_gr1
 52904	ff376f	asgeu64
+52905	ff3648	ihconst
+52906	ff36a6	ihconst
 52907	0036b5	pattern16	16
+52911	ff302c	ihconst
+52912	ff30f2	ihconst
+52917	ffcd68	ihconst
+52918	ffcd86	ihconst
+52922	ffce6f	ihconst
+52923	ffce8c	ihconst
 52927	ffc86c	nop
 52933	00ca88	pattern16	16
+52937	ffc4ed	ihconst
+52938	ffc76c	ihconst
+52945	ffc068	ihconst
+52946	ffc0ef	ihconst
 52967	ffd475	add_gr1
 52968	ffd740	nop
 52969	ffd7a8	jmpi_lr0
 52970	ffd66f	asleu65
 52971	00d60c	pattern16	16
+52972	ffd6d2	ihconst
+52973	ffd12d	ihconst
 52974	00d04c	pattern16	16
 52977	ffd308	jmpi_lr0
 52978	ffd266	nop
 52980	ffed60	sub_gr1
 52981	ffed08	asgeu64
+52982	ffedef	ihconst
+52983	ffecec	ihconst
+52992	ffe800	ihconst
+52993	ffe8e8	ihconst
 53002	00e7a6	pattern16	16
 53006	00e16f	pattern16	16
 53009	00e0ed	pattern16	16
@@ -7776,8 +10765,12 @@ k	key24	plaintext	bits
 53017	fffc28	asleu65
 53019	ffff8c	sub_gr1
 53020	fffe52	asgeu64
+53021	fffe2d	ihconst
+53022	fffecc	ihconst
 53023	00f96c	pattern16	16
 53024	00f9ef	pattern16	16
+53031	fff56c	ihconst
+53032	fff532	ihconst
 53042	00f1ef	pattern16	16
 53045	00f32d	pattern16	16
 53048	008d6f	pattern16	16
@@ -7788,6 +10781,8 @@ k	key24	plaintext	bits
 53054	008e6f	pattern16	16
 53055	ff8eac	sub_gr1
 53056	ff8972	asgeu64
+53057	ff89ed	ihconst
+53058	ff882c	ihconst
 53059	008b4c	pattern16	16
 53068	0087d2	pattern16	16
 53073	ff8008	add_gr1
@@ -7798,6 +10793,8 @@ k	key24	plaintext	bits
 53078	ff82ef	sub_gr1
 53079	ff9dec	asgeu64
 53080	ff9db2	add_lr1
+53081	ff9ced	ihconst
+53082	ff9cec	ihconst
 53089	ff99e8	add_gr1
 53090	ff98ef	nop
 53091	ff9b4c	jmpi_lr0
@@ -7844,12 +10841,26 @@ k	key24	plaintext	bits
 53167	ffb6ec	sub_gr1
 53168	ffb6ef	asgeu64
 53169	ffb108	add_lr1
+53170	ffb066	ihconst
+53171	ffb0b5	ihconst
+53178	fe4dec	ihconst
+53179	fe4c0c	ihconst
+53181	fe4fa8	ihconst
+53182	fe4e46	ihconst
 53185	004ee8	pattern16	16
 53187	00484c	pattern16	16
+53188	fe4812	ihconst
+53189	fe482d	ihconst
+53190	fe488c	ihconst
+53191	fe4b2c	ihconst
 53192	004a6f	pattern16	16
 53197	004748	pattern16	16
 53204	0041ef	pattern16	16
+53215	fe5f6c	ihconst
+53216	fe5fef	ihconst
 53219	005eb5	pattern16	16
+53224	fe5b32	ihconst
+53225	fe5bed	ihconst
 53228	00556f	pattern16	16
 53230	0055c6	pattern16	16
 53235	fe56cc	nop
@@ -7862,6 +10873,8 @@ k	key24	plaintext	bits
 53252	fe69ef	jmpi_lr0
 53253	fe69e8	asleu65
 53254	006806	pattern16	16
+53255	fe6b75	ihconst
+53256	fe6a40	ihconst
 53264	fe67ef	jmpi_lr0
 53265	fe6608	nop
 53266	006166	pattern16	16
@@ -7869,6 +10882,10 @@ k	key24	plaintext	bits
 53268	fe6060	asgeu64
 53269	fe6008	add_lr1
 53272	0063b2	pattern16	16
+53272	fe63b2	ihconst
+53273	fe62ed	ihconst
+53283	fe794c	ihconst
+53284	fe7912	ihconst
 53285	00792d	pattern16	16
 53286	00798c	pattern16	16
 53288	fe7b6f	nop
@@ -7892,10 +10909,14 @@ k	key24	plaintext	bits
 53322	fe0b6c	nop
 53324	fe0a6f	nop
 53326	fe0ac6	nop
+53327	fe0575	ihconst
+53328	fe0580	ihconst
 53329	000468	pattern16	16
 53332	000792	pattern16	16
 53336	00006f	pattern16	16
 53337	0000c8	pattern16	16
+53337	fe00c8	ihconst
+53338	fe0326	ihconst
 53339	fe03b5	add_gr1
 53341	fe02c8	jmpi_lr0
 53342	fe1d6f	asleu65
@@ -7920,14 +10941,22 @@ k	key24	plaintext	bits
 53416	fe3932	add_gr1
 53418	fe386c	jmpi_lr0
 53419	fe388c	asleu65
+53421	fe3b28	ihconst
+53422	fe3bc6	ihconst
 53423	fe3a75	jmpi_lr0
+53426	fe35ef	ihconst
+53427	fe34cc	ihconst
 53428	fe3492	jmpi_lr0
 53429	00372d	pattern16	16
 53430	00360c	pattern16	16
+53431	fe36ac	ihconst
+53432	fe316f	ihconst
 53433	fe31c8	jmpi_lr0
 53434	003026	pattern16	16
 53435	0030b5	pattern16	16
 53436	003320	pattern16	16
+53436	fe3320	ihconst
+53437	fe33c8	ihconst
 53438	fe326f	jmpi_lr0
 53439	0032ac	pattern16	16
 53441	fecded	sub_gr1
@@ -7935,21 +10964,55 @@ k	key24	plaintext	bits
 53443	fecf4c	add_lr1
 53451	00cb0c	pattern16	16
 53452	00cbd2	pattern16	16
+53452	fecbd2	ihconst
+53453	feca2d	ihconst
 53454	00c54c	pattern16	16
 53457	fec408	nop
 53459	00c7b5	pattern16	16
+53460	fec660	ihconst
+53461	fec608	ihconst
+53466	fec0ec	ihconst
+53467	fec30c	ihconst
 53469	00c2a8	pattern16	16
 53480	00d96f	pattern16	16
+53481	fed848	ihconst
+53482	fed8a6	ihconst
 53487	00da2c	pattern16	16
+53487	feda2c	ihconst
+53488	fedaf2	ihconst
 53498	00d06f	pattern16	16
+53502	fed3cc	ihconst
+53503	fed26c	ihconst
 53508	00ece0	pattern16	16
+53508	feece0	ihconst
+53509	feec88	ihconst
+53520	feeb80	ihconst
+53521	feea68	ihconst
+53526	fee70c	ihconst
+53527	fee7ac	ihconst
 53529	00e6c8	pattern16	16
 53534	00e36f	pattern16	16
+53535	fee3ac	ihconst
+53536	fee272	ihconst
 53541	00fce8	pattern16	16
+53541	fefce8	ihconst
+53542	feff06	ihconst
 53544	00f940	pattern16	16
+53570	fe8def	ihconst
+53571	fe8c4c	ihconst
+53577	fe8948	ihconst
+53578	fe89a6	ihconst
+53595	fe818c	ihconst
+53596	fe8052	ihconst
 53600	0083ef	pattern16	16
+53600	fe83ef	ihconst
+53601	fe8388	ihconst
 53614	0099c6	pattern16	16
 53617	009b68	pattern16	16
+53618	fe9bef	ihconst
+53619	fe9acc	ihconst
+53620	fe9a92	ihconst
+53621	fe952d	ihconst
 53627	0096b5	pattern16	16
 53631	0090ac	pattern16	16
 53633	0093ed	pattern16	16
@@ -7957,15 +11020,33 @@ k	key24	plaintext	bits
 53636	00adef	pattern16	16
 53643	00a90c	pattern16	16
 53655	fea7ec	nop
+53661	fea0a8	ihconst
+53662	fea346	ihconst
 53666	00a2ef	pattern16	16
+53666	fea2ef	ihconst
+53667	febd4c	ihconst
 53669	00bd2d	pattern16	16
 53674	00bea6	pattern16	16
+53675	febeb5	ihconst
+53676	feb9a0	ihconst
+53682	febbac	ihconst
+53683	febacc	ihconst
 53685	00b568	pattern16	16
 53687	feb475	nop
+53690	feb66f	ihconst
+53691	feb68c	ihconst
 53697	00b088	pattern16	16
+53697	feb088	ihconst
+53698	feb3e6	ihconst
 53702	f94def	nop
 53704	004c32	pattern16	16
+53705	f94ced	ihconst
+53706	f94f6c	ihconst
 53712	004980	pattern16	16
+53712	f94980	ihconst
+53713	f94868	ihconst
+53716	f94b92	ihconst
+53717	f94a2d	ihconst
 53720	f9446f	add_gr1
 53722	f94726	jmpi_lr0
 53723	f947b5	asleu65
@@ -7978,7 +11059,11 @@ k	key24	plaintext	bits
 53747	005ab5	pattern16	16
 53753	0057ed	pattern16	16
 53756	00516f	pattern16	16
+53757	f951a8	ihconst
+53758	f95046	ihconst
 53763	00524c	pattern16	16
+53763	f9524c	ihconst
+53764	f95212	ihconst
 53765	f9522d	add_gr1
 53766	00528c	pattern16	16
 53767	f96d2c	jmpi_lr0
@@ -7986,22 +11071,36 @@ k	key24	plaintext	bits
 53769	006f48	pattern16	16
 53770	f96fa6	sub_gr1
 53771	f96fb5	asgeu64
+53772	f96ea0	ihconst
+53773	f96948	ihconst
 53774	00696f	pattern16	16
 53775	00692c	pattern16	16
+53784	f965c0	ihconst
+53785	f96428	ihconst
 53787	f9678c	nop
 53790	0066cc	pattern16	16
 53792	0061ef	pattern16	16
 53793	006188	pattern16	16
+53794	f960e6	ihconst
+53795	f960b5	ihconst
+53800	f97d32	ihconst
+53801	f97ded	ihconst
 53802	f97c6c	add_gr1
 53804	f97f6f	jmpi_lr0
 53805	f97f28	asleu65
 53806	007fc6	pattern16	16
 53807	007e75	pattern16	16
+53807	f97e75	ihconst
+53808	f97e80	ihconst
 53809	f97968	jmpi_lr0
 53811	0078cc	pattern16	16
 53812	f97892	sub_gr1
 53813	f97b2d	asgeu64
+53814	f97a0c	ihconst
+53815	f97aac	ihconst
 53816	00756f	pattern16	16
+53819	f974b5	ihconst
+53820	f97720	ihconst
 53821	0077c8	pattern16	16
 53822	f9766f	nop
 53826	f9702c	add_gr1
@@ -8012,6 +11111,8 @@ k	key24	plaintext	bits
 53832	f90c40	asgeu64
 53833	f90ca8	add_lr1
 53843	000bb5	pattern16	16
+53843	f90bb5	ihconst
+53844	f90a60	ihconst
 53846	000aef	pattern16	16
 53849	f904ed	nop
 53858	f900ef	nop
@@ -8026,12 +11127,16 @@ k	key24	plaintext	bits
 53899	002d8c	pattern16	16
 53904	f92f80	nop
 53909	f9282d	nop
+53910	f92b0c	ihconst
+53911	f92bac	ihconst
 53915	f925b5	nop
 53926	002306	pattern16	16
 53928	003d40	pattern16	16
 53933	003f2d	pattern16	16
 53936	003eef	pattern16	16
 53961	00cd48	pattern16	16
+53961	f9cd48	ihconst
+53964	f9cca0	ihconst
 53965	00cf48	pattern16	16
 53966	f9cf6f	add_gr1
 53967	f9cf2c	nop
@@ -8039,15 +11144,23 @@ k	key24	plaintext	bits
 53969	f9ceed	asleu65
 53971	f9c9cc	jmpi_lr0
 53974	f9c886	jmpi_lr0
+53977	f9ca28	ihconst
+53978	f9c56f	ihconst
 53981	f9c42d	jmpi_lr0
 53982	f9c4cc	nop
+53984	f9c7ef	ihconst
+53985	f9c788	ihconst
 53988	f9c1e0	jmpi_lr0
 53989	f9c188	nop
 53991	f9c36c	sub_gr1
 53992	f9c332	asgeu64
 53993	f9c3ed	add_lr1
+53994	f9c26c	ihconst
+53995	f9c28c	ihconst
 53996	00dd6f	pattern16	16
 54000	00dc80	pattern16	16
+54004	f9de92	ihconst
+54005	f9d92d	ihconst
 54006	00d80c	pattern16	16
 54009	f9dbc8	nop
 54023	f9d375	nop
@@ -8062,17 +11175,29 @@ k	key24	plaintext	bits
 54046	00e746	pattern16	16
 54051	00e14c	pattern16	16
 54052	00e112	pattern16	16
+54052	f9e112	ihconst
+54053	f9e12d	ihconst
 54055	00e02c	pattern16	16
 54059	00e2b5	pattern16	16
+54065	f9ffed	ihconst
+54066	f9ffac	ihconst
 54068	00feef	pattern16	16
+54083	f9f7b5	ihconst
+54084	f9f6e0	ihconst
 54085	00f688	pattern16	16
 54087	00f06c	pattern16	16
 54090	00f36c	pattern16	16
 54093	00f228	pattern16	16
 54101	008e2d	pattern16	16
+54107	f98bb5	ihconst
+54108	f98a20	ihconst
 54109	008ac8	pattern16	16
 54119	008075	pattern16	16
+54120	f98340	ihconst
+54121	f983a8	ihconst
 54129	009f08	pattern16	16
+54129	f99f08	ihconst
+54130	f99e66	ihconst
 54131	009eb5	pattern16	16
 54132	f99960	add_gr1
 54133	f99908	nop
@@ -8083,36 +11208,80 @@ k	key24	plaintext	bits
 54139	f99a0c	add_lr1
 54164	00afef	pattern16	16
 54180	00a7e0	pattern16	16
+54194	f9bdef	ihconst
+54195	f9bccc	ihconst
+54198	f9be0c	ihconst
+54199	f9beac	ihconst
 54201	00b9c8	pattern16	16
 54206	00ba6f	pattern16	16
+54210	f9b42c	ihconst
+54211	f9b74c	ihconst
 54214	00b606	pattern16	16
+54214	f9b606	ihconst
+54215	f9b175	ihconst
 54217	00b0a8	pattern16	16
 54248	f8416f	nop
+54256	f842f2	ihconst
+54257	f85ded	ihconst
+54260	f85cef	ihconst
+54261	f85f68	ihconst
 54263	005e75	pattern16	16
+54269	f85b2d	ihconst
+54270	f85bcc	ihconst
 54273	005a88	pattern16	16
+54273	f85a88	ihconst
+54274	f855e6	ihconst
 54287	f85375	nop
 54308	0064ef	pattern16	16
 54316	0060d2	pattern16	16
+54325	f87f08	ihconst
+54326	f87fef	ihconst
 54329	0079ed	pattern16	16
+54329	f879ed	ihconst
+54330	f879ec	ihconst
 54336	007a00	pattern16	16
 54358	000c86	pattern16	16
 54365	00082d	pattern16	16
 54368	000bef	pattern16	16
+54369	f80b88	ihconst
+54370	f80ae6	ihconst
+54374	f804ef	ihconst
+54375	f8076c	ihconst
 54377	0007ed	pattern16	16
+54403	f8154c	ihconst
+54404	f815ef	ihconst
 54407	001775	pattern16	16
+54407	f81775	ihconst
+54408	f81640	ihconst
 54410	00116f	pattern16	16
 54420	002c60	pattern16	16
+54447	f8202c	ihconst
+54448	f820f2	ihconst
 54451	0022cc	pattern16	16
+54451	f822cc	ihconst
+54452	f822ef	ihconst
 54460	003952	pattern16	16
 54480	003180	pattern16	16
+54501	f8cae8	ihconst
+54502	f8c506	ihconst
+54505	f8c7a8	ihconst
+54506	f8c66f	ihconst
 54521	00dfed	pattern16	16
+54552	f8edc0	ihconst
+54553	f8ec28	ihconst
 54557	00ee2d	pattern16	16
+54557	f8ee2d	ihconst
+54558	f8eecc	ihconst
 54560	00e9ef	pattern16	16
 54563	00e8b5	pattern16	16
 54570	00e46c	pattern16	16
 54574	00e7c6	pattern16	16
 54587	00fcb5	pattern16	16
+54594	f8f82c	ihconst
+54595	f8fb4c	ihconst
 54598	00fa06	pattern16	16
+54598	f8fa06	ihconst
+54599	f8f575	ihconst
 54601	00f4a8	pattern16	16
 54609	00f008	pattern16	16
 54611	00f3b5	pattern16	16
@@ -8120,8 +11289,14 @@ k	key24	plaintext	bits
 54632	00856f	pattern16	16
 54634	0084a6	pattern16	16
 54640	0086f2	pattern16	16
+54645	f88368	ihconst
+54646	f88386	ihconst
 54649	009d28	pattern16	16
+54649	f89d28	ihconst
+54650	f89c6f	ihconst
 54662	009bef	pattern16	16
+54662	f89bef	ihconst
+54663	f89a6c	ihconst
 54666	f8956c	add_gr1
 54668	f8946f	jmpi_lr0
 54669	f89428	asleu65
@@ -8134,18 +11309,30 @@ k	key24	plaintext	bits
 54704	00a6ef	pattern16	16
 54714	00bdec	pattern16	16
 54724	f8b812	nop
+54727	f8bb2c	ihconst
+54728	f8ba6f	ihconst
 54729	00b548	pattern16	16
+54734	f8b76f	ihconst
+54735	f8b72c	ihconst
 54741	00b068	pattern16	16
 54750	004ccc	pattern16	16
 54769	fb4768	nop
+54790	fb5806	ihconst
+54791	fb5b75	ihconst
 54798	00574c	pattern16	16
 54804	fb5060	nop
 54806	fb50ef	nop
 54811	006d0c	pattern16	16
+54820	fb6912	ihconst
+54821	fb692d	ihconst
 54848	007cef	pattern16	16
+54854	fb79ef	ihconst
+54855	fb786c	ihconst
 54862	007ac6	pattern16	16
 54868	fb7792	nop
 54870	00710c	pattern16	16
+54873	fb70c8	ihconst
+54874	fb7326	ihconst
 54875	0073b5	pattern16	16
 54887	fb0875	add_gr1
 54889	fb0ba8	jmpi_lr0
@@ -8155,21 +11342,49 @@ k	key24	plaintext	bits
 54893	fb052d	asgeu64
 54906	0003ec	pattern16	16
 54907	00020c	pattern16	16
+54914	fb1fef	ihconst
+54915	fb1e4c	ihconst
+54919	fb192c	ihconst
+54920	fb186f	ihconst
+54927	fb152c	ihconst
+54928	fb15f2	ihconst
+54932	fb17ef	ihconst
+54933	fb1668	ihconst
 54936	0011c0	pattern16	16
+54940	fb1252	ihconst
+54941	fb122d	ihconst
 54945	002d88	pattern16	16
+54945	fb2d88	ihconst
+54946	fb2ce6	ihconst
 54955	00288c	pattern16	16
+54956	fb2b6f	ihconst
+54957	fb2b28	ihconst
 54959	fb2a75	nop
 54964	002492	pattern16	16
 54965	00272d	pattern16	16
 54975	0022ac	pattern16	16
+54983	fb3975	ihconst
+54984	fb3840	ihconst
 54988	003bd2	pattern16	16
+54988	fb3bd2	ihconst
+54989	fb3a2d	ihconst
 54991	0035ec	pattern16	16
 54992	0035ef	pattern16	16
+54996	fb3660	ihconst
+54997	fb3608	ihconst
 55001	0030ed	pattern16	16
+55001	fb30ed	ihconst
+55002	fb30ec	ihconst
 55005	0032a8	pattern16	16
+55009	fbcde8	ihconst
+55010	fbccef	ihconst
 55014	00cf8c	pattern16	16
+55014	fbcf8c	ihconst
+55015	fbce2c	ihconst
 55024	fbcaf2	nop
 55025	00c5ed	pattern16	16
+55025	fbc5ed	ihconst
+55026	fbc5ac	ihconst
 55028	fbc4ef	add_gr1
 55029	fbc768	nop
 55030	fbc786	jmpi_lr0
@@ -8180,53 +11395,197 @@ k	key24	plaintext	bits
 55036	fbc352	add_lr1
 55042	00dde6	pattern16	16
 55045	00dc88	pattern16	16
+55050	fbd96c	ihconst
+55051	fbd98c	ihconst
 55070	00d36f	pattern16	16
 55079	00ee75	pattern16	16
+55080	fbe940	ihconst
+55081	fbe9a8	ihconst
 55084	00e8d2	pattern16	16
+55084	fbe8d2	ihconst
+55085	fbeb2d	ihconst
+55100	fbe36f	ihconst
+55101	fbe3a8	ihconst
 55105	00e2e8	pattern16	16
+55105	fbe2e8	ihconst
+55106	fbfdef	ihconst
+55116	fbf8a0	ihconst
+55117	fbfb48	ihconst
 55122	00faac	pattern16	16
+55123	fbf5cc	ihconst
+55124	fbf5ef	ihconst
 55130	00f16f	pattern16	16
+55130	fbf16f	ihconst
+55131	fbf18c	ihconst
 55133	00f02d	pattern16	16
 55140	008de0	pattern16	16
+55141	fb8d88	ihconst
+55142	fb8cef	ihconst
+55145	fb8fed	ihconst
+55146	fb8e6c	ihconst
+55149	fb8928	ihconst
+55150	fb89c6	ihconst
+55165	fb81c8	ihconst
+55166	fb806f	ihconst
+55170	fb822c	ihconst
+55171	fb9d4c	ihconst
 55174	009c06	pattern16	16
+55174	fb9c06	ihconst
+55175	fb9f75	ihconst
 55177	009ea8	pattern16	16
+55201	fb93e8	ihconst
+55202	fb92ef	ihconst
+55206	fbad8c	ihconst
+55207	fbac2c	ihconst
 55210	00aea6	pattern16	16
+55210	fbaea6	ihconst
+55211	fbaeb5	ihconst
 55213	00a848	pattern16	16
+55221	fba568	ihconst
+55222	fba586	ihconst
 55227	00a68c	pattern16	16
+55228	fba152	ihconst
+55229	fba12d	ihconst
+55235	fba3b5	ihconst
+55236	fba2e0	ihconst
+55247	fbb975	ihconst
+55248	fbb980	ihconst
+55251	fbbbcc	ihconst
+55252	fbbb92	ihconst
 55255	00b5ac	pattern16	16
 55257	00b4c8	pattern16	16
+55257	fbb4c8	ihconst
+55258	fbb726	ihconst
+55273	fa4fa8	ihconst
+55274	fa4e6f	ihconst
+55278	fa484c	ihconst
+55279	fa48ec	ihconst
 55284	004560	pattern16	16
+55284	fa4560	ihconst
+55285	fa4508	ihconst
 55287	0044ec	pattern16	16
+55293	fa41a8	ihconst
+55294	fa4046	ihconst
+55300	fa4212	ihconst
+55301	fa422d	ihconst
+55307	fa5fb5	ihconst
+55308	fa5ea0	ihconst
 55310	00596f	pattern16	16
+55318	fa5a86	ihconst
+55319	fa5575	ihconst
+55322	fa576f	ihconst
+55323	fa578c	ihconst
+55326	fa56cc	ihconst
+55327	fa516c	ihconst
 55329	005188	pattern16	16
+55342	fa6fc6	ihconst
+55343	fa6e75	ihconst
+55347	fa68cc	ihconst
+55348	fa6892	ihconst
 55351	006aac	pattern16	16
+55351	fa6aac	ihconst
+55352	fa656f	ihconst
 55354	006426	pattern16	16
 55377	007808	pattern16	16
+55378	fa7b66	ihconst
+55379	fa7bb5	ihconst
+55382	fa7aef	ihconst
+55383	fa75ec	ihconst
+55386	fa74ec	ihconst
+55387	fa770c	ihconst
 55389	0076a8	pattern16	16
+55399	fa722c	ihconst
+55400	fa0d6f	ihconst
 55405	000e48	pattern16	16
+55406	fa0e6f	ihconst
+55407	fa0e2c	ihconst
+55412	fa08ef	ihconst
+55413	fa0b68	ihconst
 55423	00066c	pattern16	16
+55431	fa026c	ihconst
+55432	fa0232	ihconst
+55437	fa1c28	ihconst
+55438	fa1cc6	ihconst
 55444	001992	pattern16	16
+55444	fa1992	ihconst
+55445	fa182d	ihconst
+55460	fa10ef	ihconst
+55461	fa10e8	ihconst
 55462	001306	pattern16	16
+55474	fa2866	ihconst
+55475	fa28b5	ihconst
+55478	fa2bef	ihconst
+55479	fa2aec	ihconst
 55485	0027a8	pattern16	16
+55485	fa27a8	ihconst
+55486	fa2646	ihconst
 55488	002600	pattern16	16
+55497	fa3d48	ihconst
+55498	fa3da6	ihconst
+55503	fa3f2c	ihconst
+55504	fa3ff2	ihconst
 55510	003886	pattern16	16
+55510	fa3886	ihconst
+55511	fa3b75	ihconst
 55517	00342d	pattern16	16
+55527	fa336c	ihconst
+55528	fa3332	ihconst
 55529	0033ed	pattern16	16
+55535	facc75	ihconst
+55536	facc80	ihconst
+55540	face92	ihconst
+55541	fac92d	ihconst
+55547	facab5	ihconst
+55548	fac520	ihconst
 55555	00c14c	pattern16	16
 55558	00c006	pattern16	16
+55561	fac2a8	ihconst
+55562	fadd6f	ihconst
+55566	fadf4c	ihconst
+55567	fadfec	ihconst
 55568	00dfef	pattern16	16
 55573	00d808	pattern16	16
+55573	fad808	ihconst
+55574	fad8ef	ihconst
+55580	fad46f	ihconst
+55581	fad4a8	ihconst
 55584	00d700	pattern16	16
+55588	fad112	ihconst
+55589	fad12d	ihconst
+55594	fad2a6	ihconst
+55595	fad2b5	ihconst
 55601	00efed	pattern16	16
+55601	faefed	ihconst
+55602	faefac	ihconst
 55604	00eeef	pattern16	16
+55614	fae5cc	ihconst
+55615	fae46c	ihconst
+55621	fae688	ihconst
+55622	fae1ef	ihconst
+55627	fae38c	ihconst
+55628	fae26f	ihconst
 55630	00e2c6	pattern16	16
 55635	00ffcc	pattern16	16
+55636	faff92	ihconst
+55637	fafe2d	ihconst
+55643	fafbb5	ihconst
+55644	fafa20	ihconst
 55646	00f56f	pattern16	16
+55653	faf6e8	ihconst
+55654	faf106	ihconst
 55658	00f26f	pattern16	16
+55658	faf26f	ihconst
+55659	faf20c	ihconst
+55675	fa8a0c	ihconst
+55676	fa856f	ihconst
 55680	008400	pattern16	16
+55680	fa8400	ihconst
+55681	fa84e8	ihconst
 55682	0087ef	pattern16	16
 55683	00864c	pattern16	16
 55688	00806f	pattern16	16
+55688	fa806f	ihconst
+55689	fa8348	ihconst
 55690	0083a6	pattern16	16
 55692	fa82a0	add_gr1
 55694	fa9d6f	jmpi_lr0
@@ -8234,56 +11593,144 @@ k	key24	plaintext	bits
 55697	fa9ced	sub_gr1
 55698	fa9cac	asgeu64
 55699	fa9fcc	add_lr1
+55702	fa9e86	ihconst
+55703	fa9975	ihconst
+55706	fa9b6f	ihconst
+55707	fa9b8c	ihconst
 55708	009a52	pattern16	16
+55710	fa9acc	ihconst
+55711	fa956c	ihconst
 55712	0095ef	pattern16	16
+55714	fa94e6	ihconst
+55715	fa94b5	ihconst
 55716	0097e0	pattern16	16
+55718	fa96ef	ihconst
+55719	fa916c	ihconst
 55720	009132	pattern16	16
 55728	009280	pattern16	16
+55735	faaeac	ihconst
+55736	faa96f	ihconst
+55742	faaa6f	ihconst
+55743	faaaac	ihconst
 55744	00a572	pattern16	16
 55746	00a42c	pattern16	16
+55749	faa7e8	ihconst
+55750	faa606	ihconst
 55753	00a0a8	pattern16	16
+55760	fabdef	ihconst
+55761	fabc08	ihconst
 55762	00bf66	pattern16	16
+55763	fabfb5	ihconst
+55764	fabe60	ihconst
+55765	fabe08	ihconst
+55766	fabeef	ihconst
 55770	00b8ec	pattern16	16
+55771	fabb0c	ihconst
+55772	faba6f	ihconst
 55778	00b4ef	pattern16	16
+55778	fab4ef	ihconst
+55779	fab74c	ihconst
+55787	fab0b5	ihconst
+55788	fab3a0	ihconst
 55789	00b248	pattern16	16
+55802	f5486f	ihconst
+55803	f5488c	ihconst
+55809	f54a88	ihconst
+55810	f545e6	ihconst
 55812	0044e0	pattern16	16
+55814	f547ef	ihconst
+55815	f5466c	ihconst
+55820	f5406f	ihconst
+55821	f54028	ihconst
+55827	f55dcc	ihconst
+55828	f55d92	ihconst
 55830	005f0c	pattern16	16
+55832	f55e6f	ihconst
+55833	f55ec8	ihconst
+55835	f559b5	ihconst
+55836	f55820	ihconst
+55841	f55aed	ihconst
+55842	f5552c	ihconst
 55848	005140	pattern16	16
+55848	f55140	ihconst
+55849	f551a8	ihconst
 55851	00500c	pattern16	16
+55857	f56d08	ihconst
+55858	f56c66	ihconst
 55871	006a75	pattern16	16
+55872	f56a00	ihconst
+55873	f56ae8	ihconst
 55879	00672c	pattern16	16
+55879	f5672c	ihconst
+55880	f5666f	ihconst
 55882	0061a6	pattern16	16
+55884	f560a0	ihconst
+55885	f56348	ihconst
 55889	0062ed	pattern16	16
+55890	f562ac	ihconst
+55891	f57dcc	ihconst
 55897	007e28	pattern16	16
+55897	f57e28	ihconst
+55898	f5796f	ihconst
 55910	0074ef	pattern16	16
+55911	f5776c	ihconst
+55912	f57732	ihconst
 55918	0071c6	pattern16	16
+55918	f571c6	ihconst
+55919	f57075	ihconst
 55921	007368	pattern16	16
 55926	000c0c	pattern16	16
+55927	f50cac	ihconst
+55928	f50f6f	ihconst
 55934	00086f	pattern16	16
+55934	f5086f	ihconst
+55935	f508ac	ihconst
 55936	000b72	pattern16	16
+55942	f50406	ihconst
+55943	f50775	ihconst
 55944	000640	pattern16	16
 55945	f506a8	add_gr1
 55947	f5010c	jmpi_lr0
 55948	f501d2	asleu65
 55949	00002d	pattern16	16
+55950	f5034c	ihconst
+55951	f503ec	ihconst
 55952	0003ef	pattern16	16
 55954	001d66	pattern16	16
+55957	f51c08	ihconst
+55958	f51cef	ihconst
 55959	001fec	pattern16	16
 55961	001eed	pattern16	16
+55964	f5186f	ihconst
+55965	f518a8	ihconst
+55971	f5154c	ihconst
+55972	f51512	ihconst
 55977	001648	pattern16	16
+55980	f511a0	ihconst
+55981	f51048	ihconst
 55987	0012cc	pattern16	16
 55988	0012ef	pattern16	16
+55992	f52cc0	ihconst
+55993	f52f28	ihconst
 55999	f5286c	jmpi_lr0
 56001	002888	pattern16	16
 56002	f52be6	sub_gr1
 56003	f52bb5	asgeu64
 56004	f52ae0	add_lr1
+56005	f52a88	ihconst
+56006	f525ef	ihconst
 56007	00246c	pattern16	16
 56015	002175	pattern16	16
 56018	0020ef	pattern16	16
+56019	f523cc	ihconst
+56020	f52392	ihconst
 56021	00222d	pattern16	16
+56029	f53ec8	ihconst
+56030	f5396f	ihconst
 56031	0039ac	pattern16	16
 56034	003b2c	pattern16	16
+56036	f53aef	ihconst
+56037	f53ae8	ihconst
 56039	f53475	add_gr1
 56040	f53740	nop
 56041	f537a8	jmpi_lr0
@@ -8292,20 +11739,32 @@ k	key24	plaintext	bits
 56044	f536d2	sub_gr1
 56045	f5312d	asgeu64
 56046	f5304c	add_lr1
+56047	f530ec	ihconst
+56048	f530ef	ihconst
 56049	003308	pattern16	16
 56055	00ccec	pattern16	16
 56064	00c800	pattern16	16
+56068	f5ca12	ihconst
+56069	f5ca2d	ihconst
 56074	f5c7a6	add_gr1
 56075	f5c7b5	nop
 56076	f5c6a0	jmpi_lr0
 56077	f5c148	asleu65
 56078	00c16f	pattern16	16
+56079	f5c12c	ihconst
+56080	f5c1f2	ihconst
 56081	f5c0ed	jmpi_lr0
 56084	f5c3ef	sub_gr1
 56085	f5c268	asgeu64
 56086	f5c286	add_lr1
+56087	f5dd75	ihconst
+56088	f5ddc0	ihconst
 56089	00dc28	pattern16	16
+56091	f5df8c	ihconst
+56092	f5de52	ihconst
 56093	00de2d	pattern16	16
+56097	f5d988	ihconst
+56098	f5d8e6	ihconst
 56099	00d8b5	pattern16	16
 56100	f5dbe0	nop
 56104	00d532	pattern16	16
@@ -8318,11 +11777,19 @@ k	key24	plaintext	bits
 56122	f5ec26	asleu65
 56124	f5ef20	sub_gr1
 56125	f5efc8	asgeu64
+56126	f5ee6f	ihconst
+56127	f5eeac	ihconst
 56131	00eb4c	pattern16	16
+56132	f5ebef	ihconst
+56133	f5ebe8	ihconst
 56134	00ea06	pattern16	16
 56135	f5e575	nop
 56139	00e70c	pattern16	16
 56141	00e62d	pattern16	16
+56151	f5fdec	ihconst
+56152	f5fdb2	ihconst
+56153	f5fced	ihconst
+56154	f5fcec	ihconst
 56155	00ff0c	pattern16	16
 56159	f5f975	add_gr1
 56160	f5f900	nop
@@ -8331,6 +11798,8 @@ k	key24	plaintext	bits
 56163	00fb4c	pattern16	16
 56164	f5fb12	sub_gr1
 56165	f5fb2d	asgeu64
+56169	f5f448	ihconst
+56170	f5f4a6	ihconst
 56172	f5f7a0	nop
 56182	00f386	pattern16	16
 56186	008c6f	pattern16	16
@@ -8341,7 +11810,15 @@ k	key24	plaintext	bits
 56193	f58e88	sub_gr1
 56194	f589e6	asgeu64
 56195	f589b5	add_lr1
+56196	f588e0	ihconst
+56197	f58888	ihconst
+56200	f58a32	ihconst
+56201	f58aed	ihconst
 56202	00856c	pattern16	16
+56208	f58780	ihconst
+56209	f58668	ihconst
+56212	f58192	ihconst
+56213	f5802d	ihconst
 56218	f59d26	add_gr1
 56219	f59db5	nop
 56220	f59c20	jmpi_lr0
@@ -8349,7 +11826,15 @@ k	key24	plaintext	bits
 56222	009f6f	pattern16	16
 56223	f59fac	sub_gr1
 56224	f59e72	asgeu64
+56225	f59eed	ihconst
+56226	f5992c	ihconst
 56230	009b06	pattern16	16
+56233	f595a8	ihconst
+56234	f5946f	ihconst
+56236	f594d2	ihconst
+56237	f5972d	ihconst
+56240	f596ef	ihconst
+56241	f59108	ihconst
 56242	009066	pattern16	16
 56247	f592ec	add_gr1
 56248	f592b2	nop
@@ -8359,18 +11844,32 @@ k	key24	plaintext	bits
 56252	f5af6f	sub_gr1
 56253	f5afa8	asgeu64
 56254	f5ae46	add_lr1
+56255	f5ae75	ihconst
+56256	f5ae00	ihconst
+56258	f5a9ef	ihconst
+56259	f5a84c	ihconst
+56261	f5a82d	ihconst
+56262	f5a88c	ihconst
+56264	f5aa6f	ihconst
+56265	f5a548	ihconst
 56269	f5a748	nop
 56270	f5a76f	add_gr1
 56271	f5a72c	nop
 56272	f5a7f2	jmpi_lr0
 56273	f5a6ed	asleu65
 56274	00a6ac	pattern16	16
+56275	f5a1cc	ihconst
+56276	f5a1ef	ihconst
+56280	f5a3c0	ihconst
+56281	f5a228	ihconst
 56295	00bb6c	pattern16	16
 56297	00bbed	pattern16	16
 56299	00ba8c	pattern16	16
 56301	00b528	pattern16	16
 56310	00b00c	pattern16	16
 56311	00b0ac	pattern16	16
+56312	f5b36f	ihconst
+56313	f5b3c8	ihconst
 56315	00b2b5	pattern16	16
 56317	f44dc8	jmpi_lr0
 56320	f44f72	sub_gr1
@@ -8379,14 +11878,20 @@ k	key24	plaintext	bits
 56332	0045d2	pattern16	16
 56334	00474c	pattern16	16
 56338	004166	pattern16	16
+56344	f443b2	ihconst
+56345	f442ed	ihconst
 56346	0042ec	pattern16	16
 56351	005f75	pattern16	16
 56352	005f00	pattern16	16
 56361	005a48	pattern16	16
+56363	f45ab5	ihconst
+56364	f455a0	ihconst
 56389	006e88	pattern16	16
 56400	006580	pattern16	16
 56403	0067cc	pattern16	16
 56408	00606f	pattern16	16
+56410	f46326	ihconst
+56411	f463b5	ihconst
 56412	006220	pattern16	16
 56417	007ced	pattern16	16
 56418	007f2c	pattern16	16
@@ -8395,19 +11900,29 @@ k	key24	plaintext	bits
 56423	007875	pattern16	16
 56445	000da8	pattern16	16
 56450	000fef	pattern16	16
+56452	f40e12	ihconst
+56453	f40e2d	ihconst
 56454	000e8c	pattern16	16
 56460	000aa0	pattern16	16
 56462	00056f	pattern16	16
 56463	00052c	pattern16	16
+56475	f4038c	ihconst
+56476	f40252	ihconst
 56481	f41d88	add_gr1
 56483	f41cb5	jmpi_lr0
 56484	f41fe0	asleu65
 56499	0014cc	pattern16	16
 56501	f4172d	sub_gr1
 56502	f4160c	asgeu64
+56503	f416ac	ihconst
+56504	f4116f	ihconst
 56505	0011c8	pattern16	16
 56508	001320	pattern16	16
+56509	f413c8	ihconst
+56510	f4126f	ihconst
 56521	f428a8	nop
+56522	f42b6f	ihconst
+56523	f42b0c	ihconst
 56524	002bd2	pattern16	16
 56527	f425ec	add_gr1
 56528	f425ef	nop
@@ -8422,6 +11937,8 @@ k	key24	plaintext	bits
 56551	003e2c	pattern16	16
 56558	003a6f	pattern16	16
 56560	f43af2	jmpi_lr0
+56567	f43675	ihconst
+56568	f436c0	ihconst
 56572	f43352	nop
 56573	00332d	pattern16	16
 56575	00326c	pattern16	16
@@ -8446,6 +11963,8 @@ k	key24	plaintext	bits
 56724	f48460	asleu65
 56726	f484ef	sub_gr1
 56727	f487ec	asgeu64
+56728	f487b2	ihconst
+56729	f486ed	ihconst
 56735	f48375	nop
 56739	f49d4c	add_gr1
 56740	f49d12	nop
@@ -8453,6 +11972,8 @@ k	key24	plaintext	bits
 56742	f49d8c	asleu65
 56744	f49f6f	sub_gr1
 56745	f49e48	asgeu64
+56746	f49ea6	ihconst
+56747	f49eb5	ihconst
 56750	00986f	pattern16	16
 56754	f49bac	add_gr1
 56755	f49acc	nop
@@ -8465,6 +11986,8 @@ k	key24	plaintext	bits
 56762	00966f	pattern16	16
 56763	f4968c	sub_gr1
 56764	f49152	asgeu64
+56765	f4912d	ihconst
+56766	f491cc	ihconst
 56769	009088	pattern16	16
 56770	0093e6	pattern16	16
 56772	f492e0	nop
@@ -8475,6 +11998,10 @@ k	key24	plaintext	bits
 56780	f4ae6f	sub_gr1
 56781	f4ae28	asgeu64
 56782	f4aec6	add_lr1
+56789	f4aa2d	ihconst
+56790	f4a50c	ihconst
+56797	f4a6c8	ihconst
+56798	f4a16f	ihconst
 56799	00a1ac	pattern16	16
 56802	f4a32c	add_gr1
 56803	f4a24c	nop
@@ -8484,6 +12011,8 @@ k	key24	plaintext	bits
 56807	f4bc75	sub_gr1
 56808	f4bf40	asgeu64
 56809	f4bfa8	add_lr1
+56810	f4be6f	ihconst
+56811	f4be0c	ihconst
 56812	00bed2	pattern16	16
 56814	f4b84c	add_gr1
 56815	f4b8ec	nop
@@ -8493,6 +12022,8 @@ k	key24	plaintext	bits
 56819	f4bab5	sub_gr1
 56820	f4b560	asgeu64
 56821	f4b508	add_lr1
+56822	f4b5ef	ihconst
+56823	f4b4ec	ihconst
 56824	00b4b2	pattern16	16
 56826	f4b7ec	add_gr1
 56827	f4b60c	nop
@@ -8529,6 +12060,8 @@ k	key24	plaintext	bits
 56887	f75aac	sub_gr1
 56888	f7556f	asgeu64
 56889	f755c8	add_lr1
+56894	f7566f	ihconst
+56895	f756ac	ihconst
 56896	005172	pattern16	16
 56898	f7502c	add_gr1
 56899	f7534c	nop
@@ -8538,8 +12071,12 @@ k	key24	plaintext	bits
 56903	f76d75	sub_gr1
 56904	f76c40	asgeu64
 56905	f76ca8	add_lr1
+56907	f76f0c	ihconst
+56908	f76fd2	ihconst
 56909	006e2d	pattern16	16
 56913	006808	pattern16	16
+56914	f76b66	ihconst
+56915	f76bb5	ihconst
 56916	006a60	pattern16	16
 56917	f76a08	nop
 56925	f766a8	add_gr1
@@ -8552,6 +12089,8 @@ k	key24	plaintext	bits
 56934	f7638c	asleu65
 56936	f77d6f	sub_gr1
 56937	f77c48	asgeu64
+56944	f77ef2	ihconst
+56945	f779ed	ihconst
 56947	0078cc	pattern16	16
 56949	f77b68	nop
 56952	f77ac0	add_gr1
@@ -8569,34 +12108,48 @@ k	key24	plaintext	bits
 56981	f7082d	nop
 56982	f70b0c	jmpi_lr0
 56983	f70bac	asleu65
+56984	f70a6f	ihconst
+56985	f70ac8	ihconst
 56986	000526	pattern16	16
 56987	f705b5	nop
+56988	f70420	ihconst
+56989	f704c8	ihconst
 56991	f707ac	nop
 56992	f70672	add_gr1
 56994	f7012c	jmpi_lr0
 56995	f7004c	asleu65
+56996	f700ef	ihconst
+56997	f700e8	ihconst
 56998	000306	pattern16	16
 56999	f70275	nop
 57000	f71d40	add_gr1
 57001	f71da8	nop
 57002	f71c6f	jmpi_lr0
 57003	f71c0c	asleu65
+57004	f71cd2	ihconst
+57005	f71f2d	ihconst
 57006	001e4c	pattern16	16
 57007	f71eec	nop
 57008	f71eef	add_gr1
 57009	f71908	nop
 57010	f71866	jmpi_lr0
 57011	f718b5	asleu65
+57012	f71b60	ihconst
+57013	f71b08	ihconst
 57014	001bef	pattern16	16
 57015	f71aec	nop
 57016	f71ab2	add_gr1
 57018	f715ec	jmpi_lr0
 57019	f7140c	asleu65
+57020	f7176f	ihconst
+57021	f717a8	ihconst
 57023	f71675	nop
 57024	f71600	add_gr1
 57025	f716e8	nop
 57026	f711ef	jmpi_lr0
 57027	f7104c	asleu65
+57028	f71012	ihconst
+57029	f7102d	ihconst
 57030	00108c	pattern16	16
 57031	f7132c	nop
 57032	f7126f	add_gr1
@@ -8611,7 +12164,11 @@ k	key24	plaintext	bits
 57046	f72886	sub_gr1
 57047	f72b75	asgeu64
 57048	f72bc0	add_lr1
+57055	f7276c	ihconst
+57056	f727ef	ihconst
 57060	f721e0	nop
+57068	f73d6f	ihconst
+57070	f73dc6	ihconst
 57072	f73c80	nop
 57075	003ecc	pattern16	16
 57076	f73e92	nop
@@ -8892,6 +12449,8 @@ k	key24	plaintext	bits
 58452	f05a60	asgeu64
 58454	005aef	pattern16	16
 58460	00566f	pattern16	16
+58462	f05146	ihconst
+58463	f05175	ihconst
 58466	0050ef	pattern16	16
 58468	f05312	add_gr1
 58469	f0532d	nop
@@ -8901,24 +12460,42 @@ k	key24	plaintext	bits
 58474	f06ca6	asgeu64
 58475	f06cb5	add_lr1
 58487	006a75	pattern16	16
+58490	f0646f	ihconst
+58491	f0648c	ihconst
 58496	f066ef	add_gr1
 58498	f061e6	jmpi_lr0
 58499	f061b5	asleu65
+58502	f063ef	ihconst
+58503	f0626c	ihconst
 58505	f062ed	asgeu64
+58509	f07c28	ihconst
+58510	f07cc6	ihconst
 58513	007e68	pattern16	16
+58515	f079cc	ihconst
+58516	f07992	ihconst
 58521	f07ac8	add_gr1
 58522	f07526	nop
 58523	f075b5	jmpi_lr0
 58524	f07420	asleu65
+58525	f074c8	ihconst
+58527	f077ac	ihconst
 58529	f076ed	sub_gr1
 58530	f0712c	asgeu64
 58531	f0704c	add_lr1
+58535	f07275	ihconst
+58536	f00d40	ihconst
 58537	000da8	pattern16	16
+58540	f00cd2	ihconst
+58541	f00f2d	ihconst
 58544	000eef	pattern16	16
+58547	f008b5	ihconst
+58548	f00b60	ihconst
 58551	000aec	pattern16	16
 58553	f005ed	add_gr1
 58555	f0040c	jmpi_lr0
 58556	f0076f	asleu65
+58557	f007a8	ihconst
+58559	f00675	ihconst
 58561	f006e8	sub_gr1
 58562	f001ef	asgeu64
 58571	001db5	pattern16	16
@@ -8932,11 +12509,17 @@ k	key24	plaintext	bits
 58587	f0158c	asleu65
 58588	001452	pattern16	16
 58589	f0142d	nop
+58599	f0136c	ihconst
+58601	f013ed	ihconst
+58606	f02dc6	ihconst
+58607	f02c75	ihconst
 58631	f02375	add_gr1
 58632	f02240	nop
 58633	f022a8	jmpi_lr0
 58634	f03d6f	asleu65
 58638	f03f4c	nop
+58642	f03966	ihconst
+58643	f039b5	ihconst
 58644	003860	pattern16	16
 58646	f038ef	add_gr1
 58647	f03bec	nop
@@ -8948,11 +12531,15 @@ k	key24	plaintext	bits
 58667	f032b5	nop
 58668	f0cda0	jmpi_lr0
 58669	f0cc48	asleu65
+58685	f0c52d	ihconst
+58686	f0c5cc	ihconst
 58711	f0d9ac	add_gr1
 58713	f0d8c8	jmpi_lr0
 58714	f0db26	asleu65
 58716	f0da20	sub_gr1
 58717	f0dac8	asgeu64
+58732	f0d2d2	ihconst
+58733	f0ed2d	ihconst
 58744	f0e8b2	nop
 58745	f0ebed	add_gr1
 58746	f0ebec	nop
@@ -8990,6 +12577,8 @@ k	key24	plaintext	bits
 58889	f0a6ed	sub_gr1
 58890	f0a16c	asgeu64
 58891	f0a18c	add_lr1
+58895	f0a375	ihconst
+58896	f0a380	ihconst
 58900	f0bd92	add_gr1
 58902	f0bf0c	jmpi_lr0
 58903	f0bfac	asleu65
@@ -8998,6 +12587,8 @@ k	key24	plaintext	bits
 58907	f0b9b5	add_lr1
 58912	00ba72	pattern16	16
 58914	00b52c	pattern16	16
+58917	f0b4e8	ihconst
+58918	f0b706	ihconst
 58919	00b675	pattern16	16
 58920	00b140	pattern16	16
 58922	f0b06f	add_gr1
@@ -9005,6 +12596,8 @@ k	key24	plaintext	bits
 58925	f0b32d	asleu65
 58927	f0b2ec	sub_gr1
 58928	f0b2ef	asgeu64
+58934	f34fef	ihconst
+58935	f34eec	ihconst
 58943	004a75	pattern16	16
 58945	f34ae8	add_gr1
 58946	f345ef	nop
@@ -9038,8 +12631,12 @@ k	key24	plaintext	bits
 59055	f3702c	add_gr1
 59057	f373ed	jmpi_lr0
 59058	f373ac	asleu65
+59063	f30c75	ihconst
+59064	f30cc0	ihconst
 59067	000e8c	pattern16	16
 59073	000888	pattern16	16
+59083	f3078c	ihconst
+59084	f3066f	ihconst
 59088	f30180	nop
 59090	0000ef	pattern16	16
 59108	f31aef	nop
@@ -9048,6 +12645,8 @@ k	key24	plaintext	bits
 59135	f32875	nop
 59138	f32bef	nop
 59146	0027a6	pattern16	16
+59171	f338b5	ihconst
+59172	f33be0	ihconst
 59181	003728	pattern16	16
 59185	003168	pattern16	16
 59188	003092	pattern16	16
@@ -9073,6 +12672,8 @@ k	key24	plaintext	bits
 59479	f241ac	nop
 59487	005dac	pattern16	16
 59522	006fef	pattern16	16
+59530	f26ba6	ihconst
+59531	f26bb5	ihconst
 59535	f2652c	nop
 59537	0064ed	pattern16	16
 59570	f275ef	nop
@@ -9106,6 +12707,8 @@ k	key24	plaintext	bits
 59753	f2dfed	sub_gr1
 59754	f2de6c	asgeu64
 59755	f2de8c	add_lr1
+59763	f2dacc	ihconst
+59764	f2da92	ihconst
 59768	f2d76f	nop
 59779	00ed4c	pattern16	16
 59785	00eea8	pattern16	16
@@ -9139,6 +12742,8 @@ k	key24	plaintext	bits
 59877	f282e8	jmpi_lr0
 59878	f29d06	asleu65
 59879	009c75	pattern16	16
+59882	f29e6f	ihconst
+59883	f29e0c	ihconst
 59885	00992d	pattern16	16
 59898	0097ec	pattern16	16
 59904	f29000	nop
@@ -9160,10 +12765,14 @@ k	key24	plaintext	bits
 59971	f2b34c	sub_gr1
 59972	f2b3ef	asgeu64
 59973	f2b3e8	add_lr1
+59981	8d4e2d	ihconst
+59982	8d494c	ihconst
 59986	8d4b66	nop
 59987	004bb5	pattern16	16
 59989	004a08	pattern16	16
 59991	0045ec	pattern16	16
+60001	8d41e8	ihconst
+60002	8d40ef	ihconst
 60015	8d5e2c	nop
 60017	8d59ed	nop
 60027	8d548c	nop
@@ -9184,30 +12793,52 @@ k	key24	plaintext	bits
 60069	8d60e8	asleu65
 60070	006306	pattern16	16
 60071	006275	pattern16	16
+60071	8d6275	ihconst
+60072	8d7d40	ihconst
 60075	8d7c0c	jmpi_lr0
 60077	007f2d	pattern16	16
 60078	007e4c	pattern16	16
+60078	8d7e4c	ihconst
+60079	8d7eec	ihconst
 60081	007908	pattern16	16
 60082	8d7866	jmpi_lr0
 60084	007b60	pattern16	16
 60085	007b08	pattern16	16
+60085	8d7b08	ihconst
+60086	8d7bef	ihconst
 60089	8d75ed	jmpi_lr0
+60092	8d776f	ihconst
+60093	8d77a8	ihconst
 60095	007675	pattern16	16
 60096	8d7600	jmpi_lr0
 60099	00704c	pattern16	16
+60099	8d704c	ihconst
+60100	8d7012	ihconst
 60103	8d732c	jmpi_lr0
 60105	000d48	pattern16	16
+60106	8d0da6	ihconst
+60107	8d0db5	ihconst
 60109	000f48	pattern16	16
 60110	8d0f6f	jmpi_lr0
+60113	8d0eed	ihconst
+60114	8d0eac	ihconst
 60116	0009ef	pattern16	16
 60117	8d0868	jmpi_lr0
 60119	000b75	pattern16	16
+60120	8d0bc0	ihconst
+60121	8d0a28	ihconst
 60123	00058c	pattern16	16
 60124	8d0452	jmpi_lr0
+60127	8d076c	ihconst
+60128	8d07ef	ihconst
 60131	8d06b5	jmpi_lr0
+60134	8d00ef	ihconst
+60135	8d036c	ihconst
 60138	8d026c	jmpi_lr0
 60140	001d6f	pattern16	16
 60141	001d28	pattern16	16
+60141	8d1d28	ihconst
+60142	8d1dc6	ihconst
 60144	001c80	pattern16	16
 60145	8d1f68	jmpi_lr0
 60147	001ecc	pattern16	16
@@ -9217,28 +12848,48 @@ k	key24	plaintext	bits
 60154	001a26	pattern16	16
 60155	8d1ab5	jmpi_lr0
 60158	00146f	pattern16	16
+60158	8d146f	ihconst
+60159	8d14ac	ihconst
 60164	8d11ef	nop
 60166	8d1006	jmpi_lr0
+60169	8d12a8	ihconst
+60170	8d2d6f	ihconst
 60172	002dd2	pattern16	16
 60175	8d2fec	nop
 60177	8d2e08	jmpi_lr0
+60180	8d2860	ihconst
+60181	8d2808	ihconst
 60189	8d24a8	nop
 60190	002746	pattern16	16
 60191	8d2775	jmpi_lr0
 60192	8d2700	nop
 60194	0026ef	pattern16	16
 60195	00214c	pattern16	16
+60196	8d2112	ihconst
+60197	8d212d	ihconst
 60198	00218c	pattern16	16
+60199	8d202c	ihconst
+60200	8d236f	ihconst
 60202	8d22a6	asgeu64
 60207	8d3c2c	nop
+60209	8d3fed	ihconst
+60210	8d3fac	ihconst
 60220	003552	pattern16	16
 60222	8d35cc	add_gr1
 60223	8d346c	nop
 60224	8d34ef	jmpi_lr0
 60225	8d3488	asleu65
 60226	0037e6	pattern16	16
+60229	8d3688	ihconst
+60230	8d31ef	ihconst
 60231	00306c	pattern16	16
+60232	8d3032	ihconst
+60233	8d30ed	ihconst
 60234	00336c	pattern16	16
+60236	8d326f	ihconst
+60237	8d3228	ihconst
+60239	8dcd75	ihconst
+60240	8dcd80	ihconst
 60241	00cc68	pattern16	16
 60242	8dccef	asgeu64
 60244	00cf92	pattern16	16
@@ -9256,8 +12907,18 @@ k	key24	plaintext	bits
 60259	00c64c	pattern16	16
 60260	8dc6ef	sub_gr1
 60261	8dc6e8	asgeu64
+60262	8dc106	ihconst
+60263	8dc075	ihconst
 60269	8ddd2d	nop
 60270	00dc4c	pattern16	16
+60272	8ddcef	ihconst
+60273	8ddf08	ihconst
+60275	8ddeb5	ihconst
+60276	8dd960	ihconst
+60278	8dd9ef	ihconst
+60279	8dd8ec	ihconst
+60281	8ddbed	ihconst
+60283	8dda0c	ihconst
 60287	8dd475	add_gr1
 60288	8dd400	nop
 60289	8dd4e8	jmpi_lr0
@@ -9265,9 +12926,13 @@ k	key24	plaintext	bits
 60291	00d64c	pattern16	16
 60292	8dd612	sub_gr1
 60293	8dd62d	asgeu64
+60299	8dd3b5	ihconst
+60300	8dd2a0	ihconst
 60301	00ed48	pattern16	16
 60306	8decac	nop
 60307	00efcc	pattern16	16
+60308	8defef	ihconst
+60309	8dee68	ihconst
 60310	00ee86	pattern16	16
 60311	8de975	add_gr1
 60313	8de828	jmpi_lr0
@@ -9278,13 +12943,27 @@ k	key24	plaintext	bits
 60325	8de788	add_gr1
 60327	8de16c	jmpi_lr0
 60328	8de132	asleu65
+60329	8de1ed	ihconst
+60330	8de06c	ihconst
 60331	00e08c	pattern16	16
 60333	00e328	pattern16	16
 60336	8de280	nop
+60337	8dfd68	ihconst
+60338	8dfdef	ihconst
+60340	8dfc92	ihconst
+60341	8dff2d	ihconst
+60344	8df96f	ihconst
+60345	8df9c8	ihconst
 60346	00f826	pattern16	16
+60348	8dfb20	ihconst
+60349	8dfbc8	ihconst
+60351	8dfaac	ihconst
+60352	8df572	ihconst
 60360	00f040	pattern16	16
 60362	00f36f	pattern16	16
 60363	8df30c	nop
+60368	8d8def	ihconst
+60369	8d8c08	ihconst
 60377	0088ed	pattern16	16
 60382	8d8546	add_gr1
 60383	8d8575	nop
@@ -9297,9 +12976,13 @@ k	key24	plaintext	bits
 60400	8d82f2	add_gr1
 60402	8d9dac	jmpi_lr0
 60403	8d9ccc	asleu65
+60408	8d9ec0	ihconst
+60409	8d9928	ihconst
 60410	00986f	pattern16	16
 60411	8d988c	jmpi_lr0
 60412	009b52	pattern16	16
+60414	8d9bcc	ihconst
+60415	8d9a6c	ihconst
 60416	009aef	pattern16	16
 60417	009a88	pattern16	16
 60419	8d95b5	jmpi_lr0
@@ -9338,7 +13021,15 @@ k	key24	plaintext	bits
 60522	8c466c	add_gr1
 60524	8c416f	jmpi_lr0
 60525	8c4128	asleu65
+60532	8c4292	ihconst
+60533	8c5d2d	ihconst
+60538	8c5e26	ihconst
+60539	8c5eb5	ihconst
 60548	0055ef	pattern16	16
+60551	8c5775	ihconst
+60552	8c5640	ihconst
+60562	8c6d66	ihconst
+60563	8c6db5	ihconst
 60564	006c60	pattern16	16
 60566	8c6cef	add_gr1
 60567	8c6fec	nop
@@ -9349,6 +13040,8 @@ k	key24	plaintext	bits
 60574	8c6b46	nop
 60575	8c6b75	jmpi_lr0
 60576	8c6b00	asleu65
+60577	8c6be8	ihconst
+60579	8c654c	ihconst
 60581	8c652d	sub_gr1
 60582	8c658c	asgeu64
 60583	8c642c	add_lr1
@@ -9389,20 +13082,34 @@ k	key24	plaintext	bits
 60667	8c1e0c	nop
 60668	8c196f	jmpi_lr0
 60669	8c19a8	asleu65
+60676	8c1a12	ihconst
+60677	8c1a2d	ihconst
 60679	8c152c	jmpi_lr0
 60680	00146f	pattern16	16
+60685	8c1148	ihconst
+60686	8c116f	ihconst
 60688	8c11f2	jmpi_lr0
+60694	8c1286	ihconst
+60695	8c2d75	ihconst
 60697	8c2c28	jmpi_lr0
 60698	002f6f	pattern16	16
 60699	002f8c	pattern16	16
+60703	8c296c	ihconst
+60704	8c29ef	ihconst
 60706	8c28e6	jmpi_lr0
 60707	0028b5	pattern16	16
 60708	002be0	pattern16	16
+60712	8c2532	ihconst
+60713	8c25ed	ihconst
 60715	8c248c	jmpi_lr0
 60716	00276f	pattern16	16
 60717	002728	pattern16	16
 60719	002675	pattern16	16
+60721	8c2168	ihconst
+60722	8c21ef	ihconst
 60724	8c2092	jmpi_lr0
+60730	8c3c26	ihconst
+60731	8c3cb5	ihconst
 60733	8c3fc8	jmpi_lr0
 60734	003e6f	pattern16	16
 60740	003bef	pattern16	16
@@ -9462,6 +13169,10 @@ k	key24	plaintext	bits
 61125	8f7fe8	jmpi_lr0
 61126	8f7e06	asleu65
 61136	0075ef	pattern16	16
+61138	8f7766	ihconst
+61139	8f77b5	ihconst
+61142	8f76ef	ihconst
+61143	8f71ec	ihconst
 61145	0070ed	pattern16	16
 61153	8f0de8	nop
 61154	000cef	pattern16	16
@@ -9488,6 +13199,8 @@ k	key24	plaintext	bits
 61234	8f2466	asleu65
 61240	0026b2	pattern16	16
 61253	003c2d	pattern16	16
+61262	8f3b6f	ihconst
+61264	8f3bf2	ihconst
 61266	003aac	pattern16	16
 61267	0035cc	pattern16	16
 61268	0035ef	pattern16	16
@@ -9534,23 +13247,37 @@ k	key24	plaintext	bits
 61444	8f8212	asleu65
 61457	8f98ed	sub_gr1
 61458	8f98ac	asgeu64
+61469	8f962d	ihconst
+61471	8f916c	ihconst
+61474	8f90e6	ihconst
+61475	8f90b5	ihconst
 61479	00ad6c	pattern16	16
 61481	00aded	pattern16	16
 61491	00a8cc	pattern16	16
 61503	00a6ac	pattern16	16
+61506	8fa02c	ihconst
+61508	8fa3ef	ihconst
 61510	00a206	pattern16	16
+61516	8fbfd2	ihconst
+61519	8fb9ec	ihconst
 61524	00ba60	pattern16	16
 61527	00b5ec	pattern16	16
 61529	00b4ed	pattern16	16
 61532	00b66f	pattern16	16
 61536	00b100	pattern16	16
+61539	8fb34c	ihconst
+61541	8fb32d	ihconst
 61543	00b22c	pattern16	16
+61544	8e4d6f	ihconst
+61545	8e4c48	ihconst
 61552	8e4ef2	add_gr1
 61553	8e49ed	nop
 61554	8e49ac	jmpi_lr0
 61555	8e48cc	asleu65
 61557	8e4b68	sub_gr1
 61558	8e4b86	asgeu64
+61570	8e41e6	ihconst
+61571	8e41b5	ihconst
 61575	00426c	pattern16	16
 61578	005d6c	pattern16	16
 61588	005992	pattern16	16
@@ -9560,7 +13287,13 @@ k	key24	plaintext	bits
 61596	005420	pattern16	16
 61601	8e56ed	nop
 61602	00512c	pattern16	16
+61611	8e6c0c	ihconst
+61612	8e6cd2	ihconst
 61613	006f2d	pattern16	16
+61615	8e6eec	ihconst
+61616	8e6eef	ihconst
+61623	8e6aec	ihconst
+61624	8e6ab2	ihconst
 61625	0065ed	pattern16	16
 61628	00676f	pattern16	16
 61630	006646	pattern16	16
@@ -9573,6 +13306,8 @@ k	key24	plaintext	bits
 61640	8e626f	add_gr1
 61642	8e7da6	jmpi_lr0
 61643	8e7db5	asleu65
+61644	8e7ca0	ihconst
+61646	8e7f6f	ihconst
 61648	8e7ff2	sub_gr1
 61649	8e7eed	asgeu64
 61650	8e7eac	add_lr1
@@ -9587,7 +13322,11 @@ k	key24	plaintext	bits
 61687	0008ac	pattern16	16
 61688	000b6f	pattern16	16
 61695	0004ac	pattern16	16
+61698	8e062c	ihconst
+61699	8e014c	ihconst
 61701	0001e8	pattern16	16
+61701	8e01e8	ihconst
+61702	8e0006	ihconst
 61705	0002a8	pattern16	16
 61716	001860	pattern16	16
 61717	001808	pattern16	16
@@ -9603,9 +13342,13 @@ k	key24	plaintext	bits
 61794	00372c	pattern16	16
 61795	8e364c	nop
 61806	00cc4c	pattern16	16
+61810	8ece66	ihconst
+61811	8eceb5	ihconst
 61813	00c908	pattern16	16
 61815	00c8ec	pattern16	16
 61818	00cbec	pattern16	16
+61824	8ec400	ihconst
+61825	8ec4e8	ihconst
 61852	00da52	pattern16	16
 61859	00d4b5	pattern16	16
 61862	00d6ef	pattern16	16
@@ -9615,6 +13358,8 @@ k	key24	plaintext	bits
 61894	8ee606	jmpi_lr0
 61895	8ee175	asleu65
 61906	00ff66	pattern16	16
+61907	8effb5	ihconst
+61908	8efe60	ihconst
 61915	8efb0c	nop
 61928	8ef16f	jmpi_lr0
 61929	8ef048	nop
@@ -9622,6 +13367,8 @@ k	key24	plaintext	bits
 61934	00f26f	pattern16	16
 61943	008e75	pattern16	16
 61947	00888c	pattern16	16
+61953	8e8a88	ihconst
+61954	8e85e6	ihconst
 61955	8e85b5	jmpi_lr0
 61956	0084e0	pattern16	16
 61958	8e87ef	jmpi_lr0
@@ -9629,7 +13376,9 @@ k	key24	plaintext	bits
 61960	008632	pattern16	16
 61968	008380	pattern16	16
 61970	8e82ef	jmpi_lr0
+61977	8e9ec8	ihconst
 61978	8e9926	jmpi_lr0
+61979	8e99b5	ihconst
 61981	0098c8	pattern16	16
 61986	8e952c	jmpi_lr0
 61992	009140	pattern16	16
@@ -9647,10 +13396,14 @@ k	key24	plaintext	bits
 62068	8eb292	jmpi_lr0
 62072	894f6f	jmpi_lr0
 62074	004e26	pattern16	16
+62078	89486f	ihconst
+62079	8948ac	ihconst
 62081	894bed	jmpi_lr0
 62084	8945ef	sub_gr1
 62085	8945e8	asgeu64
 62086	894406	add_lr1
+62094	89434c	ihconst
+62095	8943ec	ihconst
 62097	004208	pattern16	16
 62098	005d66	pattern16	16
 62101	005c08	pattern16	16
@@ -9661,4 +13414,6 @@ k	key24	plaintext	bits
 62117	89552d	jmpi_lr0
 62118	89558c	asleu65
 62120	00576f	pattern16	16
+62129	8953ed	ihconst
+62130	8953ac	ihconst
 62133	006d68	pattern16	16

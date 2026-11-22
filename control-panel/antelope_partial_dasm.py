@@ -12,12 +12,18 @@ print as '?':
     jump / call targets   unknown (their displacement's high byte is in RC);
                           shown as '?' with the known low displacement byte
 
-Words whose whole plaintext is known (the idiom samples in mask_samples.tsv:
-nop, jmpi lr0, the spill/fill asserts, sub/add gr1/lr1 frame words) are
-decoded in full.  Function labels come from the ACEF symbol table
-(symbols.txt, 768 .text entries), which is not masked.
+Words whose whole plaintext is known (the samples in mask_samples.tsv: nop,
+jmpi lr0, the spill/fill asserts, sub/add gr1/lr1 frame words, and the
+relocated const/consth words) are decoded in full.  Function labels come from
+the ACEF symbol table (symbols.txt, 768 .text entries), which is not masked.
 
-Usage:  antelope_partial_dasm.py > firmware/disasm/text.partial.asm
+Given the ACEF file, each relocated const/consth also gets its target as a
+comment ('-> .text $15808', '-> .bss+$0004').  The symbol a relocation names
+is the entry AFTER its symbol index (the index points at a (-3, 0) entry in
+front of the real one; checked on the dispatcher's table, whose const names
+1135 and whose address .lit $D60 + $80 is entry 1136).
+
+Usage:  antelope_partial_dasm.py [ACEF_100.bin] > firmware/disasm/text.partial.asm
 """
 import os, sys, collections
 import unmask_antelope_low as u
@@ -78,6 +84,29 @@ def partial(w, n, pc):
     return mn, '?, %s, %s' % (RA, RB)
 
 
+SECNAME = {1: 'Code', 2: '.text', 3: '.lit', 4: '.data', 5: 'Apple', 6: '.data1', 7: '.bss'}
+
+
+def reloc_targets(path):
+    """word offset -> 'section+addend' for the const/consth relocations."""
+    import apply_reloc as a
+    d, K, sp, ns, secs = a.load(path)
+    sym, _, _ = a.make_resolver(d, sp, ns, secs)
+    t = [s for s in secs if s['name'] == '.text'][0]
+    R = a.get_relocs(d, t)
+    ihc = {va - t['vaddr']: si for va, si, ty in R if ty == 28}
+    out = {}
+    for va, si, ty in R:
+        if ty in (26, 27):
+            n = si + 1 if sym(si)[0] == -3 else si
+            sc, v = sym(n)
+            if sc == 0:                         # undefined: an external symbol
+                out[va - t['vaddr']] = ('extern#%d' % n, 0, ty)
+            else:
+                out[va - t['vaddr']] = (SECNAME.get(sc, str(sc)), v, ty)
+    return out, ihc
+
+
 def main():
     W = u.words(os.path.join(ANT, 'text.bin'))
     U, known = u.unmask_best(W)
@@ -88,6 +117,9 @@ def main():
             plain[k] = FULL[kind[k]]
         elif kind[k] in FRAME:
             plain[k] = FRAME[kind[k]] | (U[k] & 0xFF)
+        else:
+            plain[k] = W[k] ^ S[k]
+    rel, ihc = reloc_targets(sys.argv[1]) if len(sys.argv) > 1 else ({}, {})
     syms = set()
     for ln in open(os.path.join(ANT, 'symbols.txt')):
         p = ln.split()
@@ -113,6 +145,17 @@ def main():
                    '%02x??%04x' % (w >> 24, w & 0x7FFF)
         mix[mn] += 1
         ann = '   ; [delay slot]' if delay else ''
+        if pc in rel:
+            sec, v, ty = rel[pc]
+            if ty == 26:
+                ann += '   ; lo of %s' % sec + ('+$%x' % v if v else '')
+            else:
+                add = ihc.get(pc)
+                tgt = v + (add or 0)
+                ann += '   ; -> %s $%05x' % (sec, tgt) if sec == '.text' else \
+                       '   ; -> %s+$%04x' % (sec, tgt)
+                if sec == '.text' and tgt in syms:
+                    ann += ' (sub_%05x)' % tgt
         out.append('  %05x:  %s  %-8s %s%s' % (pc, hexs, mn, ops, ann))
         delay = mn in BR
     head = [
@@ -124,8 +167,11 @@ def main():
         '*  as "?": RC (the destination of ALU ops and loads), the high byte',
         '*  of every 16-bit immediate, and so every jump/call target.  RA is',
         '*  printed as "?rN" (gr or lr N) where its top bit is not known.',
-        '*  Words whose full plaintext is known (frame and padding idioms)',
-        '*  are decoded completely.  The hex column shows the unmasked word',
+        '*  Words whose full plaintext is known (frame and padding idioms,',
+        '*  relocated const/consth) are decoded completely.  A relocated',
+        '*  const/consth pair is commented with its target ("-> .text $15808",',
+        '*  "-> .bss+$0004"; "extern#N" is an undefined symbol, N its index',
+        '*  in the symbol table).  The hex column shows the unmasked word',
         '*  with the masked byte as "??".  Labels sub_XXXXX are the 768',
         '*  .text entries of the (unmasked) ACEF symbol table.',
         '*',

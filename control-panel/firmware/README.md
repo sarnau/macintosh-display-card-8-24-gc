@@ -14,7 +14,7 @@ and the DRVR) and what could be recovered from it.
 | `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
 | `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
 | `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only, `.lit` has its own key): bits 0-14 of every word, bit 15 for 96% (RA complete), bits 16-17 for some; bits 18-23 (most of RC, high immediate byte) still masked (the key is 24 bits); `disasm/text.asm` is *not* real code (opcode byte only) |
+| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only, `.lit` has its own key): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 19-23 (most of RC, high immediate byte) still masked (the key is 24 bits) except at the 3,755 relocated `const`/`consth` words, whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
 Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
@@ -185,6 +185,9 @@ delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
 * `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
   known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
   plain; RC, the high immediate byte and so all branch targets print as `?`.
+  Run with `ACEF_100.bin` as argument, it comments every relocated
+  `const`/`consth` pair with its target (`-> .text $15808 (sub_15808)`), so
+  `calli` targets and global data addresses are exact.
   This is the first readable view of the accelerator code.
 
 ## COFF relocations — reverse-engineered and applied

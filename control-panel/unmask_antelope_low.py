@@ -3,36 +3,42 @@
 
 Antelope's key is 24 bits (unlike Hand's 23).  Only its low bits are known.
 Each level below is linear above a table indexed by k mod P, and is exact on
-all 4,620 samples in firmware/ACEF_100_Antelope/mask_samples.tsv (plus
-held-out tests: 920/920, 851/851, 397/397):
+all samples in firmware/ACEF_100_Antelope/mask_samples.tsv (plus
+held-out tests: 920/920, 851/851, 397/397).  The samples are the idiom words
+(4,620), 16-bit 'pattern16' words, and 'ihconst' words: const/consth pairs
+whose addend the relocations give (antelope_reloc_samples.py), which add
+bits 16-23 at 3,755 places.  The bit-18 level is checked by 328 sample pairs
+49,152 words apart.  Bits 19-23 change with periods longer than .text, so no
+table of this kind can predict them.
 
     bits 0-12   key mod 2^13 = J13[k mod  384] + $0400 * (k div  384)
     bits 0-14   key mod 2^15 = J15[k mod 1536] + $7000 * (k div 1536)
     bits 0-15   key mod 2^16 = J16[k mod 6144] + $4000 * (k div 6144)
     bits 0-16   key mod 2^17 = J17[k mod 12288] + $18000 * (k div 12288)
     bits 0-17   key mod 2^18 = J18[k mod 24576] + $10000 * (k div 24576)
+    bits 0-18   key mod 2^19 = J19[k mod 49152] + $60000 * (k div 49152)
 
 k = word index from the start of the section.  NOTE: .lit agrees with
 this key only in bits 0-1 (see HOST_CARD_PROTOCOL.md, "the command
 dispatcher"); lit.partial.bin is not valid above bit 1.  The tables are rebuilt from the samples file: full 24-bit
 samples, plus 16-bit 'pattern16' samples (see HOST_CARD_PROTOCOL.md) that
-feed only the levels up to bit 15.  J13 and J15 are complete, J16 covers 96%,
-J17 32% and J18 18% of their classes, so a word gets the deeper bits only
-where its class holds a sample.  Bits 18-23 stay masked; bits 24-31 (opcode)
-were never masked.
+feed only the levels up to bit 15.  J13 and J15 are complete, J16 covers 98%,
+J17 52%, J18 30% and J19 16% of their classes, so a word gets the deeper bits
+only where its class holds a sample.  Bits 19-23 stay masked except at sample
+words; bits 24-31 (opcode) were never masked.
 
 What that means for an Am29000 word (op | RC | RA | RB/I):
     bits  0- 7  RB / low immediate byte      -> plain
     bits  8-12  RA's low 5 bits              -> plain
     bits 13-14  RA bits 5-6                  -> plain
-    bit  15     RA bit 7 (local vs global)   -> plain for ~96% of words
-    bits 16-17  RC's low 2 bits              -> plain for some words
-    bits 18-23  rest of RC / high immediate  -> masked
+    bit  15     RA bit 7 (local vs global)   -> plain for ~98% of words
+    bits 16-18  RC's low 3 bits              -> plain for some words
+    bits 19-23  rest of RC / high immediate  -> masked
 
 Usage:
     unmask_antelope_low.py IN.bin OUT.bin   # unmask as many low bits as known
         also writes OUT.bin.known: one byte per word = number of plain low
-        bits in that word of OUT.bin (13 to 18)
+        bits in that word of OUT.bin (15 to 19)
     unmask_antelope_low.py --check          # the validation checks
 """
 import struct, sys, os, collections
@@ -41,7 +47,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ANT = os.path.join(HERE, 'firmware', 'ACEF_100_Antelope')
 P, D, MASK = 384, 1024, 0x1FFF                      # the complete 13-bit level
 LEVELS = [(384, 0x0400, 13), (1536, 0x7000, 15), (6144, 0x4000, 16),
-          (12288, 0x18000, 17), (24576, 0x10000, 18)]
+          (12288, 0x18000, 17), (24576, 0x10000, 18), (49152, 0x60000, 19)]
 
 
 NBITS = {}      # k -> number of valid low key bits (24 unless the row says less)

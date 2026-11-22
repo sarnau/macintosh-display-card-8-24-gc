@@ -435,8 +435,9 @@ fields:
 * It loads the command number into `lr8` from `+$04` of a second record,
   which is also reached through a global.
 * About 37 case blocks end in `jmp` to a common exit. Most store the reply
-  (`lr12`) through `+$1C` again. Many call a handler with `calli`, whose
-  target is masked.
+  (`lr12`) through `+$1C` again. Many call a handler with `calli`. The
+  `calli` target is masked in the code, but the relocations name it (see
+  "Relocations name the targets" below).
 
 The table is `.lit` `$0DE0`. That is the module's `.lit` base `$0D60` plus
 the plain `$80`, and it is exactly one of the ten relocated `.lit` runs (61
@@ -453,8 +454,24 @@ The earlier "31 of 31 targets inside `.text`" check was weak: every decoded
 target was below `$5948`, including those in tables owned by modules near
 the end of `.text`. `lit.partial.bin` is therefore right only in bits 0-1.
 
+**Rechecked with the entries read as module offsets.** A relocated `.lit`
+word names the module's `.text` section symbol (for this table, symbol
+1129+1 = `.text $31DA8`). So it holds the target's *offset* from the module
+start, not the absolute address. A sharper test: a case block starts right
+after a `jmp`/`jmpi` and its delay slot. That holds for 19 of the 19 known
+dispatcher blocks, against about 4% of random code words. Decoded with the
+`.text` key, relocated `.lit` words land after a jump at chance, both as
+offsets (25 of 662) and as absolute addresses (45 of 662; 37 expected). A
+constant added to or XORed onto the `.text` key, searched over all of
+`.lit` and per run, scores no better than chance (best 41 of 653 over
+12,288 constants). So the conclusion stands: `.lit` has its own key.
+Its bits above the offset's width are visible directly, though. For
+offsets below `$4000`, raw bits 14-23 are key bits, and they track the
+`.text` key at the same index (for example at word 994: `.lit` raw
+`$026472`, `.text` key `$027EE6`).
+
 The constraint for a future solution is clear: every relocated `.lit` word
-is a code address inside its own module (module ranges come from the symbol
+is a code offset inside its own module (module ranges come from the symbol
 table's per-module `.text`/`.lit` entries). For the dispatcher table the
 targets are, in addition, among the about 37 case-block starts in
 `$31E20`-`$328C8`.
@@ -471,20 +488,37 @@ their arguments the same way:
 The packet sets the reply to 1 on entry, so a block that stores nothing
 answers "drawn". The blocks, by shape:
 
-| block(s) | what it does |
-|---|---|
-| `$32468` `$32498` `$324C8` `$324F8` `$32570` `$325A0` `$325D0` | `handler(p[0])`, no reply stored: 7 one-long commands |
-| `$32080` | `handler(p[0])`, then reply `lr12` (`$??00`, probably 0) |
-| `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command |
-| `$32408` | `handler(p[0..5])`: six longs |
-| `$322D4`-`$323D0` | `p[0]` is a bit mask. Bits 0, 1, 3, 2 and 4, tested in that order, each take two or three more longs and call their own handler. A zero result ends the chain. |
-| `$32600`, `$32688` | `handler(6, p[0])`, and the reply depends on the result |
-| `$3279C` | stores `p[0]` and `p[1]` in two globals; no call |
-| `$32234`, `$32284` | unless `[msp+8] = -1`, stores `[p[0]+4]` at offset `$..C0` of a global block (two near-identical cases) |
-| `$31F7C` | after a mask test on the command: `reply = handler(cmd, [rec+$0C], [rec+$10])`, a generic forwarder |
-| `$31FE8` | local call with `[rec+$0C]`, clears a global, then a local call with `($..64, 1, 0)` |
-| `$327D8`, `$327F8` | only store reply `lr12` (`$??00`): "not handled", so the host runs the original |
-| **`$32818`** | **default**. The `cpgtu` branch lands one word in, because its delay slot holds the block's first word. It calls a reporter with `($..68, cmd)`, so it is probably a "bad command" message. |
+The handler column comes from the relocations (next subsection), so it is
+exact. The pointer to `rec` is at `.bss+$0004` of this module, and the
+packet pointer is at `.bss+$0000`.
+
+| block(s) | what it does | handler |
+|---|---|---|
+| `$32468`, `$32498` | `handler(p[0])`, no reply stored | both `$15808` |
+| `$324C8` | the same | `$158F4` |
+| `$324F8`, `$32570`, `$325A0`, `$325D0` | the same | `$14034`, `$14168`, `$141F8`, `$14274` |
+| `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command | `$140CC` |
+| `$32080` | `handler(p[0])`, then reply `lr12` (`$??00`, probably 0) | `$39104` (system call `$??D5`) |
+| `$32408` | `handler(p[0..5])`: six longs | `$151C4` |
+| `$322D4`-`$323D0` | `p[0]` is a bit mask. Bits 0, 1, 3, 2 and 4, tested in that order, each take two or three more longs and call their own handler. A zero result ends the chain. | bit 0: `$14B64`; bits 1, 3, 2, 4: all `$14A80` |
+| `$32600`, `$32688` | `handler(6, p[0])`, and the reply depends on the result | both `$15D28` |
+| `$3279C` | stores `p[0]` and `p[1]` in two globals; no call | - |
+| `$32234`, `$32284` | unless `[msp+8] = -1`, stores `[p[0]+4]` at offset `$..C0` of a global block (two near-identical cases) | - |
+| `$31F7C` | after a mask test on the command: `reply = handler(cmd, [rec+$0C], [rec+$10])`, a generic forwarder | `$38F64` (system call `$??D2`) |
+| `$31FE8` | local calls with `[rec+$0C]`, clears a global, then a local call with `($..64, 1, 0)` | (local `call`) |
+| `$320A8`-`$32230` | blocks not split out above | `$161F8` (twice), `$15D84`, `$16BA0`, `$2D7B8`, `$13770` |
+| `$326BC`-`$32798` | blocks that go through system calls and an external data block (`extern#1772+$88`..`$90`) | `$39028` (`$??CD`), `$390B4` (`$??D3`), `$39018` (`$??CC`) |
+| `$327D8`, `$327F8` | only store reply `lr12` (`$??00`): "not handled", so the host runs the original | - |
+| **`$32818`** | **default**. The `cpgtu` branch lands one word in, because its delay slot holds the block's first word. It calls a reporter with `(.lit $0DC8, cmd)`, so it is probably a "bad command" message with its format string in `.lit`. | `$00140` |
+
+The `$38xxx`/`$39xxx` handlers are 16-byte system-call stubs:
+`const gr121, N` / `asneq trap, gr1, gr1` / `jmpi lr0` (the 29K OS
+convention: the service number goes in `gr121`). Only N's low byte is plain.
+35 such stubs exist. The others (`$13770`-`$16BA0`) all sit in one module,
+`$11AD4`-`$174FC`. Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
+`$14274`) are consecutive functions of `$50`-`$9C` bytes, each called by one
+one- or two-long block. That fits small state setters (pen, colours,
+patterns) better than drawing routines.
 
 On the host side (`QUICKDRAW_PATCHES.md`) the commands with one long are
 `$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37` `$3C`.
@@ -498,6 +532,52 @@ with `.text`'s key, `$32818` appears in none of the 61 entries, not even in
 bits 0-6 (2 hits, both chance). With the same key, raw `.lit` words 48
 apart agree in bits 2-6 at chance rate (10 of 402). So `.lit` does not
 repeat `.text`'s period-48 low table above bit 1 either.
+
+**Relocations name the targets.** `.text` loads every address with a
+`const`/`consth` pair. The pair carries three relocation records:
+
+* `R_ILOHALF` (type 26) on the `const`;
+* `R_IHIHALF` (27) on the `consth`;
+* `R_IHCONST` (28), whose symbol-index field is not a symbol: it is the low
+  16 bits of the addend.
+
+The instructions hold only the addend, and the loader adds the symbol. Two
+details make this usable:
+
+* **Symbol index + 1.** A relocation's symbol index points at a `(-3, 0)`
+  entry, and the real symbol is the next entry. Checked on the dispatcher
+  table: its `const` names 1135, and entry 1136 is `.lit $0D60`, which with
+  the addend `$80` gives the table at `$0DE0`. With this rule the 1,899
+  `consth` relocations resolve to `.text` (970, of which 969 are function entries in the
+  symbol table), `.data` (254), `.bss` (175), `.lit` (116) and undefined
+  externals (384).
+* **The plaintext is known.** The `const`'s plain low byte equals the
+  addend's low byte in 1,889 of 1,898 pairs. So `const` holds the addend's
+  low 16 bits and `consth` holds 0, because every addend is below `$10000`.
+
+The masked high byte of each of these words is RC, which is key bits 16-23.
+So each relocated word gives those bits exactly. Where the low key level
+knows bits 16-17, the derived bits agree in all 972 cases.
+`antelope_reloc_samples.py ACEF_100.bin` writes 3,755 such words to
+`mask_samples.tsv` as `ihconst` rows. It takes bit 15 from the pair's other
+word where only that one knows it: both words name the same register. The
+levels stay exact, and their coverage grows:
+
+| bits | table | classes covered |
+|---|---|---|
+| 0-15 | `J16[k mod 6144]` | 96% -> 98% |
+| 0-16 | `J17[k mod 12288]` | 32% -> 52% |
+| 0-17 | `J18[k mod 24576]` | 18% -> 30% |
+| 0-18 | **new:** `J19[k mod 49152] + $60000 * (k div 49152)` | 16% |
+
+The bit-18 level holds for all 328 sample pairs 49,152 words apart. Bits
+19-23 change with periods longer than `.text` (62,134 words), so no table of
+this kind predicts them. They need the generator's closed form, as for
+`Hand` (`SECOND_MASK.md` section 3). The new samples show bits 20-23
+behaving like Hand's high field: a slow 3-bit count, sign-extended
+(`$0x`, `$1x`, `$2x`, `$3x`, then `$Cx`, `$Dx`, `$Ex`, `$Fx` from word
+about 27,000). `text.partial.asm` now decodes these words in full and
+comments each pair with its target.
 
 **First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
 `.lit` words whose target range is under 8 KB (175 in small modules, plus
