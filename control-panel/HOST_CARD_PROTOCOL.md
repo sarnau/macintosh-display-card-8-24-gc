@@ -223,3 +223,29 @@ video driver's `SerialShiftOut`), writing three bytes from `lr3..lr5` to a port
 at `$460004C0`, region-table add (`$200147C`) and remove (`$2001604`), and
 register-dump helpers. Since Antelope does not call the services (section 6),
 none of this is exercised by the accelerator proper.
+
+### Antelope mask: the `.lit` jump/command tables (partial result)
+
+The relocation table lists ten runs of consecutive word relocations in `.lit`
+(50, 63, 38, 61, 104, 40, 27, 177, 61, 41 words: switch tables and, among them,
+the card's command table). All of them point at one placeholder symbol, so the
+targets are the *masked* word contents. Their plaintext is a 4-aligned `.text`
+offset, which predicts that the key's two low bits equal the word's. Checked
+against the 48-entry low-bit table `C48` recovered from `.text`
+(`mask_samples.tsv`), indexing the table by the word's position in `.lit`:
+
+* **all 700-odd words of all ten runs agree on bits 0-1** (50/50, 63/63, 38/38,
+  61/61, 104/104, 40/40, 27/27, 177/177, 61/61, 41/41), against a 1-in-4 chance
+  each. So `.lit` and `.text` share one generator (per ACEF, indexed by the word
+  index within each section), and `.lit`'s runs really are tables of aligned
+  code offsets.
+* The words' high bits cluster in short stretches (for example `0x34xxx` for 28
+  entries, then `0x37`, `0x30`, `0x31`, `0x33`), i.e. the entries are grouped by
+  target region but the mixture of key ramp and target addresses could not be
+  separated without the key's high-bit structure, so no command -> function
+  mapping was recovered.
+
+So the command table cannot be read yet, but the two data points that matter for
+a future solution are now fixed: the generator is shared across Antelope's
+sections, and about 700 further words carry known constraints (bits 0-1, and
+bits 18-22 zero when the target is below `$3CAD8`).
