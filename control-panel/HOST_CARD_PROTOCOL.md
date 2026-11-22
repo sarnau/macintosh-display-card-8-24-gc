@@ -265,7 +265,8 @@ neither from data the fit used:
   281 of 293 cases, with every N a multiple of 8 (frame sizes 24, 16, 32, 48,
   56, 40, 64, 8, ...).
 * **`.lit` switch tables** (same generator, indexed by the word's position in
-  `.lit`). All 662 relocated words decode 4-aligned. Within each run the
+  `.lit`). **Withdrawn as a check of bits 2-12**; see "the command dispatcher"
+  below: `.lit` has its own key above bit 1. All 662 relocated words decode 4-aligned. Within each run the
   targets (mod 8 KB) cluster, e.g. `0858 0878 08f8 08c8 0908 097c ...`, and
   some cases repeat a target exactly (`1378 1378`, `0128 0128`). That is the
   shape of compiled switch tables, which random bits would not give. The hit
@@ -407,7 +408,63 @@ Instruction mix:
 * `jmpi` 997;
 * 608 `.word` (invalid opcodes: data embedded in `.text`).
 
+### Antelope: the command dispatcher (`sub_31e20`)
+
+The partial listing finds the function that runs the host's QuickDraw
+commands. There are about 65 switch statements: a `cpgtu` bound check, then
+`sll 2`, `const`/`consth` of a table address, `load` and `jmpi`. Their bounds
+are plain, because they are low immediates. All but one are 4 to 30 cases. One
+is 61 cases, at `$32850`:
+
+    cpgtu  ?, lr8, $3c        ; command > $3C -> default
+    sll    ?, gr96, 2
+    const  gr122, $??80 / consth gr122   ; table (reloc. symbol 1135)
+    add    ?, gr122, gr96
+    load   ?, ?, gr96, gr122
+    jmpi   gr96
+
+`$3C` is the largest command the host sends (`GA_PmBackColor`). The function
+is `sub_31e20` (`$31E20`-`$328C8`), in the module whose `.text` starts at
+`$31DA8` and whose `.lit` starts at `$0D60`. What it does, from the plain
+fields:
+
+* It loads a packet pointer from a global and tests packet `+$14`. The host
+  writes `$FFFFFFFF` there when it posts a request (`gc24.s` `$604A`).
+* It stores 1 in packet `+$1C`. The host reads its return code from
+  `+$1C`: 1 = drawn, 2 = drawn but run the original too.
+* It loads the command number into `lr8` from `+$04` of a second record,
+  which is also reached through a global.
+* About 37 case blocks end in `jmp` to a common exit. Most store the reply
+  (`lr12`) through `+$1C` again. Many call a handler with `calli`, whose
+  target is masked.
+
+The table is `.lit` `$0DE0`. That is the module's `.lit` base `$0D60` plus
+the plain `$80`, and it is exactly one of the ten relocated `.lit` runs (61
+words, `$0DE0`-`$0ED0`). So command -> case block is fixed by 61 words. They
+are still masked, and the next point is why they cannot be read yet.
+
+**`.lit` does not use the `.text` key (correction).** Decoded with the
+`.text` key at the same word index, the 61 entries hit the dispatcher's case
+blocks once in 61 (chance is about 3). Across all ten runs, 175 relocated words
+sit in modules smaller than 8 KB. Decoded the same way, 109 fall inside their
+module's code range mod 8 KB, against 123 expected by chance. So only
+bits 0-1 of the `.text` key (700 of 700 aligned) are shown to hold for `.lit`.
+The earlier "31 of 31 targets inside `.text`" check was weak: every decoded
+target was below `$5948`, including those in tables owned by modules near
+the end of `.text`. `lit.partial.bin` is therefore right only in bits 0-1.
+
+The constraint for a future solution is clear: every relocated `.lit` word
+is a code address inside its own module (module ranges come from the symbol
+table's per-module `.text`/`.lit` entries). For the dispatcher table the
+targets are, in addition, among the about 37 case-block starts in
+`$31E20`-`$328C8`.
+
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
+
+**Withdrawn.** The first bullet below is wrong; see "the command dispatcher"
+below. The 31 decoded targets fall inside `.text` only because they are all
+small (below `$5948`), including those in tables owned by modules near the
+end of `.text`. Only bits 0-1 of the `.text` key are shown to hold for `.lit`.
 
 * **`.lit` uses the full `.text` key at the same word index**, all 23 bits, not
   just the low ones. 31 relocated `.lit` words have a `.text` sample at the same

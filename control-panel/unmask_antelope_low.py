@@ -12,8 +12,9 @@ held-out tests: 920/920, 851/851, 397/397):
     bits 0-16   key mod 2^17 = J17[k mod 12288] + $18000 * (k div 12288)
     bits 0-17   key mod 2^18 = J18[k mod 24576] + $10000 * (k div 24576)
 
-k = word index from the start of the section (.text and .lit share the
-generator).  The tables are rebuilt from the samples file: full 24-bit
+k = word index from the start of the section.  NOTE: .lit agrees with
+this key only in bits 0-1 (see HOST_CARD_PROTOCOL.md, "the command
+dispatcher"); lit.partial.bin is not valid above bit 1.  The tables are rebuilt from the samples file: full 24-bit
 samples, plus 16-bit 'pattern16' samples (see HOST_CARD_PROTOCOL.md) that
 feed only the levels up to bit 15.  J13 and J15 are complete, J16 covers 96%,
 J17 32% and J18 18% of their classes, so a word gets the deeper bits only
