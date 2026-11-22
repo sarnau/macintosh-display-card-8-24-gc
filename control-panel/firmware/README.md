@@ -182,6 +182,10 @@ delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
 * `disasm/text.asm`, `Code.asm`, `lit.asm`, `data.asm` -- Antelope, made from the
   **masked** bytes: only the opcode byte and the relocation annotations are
   meaningful. The 768 function entry addresses (from the symbol table) are real.
+* `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
+  known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
+  plain; RC, the high immediate byte and so all branch targets print as `?`.
+  This is the first readable view of the accelerator code.
 
 ## COFF relocations — reverse-engineered and applied
 

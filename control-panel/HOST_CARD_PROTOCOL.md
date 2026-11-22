@@ -374,6 +374,39 @@ Independent checks, on words that are not samples of any kind:
   (633), then `lr8`, `lr2`, `lr10`, `lr3`, `lr11`, `gr97`, `gr98`, `lr4`, ...:
   the return, temporary, argument and local registers compiled 29K code uses.
 
+### Antelope: partial disassembly
+
+`antelope_partial_dasm.py` writes `firmware/disasm/text.partial.asm`. Every
+`.text` word is decoded with what is plain:
+
+* opcode, RA (or `?rN` where its top bit is not known), RB and the low
+  immediate byte are shown;
+* RC (the destination of ALU ops), the high byte of 16-bit immediates and so
+  all jump and call targets print as `?`;
+* words whose whole plaintext is known (the frame and padding idioms) are
+  decoded in full;
+* labels are the 768 `.text` entries of the ACEF symbol table.
+
+On loads the destination is RA, so loads read completely apart from their
+control fields.
+
+The listing reads as real compiled 29K code. One example is `sub_00178`. It
+sets the funnel-shift count from an argument (`mtsr FC, lr5`), loads 16 words
+into `gr96..gr111` (`mtsrim CR,$0f` + `loadm`), runs them through a chain of
+15 `extract` instructions, and stores the result with `storem`. That is the
+inner loop of a bit-aligned block copy, the core of a CopyBits-style blit.
+
+Instruction mix:
+
+* `add` 14,953;
+* `load` 5,496 / `store` 2,722;
+* `const` 5,187 / `consth` 2,202;
+* `jmpt` 5,149;
+* `sll` 2,873, `srl` 1,409, `sra` 714;
+* `calli` 1,155 against `call` 555;
+* `jmpi` 997;
+* 608 `.word` (invalid opcodes: data embedded in `.text`).
+
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 
 * **`.lit` uses the full `.text` key at the same word index**, all 23 bits, not
