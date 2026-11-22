@@ -158,11 +158,14 @@ routine. In short, `Hand` is the Am29000 **runtime kernel** for the card:
   the host flags from `PublicIn+$18` into `gr64`, clears the interrupt and
   region tables and the video block, and starts the wait loop.
 
-What is still only roughly read: the exact `VidComm` command codes (`$2000C14`
-copies and re-initialises state depending on the command), the pager at
-`$2001D10`, the services behind vector 66, and the data structures at
-`$4C002810..$4C002E48`. The routine banners say "reading" where a role is
-inferred from the loads and compares and not confirmed against a caller.
+The video command service (`$2000C14`) is now read in detail: besides the
+clock-retiming pause, page configuration 1/2 converts the 2 MB video window
+between a linear and a 4-way word-interleaved layout in place, and the pager
+(`$2001D10`) replaces a randomly chosen entry of a 52-entry pool, relinks the
+hash chain, invalidates its TLB entries and bursts the new page in. Still only
+roughly read: the services behind vector 66 and the exact layout of the
+`$4C002810..$4C002E48` tables. The routine banners say "reading" where a role is
+inferred from loads and compares and not confirmed against a caller.
 
 ## Disassembly
 
@@ -318,5 +321,5 @@ info) — none is present in the shipped control-panel software.
 
 * The mask generator for `Antelope` (all of the accelerator code).
 * `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
-* In `Hand`: the `VidComm` page-configuration copies, the pager at `$2001D10`,
-  and which feature each host-flag bit switches.
+* In `Hand`: the services behind vector 66 and which feature each host-flag bit
+  switches.
