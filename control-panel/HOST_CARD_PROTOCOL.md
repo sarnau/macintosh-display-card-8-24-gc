@@ -229,19 +229,51 @@ With the corrected samples the generator has a clean structure:
   samples exactly:
   * through bit 10 with `P = 96` (`M mod 32 = $18`);
   * through bit 11 with `P = 192`;
-  * through bit 13 with `P = 384` (`M mod 64 = $18`).
+  * through bit **12** with `P = 384`, i.e.
+    `key mod 2^13 = J[k mod 384] + $400*(k div 384)` (`$400 = 384*$18 mod
+    2^13`). An exhaustive search over the block step confirms this. All 384
+    phases are covered. A fit on 3,000 random samples predicts the other 726
+    exactly. (An earlier note here said "through bit 13". That was one bit too
+    many: bit 13 has 378 conflicts at the best step.)
 
   Each extra level seems to double the table period, so the jitter term is
   itself a deeper counter (like `Hand`'s `ROW`/`COL` pair, but with more
-  levels). The step `M`'s higher bits and the jitter's growth beyond bit 13 are
-  not determined.
+  levels).
+* Bit 13 and up resist every simple extension tried:
+  * adding quadratic or cubic terms in `k div 384` (a Hensel lift finds none
+    exact at bit 13);
+  * a separable sum or XOR `A[k mod P] + B[k div P]` for P = 48..768;
+  * removing a carry out of the 13-bit field, with or without negating the
+    upper field (Hand-style), at any carry offset.
+
+  All leave 1,200-1,600 conflicts. Bit 13 therefore comes from a different
+  mechanism than bits 0-12.
 * A constant second difference (`R` quadratic in `k`) does not fit for any
   spacing of 48 to 480 words.
 
-What this buys: the low 13-14 bits of every key in `.text` can be predicted
-from a 384-entry table plus a slope. Most register fields sit in bits 0-15, so a
-partial unmask (bits 0-13 of each operand) is in reach. The top bits would still
-be missing. The tables are not yet extracted into a tool.
+**Partial unmask: `unmask_antelope_low.py`.** It rebuilds `J` from the
+samples file and XORs bits 0-12 of every word of a section. The outputs are
+`firmware/ACEF_100_Antelope/text.low13.bin` and `lit.low13.bin`. Bits 13-22
+stay masked. In an Am29000 word that leaves plain the RB field or low immediate
+byte, and the low 5 bits of RA. Still masked are RA's top 3 bits (local versus
+global), RC's low 7 bits, and the high immediate byte. Two independent checks,
+neither from data the fit used:
+
+* **Prologues.** The word before each `asgeu 64` decodes as `sub gr1,gr1,N` in
+  281 of 293 cases, with every N a multiple of 8 (frame sizes 24, 16, 32, 48,
+  56, 40, 64, 8, ...).
+* **`.lit` switch tables** (same generator, indexed by the word's position in
+  `.lit`). All 662 relocated words decode 4-aligned. Within each run the
+  targets (mod 8 KB) cluster, e.g. `0858 0878 08f8 08c8 0908 097c ...`, and
+  some cases repeat a target exactly (`1378 1378`, `0128 0128`). That is the
+  shape of compiled switch tables, which random bits would not give. The hit
+  rate on decoded `sub gr1,gr1,N` prologues is at chance (13% vs 13%), so the
+  runs point at case labels, not functions.
+
+Lead for the upper bits: within one switch table the targets mostly share their
+upper bits. So for consecutive `.lit` words `raw >> 13` is `key >> 13` XOR a
+nearly constant value, which would give dense, consecutive upper-bit key
+differences.
 
 ## 8. The kernel's service table (vector 66)
 

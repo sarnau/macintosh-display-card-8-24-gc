@@ -78,8 +78,12 @@ patched by the loader -- the 2,064 `aseq trap64,gr1,gr1` NOP words and 915
 bits at first was largely an artefact: the `asleu` samples had been computed
 from the wrong plaintext (`lr2` instead of `lr1`). With that fixed, every key
 bit `b` is an exact function of `k mod 48*2^(b-6)`, the signature of a
-T-function. A table-plus-slope model `J[k mod 384] + M*k` reproduces the
-samples exactly through bit 13. The top bits are still open (see
+T-function. A table-plus-slope model,
+`key mod 2^13 = J[k mod 384] + $400*(k div 384)`, reproduces bits 0-12 of
+every sample exactly and predicts held-out samples. `unmask_antelope_low.py`
+uses it for a partial unmask. On data it never saw, it decodes
+`sub gr1,gr1,N` prologues with frame sizes that are multiples of 8, and
+`.lit` switch tables with clustered targets. Bits 13-22 are still open (see
 `HOST_CARD_PROTOCOL.md` section 6, "third attempt").
 
 Lesson added: check each known-plaintext idiom against the code it is supposed
