@@ -459,6 +459,33 @@ table's per-module `.text`/`.lit` entries). For the dispatcher table the
 targets are, in addition, among the about 37 case-block starts in
 `$31E20`-`$328C8`.
 
+**First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
+`.lit` words whose target range is under 8 KB (175 in small modules, plus
+the 61 dispatcher entries, whose range is the dispatcher function). A
+decode "hits" when the target lands in its range, mod 8 KB. Chance is
+143 hits.
+
+* **Index shift** (`.lit` word k uses the `.text` key at k+δ): every
+  δ that keeps bits 0-1 aligned (multiples of 48, 64 distinct values mod
+  3072) scores 150-170, which is noise. Unaligned shifts do no better and
+  break the 662/662 alignment.
+* **Constant offset**, added or XORed onto the `.text` key: the best is
+  143-149 of 236. On the dispatcher table alone the best is 31 of 61
+  (chance about 20).
+* **Per 384-word block** with the plain `.text` key: block 0 scores 3 of 63
+  where 22 are expected. That is far *below* chance, so the `.text` key is
+  systematically wrong there and not merely noisy. Blocks 1 and 2 sit in
+  modules close to 8 KB, so they say little.
+* The symbol table's module ranges are not tight enough for some groups:
+  `.lit` words 74-125 never fit all together for any constant. So either
+  those tables belong to more than one module, or the range heuristic
+  needs the function-level ranges that the dispatcher test used.
+
+So `.lit`'s key shares bits 0-1 with `.text` (and the `asgeu`/`asleu`
+vector patching shows it is the same family), but bits 2-12 follow a
+different table. Recovering it needs known plaintext inside `.lit`, for
+example a switch whose case labels are all identifiable in `.text`.
+
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 
 **Withdrawn.** The first bullet below is wrong; see "the command dispatcher"
