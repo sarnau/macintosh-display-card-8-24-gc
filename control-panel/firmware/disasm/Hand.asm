@@ -1450,9 +1450,12 @@ L_20011b0:
   20011e4:  88000000  iret                             
 * ==================================================================
 *  VECTOR 66 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
-*  $B6+$D5 index the jump table at $4C002500 (probably the PrivNZ section,
-*  pointers to the stubs below); anything else returns gr96 = $FFFFFFD6, gr121 = 0.
+*  $B6+$D5 index the jump table at $4C002500, which is the PrivNZ section: its 33
+*  words ($B6..$D6) decode with PublicIn's keystream to pointers into this region
+*  ($20010FC..$2001B9C; 31 of 33 are valid 4-aligned Hand addresses, exact values
+*  uncertain by up to $7C); the rest of the table is uninitialised; anything else returns gr96 = $FFFFFFD6, gr121 = 0.
 *  Arguments in lr2/lr3, result in gr96.  Service stubs that follow:
+*    (stub roles below are from reading the code at each address)
 *    $2001224  wait for / clear the INTR2 status ($44000054 <- all-ones,
 *              poll $44000068, then clear)       $2001250  gr96 = [$4C00682C]
 *    $2001260  read/modify the word at $4C00643C (and mirror it to $46000000)

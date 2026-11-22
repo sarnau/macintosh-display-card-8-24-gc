@@ -202,3 +202,24 @@ rather than more fitting of samples, or a larger known-plaintext set such as the
   at an address `ReserveEngineRegion` chooses), so one hypothesis is that each
   generator is a function of the load region's address mapping; no test of it
   was possible without a way to obtain more plaintext.
+
+## 8. The kernel's service table (vector 66)
+
+`Hand`'s service dispatcher (`$20011E8`) takes the service number in `gr121`,
+subtracts `$B6` and jumps through the word table at `$4C002500` (up to `$D6`
+entries). `$4C002500` is exactly the **`PrivNZ`** section (`$84` bytes = 33
+words, services `$B6`..`$D6`); the rest of the range is uninitialised. The
+section's words use `PublicIn`'s keystream (the all-zero section's own contents)
+as their mask: unmasking with it gives 33 pointers `$0200xxxx`, **31 of which are
+valid 4-aligned addresses inside `Hand`** in the stub area `$20010FC..$2001B9C`
+(a chance rate of about 0.7% each); two entries (services `$BC`, `$C5`) come out
+invalid. The pointers are only reliable up to the key's low bits (a few look
+like the middle of a stub, e.g. services `$C1` and `$D2` -> `$20012E0` where
+`$20012AC` is the stub start), so the table gives the *set* and rough placement
+of the services, not exact entry points. Stubs recognisable from the code at those
+addresses: an `iret` no-op, "free memory" (`gr96 = heap end - break`), a 10-bit
+serial shift-out of `lr4` to `$440000A0` (the pixel-clock chip, same shape as the
+video driver's `SerialShiftOut`), writing three bytes from `lr3..lr5` to a port
+at `$460004C0`, region-table add (`$200147C`) and remove (`$2001604`), and
+register-dump helpers. Since Antelope does not call the services (section 6),
+none of this is exercised by the accelerator proper.
