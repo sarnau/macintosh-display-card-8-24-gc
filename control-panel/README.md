@@ -43,24 +43,40 @@ NuBus slot space, and firmware is written there with plain
 `BlockMove`/`move.l`, not shuttled through the separate command-queue
 mechanism `gc24` uses for ordinary QuickDraw commands at runtime.
 
-**What happens right after the load, traced in `DRVR.s`'s `LoadFirmware`:**
-two fundamental hardware-access primitives it uses everywhere
-(`MakeSuperslotAddr`, the NuBus super-slot address builder, and
-`PokeHardwareLong`, a `_SwapMMUMode`-bracketed aligned longword write —
-confirmed by decoding their bodies, not named speculatively) get used four
-times right after a successful `ACEFLoad`, writing into fixed offsets
-(`+$04`/`+$0C`/`+$18`/`+$40`) of the just-loaded image — a parameter/
-handshake header the Am29000 side must read once it starts running, not a
-discrete reset/interrupt trigger (none is issued). Only *after* those four
-writes does the driver set a pure software "ready" flag and return. Given
-the Am29000's own `Boot` code is already running continuously and reads a
-lot of state before branching (see `firmware/README.md`), the most
-consistent picture is that the coprocessor **polls** this header rather
-than being explicitly kicked off — but the polling code itself isn't
-present in this file to confirm directly, and one of the four written
-values (`+$0C`, built from the ACEF magic byte's low nibble as a slot
-number) isn't fully explained. See `DRVR.s`'s `LoadFirmware` header for
-the full field-by-field breakdown.
+**What happens around the load, traced in `DRVR.s`** (`MakeSuperslotAddr` is
+the NuBus super-slot address builder and `PokeHardwareLong` a
+`_SwapMMUMode`-bracketed aligned longword write — both confirmed by decoding
+their bodies). There are two loaders, not one:
+
+* **`Init29K` (`$23CC`, DoControl cs2)** brings the card up from scratch.
+  Only card types `$2C`/`$7E` (the GC) are touched. It writes 0 to hardware
+  register `$04000028`, pattern-tests the card's 128 KB SRAM, probes the DRAM
+  banks at `$0C000000`/`$0D000000` in 1 MB steps (top of RAM → unit `+$138`),
+  then runs `ACEFLoad` on the **Runtime** ACEF. `ACEFLoad` special-cases the
+  section named `PublicIn`: the out-parameter it returns (unit `+$130`) is
+  that section's host-visible address. `Init29K` then reads **image+$400**
+  and demands `$32100456` — and that value is exactly the first word of the
+  Runtime's **`PublicOu`** section (`PublicIn`+`$400`), so the "image" the
+  host pokes is the `PublicIn`/`PublicOu` pair at card `0x4C006400/0x4C006800`.
+  It writes `+$18` (feature flags), `+$00` (`$42005300`), `+$08` (top of
+  DRAM) and `+$14` (engine region), then reads the card's **mailbox address**
+  from `+$40C`, stores the host ack-word address at mailbox`+$0C` and the
+  `'s337'` signature at mailbox`+$00` to open it (cs51 later sends payloads
+  through it: payload at `+$08`, then `'s337'`).
+* **`LoadFirmware` (`$2926`, cs3)** loads the second ACEF (**Antelope**) with
+  the same `ACEFLoad`, then writes four longwords into the same header
+  (`+$18` flags, `+$0C` ACEFLoad's return value as a card address, `+$04` its
+  out-parameter, `+$40` the engine RAM region) and sets the software
+  "firmware loaded" bit. Which of those four is a kick-off is not shown by
+  the 68k side; no reset/interrupt is issued, so the Am29000 must poll.
+
+ACEFLoad's own message strings (now correctly decoded as data) confirm the
+ACEF layout: `Program '%s' version %08x date %d` (optional header `+$1C`
+name, `+$14` version, `+$18` date), the 32-text-section limit, "multiple
+.BSS not allowed", and the relocation range errors. `DRVR.s` documents the
+whole 1 KB-per-slot **unit record** (`BuildUnitRecords`, `$1E4A`) field by
+field. An earlier version of this README said `+$0C` was "built from the ACEF
+magic byte's low nibble"; that was a misreading.
 
 ## How the pieces cooperate
 
@@ -279,6 +295,14 @@ An earlier revision of this README called them private selectors of
 `.GraphAccel`'s own `DoControl` csCode map (InitAccel, LoadFirmware,
 Enable/DisableAccel, a mailbox-send to the Am29000, …) is documented at the
 cascade in `DRVR.s`, and `INIT_main.s`'s boot handshake is decoded against it.
+
+## Reproducing the inputs
+
+`../Macintosh Control Panel/824GC.rsrc` is the original resource fork.
+`python3 extract_resources.py "../Macintosh Control Panel/824GC.rsrc" OUT/`
+dumps `ACEF_100.bin`, `ACEF_1.bin`, `DRVR_-4048.bin`, the INITs and the cdev;
+`acef_unpack.py` then unpacks the ACEFs and `apply_reloc.py` applies the
+relocations (see `firmware/README.md`).
 
 ## Status / what's next
 

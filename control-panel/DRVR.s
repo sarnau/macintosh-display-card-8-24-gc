@@ -1076,8 +1076,9 @@ DoControl:
 * then PokeHardwareLong(A4+$144 + 8, csParam+2) -- the payload -- and only
 * THEN PokeHardwareLong(A4+$144, $73333337 = ASCII 's337') to commit it:
 * payload first, signature last, the standard mailbox-publish order.  A4+$144
-* is presumably the card-side mailbox address (Status cs16 reads a field at
-* that same offset); its exact target isn't traced here.
+* is the card's MAILBOX address, read back from image+$40C by Init29K ($23CC),
+* which also stored the ack-word address at mailbox+$0C and wrote the first
+* 's337' to open the mailbox (Status cs16 reads this same field).
   00ba6:  20 0c                move.l   a4, d0
   00ba8:  67 00 03 d2          beq.w    $f7c
   00bac:  20 3c 00 00 08 00    move.l   #$800, d0
@@ -1367,42 +1368,19 @@ DoControl:
   00f82:  4c ee 18 e0 ff d8    movem.l  -$28(a6), d5-d7/a3-a4
   00f88:  4e 5e                unlk     a6
   00f8a:  4e 74 00 08          rtd      #$8
-  00f8e:  47 41                dc.b     $47,$41  ; GA
-  00f90:  5f 44                subq.w   #$7, d4
-  00f92:  72 76                moveq    #$76, d1
-  00f94:  72 63                moveq    #$63, d1
-  00f96:  6f 6e                ble.b    $1006
-  00f98:  74 72                moveq    #$72, d2
-  00f9a:  6f 6c                ble.b    $1008
-  00f9c:  3a 20                move.w   -(a0), d5
-  00f9e:  49                   dc.b     $49  ; I
-  00f9f:  6e 69                bgt.b    $100a
-  00fa1:  74 32                moveq    #$32, d2
-  00fa3:  39 4b 20 65          move.w   a3, $2065(a4)
-  00fa7:  72 72                moveq    #$72, d1
-  00fa9:  6f 72                ble.b    $101d
-  00fab:  00 47 41 5f          ori.w    #$415f, d7
-  00faf:  44 52                neg.w    (a2)
-  00fb1:  56 52                addq.w   #$3, (a2)
-  00fb3:  63 6f                bls.b    $1024
-  00fb5:  6e 74                bgt.b    $102b
-  00fb7:  72 6f                moveq    #$6f, d1
-  00fb9:  6c 3a                bge.b    $ff5
-  00fbb:  20 6e 6f 20          movea.l  $6f20(a6), a0
-  00fbf:  41 43 45             dc.b     $41,$43,$45  ; ACE
-  00fc2:  46 20                not.b    -(a0)
-  00fc4:  67 69                beq.b    $102f
-  00fc6:  76 65                moveq    #$65, d3
-  00fc8:  6e 20                bgt.b    $fea
-  00fca:  66 6f                bne.b    $103b
-  00fcc:  72 20                moveq    #$20, d1
-  00fce:  69 6e                bvs.b    $103e
-  00fd0:  69 74                bvs.b    $1046
-  00fd2:  20 63                movea.l  -(a3), a0
-  00fd4:  61 6c                bsr.b    $1042
-  00fd6:  6c 00 4e 56          bge.w    $5e2e
-  00fda:  00 00 42 6e          ori.b    #$6e, d0
-  00fde:  00 10 4e 5e          ori.b    #$5e, (a0)
+* Two C strings (misdecoded as code before): the log messages DoControl
+* cs2 emits.  Followed by DoClose.
+* 'GA_Drvrcontrol: Init29K error' (C string, 30 bytes incl. NUL)
+  00f8e:  47 41 5f 44 72 76 72 63 6f 6e 74 72 6f 6c 3a 20 dc.b     $47,$41,$5f,$44,$72,$76,$72,$63,$6f,$6e,$74,$72,$6f,$6c,$3a,$20  ; GA_Drvrcontrol: 
+  00f9e:  49 6e 69 74 32 39 4b 20 65 72 72 6f 72 00 dc.b     $49,$6e,$69,$74,$32,$39,$4b,$20,$65,$72,$72,$6f,$72,$00  ; Init29K error.
+* 'GA_DRVRcontrol: no ACEF given for init call' (C string, 44 bytes incl. NUL)
+  00fac:  47 41 5f 44 52 56 52 63 6f 6e 74 72 6f 6c 3a 20 dc.b     $47,$41,$5f,$44,$52,$56,$52,$63,$6f,$6e,$74,$72,$6f,$6c,$3a,$20  ; GA_DRVRcontrol: 
+  00fbc:  6e 6f 20 41 43 45 46 20 67 69 76 65 6e 20 66 6f dc.b     $6e,$6f,$20,$41,$43,$45,$46,$20,$67,$69,$76,$65,$6e,$20,$66,$6f  ; no ACEF given fo
+  00fcc:  72 20 69 6e 69 74 20 63 61 6c 6c 00 dc.b     $72,$20,$69,$6e,$69,$74,$20,$63,$61,$6c,$6c,$00  ; r init call.
+DoClose:
+  00fd8:  4e 56 00 00          link.w   a6, #$0
+  00fdc:  42 6e 00 10          clr.w    $10(a6)
+  00fe0:  4e 5e                unlk     a6
   00fe2:  4e 74 00 08          rtd      #$8
 * ==================================================================
 * InstallPatches
@@ -2614,6 +2592,40 @@ ClassifyTrapNum:
   01e40:  4c ee 10 80 ff f8    movem.l  -$8(a6), d7/a4
   01e46:  4e 5e                unlk     a6
   01e48:  4e 75                rts      
+* BuildUnitRecords(firstSlot, globals): loops slot d7 = firstSlot..$0E.  For
+* each slot that has a recognised card it allocates a $600-byte locked handle
+* (NewHandle/MoveHHi/HNoPurge/HLock) = the UNIT RECORD that A4 = *handle points
+* at everywhere else in this driver.  Field map, established from every reader
+* and writer in this file (confidence noted where it is inferred):
+*    +$000 w  slot number              +$002 w  scratch (cs18 / Status $002)
+*    +$004 l  1, or 8 if globals+$254 (a 'big/24-bit mode' flag byte)
+*    +$008 l  STATE FLAGS (see the DoControl map): bit1 = firmware loaded,
+*             bit2 = cs5/cs6, bit5 = accelerator active, $400/$800 = cs20/21
+*    +$00C l  slot-space base + $8C00   +$010/+$014  globals-derived pointers
+*    +$0AC.. +$0C8  copied from globals+$26C/$268/$270 (client hook words)
+*    +$128 l  CONFIG word: starts $80000000; cs17/cs50 write it; bits $20 /
+*             $40 / $100 are tested by SetFeatureFlags ($2AD2)
+*    +$12C l  cs4 argument             +$130 l  BASE of the image ACEFLoad put
+*             on the card (host-visible; comm header lives here, see Init29K)
+*    +$134 l  start of the card-RAM region reserved for the engine (see $2B5E)
+*    +$138 l  LAST valid card-DRAM address found by Init29K's memory probe
+*             ($0C1FFFFF.. $0C3FFFFF or $0D3FFFFF/$0D4FFFFF/$0D7FFFFF)
+*    +$13C l  pointer to the ACK word the card reports into (cleared by cs51)
+*    +$140 l  the same address as handed to the card;  +$144 l MAILBOX address read
+*             back from the card at image+$40C (Init29K)
+*    +$148 l  Handle: cached copy of the ACEF given to cs2
+*    +$14C/+$150 l  (version, date) of the ACEF whose program name is 'Runtime'
+*    +$154/+$158 l  (version, date) of the other ACEF (see RecordAcefVersion)
+*             ($FF in either = two different values were seen)  [Status 17/18]
+*    +$15C w  zero      +$15E w  hardware-ready bits: BuildUnitRecords samples
+*             bit31 of card regs $0400004C/48/44 into bits 1/2/4
+*    +$160 w  slot copy                +$162 w  CARD TYPE ($2C or $7E = a GC)
+*    +$164 l  ProbeCard result (also copied to +$17C when it reports failure)
+*    +$168 l  FEATURE FLAGS built by SetFeatureFlags ($2AD2); passed to the card
+*             (written to image+$18).  Bit $800 = 'mailbox not enabled yet'.
+*    +$16C l  slot base ($F0000000 | slot<<24 | slot<<20)
+*    +$174 l  $53 (constant)           +$17C l  LAST ERROR long (Status 21)
+*    +$18E l  zero                     +$5F0 l  zero
   01e4a:  4e 56 ff 3c          link.w   a6, #$ff3c
   01e4e:  48 e7 1f 18          movem.l  d3-d7/a3-a4, -(a7)
   01e52:  28 2e 00 08          move.l   $8(a6), d4
@@ -2889,14 +2901,22 @@ ClassifyTrapNum:
   021c4:  4c ee 18 f8 ff 20    movem.l  -$e0(a6), d3-d7/a3-a4
   021ca:  4e 5e                unlk     a6
   021cc:  4e 75                rts      
-  021ce:  54 69 62 75          addq.w   #$2, $6275(a1)
-  021d2:  72 6f                moveq    #$6f, d1
-  021d4:  6e 00 43 68          bgt.w    $653e
-  021d8:  65 65                bcs.b    $223f
-  021da:  74 61                moveq    #$61, d2
-  021dc:  68 00 4e 56          bvc.w    $7034
-  021e0:  00 00 48 e7          ori.b    #$e7, d0
-  021e4:  0f 00                btst.l   d7, d0
+* Two C strings, misdecoded as code before:  'Tiburon' and 'Cheetah' -- the
+* two board-family names this driver tests against (see BuildUnitRecords).
+* 'Tiburon' (C string, 8 bytes incl. NUL)
+  021ce:  54 69 62 75 72 6f 6e 00 dc.b     $54,$69,$62,$75,$72,$6f,$6e,$00  ; Tiburon.
+* 'Cheetah' (C string, 8 bytes incl. NUL)
+  021d6:  43 68 65 65 74 61 68 00 dc.b     $43,$68,$65,$65,$74,$61,$68,$00  ; Cheetah.
+* ProbeCard(slot) -> long.  Reads the slot's hardware ID/config register
+* $0400009C (bit31) and the nibble at ($06000000 >> 12) & $F to pick a board
+* generation (2, 3 or 4 -> low byte of the result), then pattern-tests the
+* card's local SRAM (writes ~addr every $100 bytes across $20000, reads it
+* back; needs >= $10000 good bytes, else error $FFFFD8EA; the full $20000 sets
+* bit 8) and probes the DRAM banks at $0C000000.. with TestRAMLong ($273C) /
+* AliasCheck ($2800).  Result is stored in unit record +$164.  Names are mine;
+* the register meanings are inferred from the shape of the reads only.
+  021de:  4e 56 00 00          link.w   a6, #$0
+  021e2:  48 e7 0f 00          movem.l  d4-d7, -(a7)
   021e6:  2c 2e 00 08          move.l   $8(a6), d6
   021ea:  78 00                moveq    #$0, d4
   021ec:  7a 00                moveq    #$0, d5
@@ -3045,6 +3065,31 @@ ClassifyTrapNum:
   023c2:  4c ee 00 f0 ff f0    movem.l  -$10(a6), d4-d7
   023c8:  4e 5e                unlk     a6
   023ca:  4e 75                rts      
+* Init29K(unit handle, ACEF handle)  -- the cs2 engine ('GA_DrvrControl: Init29K
+* error' is logged when this fails).  Only card types $2C/$7E are initialised;
+* any other type returns noErr without touching the card.  Sequence:
+*   1. $1D8E(unit): writes 0 to hardware reg $04000028 (release).
+*   2. SRAM test (128 KB at card offset 0, stride $1000, writes ~addr); needs
+*      >= 64 KB else last-error $FFFFD8EA.
+*   3. DRAM probe: TestRAMLong($0C000000), AliasCheck($0C000000/$0C100000)
+*      (zero = failure -> $FFFFD8EA), then extends the top-of-RAM estimate in
+*      1 MB steps, in the $0C0xxxxx bank and a second bank at $0Dxxxxxx ->
+*      unit +$138.  A layout with a hole sets last-error $FFFFD8E8.
+*   4. $1D8E again; helper $4564 (feature flags | $10 passed in); then
+*      ACEFLoad(the ACEF handle) with &unit+$130 as the out-parameter -> unit
+*      +$130 = image base on the card.  Failure = last-error $FFFFD8EA.
+*   5. Handshake: reads image+$400 and requires $32100456 (a 'firmware is up'
+*      signature the card side wrote; else last-error $FFFFD8EA).  Then pokes:
+*        image+$18 <- unit +$168 (feature flags)
+*        image+$00 <- $42005300
+*        image+$08 <- superslot($138)   [top of DRAM]
+*        image+$14 <- superslot(($134 - $6D1) & ~$FF)
+*      and, unless feature flag $800 is set, reads the card's MAILBOX address
+*      from image+$40C into unit +$144, pokes mailbox+$0C <- unit +$140 (the
+*      ack-word address) and finally mailbox+$00 <- 's337' ($73333337) to
+*      open it.  cs51 later sends payloads through that mailbox.
+*   (Which ACEF this loads depends on what cs2 was handed; INIT_main passes the
+*   Runtime image, so the 'Runtime' kernel is what ends up at +$130.)
   023cc:  4e 56 ff f6          link.w   a6, #$fff6
   023d0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   023d4:  26 6e 00 08          movea.l  $8(a6), a3
@@ -3288,6 +3333,9 @@ ClassifyTrapNum:
   02732:  4c ee 18 f0 ff de    movem.l  -$22(a6), d4-d7/a3-a4
   02738:  4e 5e                unlk     a6
   0273a:  4e 75                rts      
+* TestRAMLong(slot, addr) -> 1/0.  Walking-ones test of one longword on the
+* card: writes 1<<n for n=0..31 and checks each readback, then addr itself
+* and ~addr; restores the original value on both outcomes.
   0273c:  4e 56 00 00          link.w   a6, #$0
   02740:  48 e7 0f 00          movem.l  d4-d7, -(a7)
   02744:  2a 2e 00 0c          move.l   $c(a6), d5
@@ -3357,6 +3405,9 @@ ClassifyTrapNum:
   027f6:  4c ee 00 f0 ff f0    movem.l  -$10(a6), d4-d7
   027fc:  4e 5e                unlk     a6
   027fe:  4e 75                rts      
+* AliasCheck(addrA, addrB, slot) -> long: two-address memory probe used by
+* Init29K when sizing DRAM; nonzero = pass (Init29K treats 0 as failure).
+* Shape only -- the exact pattern is not traced.
   02800:  4e 56 ff f8          link.w   a6, #$fff8
   02804:  48 e7 0f 00          movem.l  d4-d7, -(a7)
   02808:  28 2e 00 0c          move.l   $c(a6), d4
@@ -3462,27 +3513,26 @@ ClassifyTrapNum:
 * compare gc24.s's ACEFLoad, called once from its own loader path).
 *
 * After a successful ACEFLoad, on the SUCCESS path this writes FOUR
-* longwords into fixed offsets of the just-loaded image (base =
-* the unit record's +$130 field) via PokeHardwareLong -- i.e. a parameter/
-* handshake header the Am29000 side must read once it starts running,
-* not some separate reset/interrupt trigger (none is issued here):
-*   +$18  <- unit record +$168
-*   +$0C  <- MakeSuperslotAddr(0, ACEF-magic-byte)  (a bare super-slot
-*           base address $s000'0000, s = the low nibble of the ACEF
-*           magic $12A/$12B just parsed -- an odd reuse of the magic
-*           byte as a slot nibble; not fully explained)
-*   +$04  <- ACEFLoad's own out-parameter (the value it wrote back
-*           through the pointer passed at call time -- most plausibly
-*           a relocated entry point or final load size, not proven)
-*   +$40  <- unit record +$134
+* longwords into fixed offsets of the just-loaded image (base = the unit
+* record's +$130 field, the same image base Init29K ($23CC) established
+* when it loaded the 'Runtime' kernel -- so these pokes patch the header
+* the Runtime exposes at image+$00..$40) via PokeHardwareLong:
+*   +$18  <- unit record +$168 (the feature-flags long)
+*   +$0C  <- MakeSuperslotAddr(ACEFLoad's RETURN value, slot) -- ACEFLoad
+*           returns its running load address variable (-$116) as a card
+*           address; most plausibly the entry/base of the module just
+*           loaded.  (An earlier note here read it as the ACEF magic
+*           nibble; that was wrong -- ACEFLoad's result is d5 here.)
+*   +$04  <- ACEFLoad's out-parameter (end address / size written through
+*           the pointer passed at call time -- not proven which)
+*   +$40  <- MakeSuperslotAddr(unit record +$134) -- the engine RAM region
+*           start reserved by ReserveEngineRegion ($2B5E)
 * Only after all four writes does it set bit 1 of the unit's state flags
 * (+$8; 'firmware loaded' -- a pure SOFTWARE flag, not a hardware trigger)
-* and return. Given the
-* Am29000's Boot code (../firmware/disasm/Boot.asm) is already running
-* continuously and reads a great deal of state before branching, the
-* most consistent picture is that the coprocessor POLLS this header
-* rather than being explicitly kicked off -- but that polling code
-* isn't present in this file to confirm directly.
+* and return.  Only card types $2C/$7E are handled (others return -1).
+* The Runtime's code is already running (Init29K got its $32100456 ready
+* signature before this point) and the most consistent picture is that it
+* polls these header words rather than being kicked explicitly.
 LoadFirmware:
   02926:  4e 56 ff f8          link.w   a6, #$fff8
   0292a:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
@@ -3578,6 +3628,9 @@ LoadFirmware:
   02a2e:  4c ee 18 e0 ff e4    movem.l  -$1c(a6), d5-d7/a3-a4
   02a34:  4e 5e                unlk     a6
   02a36:  4e 75                rts      
+* PostLoadPoke(unit): for card types $2C/$7E with state bit 1 set:
+* writes the unit's flags $168 to image+$18, $FF to image+$3D4 and $FF to
+* hardware reg $04000050, then sets state bit 2 ($4).  (Called by cs13/cs48.)
   02a38:  4e 56 00 00          link.w   a6, #$0
   02a3c:  2f 0c                move.l   a4, -(a7)
   02a3e:  28 6e 00 08          movea.l  $8(a6), a4
@@ -3632,6 +3685,13 @@ LoadFirmware:
   02aca:  28 6e ff fc          movea.l  -$4(a6), a4
   02ace:  4e 5e                unlk     a6
   02ad0:  4e 75                rts      
+* SetFeatureFlags(unit, globals): builds unit +$168 from scratch:
+*    $800 always (mailbox NOT yet enabled);
+*    |= $1 if +$128 & $20;   |= $200 if +$128 & $40;
+*    &= ~$800 if +$128 & $100 (set by cs50 -> mailbox allowed);
+*    |= $1000000 if globals+$254;
+*    card type $2C/$7E: |= $A00120, and |= $100000 if top-of-DRAM +$138 >
+*    $0D000000.
   02ad2:  4e 56 00 00          link.w   a6, #$0
   02ad6:  2f 0c                move.l   a4, -(a7)
   02ad8:  20 6e 00 08          movea.l  $8(a6), a0
@@ -3665,6 +3725,13 @@ LoadFirmware:
   02b56:  28 6e ff fc          movea.l  -$4(a6), a4
   02b5a:  4e 5e                unlk     a6
   02b5c:  4e 75                rts      
+* ReserveEngineRegion(sizeA, countB, arg, unitHandle): computes where
+* in card RAM the engine's working areas go, counting down from the top of
+* DRAM (+$138): +$134 = ((+$138 - (arg + 2*countB + round1K(sizeA) + $400))
+* rounded to 1 KB); below $0C000000 it gives up and stores 0.  Then, via the
+* image base +$130, publishes the layout: +$20 = superslot(+$134), +$24 =
+* superslot(+$134 + sizeA + countB + arg), +$28 = sizeA, +$2C = countB, +$30 =
+* arg, +$40 = superslot(+$134).
   02b5e:  4e 56 00 00          link.w   a6, #$0
   02b62:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   02b66:  28 2e 00 0c          move.l   $c(a6), d4
@@ -3771,6 +3838,13 @@ LoadFirmware:
   02c8c:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
   02c92:  4e 5e                unlk     a6
   02c94:  4e 75                rts      
+* RecordAcefVersion(name, version, date, unitHandle): called from ACEFLoad with
+* the program name, version and date parsed from the ACEF optional header
+* (ACEFLoad's own message: "Program '%s' version %08x date %d").  If the name
+* is 'Runtime' the pair goes to unit +$14C/+$150, otherwise to +$154/+$158;
+* if a pair is already set to a DIFFERENT value it is poisoned to $FF.
+* Status csCodes 17 and 18 read these back.  (CompareName at $3062 does the
+* strncmp.)
   02c96:  4e 56 00 00          link.w   a6, #$0
   02c9a:  48 e7 03 08          movem.l  d6-d7/a4, -(a7)
   02c9e:  2c 2e 00 10          move.l   $10(a6), d6
@@ -3821,10 +3895,13 @@ LoadFirmware:
   02d28:  4c ee 10 c0 ff f4    movem.l  -$c(a6), d6-d7/a4
   02d2e:  4e 5e                unlk     a6
   02d30:  4e 75                rts      
-  02d32:  52 75 6e 74          addq.w   #$1, $74(a5, d6.l)
-  02d36:  69 6d                bvs.b    $2da5
-  02d38:  65 00 4e 56          bcs.w    $7b90
-  02d3c:  00 00 70 00          ori.b    #$0, d0
+* C string 'Runtime' (misdecoded as code before) -- compared against the
+* ACEF program name by RecordAcefVersion.
+* 'Runtime' (C string, 8 bytes incl. NUL)
+  02d32:  52 75 6e 74 69 6d 65 00 dc.b     $52,$75,$6e,$74,$69,$6d,$65,$00  ; Runtime.
+* empty stub (returns 0): a no-op callback slot.
+  02d3a:  4e 56 00 00          link.w   a6, #$0
+  02d3e:  70 00                moveq    #$0, d0
   02d40:  4e 5e                unlk     a6
   02d42:  4e 75                rts      
   02d44:  4e 56 ff f8          link.w   a6, #$fff8
@@ -5551,351 +5628,130 @@ CmdTableJumpTable_03e5a:
   041fa:  4c ee 18 f0 fe a2    movem.l  -$15e(a6), d4-d7/a3-a4
   04200:  4e 5e                unlk     a6
   04202:  4e 75                rts      
-  04204:  4c                   dc.b     $4c  ; L
-  04205:  6f 61                ble.b    $4268
-  04207:  64 20                bcc.b    $4229
-  04209:  43                   dc.b     $43  ; C
-  0420a:  6f 6d                ble.b    $4279
-  0420c:  70 6c                moveq    #$6c, d0
-  0420e:  65 74                bcs.b    $4284
-  04210:  65 2e                bcs.b    $4240
-  04212:  0d 00                btst.l   d6, d0
-  04214:  65 72                bcs.b    $4288
-  04216:  72 6f                moveq    #$6f, d1
-  04218:  72 3a                moveq    #$3a, d1
-  0421a:  20 72 65 6c 6f 63    movea.l  $6f63(a2, invalid.w), a0
-  04220:  61 74                bsr.b    $4296
-  04222:  69 6f                bvs.b    $4293
-  04224:  6e 20                bgt.b    $4246
-  04226:  72 65                moveq    #$65, d1
-  04228:  63 6f                bls.b    $4299
-  0422a:  72 64                moveq    #$64, d1
-  0422c:  73                   dc.b     $73  ; s
-  0422d:  20 6f 75 74          movea.l  $7574(a7), a0
-  04231:  20 6f 66 20          movea.l  $6620(a7), a0
-  04235:  73                   dc.b     $73  ; s
-  04236:  65 71                bcs.b    $42a9
-  04238:  75                   dc.b     $75  ; u
-  04239:  65 6e                bcs.b    $42a9
-  0423b:  63 65                bls.b    $42a2
-  0423d:  0d 00                btst.l   d6, d0
-  0423f:  00 41 62 73          ori.w    #$6273, d1
-  04243:  6f 6c                ble.b    $42b1
-  04245:  75                   dc.b     $75  ; u
-  04246:  74 65                moveq    #$65, d2
-  04248:  20 42                movea.l  d2, a0
-  0424a:  72 61                moveq    #$61, d1
-  0424c:  6e 63                bgt.b    $42b1
-  0424e:  68 20                bvc.b    $4270
-  04250:  54 61                addq.w   #$2, -(a1)
-  04252:  72 67                moveq    #$67, d1
-  04254:  65 74                bcs.b    $42ca
-  04256:  20 28 30 78          move.l   $3078(a0), d0
-  0425a:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  0425e:  29 20                move.l   -(a0), -(a4)
-  04260:  4f 75                dc.b     $4f,$75  ; Ou
-  04262:  74 20                moveq    #$20, d2
-  04264:  6f 66                ble.b    $42cc
-  04266:  20 52                movea.l  (a2), a0
-  04268:  61 6e                bsr.b    $42d8
-  0426a:  67 65                beq.b    $42d1
-  0426c:  20 61                movea.l  -(a1), a0
-  0426e:  74 20                moveq    #$20, d2
-  04270:  30 78 25 30          movea.w  $2530.w, a0
-  04274:  38 58                movea.w  (a0)+, a4
-  04276:  20 0d                move.l   a5, d0
-  04278:  00 00 52 65          ori.b    #$65, d0
-  0427c:  6c 61                bge.b    $42df
-  0427e:  74 69                moveq    #$69, d2
-  04280:  76 65                moveq    #$65, d3
-  04282:  20 42                movea.l  d2, a0
-  04284:  72 61                moveq    #$61, d1
-  04286:  6e 63                bgt.b    $42eb
-  04288:  68 20                bvc.b    $42aa
-  0428a:  54 61                addq.w   #$2, -(a1)
-  0428c:  72 67                moveq    #$67, d1
-  0428e:  65 74                bcs.b    $4304
-  04290:  20 28 30 78          move.l   $3078(a0), d0
-  04294:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  04298:  29 20                move.l   -(a0), -(a4)
-  0429a:  4f 75                dc.b     $4f,$75  ; Ou
-  0429c:  74 20                moveq    #$20, d2
-  0429e:  6f 66                ble.b    $4306
-  042a0:  20 52                movea.l  (a2), a0
-  042a2:  61 6e                bsr.b    $4312
-  042a4:  67 65                beq.b    $430b
-  042a6:  20 61                movea.l  -(a1), a0
-  042a8:  74 20                moveq    #$20, d2
-  042aa:  30 78 25 30          movea.w  $2530.w, a0
-  042ae:  38 58                movea.w  (a0)+, a4
-  042b0:  20 0d                move.l   a5, d0
-  042b2:  00 00 73 65          ori.b    #$65, d0
-  042b6:  65 6b                bcs.b    $4323
-  042b8:  20 70 61 73 74 20 65 6e 64 20 movea.l  ([$7420656e, a0], $aaaaaaaa), a0
-  042c2:  6f 66                ble.b    $432a
-  042c4:  20 66                movea.l  -(a6), a0
-  042c6:  69 6c                bvs.b    $4334
-  042c8:  65 20                bcs.b    $42ea
-  042ca:  69 6e                bvs.b    $433a
-  042cc:  20 41                movea.l  d1, a0
-  042ce:  43 45                dc.b     $43,$45  ; CE
-  042d0:  46 6c 6f 61          not.w    $6f61(a4)
-  042d4:  64 3a                bcc.b    $4310
-  042d6:  20 25                move.l   -(a5), d0
-  042d8:  64 0d                bcc.b    $42e7
-  042da:  00 00 4d 75          ori.b    #$75, d0
-  042de:  6c 74                bge.b    $4354
-  042e0:  69 70                bvs.b    $4352
-  042e2:  6c 65                bge.b    $4349
-  042e4:  20 2e 42 53          move.l   $4253(a6), d0
-  042e8:  53 20                subq.b   #$1, -(a0)
-  042ea:  73                   dc.b     $73  ; s
-  042eb:  65 63                bcs.b    $4350
-  042ed:  74 69                moveq    #$69, d2
-  042ef:  6f 6e                ble.b    $435f
-  042f1:  73                   dc.b     $73  ; s
-  042f2:  20 6e 6f 74          movea.l  $6f74(a6), a0
-  042f6:  20 61                movea.l  -(a1), a0
-  042f8:  6c 6c                bge.b    $4366
-  042fa:  6f 77                ble.b    $4373
-  042fc:  65 64                bcs.b    $4362
-  042fe:  20 69 6e 20          movea.l  $6e20(a1), a0
-  04302:  72 65                moveq    #$65, d1
-  04304:  6c 6f                bge.b    $4375
-  04306:  63 61                bls.b    $4369
-  04308:  74 61                moveq    #$61, d2
-  0430a:  62 6c                bhi.b    $4378
-  0430c:  65 20                bcs.b    $432e
-  0430e:  66 69                bne.b    $4379
-  04310:  6c 65                bge.b    $4377
-  04312:  00 00 43 6f          ori.b    #$6f, d0
-  04316:  64 65                bcc.b    $437d
-  04318:  00 00 53 65          ori.b    #$65, d0
-  0431c:  63 74                bls.b    $4392
-  0431e:  69 6f                bvs.b    $438f
-  04320:  6e 20                bgt.b    $4342
-  04322:  25 38 73 3a          move.l   $733a.w, -(a2)
-  04326:  20 28 30 78          move.l   $3078(a0), d0
-  0432a:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  0432e:  29 20                move.l   -(a0), -(a4)
-  04330:  25 64 20 41          move.l   -(a4), $2041(a2)
-  04334:  64 64                bcc.b    $439a
-  04336:  72 65                moveq    #$65, d1
-  04338:  73 73                dc.b     $73,$73  ; ss
-  0433a:  3a 20                move.w   -(a0), d5
-  0433c:  25 58 20 73          move.l   (a0)+, $2073(a2)
-  04340:  69 7a                bvs.b    $43bc
-  04342:  65 3a                bcs.b    $437e
-  04344:  20 25                move.l   -(a5), d0
-  04346:  64 20                bcc.b    $4368
-  04348:  25 73 20 61 74 20    move.l   $61(a3, d2.w), $7420(a2)
-  0434e:  30 78 25 30          movea.w  $2530.w, a0
-  04352:  38 58                movea.w  (a0)+, a4
-  04354:  0d 00                btst.l   d6, d0
-  04356:  6c 6f                bge.b    $43c7
-  04358:  61 64                bsr.b    $43be
-  0435a:  65 64                bcs.b    $43c0
-  0435c:  00 00 7a 65          ori.b    #$65, d0
-  04360:  72 6f                moveq    #$6f, d1
-  04362:  65 64                bcs.b    $43c8
-  04364:  00 00 4c 6f          ori.b    #$6f, d0
-  04368:  61 64                bsr.b    $43ce
-  0436a:  65 72                bcs.b    $43de
-  0436c:  20 6c 69 6d          movea.l  $696d(a4), a0
-  04370:  69 74                bvs.b    $43e6
-  04372:  20 6f 66 20          movea.l  $6620(a7), a0
-  04376:  33 32 20 74          move.w   $74(a2, d2.w), -(a1)
-  0437a:  65 78                bcs.b    $43f4
-  0437c:  74 20                moveq    #$20, d2
-  0437e:  73                   dc.b     $73  ; s
-  0437f:  65 63                bcs.b    $43e4
-  04381:  74 69                moveq    #$69, d2
-  04383:  6f 6e                ble.b    $43f3
-  04385:  73                   dc.b     $73  ; s
-  04386:  0d 00                btst.l   d6, d0
-  04388:  50 75 62 6c          addq.w   #$8, $6c(a5, d6.w)
-  0438c:  69 63                bvs.b    $43f1
-  0438e:  49                   dc.b     $49  ; I
-  0438f:  6e 00 00 53          bgt.w    $43e4
-  04393:  6b 69                bmi.b    $43fe
-  04395:  70 70                moveq    #$70, d0
-  04397:  69 6e                bvs.b    $4407
-  04399:  67 20                beq.b    $43bb
-  0439b:  53 65                subq.w   #$1, -(a5)
-  0439d:  63 74                bls.b    $4413
-  0439f:  69 6f                bvs.b    $4410
-  043a1:  6e 20                bgt.b    $43c3
-  043a3:  25 38 73 3a          move.l   $733a.w, -(a2)
-  043a7:  20 28 30 78          move.l   $3078(a0), d0
-  043ab:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  043af:  29 20                move.l   -(a0), -(a4)
-  043b1:  25 64 20 41          move.l   -(a4), $2041(a2)
-  043b5:  64 64                bcc.b    $441b
-  043b7:  72 65                moveq    #$65, d1
-  043b9:  73 73                dc.b     $73,$73  ; ss
-  043bb:  3a 20                move.w   -(a0), d5
-  043bd:  25 58 20 73          move.l   (a0)+, $2073(a2)
-  043c1:  69 7a                bvs.b    $443d
-  043c3:  65 3a                bcs.b    $43ff
-  043c5:  20 25                move.l   -(a5), d0
-  043c7:  64 0d                bcc.b    $43d6
-  043c9:  00 70 61 73 73 20 25 64 ori.w    #$6173, $2564(a0, d7.w * 2)
-  043d1:  3a 20                move.w   -(a0), d5
-  043d3:  73                   dc.b     $73  ; s
-  043d4:  63 6e                bls.b    $4444
-  043d6:  5f 70 74 72          subq.w   #$7, $72(a0, d7.w)
-  043da:  20                   dc.b     $20  ;  
-  043db:  3d 20                move.w   -(a0), -(a6)
-  043dd:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  043e1:  2c 72 65 6c 5f 70    movea.l  $5f70(a2, invalid.w), a6
-  043e7:  74 72                moveq    #$72, d2
-  043e9:  20                   dc.b     $20  ;  
-  043ea:  3d 20                move.w   -(a0), -(a6)
-  043ec:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  043f0:  0d 00                btst.l   d6, d0
-  043f2:  4c                   dc.b     $4c  ; L
-  043f3:  6f 61                ble.b    $4456
-  043f5:  64 69                bcc.b    $4460
-  043f7:  6e 67                bgt.b    $4460
-  043f9:  20 25                move.l   -(a5), d0
-  043fb:  64 20                bcc.b    $441d
-  043fd:  73                   dc.b     $73  ; s
-  043fe:  65 63                bcs.b    $4463
-  04400:  74 69                moveq    #$69, d2
-  04402:  6f 6e                ble.b    $4472
-  04404:  73                   dc.b     $73  ; s
-  04405:  2e 0d                move.l   a5, d7
-  04407:  00 54 65 78          ori.w    #$6578, (a4)
-  0440b:  74 20                moveq    #$20, d2
-  0440d:  62 61                bhi.b    $4470
-  0440f:  73                   dc.b     $73  ; s
-  04410:  65 20                bcs.b    $4432
-  04412:  3d 20                move.w   -(a0), -(a6)
-  04414:  25 58 0d 00          move.l   (a0)+, $d00(a2)
-  04418:  4e 6f                move     usp, a7
-  0441a:  74 20                moveq    #$20, d2
-  0441c:  65 6e                bcs.b    $448c
-  0441e:  6f 75                ble.b    $4495
-  04420:  67 68                beq.b    $448a
-  04422:  20 6d 65 6d          movea.l  $656d(a5), a0
-  04426:  6f 72                ble.b    $449a
-  04428:  79                   dc.b     $79  ; y
-  04429:  20 74 6f 20 6c 6f    movea.l  $6c6f(a4, d6.l * 8), a0
-  0442f:  61 64                bsr.b    $4495
-  04431:  20 70 72 6f          movea.l  $6f(a0, d7.w), a0
-  04435:  67 72                beq.b    $44a9
-  04437:  61 6d                bsr.b    $44a6
-  04439:  0d 00                btst.l   d6, d0
-  0443b:  00                   dc.b     $00  ; .
-  0443c:  4e 6f                move     usp, a7
-  0443e:  20 4d                movea.l  a5, a0
-  04440:  65 6d                bcs.b    $44af
-  04442:  6f 72                ble.b    $44b6
-  04444:  79                   dc.b     $79  ; y
-  04445:  20 66                movea.l  -(a6), a0
-  04447:  6f 72                ble.b    $44bb
-  04449:  20 73 79 6d 62 6f    movea.l  ([$626f, a3]), a0
-  0444f:  6c 20                bge.b    $4471
-  04451:  74 61                moveq    #$61, d2
-  04453:  62 6c                bhi.b    $44c1
-  04455:  65 00 00 4c          bcs.w    $44a3
-  04459:  6f 61                ble.b    $44bc
-  0445b:  64 20                bcc.b    $447d
-  0445d:  61 74                bsr.b    $44d3
-  0445f:  20 25                move.l   -(a5), d0
-  04461:  30 38 58 2c          move.w   $582c.w, d0
-  04465:  20 4d                movea.l  a5, a0
-  04467:  61 67                bsr.b    $44d0
-  04469:  69 63                bvs.b    $44ce
-  0446b:  3a 20                move.w   -(a0), d5
-  0446d:  30 78 25 30          movea.w  $2530.w, a0
-  04471:  38 78 20 53          movea.w  $2053.w, a4
-  04475:  65 63                bcs.b    $44da
-  04477:  74 69                moveq    #$69, d2
-  04479:  6f 6e                ble.b    $44e9
-  0447b:  73                   dc.b     $73  ; s
-  0447c:  3a 20                move.w   -(a0), d5
-  0447e:  25 64 20 53          move.l   -(a4), $2053(a2)
-  04482:  79                   dc.b     $79  ; y
-  04483:  6d 62                blt.b    $44e7
-  04485:  6f 6c                ble.b    $44f3
-  04487:  73                   dc.b     $73  ; s
-  04488:  3a 20                move.w   -(a0), d5
-  0448a:  25 64 20 46          move.l   -(a4), $2046(a2)
-  0448e:  6c 61                bge.b    $44f1
-  04490:  67 73                beq.b    $4505
-  04492:  3a 20                move.w   -(a0), d5
-  04494:  25 30 78 0d          move.l   $d(a0, d7.l), -(a2)
-  04498:  00 00 50 72          ori.b    #$72, d0
-  0449c:  6f 67                ble.b    $4505
-  0449e:  72 61                moveq    #$61, d1
-  044a0:  6d 20                blt.b    $44c2
-  044a2:  27 25                move.l   -(a5), -(a3)
-  044a4:  73                   dc.b     $73  ; s
-  044a5:  27 20                move.l   -(a0), -(a3)
-  044a7:  76 65                moveq    #$65, d3
-  044a9:  72 73                moveq    #$73, d1
-  044ab:  69 6f                bvs.b    $451c
-  044ad:  6e 20                bgt.b    $44cf
-  044af:  25 30 38 78          move.l   $78(a0, d3.l), -(a2)
-  044b3:  20 64                movea.l  -(a4), a0
-  044b5:  61 74                bsr.b    $452b
-  044b7:  65 20                bcs.b    $44d9
-  044b9:  25 64 0d 00          move.l   -(a4), $d00(a2)
-  044bd:  00 49                dc.b     $00,$49  ; .I
-  044bf:  6e 76                bgt.b    $4537
-  044c1:  61 6c                bsr.b    $452f
-  044c3:  69 64                bvs.b    $4529
-  044c5:  20 66                movea.l  -(a6), a0
-  044c7:  6f 72                ble.b    $453b
-  044c9:  6d 61                blt.b    $452c
-  044cb:  74 21                moveq    #$21, d2
-  044cd:  00 28 63 29 20 43    ori.b    #$29, $2043(a0)
-  044d3:  6f 70                ble.b    $4545
-  044d5:  79                   dc.b     $79  ; y
-  044d6:  72 69                moveq    #$69, d1
-  044d8:  67 68                beq.b    $4542
-  044da:  74 20                moveq    #$20, d2
-  044dc:  41                   dc.b     $41  ; A
-  044dd:  70 70                moveq    #$70, d0
-  044df:  6c 65                bge.b    $4546
-  044e1:  20 43                movea.l  d3, a0
-  044e3:  6f 6d                ble.b    $4552
-  044e5:  70 75                moveq    #$75, d0
-  044e7:  74 65                moveq    #$65, d2
-  044e9:  72 2c                moveq    #$2c, d1
-  044eb:  31 39 39 30 2e 41    move.w   $39302e41.l, -(a0)
-  044f1:  6c 6c                bge.b    $455f
-  044f3:  20 52                movea.l  (a2), a0
-  044f5:  69 67                bvs.b    $455e
-  044f7:  68 74                bvc.b    $456d
-  044f9:  73                   dc.b     $73  ; s
-  044fa:  20 52                movea.l  (a2), a0
-  044fc:  65 73                bcs.b    $4571
-  044fe:  65 72                bcs.b    $4572  ; -> GetTrap
-  04500:  76 65                moveq    #$65, d3
-  04502:  64 00 4e 6f          bcc.w    $9373
-  04506:  74 20                moveq    #$20, d2
-  04508:  69 6e                bvs.b    $4578
-  0450a:  20 41                movea.l  d1, a0
-  0450c:  43 45                dc.b     $43,$45  ; CE
-  0450e:  46 20                not.b    -(a0)
-  04510:  66 6f                bne.b    $4581
-  04512:  72 6d                moveq    #$6d, d1
-  04514:  61 74                bsr.b    $458a
-  04516:  21 00                move.l   d0, -(a0)
-  04518:  49                   dc.b     $49  ; I
-  04519:  6e 69                bgt.b    $4584
-  0451b:  74 69                moveq    #$69, d2
-  0451d:  61 6c                bsr.b    $458b
-  0451f:  69 7a                bvs.b    $459b
-  04521:  61 74                bsr.b    $4597
-  04523:  69 6f                bvs.b    $4594
-  04525:  6e 20                bgt.b    $4547
-  04527:  66 61                bne.b    $458a
-  04529:  69 6c                bvs.b    $4597
-  0452b:  65 64                bcs.b    $4591
-  0452d:  0d 00                btst.l   d6, d0
+* The ACEFLoad message strings (misdecoded as code before).  These are the
+* loader's own debug/error texts and confirm several things about the format:
+*   'Program %s version %08x date %d'  -> optional-header +$1C name,
+*       +$14 version, +$18 date;   'Load at %08X, Magic: %08x Sections: %d
+*   Symbols: %d Flags: %x';  'Loader limit of 32 text sections';  'Multiple .BSS
+*   sections not allowed in relocatable file';  'Section %8s: ... loaded/
+*   zeroed';  'Skipping Section ...';  relocation range errors ('Absolute/
+*   Relative Branch Target ... Out of Range', 'relocation records out of
+*   sequence');  '(c) Copyright Apple Computer,1990...' is the 64-byte
+*   signature the 0x12B variant carries;  'PublicIn' is a section name the
+*   loader special-cases.  After the last string a NUL pad precedes the next
+*   function.
+* 'Load Complete.\r' (C string, 16 bytes incl. NUL)
+  04204:  4c 6f 61 64 20 43 6f 6d 70 6c 65 74 65 2e 0d 00 dc.b     $4c,$6f,$61,$64,$20,$43,$6f,$6d,$70,$6c,$65,$74,$65,$2e,$0d,$00  ; Load Complete...
+* 'error: relocation records out of sequence\r' (C string, 43 bytes incl. NUL)
+  04214:  65 72 72 6f 72 3a 20 72 65 6c 6f 63 61 74 69 6f dc.b     $65,$72,$72,$6f,$72,$3a,$20,$72,$65,$6c,$6f,$63,$61,$74,$69,$6f  ; error: relocatio
+  04224:  6e 20 72 65 63 6f 72 64 73 20 6f 75 74 20 6f 66 dc.b     $6e,$20,$72,$65,$63,$6f,$72,$64,$73,$20,$6f,$75,$74,$20,$6f,$66  ; n records out of
+  04234:  20 73 65 71 75 65 6e 63 65 0d 00 dc.b     $20,$73,$65,$71,$75,$65,$6e,$63,$65,$0d,$00  ;  sequence..
+* (alignment pad)
+  0423f:  00 dc.b     $00  ; .
+* 'Absolute Branch Target (0x%08x) Out of Range at 0x%08X \r' (C string, 57 bytes incl. NUL)
+  04240:  41 62 73 6f 6c 75 74 65 20 42 72 61 6e 63 68 20 dc.b     $41,$62,$73,$6f,$6c,$75,$74,$65,$20,$42,$72,$61,$6e,$63,$68,$20  ; Absolute Branch 
+  04250:  54 61 72 67 65 74 20 28 30 78 25 30 38 78 29 20 dc.b     $54,$61,$72,$67,$65,$74,$20,$28,$30,$78,$25,$30,$38,$78,$29,$20  ; Target (0x%08x) 
+  04260:  4f 75 74 20 6f 66 20 52 61 6e 67 65 20 61 74 20 dc.b     $4f,$75,$74,$20,$6f,$66,$20,$52,$61,$6e,$67,$65,$20,$61,$74,$20  ; Out of Range at 
+  04270:  30 78 25 30 38 58 20 0d 00 dc.b     $30,$78,$25,$30,$38,$58,$20,$0d,$00  ; 0x%08X ..
+* (alignment pad)
+  04279:  00 dc.b     $00  ; .
+* 'Relative Branch Target (0x%08x) Out of Range at 0x%08X \r' (C string, 57 bytes incl. NUL)
+  0427a:  52 65 6c 61 74 69 76 65 20 42 72 61 6e 63 68 20 dc.b     $52,$65,$6c,$61,$74,$69,$76,$65,$20,$42,$72,$61,$6e,$63,$68,$20  ; Relative Branch 
+  0428a:  54 61 72 67 65 74 20 28 30 78 25 30 38 78 29 20 dc.b     $54,$61,$72,$67,$65,$74,$20,$28,$30,$78,$25,$30,$38,$78,$29,$20  ; Target (0x%08x) 
+  0429a:  4f 75 74 20 6f 66 20 52 61 6e 67 65 20 61 74 20 dc.b     $4f,$75,$74,$20,$6f,$66,$20,$52,$61,$6e,$67,$65,$20,$61,$74,$20  ; Out of Range at 
+  042aa:  30 78 25 30 38 58 20 0d 00 dc.b     $30,$78,$25,$30,$38,$58,$20,$0d,$00  ; 0x%08X ..
+* (alignment pad)
+  042b3:  00 dc.b     $00  ; .
+* 'seek past end of file in ACEFload: %d\r' (C string, 39 bytes incl. NUL)
+  042b4:  73 65 65 6b 20 70 61 73 74 20 65 6e 64 20 6f 66 dc.b     $73,$65,$65,$6b,$20,$70,$61,$73,$74,$20,$65,$6e,$64,$20,$6f,$66  ; seek past end of
+  042c4:  20 66 69 6c 65 20 69 6e 20 41 43 45 46 6c 6f 61 dc.b     $20,$66,$69,$6c,$65,$20,$69,$6e,$20,$41,$43,$45,$46,$6c,$6f,$61  ;  file in ACEFloa
+  042d4:  64 3a 20 25 64 0d 00 dc.b     $64,$3a,$20,$25,$64,$0d,$00  ; d: %d..
+* (alignment pad)
+  042db:  00 dc.b     $00  ; .
+* 'Multiple .BSS sections not allowed in relocatable file' (C string, 55 bytes incl. NUL)
+  042dc:  4d 75 6c 74 69 70 6c 65 20 2e 42 53 53 20 73 65 dc.b     $4d,$75,$6c,$74,$69,$70,$6c,$65,$20,$2e,$42,$53,$53,$20,$73,$65  ; Multiple .BSS se
+  042ec:  63 74 69 6f 6e 73 20 6e 6f 74 20 61 6c 6c 6f 77 dc.b     $63,$74,$69,$6f,$6e,$73,$20,$6e,$6f,$74,$20,$61,$6c,$6c,$6f,$77  ; ctions not allow
+  042fc:  65 64 20 69 6e 20 72 65 6c 6f 63 61 74 61 62 6c dc.b     $65,$64,$20,$69,$6e,$20,$72,$65,$6c,$6f,$63,$61,$74,$61,$62,$6c  ; ed in relocatabl
+  0430c:  65 20 66 69 6c 65 00 dc.b     $65,$20,$66,$69,$6c,$65,$00  ; e file.
+* (alignment pad)
+  04313:  00 dc.b     $00  ; .
+* 'Code' (C string, 5 bytes incl. NUL)
+  04314:  43 6f 64 65 00 dc.b     $43,$6f,$64,$65,$00  ; Code.
+* (alignment pad)
+  04319:  00 dc.b     $00  ; .
+* 'Section %8s: (0x%08x) %d Address: %X size: %d %s at 0x%08X\r' (C string, 60 bytes incl. NUL)
+  0431a:  53 65 63 74 69 6f 6e 20 25 38 73 3a 20 28 30 78 dc.b     $53,$65,$63,$74,$69,$6f,$6e,$20,$25,$38,$73,$3a,$20,$28,$30,$78  ; Section %8s: (0x
+  0432a:  25 30 38 78 29 20 25 64 20 41 64 64 72 65 73 73 dc.b     $25,$30,$38,$78,$29,$20,$25,$64,$20,$41,$64,$64,$72,$65,$73,$73  ; %08x) %d Address
+  0433a:  3a 20 25 58 20 73 69 7a 65 3a 20 25 64 20 25 73 dc.b     $3a,$20,$25,$58,$20,$73,$69,$7a,$65,$3a,$20,$25,$64,$20,$25,$73  ; : %X size: %d %s
+  0434a:  20 61 74 20 30 78 25 30 38 58 0d 00 dc.b     $20,$61,$74,$20,$30,$78,$25,$30,$38,$58,$0d,$00  ;  at 0x%08X..
+* 'loaded' (C string, 7 bytes incl. NUL)
+  04356:  6c 6f 61 64 65 64 00 dc.b     $6c,$6f,$61,$64,$65,$64,$00  ; loaded.
+* (alignment pad)
+  0435d:  00 dc.b     $00  ; .
+* 'zeroed' (C string, 7 bytes incl. NUL)
+  0435e:  7a 65 72 6f 65 64 00 dc.b     $7a,$65,$72,$6f,$65,$64,$00  ; zeroed.
+* (alignment pad)
+  04365:  00 dc.b     $00  ; .
+* 'Loader limit of 32 text sections\r' (C string, 34 bytes incl. NUL)
+  04366:  4c 6f 61 64 65 72 20 6c 69 6d 69 74 20 6f 66 20 dc.b     $4c,$6f,$61,$64,$65,$72,$20,$6c,$69,$6d,$69,$74,$20,$6f,$66,$20  ; Loader limit of 
+  04376:  33 32 20 74 65 78 74 20 73 65 63 74 69 6f 6e 73 dc.b     $33,$32,$20,$74,$65,$78,$74,$20,$73,$65,$63,$74,$69,$6f,$6e,$73  ; 32 text sections
+  04386:  0d 00 dc.b     $0d,$00  ; ..
+* 'PublicIn' (C string, 9 bytes incl. NUL)
+  04388:  50 75 62 6c 69 63 49 6e 00 dc.b     $50,$75,$62,$6c,$69,$63,$49,$6e,$00  ; PublicIn.
+* (alignment pad)
+  04391:  00 dc.b     $00  ; .
+* 'Skipping Section %8s: (0x%08x) %d Address: %X size: %d\r' (C string, 56 bytes incl. NUL)
+  04392:  53 6b 69 70 70 69 6e 67 20 53 65 63 74 69 6f 6e dc.b     $53,$6b,$69,$70,$70,$69,$6e,$67,$20,$53,$65,$63,$74,$69,$6f,$6e  ; Skipping Section
+  043a2:  20 25 38 73 3a 20 28 30 78 25 30 38 78 29 20 25 dc.b     $20,$25,$38,$73,$3a,$20,$28,$30,$78,$25,$30,$38,$78,$29,$20,$25  ;  %8s: (0x%08x) %
+  043b2:  64 20 41 64 64 72 65 73 73 3a 20 25 58 20 73 69 dc.b     $64,$20,$41,$64,$64,$72,$65,$73,$73,$3a,$20,$25,$58,$20,$73,$69  ; d Address: %X si
+  043c2:  7a 65 3a 20 25 64 0d 00 dc.b     $7a,$65,$3a,$20,$25,$64,$0d,$00  ; ze: %d..
+* 'pass %d: scn_ptr = %08x,rel_ptr = %08x\r' (C string, 40 bytes incl. NUL)
+  043ca:  70 61 73 73 20 25 64 3a 20 73 63 6e 5f 70 74 72 dc.b     $70,$61,$73,$73,$20,$25,$64,$3a,$20,$73,$63,$6e,$5f,$70,$74,$72  ; pass %d: scn_ptr
+  043da:  20 3d 20 25 30 38 78 2c 72 65 6c 5f 70 74 72 20 dc.b     $20,$3d,$20,$25,$30,$38,$78,$2c,$72,$65,$6c,$5f,$70,$74,$72,$20  ;  = %08x,rel_ptr 
+  043ea:  3d 20 25 30 38 78 0d 00 dc.b     $3d,$20,$25,$30,$38,$78,$0d,$00  ; = %08x..
+* 'Loading %d sections.\r' (C string, 22 bytes incl. NUL)
+  043f2:  4c 6f 61 64 69 6e 67 20 25 64 20 73 65 63 74 69 dc.b     $4c,$6f,$61,$64,$69,$6e,$67,$20,$25,$64,$20,$73,$65,$63,$74,$69  ; Loading %d secti
+  04402:  6f 6e 73 2e 0d 00 dc.b     $6f,$6e,$73,$2e,$0d,$00  ; ons...
+* 'Text base = %X\r' (C string, 16 bytes incl. NUL)
+  04408:  54 65 78 74 20 62 61 73 65 20 3d 20 25 58 0d 00 dc.b     $54,$65,$78,$74,$20,$62,$61,$73,$65,$20,$3d,$20,$25,$58,$0d,$00  ; Text base = %X..
+* 'Not enough memory to load program\r' (C string, 35 bytes incl. NUL)
+  04418:  4e 6f 74 20 65 6e 6f 75 67 68 20 6d 65 6d 6f 72 dc.b     $4e,$6f,$74,$20,$65,$6e,$6f,$75,$67,$68,$20,$6d,$65,$6d,$6f,$72  ; Not enough memor
+  04428:  79 20 74 6f 20 6c 6f 61 64 20 70 72 6f 67 72 61 dc.b     $79,$20,$74,$6f,$20,$6c,$6f,$61,$64,$20,$70,$72,$6f,$67,$72,$61  ; y to load progra
+  04438:  6d 0d 00 dc.b     $6d,$0d,$00  ; m..
+* (alignment pad)
+  0443b:  00 dc.b     $00  ; .
+* 'No Memory for symbol table' (C string, 27 bytes incl. NUL)
+  0443c:  4e 6f 20 4d 65 6d 6f 72 79 20 66 6f 72 20 73 79 dc.b     $4e,$6f,$20,$4d,$65,$6d,$6f,$72,$79,$20,$66,$6f,$72,$20,$73,$79  ; No Memory for sy
+  0444c:  6d 62 6f 6c 20 74 61 62 6c 65 00 dc.b     $6d,$62,$6f,$6c,$20,$74,$61,$62,$6c,$65,$00  ; mbol table.
+* (alignment pad)
+  04457:  00 dc.b     $00  ; .
+* 'Load at %08X, Magic: 0x%08x Sections: %d Symbols: %d Flags: %0x\r' (C string, 65 bytes incl. NUL)
+  04458:  4c 6f 61 64 20 61 74 20 25 30 38 58 2c 20 4d 61 dc.b     $4c,$6f,$61,$64,$20,$61,$74,$20,$25,$30,$38,$58,$2c,$20,$4d,$61  ; Load at %08X, Ma
+  04468:  67 69 63 3a 20 30 78 25 30 38 78 20 53 65 63 74 dc.b     $67,$69,$63,$3a,$20,$30,$78,$25,$30,$38,$78,$20,$53,$65,$63,$74  ; gic: 0x%08x Sect
+  04478:  69 6f 6e 73 3a 20 25 64 20 53 79 6d 62 6f 6c 73 dc.b     $69,$6f,$6e,$73,$3a,$20,$25,$64,$20,$53,$79,$6d,$62,$6f,$6c,$73  ; ions: %d Symbols
+  04488:  3a 20 25 64 20 46 6c 61 67 73 3a 20 25 30 78 0d dc.b     $3a,$20,$25,$64,$20,$46,$6c,$61,$67,$73,$3a,$20,$25,$30,$78,$0d  ; : %d Flags: %0x.
+  04498:  00 dc.b     $00  ; .
+* (alignment pad)
+  04499:  00 dc.b     $00  ; .
+* "Program '%s' version %08x date %d\r" (C string, 35 bytes incl. NUL)
+  0449a:  50 72 6f 67 72 61 6d 20 27 25 73 27 20 76 65 72 dc.b     $50,$72,$6f,$67,$72,$61,$6d,$20,$27,$25,$73,$27,$20,$76,$65,$72  ; Program '%s' ver
+  044aa:  73 69 6f 6e 20 25 30 38 78 20 64 61 74 65 20 25 dc.b     $73,$69,$6f,$6e,$20,$25,$30,$38,$78,$20,$64,$61,$74,$65,$20,$25  ; sion %08x date %
+  044ba:  64 0d 00 dc.b     $64,$0d,$00  ; d..
+* (alignment pad)
+  044bd:  00 dc.b     $00  ; .
+* 'Invalid format!' (C string, 16 bytes incl. NUL)
+  044be:  49 6e 76 61 6c 69 64 20 66 6f 72 6d 61 74 21 00 dc.b     $49,$6e,$76,$61,$6c,$69,$64,$20,$66,$6f,$72,$6d,$61,$74,$21,$00  ; Invalid format!.
+* '(c) Copyright Apple Computer,1990.All Rights Reserved' (C string, 54 bytes incl. NUL)
+  044ce:  28 63 29 20 43 6f 70 79 72 69 67 68 74 20 41 70 dc.b     $28,$63,$29,$20,$43,$6f,$70,$79,$72,$69,$67,$68,$74,$20,$41,$70  ; (c) Copyright Ap
+  044de:  70 6c 65 20 43 6f 6d 70 75 74 65 72 2c 31 39 39 dc.b     $70,$6c,$65,$20,$43,$6f,$6d,$70,$75,$74,$65,$72,$2c,$31,$39,$39  ; ple Computer,199
+  044ee:  30 2e 41 6c 6c 20 52 69 67 68 74 73 20 52 65 73 dc.b     $30,$2e,$41,$6c,$6c,$20,$52,$69,$67,$68,$74,$73,$20,$52,$65,$73  ; 0.All Rights Res
+  044fe:  65 72 76 65 64 00 dc.b     $65,$72,$76,$65,$64,$00  ; erved.
+* 'Not in ACEF format!' (C string, 20 bytes incl. NUL)
+  04504:  4e 6f 74 20 69 6e 20 41 43 45 46 20 66 6f 72 6d dc.b     $4e,$6f,$74,$20,$69,$6e,$20,$41,$43,$45,$46,$20,$66,$6f,$72,$6d  ; Not in ACEF form
+  04514:  61 74 21 00 dc.b     $61,$74,$21,$00  ; at!.
+* 'Initialization failed\r' (C string, 23 bytes incl. NUL)
+  04518:  49 6e 69 74 69 61 6c 69 7a 61 74 69 6f 6e 20 66 dc.b     $49,$6e,$69,$74,$69,$61,$6c,$69,$7a,$61,$74,$69,$6f,$6e,$20,$66  ; Initialization f
+  04528:  61 69 6c 65 64 0d 00 dc.b     $61,$69,$6c,$65,$64,$0d,$00  ; ailed..
   0452f:  00                   dc.b     $00  ; .
   04530:  4e 56 00 00          link.w   a6, #$0
   04534:  4a ae 00 08          tst.l    $8(a6)

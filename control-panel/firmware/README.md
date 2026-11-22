@@ -56,7 +56,7 @@ pokes at `base+0x0C007300` (see `../../extracted-source/VideoDriver.s`):
 | `Boot` | `0x2003000` | Am29000 boot code |
 | `Hand` | `0x2000000` | interrupt/trap handlers |
 | `Cache` | `0x2003800` | (bss) instruction-cache RAM |
-| `Vec` | `0x4C000000` | vector table |
+| `Vec` | `0x4C000000` | 1 KB table (256 longs) — **contents unexplained**, see below |
 | `PublicIn` / `PublicOu` | `0x4C006400/6800` | host↔card command in/out |
 | `HifComm` | `0x4C007000` | host-interface comm block |
 | **`VidComm`** | **`0x4C007300`** | **video command block (= ROM's `$0C007300`)** |
@@ -326,3 +326,36 @@ sub_00084:
 To recover the actual *names* one would need a build artifact this stripped
 firmware no longer carries (a `.map`, an unstripped `.o`, or symbolic debug
 info) — none is present in the shipped control-panel software.
+
+## `Vec`, `PublicIn`, `PublicOu`: noise-masked data (open puzzle)
+
+These three Runtime data sections do **not** look like what their names
+suggest. All three share one pattern: 17-bit values whose high bits descend
+in a regular staircase (`0x7C..`, `0x78..`, `0x74..`, … a drop of `0x400`
+per step, repeating every 24 entries with a `0x1000` shift, then a second
+run from `0x1BC..` down to `0x80..`) and whose low 10 bits look random.
+`Vec`'s 252 entries are all 4-aligned and distinct; they match no function
+symbol, no relocation site and no particular instruction class in Antelope's
+`.text` (checked), so they are not code pointers in any plain sense.
+
+What *is* solid:
+
+* `PublicOu` word 0 is the real constant **`$32100456`** — the "card is up"
+  signature `DRVR.s`'s `Init29K` waits for at `image+$400`. That fixes the
+  host-side image base as the `PublicIn` section (`0x4C006400`; the host
+  reaches it at slot-base `+0x0C006400`), so every handshake offset in
+  `DRVR.s` (`+$18`, `+$00`, `+$08`, `+$14`, `+$40`, `+$3D4`, `+$40C`) is a
+  field of `PublicIn`/`PublicOu`.
+* `PublicOu+$0C` reads `0x4C007112` (inside `HifComm`), `+$10` `0x4C007AFD`,
+  `+$14` `0x4C0070AF`: plausible pointers whose low bits are noise. The host
+  reads `+$40C` as the mailbox address, so the static values are probably
+  placeholders the card overwrites at run time.
+* `PublicOu` from `+$50C` holds text-like bytes interleaved with noise
+  (two ASCII-range bytes, two high bytes per word) that does not decode as
+  a plain string.
+
+How these were produced (a deliberate mask, an uninitialised-memory dump
+that the linker captured, or something the Boot code undoes) is **not
+determined**. It is also unknown where Boot's `Cache` second stage comes
+from; the new evidence only rules out the simple idea that `Vec` is an
+ordinary vector table of handler addresses.
