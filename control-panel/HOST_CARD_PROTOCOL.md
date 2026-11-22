@@ -133,7 +133,20 @@ as written). Decoded with `Hand`'s or `Boot`'s tables it becomes recognisable
 start-up code -- stack setup, `const`/`consth` pointer loads, `calli` calls and
 `asneq trap69,..` (the host-interface service call, used for exit) -- but the
 tables are not right for it, so its register fields are unreliable and it is
-not decoded here. So the kernel services (`sbrk`, `InpArgs`, time) are used,
+not decoded here. What *can* be read without the tables: in the first 128
+words the mask's bits 15-23 are zero (the key is a small ramp there), so the
+opcode and RC bytes are plain, and the loader's byte patches (`asgeu` vector
+`$40`) land on plain fields. That gives the stub's outline: `sub gr1,gr1,$18`;
+`asgeu 64`; `add lr1,gr1,..`; a `const`/`consth` pair with an unresolved external
+(a 4-8 byte common variable); a `const` whose plain high byte is `$01`
+followed by **`asneq trap69`** (word 9) -- a service number `$1xx` through the
+host-interface call, plausibly `$104` (the `InpArgs` pointer, `$4C007800`)
+since only `$101`-`$104`, `$111`, `$112`, `$121` exist; then three `calli`
+calls, one of them to a function at `.text+$3AC88` (via a lo16/hi16 relocation,
+the program's main routine), and at the end a `const` whose plain high byte is
+`$00` followed by a second **`asneq trap69`** (word 35) and a `jmp`: the
+`exit` (service 1) path. All register numbers and low bytes in the stub stay
+unreliable. So the kernel services (`sbrk`, `InpArgs`, time) are used,
 at most, by that stub; the accelerator proper does not call them; naming Antelope's functions from kernel
 anchors is therefore not possible beyond the spill/fill convention.
 
