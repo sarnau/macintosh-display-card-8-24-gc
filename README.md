@@ -27,6 +27,22 @@ disassembler** used to lift the coprocessor's own code.
 
 → see [`control-panel/README.md`](control-panel/README.md)
 
+## Where things stand
+
+* **Host side (68k): fully decoded** -- the declaration ROM, the control panel,
+  the `gc24` engine, the `.GraphAccel` driver and both INITs.
+* **Card firmware: the kernel is read.** The Am29000 `Runtime` image
+  (`Boot` + `Hand`, the trap/TLB/interrupt/service kernel) was recovered
+  from under a second, address-like mask on the code words and is
+  disassembled with a reading guide (`control-panel/firmware/`). Its
+  host-visible protocol (boot handshake, flags, restart, mailbox, video command
+  block, accelerated-command queue) is written down and cross-checked on both
+  sides in [`control-panel/HOST_CARD_PROTOCOL.md`](control-panel/HOST_CARD_PROTOCOL.md).
+* **Open: the 243 KB QuickDraw accelerator (`Antelope`)** carries the same kind of
+  mask with its own, more complex generator; it is not yet solved, so its
+  disassembly is not meaningful beyond opcode bytes (loader facts such as the
+  relocations and symbol boundaries are valid).
+
 ## Source material
 
 | File | What it is |
