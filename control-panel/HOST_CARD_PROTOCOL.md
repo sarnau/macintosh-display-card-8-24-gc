@@ -142,3 +142,15 @@ bits 7 and up do **not** follow `Hand`'s `0x80*(ROW-k)` ramp with a per-phase
 table (the jitter amplitude is several hundred rows, with plateau jumps), so
 Antelope's generator has additional structure that is not yet modelled and
 `text.bin` cannot be unmasked yet.
+
+Further attempt (not solved). The plaintext of the neighbours extends the
+samples: the word before every `asleu 65` is `jmpi lr0` (`$C0000080`, 454 of 454;
+its delay slot holds the assert), the word before an `asgeu 64` is
+`sub gr1,gr1,N` (281 of 293) and the word after it `add lr1,gr1,N` (214), so
+`mask_samples.tsv` now holds 1,201 full 23-bit keys (`asgeu`, `asleu`,
+`jmpi lr0`). Findings: adjacent keys (`jmpi`/`asleu` pairs) differ by about
++-1000 with no per-phase regularity (only the low 7 bits are per-phase);
+`(key>>7) + k` mod 256 is not periodic in `k mod P` for any P up to 260, and
+shows sawtooth runs (slope about +1.5 rows per word, reset every ~80 words,
+amplitude ~200 rows) in dense stretches, i.e. a multi-level counter rather
+than `Hand`'s single ramp. A closed form was not found.
