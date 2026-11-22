@@ -161,7 +161,7 @@ Counting idioms through the (unmasked) opcode byte gives far more known
 plaintext than the spill/fill words alone: **all 2,064 words with opcode `$70`
 are the NOP `aseq trap64,gr1,gr1` (`$70400101`)** -- each agrees with the
 48-entry low-bit table -- and 915 of the 997 `$C0` words are `jmpi lr0`
-(`$C0000080`). With the 747 spill/fill words that is 3,726 full 23-bit key values,
+(`$C0000080`). With the 747 spill/fill words that is 3,726 full key values,
 about one per 17 words, in `firmware/ACEF_100_Antelope/mask_samples.tsv`.
 
 What the denser data show (no closed form yet):
@@ -254,9 +254,10 @@ With the corrected samples the generator has a clean structure:
 **Partial unmask: `unmask_antelope_low.py`.** It rebuilds `J` from the
 samples file and XORs bits 0-12 of every word of a section. The outputs are
 `firmware/ACEF_100_Antelope/text.low13.bin` and `lit.low13.bin`. Bits 13-22
-stay masked. In an Am29000 word that leaves plain the RB field or low immediate
-byte, and the low 5 bits of RA. Still masked are RA's top 3 bits (local versus
-global), RC's low 7 bits, and the high immediate byte. Two independent checks,
+stay masked, and so does bit 23 (Antelope's key is 24 bits wide; see the idiom
+section below). In an Am29000 word that leaves plain the RB field or low
+immediate byte, and the low 5 bits of RA. Still masked are RA's top 3 bits
+(local versus global), all of RC, and the high immediate byte. Two independent checks,
 neither from data the fit used:
 
 * **Prologues.** The word before each `asgeu 64` decodes as `sub gr1,gr1,N` in
@@ -269,6 +270,48 @@ neither from data the fit used:
   shape of compiled switch tables, which random bits would not give. The hit
   rate on decoded `sub gr1,gr1,N` prologues is at chance (13% vs 13%), so the
   runs point at case labels, not functions.
+
+### Antelope mask: function-frame idioms (894 more full keys)
+
+With bits 0-12 plain, the neighbourhood of the known spill and fill asserts
+decodes to the standard Am29000 frame:
+
+| idiom | position | count | plaintext |
+|---|---|---|---|
+| `sub gr1,gr1,N` | word before `asgeu 64` | 281 | `$250101NN` |
+| `add lr1,gr1,N` | word after `asgeu 64` | 163 | `$158101NN` |
+| `add gr1,gr1,N` | 3 words before `asleu 65` (epilogue) | 450 | `$150101NN` |
+| tag word | word before the `sub` | 277 | `$00......`: zero only in bits 0-15 |
+
+N is read from the plain low byte. Test of the guessed upper fields: the
+implied keys' bits 13-16 were compared with existing samples in the same
+`k mod 48*2^(b-6)` class. They agree in every case (e.g. epilogue
+`add`: 177/177, 88/88, 39/39, 12/12), against 50% for a wrong guess. The tag
+word agrees through bit 15 but only 7/12 at bit 16, so its upper byte is
+not zero, and it was left out. RC's bit 23 (`lr1` vs `gr1`) cannot be tested
+this way, so those two idioms rely on the standard calling convention for
+that one bit.
+
+`mask_samples.tsv` now holds **4,620 keys, as 24-bit values** (column
+`key24`). The old column was named `key23` but already held bit 23. Two
+findings follow:
+
+* **The key is 24 bits.** In every idiom, raw bit 23 differs from the
+  plaintext in about half the words. The key's bit 23 is 0 at low indices,
+  like bit 22. Unlike `Hand`, Antelope masks the RC field's top bit too.
+* **The bit-period rule is now well tested through bit 16.** Every key bit
+  `b` from 13 to 23 is consistent with depending only on `k mod 48*2^(b-6)`.
+  The idioms land in classes already holding independent samples: 3,353
+  classes at bit 13 and 4,514 at bit 16, out of 4,620 samples. From bit 17 up
+  every class holds one sample, so those bits are untested.
+  Equivalently: bit `b` depends only on `k mod 3` and bits `0..b-3` of `k`,
+  the dependence `J[k mod 48] + 8*k` would give, but the update is not linear
+  (see above).
+
+What the high bits look like: `key >> 16` runs `00 02 1c 1e 19 1b 15 17 16 10
+12 2d 2f 2b 24 27 21 23 22 3d 39 ...` as `k` grows. The high nibble steps
+`0 1 2 3 c d e f` over the section, and the low nibble falls with small jitter
+inside each step, like `Hand`'s negated `-(r>>16)` field.
 
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 

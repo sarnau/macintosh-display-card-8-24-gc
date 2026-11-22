@@ -7,15 +7,15 @@ firmware/ACEF_100_Antelope/mask_samples.tsv, 726/726 on held-out samples):
     key(k) mod 2^13 = J[k mod 384] + 1024 * (k div 384)      (mod 2^13)
 
 k = word index from the start of the section (.text and .lit share the
-generator).  J is rebuilt from the samples file.  Bits 13-22 of the output
-are STILL MASKED, and bits 24-31 (opcode) were never masked.
+generator).  J is rebuilt from the samples file.  Antelope's key is 24 bits
+(unlike Hand's 23): bits 13-23 of the output are STILL MASKED, and only
+bits 24-31 (opcode) were never masked.
 
 What that means for an Am29000 word (op | RC | RA | RB/I):
     bits  0- 7  RB / low immediate byte      -> plain
     bits  8-12  RA's low 5 bits              -> plain
     bits 13-15  RA's top 3 bits (lr/gr)      -> masked
-    bits 16-22  RC's low 7 bits / high imm   -> masked
-    bit  23     never masked
+    bits 16-23  RC / high immediate byte     -> masked
 
 Usage:
     unmask_antelope_low.py IN.bin OUT.bin      # XOR bits 0-12 of every word

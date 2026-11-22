@@ -14,7 +14,7 @@ and the DRVR) and what could be recovered from it.
 | `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
 | `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
 | `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked**: bits 0-12 of every word (`text.low13.bin`, `lit.low13.bin`: RB/low immediate byte and RA's low 5 bits); bits 13-22 still masked; `disasm/text.asm` is *not* real code (opcode byte only) |
+| `Antelope` (the 243 KB accelerator) | **partly unmasked**: bits 0-12 of every word (`text.low13.bin`, `lit.low13.bin`: RB/low immediate byte and RA's low 5 bits); bits 13-23 still masked (the key is 24 bits); `disasm/text.asm` is *not* real code (opcode byte only) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
 Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
