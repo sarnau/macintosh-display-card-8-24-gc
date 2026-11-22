@@ -17,8 +17,84 @@
 *  The first instruction (jmp $2002808) is the entry point.  Delay slots are
 *  marked.  'aseq trap64,gr1,gr1' is the usual Am29000 NOP.
 * ==================================================================
+* ------------------------------------------------------------------
+*  READING GUIDE (all inferred from the code; names are mine)
+* ------------------------------------------------------------------
+*  Conventions seen throughout
+*    gr1/gr126/gr127/lr1..   AMD register-stack convention (gr1 = frame,
+*                            gr126/gr127 = spill bounds; vectors 61/62 below)
+*    gr64                    kernel FLAGS word, loaded at init from
+*                            PublicIn+$18 ($4C006418) = the unit flags
+*                            DRVR.s's SetFeatureFlags/PostLoadPoke publish
+*    gr65                    program break / heap pointer (service $101)
+*    gr69 / gr70             return address for internal 'call gr69,..'
+*                            (return = 'jmpi gr69'); gr70 for the service stubs
+*    gr77                    REASON CODE handed to the fatal-trap reporter
+*                            at $2002808 (table below)
+*    gr82,gr86,gr87,gr88,gr89,gr90   handler copies of OPS,CHA,CHD,PC0,PC1,CHC
+*    gr96, gr121             service result / service number (see $20011E8)
+*    gr0 with IPA/IPC set    INDIRECT register access: the four 'or gr0,..'
+*                            instructions are intentional, not noise
+*    'aseq trap64,gr1,gr1'   the usual Am29000 NOP (assert that never fires)
+*    CPS $047F / $007F       interrupts+traps disabled / enabled-ish sections
+*
+*  TRAP VECTOR TABLE (built by Boot at VAB = $4C000000; entry n at +4n)
+*     0 illegal opcode ........ $2000000   1 unaligned access .... $2000008
+*     2 out of range .......... $2000908   3 no coprocessor ...... $2000920
+*     4 coprocessor exception . $2000928   5 protection violation . $2000940
+*     6 instr access exception  $2000644   7 data access exception  $2000358
+*     8,10 instr TLB miss ..... $2000670   9,11 data TLB miss .... $2000714
+*    12 instr TLB prot viol ... $20008A0  13 data TLB prot viol ... $20008A8
+*    14 timer ................. $2000960  15 trace ................ $2000A24
+*    16 INTR0 $2000B08  17 INTR1 $2000B48  18 INTR2 $2000B98  19 INTR3 $2001064
+*    20 TRAP0 $2001144  21 TRAP1 $2001164  22..60 default ........ $2001D08
+*    61 register spill ....... $2001184   62 register fill ........ $20011B8
+*    63 SERVICE CALL ......... $20011E8   64 default (the NOP assert)
+*    65 assertion ............ $2000AE8   66 SERVICE CALL (HIF-like) $2001A70
+*
+*  REASON CODES (gr77 -> $2002808 -> mailbox word $4C007004)
+*    8F no-coprocessor   90 data access        91 vector 0        92 unaligned
+*    93 out-of-range     95 instr access/TLB   96..99 INTR0..3 with no handler
+*    9A TRAP0  9B TRAP1  9C protection         9D coprocessor     9E,A1 pager
+*    9F trace (unexpected)   A0 assert 65      A3 unknown vector  A5 stack bound
+*    A6 TLB miss outside any mapped region     B4,B5 report/trace overflow
+*
+*  CARD ADDRESS MAP USED BY THIS CODE (inferred)
+*    $4C000000 Vec   trap vector table (VAB)
+*    $4C002500 PrivNZ service-call jump table (pointers to $0200xxxx)
+*    $4C002810..$4C002E48  software TLB / page-table state (32-bucket hash at
+*                    $4C002818, 20-byte entries from $4C002898, tables at
+*                    $4C002CA8 / $4C002D78 / $4C002E48)
+*    $4C003090       register save area of the data-access handler
+*    $4C003168/316C  memory-region table: count, then 12-byte entries
+*                    (base, size, aux); used by $2001C2C and the TLB handlers
+*    $4C006400 PublicIn (host -> card): +00 boot poke $42005300, +10 address
+*                    limit, +18 flags (-> gr64), +3C timer value
+*    $4C00617C..$4C00618C  INTR0..INTR3 handler/enable words, pending flag
+*    $4C0061BC..$4C0061CC  trace / single-step state;  $4C006748 fatal-trap
+*                    register dump;  $4C006800 PublicOu (card -> host):
+*                    +28 board config, +30/+34 timer tick counters
+*    $4C006A5C,6A60,6A7C  last reason, trace count, PC1 trace buffer
+*    $4C007000 HifComm mailbox:  +00 signature ($96666669 card posts,
+*                    $73333337 's337' host acknowledges), +04 reason/status,
+*                    +08 host argument, +10..+4F register dump
+*    $4C007300 VidComm video command block (+04 ack, +08.. params, +1C command)
+*    $44000000..$440000A0 card control registers (HW-ID bits +44/+48/+4C,
+*                    interrupt acks +50/+54/+58, status +64/+68/+70, +7C/+80)
+*    $46000000       interrupt mask/pending word;  $40003400 register spill area
+* ------------------------------------------------------------------
+*
+*  $2000000  VECTOR 0 / ENTRY: jmp $2002808 with reason $91 (illegal opcode),
+*            i.e. the fatal-trap reporter.  Normal start-up is Boot -> $2001FFC.
   2000000:  a00a0002  jmp      $2002808                   ; -> L_2002808
   2000004:  03004d91  const    gr77, $0091                ; [delay slot]
+* ==================================================================
+*  VECTOR 1 -- UNALIGNED ACCESS: emulates unaligned word loads/stores
+*  (and load/store-multiple) with two halfword accesses, calling the
+*  address-range check $2001C2C per word; uses CHA/CHD/CHC, CR, IPA/IPC
+*  (indirect register access, hence the 'or gr0,..' lines) and returns
+*  with iret via $20000D0.  Failures end in reason $92.
+* ==================================================================
 L_2000008:
   2000008:  c6590b00  mfsr     gr89, PC1               
   200000c:  c6580a00  mfsr     gr88, PC0               
@@ -100,6 +176,7 @@ L_2000104:
 L_2000128:
   2000128:  a00900b8  jmp      $2002808                   ; -> L_2002808
   200012c:  03004d92  const    gr77, $0092                ; [delay slot]
+*  (store-multiple / load-multiple emulation path of the unaligned handler)
 L_2000130:
   2000130:  c6448700  mfsr     gr68, CR                
   2000134:  814d4402  sll      gr77, gr68, $02         
@@ -258,6 +335,13 @@ L_2000324:
   200034c:  01ff54ff  constn   gr84, $ffff             
   2000350:  a0ff002e  jmp      $2000008                   ; -> L_2000008
   2000354:  1e005455  store    0, 0, gr84, gr85           ; [delay slot]
+* ==================================================================
+*  VECTOR 7 -- DATA ACCESS EXCEPTION: saves registers to $4C003090,
+*  clears the CHC fault bits, reads the bus status word at $46000000,
+*  acknowledges the source (bit mask built from the faulting address)
+*  and resumes (iret/iretinv) with CHA/CHC adjusted; unrecoverable
+*  cases report reason $90.  [$20004A4: interrupt-style acknowledge path]
+* ==================================================================
   2000358:  03045500  const    gr85, $0400             
   200035c:  03305490  const    gr84, $3090             
   2000360:  024c5400  consth   gr84, $4c00             
@@ -453,6 +537,10 @@ L_20005b8:
   2000638:  24545443  sub      gr84, gr84, gr67        
   200063c:  ce000454  mtsr     CHA, gr84               
   2000640:  88000000  iret                             
+* ==================================================================
+*  VECTOR 6 -- INSTRUCTION ACCESS EXCEPTION: records PC0/PC1 and reports
+*  reason $95 through $2002808.
+* ==================================================================
   2000644:  15825800  add      lr2, gr88, $00             ; [delay slot]
   2000648:  15835900  add      lr3, gr89, $00          
   200064c:  c6470100  mfsr     gr71, OPS               
@@ -465,6 +553,14 @@ L_20005b8:
 L_2000668:
   2000668:  a0080068  jmp      $2002808                   ; -> L_2002808
   200066c:  03004d95  const    gr77, $0095                ; [delay slot]
+* ==================================================================
+*  VECTORS 8 and 10 -- INSTRUCTION TLB MISS (software TLB refill).
+*  If CHC bit 10 is set it just clears CHC bit 0 and returns.  Otherwise
+*  it hashes the 1 KB page number ((PC1 >> 10) & $1F) into the bucket table
+*  at $4C002818, walks the chain for a tag equal to the page, and loads the
+*  two TLB words with 'mttlb' at the LRU slot (LRU, LRU+1); iretinv restarts
+*  the instruction.  Not found -> $2001D10 (pager).  Reason $95 on null PC1.
+* ==================================================================
   2000670:  c6540600  mfsr     gr84, CHC               
   2000674:  81555415  sll      gr85, gr84, $15         
   2000678:  a4005504  jmpf     gr85, $2000688             ; -> L_2000688
@@ -510,6 +606,15 @@ L_20006ec:
   2000708:  15515101  add      gr81, gr81, $01         
   200070c:  be005143  mttlb    gr81, gr67              
   2000710:  8c000000  iretinv                          
+* ==================================================================
+*  VECTORS 9 and 11 -- DATA TLB MISS.  Builds the TLB tag from CHA (page
+*  address | $7600 flags), loads it at LRU, then checks whether the address
+*  lies in a registered region of the table at $4C00316C (bitmask test on
+*  the top nibble against gr91, then a linear scan over the entries); if it
+*  does, remaps via the entry's offset and retries (mttlb + iret).  If not,
+*  and gr64 bit 30 says to trap, it records the miss at $4C0061C8/61CC and
+*  sets an OPS bit; otherwise reason $A6 (miss outside any region).
+* ==================================================================
   2000714:  c64a0e00  mfsr     gr74, LRU                  ; [delay slot]
   2000718:  c6440400  mfsr     gr68, CHA               
   200071c:  03804c00  const    gr76, $8000             
@@ -618,8 +723,14 @@ L_2000860:
 L_2000898:
   2000898:  be004a44  mttlb    gr74, gr68              
   200089c:  88000000  iret                             
+*  VECTOR 12 -- INSTRUCTION TLB PROTECTION VIOLATION: reason $95
   20008a0:  a00700da  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   20008a4:  03004d95  const    gr77, $0095                ; [delay slot]
+* ==================================================================
+*  VECTOR 13 -- DATA TLB PROTECTION VIOLATION: if the miss recorded at
+*  $4C0061C8/61CC matches (trace/step bookkeeping) clears OPS bit $2000 and
+*  returns; else reason $9C.
+* ==================================================================
   20008a8:  81474001  sll      gr71, gr64, $01         
   20008ac:  a4004714  jmpf     gr71, $20008fc             ; -> L_20008fc
   20008b0:  036147c8  const    gr71, $61c8                ; [delay slot]
@@ -646,6 +757,7 @@ L_20008fc:
   20008fc:  88000000  iret                             
   2000900:  a00700c2  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   2000904:  03004d9c  const    gr77, $009c                ; [delay slot]
+*  VECTOR 2 -- OUT OF RANGE: returns (iret) if gr64 bit 15 is set, else reason $93
   2000908:  81474010  sll      gr71, gr64, $10         
   200090c:  ac004704  jmpt     gr71, $200091c             ; -> L_200091c
   2000910:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
@@ -653,8 +765,10 @@ L_20008fc:
   2000918:  03004d93  const    gr77, $0093                ; [delay slot]
 L_200091c:
   200091c:  88000000  iret                             
+*  VECTOR 3 -- NO COPROCESSOR: reason $8F
   2000920:  a00700ba  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   2000924:  03004d8f  const    gr77, $008f                ; [delay slot]
+*  VECTOR 4 -- COPROCESSOR EXCEPTION: returns (iret) if gr64 bit 2 is set, else reason $9D
   2000928:  8147401d  sll      gr71, gr64, $1d         
   200092c:  ac004704  jmpt     gr71, $200093c             ; -> L_200093c
   2000930:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
@@ -662,6 +776,7 @@ L_200091c:
   2000938:  03004d9d  const    gr77, $009d                ; [delay slot]
 L_200093c:
   200093c:  88000000  iret                             
+*  VECTOR 5 -- PROTECTION VIOLATION: if CHC bit 10 is set clears CHC bit 0 and returns, else reason $9C
   2000940:  c6540600  mfsr     gr84, CHC                  ; [delay slot]
   2000944:  81555415  sll      gr85, gr84, $15         
   2000948:  a4005504  jmpf     gr85, $2000958             ; -> L_2000958
@@ -671,6 +786,13 @@ L_200093c:
 L_2000958:
   2000958:  a00700ac  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   200095c:  03004d9c  const    gr77, $009c                ; [delay slot]
+* ==================================================================
+*  VECTOR 14 -- TIMER: reloads TMR with $01007530 (interrupt-enable bit +
+*  30000 cycles), increments the tick counter at $4C006830 (every 65536
+*  ticks copies the word at $4C00643C << 16 to $46000000), adds $7530 to
+*  the cycle accumulator at $4C006834, and calls $2002794 (PC1 trace) when
+*  tracing is enabled.  Returns with iret.
+* ==================================================================
   2000960:  c6540600  mfsr     gr84, CHC               
   2000964:  81555415  sll      gr85, gr84, $15         
   2000968:  a4005504  jmpf     gr85, $2000978             ; -> L_2000978
@@ -724,6 +846,11 @@ L_2000a10:
   2000a18:  15494901  add      gr73, gr73, $01         
   2000a1c:  1e004948  store    0, 0, gr73, gr72        
   2000a20:  88000000  iret                             
+* ==================================================================
+*  VECTOR 15 -- TRACE: single-step support.  With the step state at
+*  $4C0061C8/61CC armed it clears OPS bits, re-installs the TLB entry and
+*  iretinv's; counts occurrences in $4C00684C/6850; otherwise reason $9F.
+* ==================================================================
   2000a24:  c6540600  mfsr     gr84, CHC                  ; [delay slot]
   2000a28:  81555415  sll      gr85, gr84, $15         
   2000a2c:  a4005504  jmpf     gr85, $2000a3c             ; -> L_2000a3c
@@ -777,6 +904,7 @@ L_2000ad4:
   2000adc:  15464601  add      gr70, gr70, $01         
   2000ae0:  1e004644  store    0, 0, gr70, gr68        
   2000ae4:  88000000  iret                             
+*  VECTOR 65 -- ASSERTION: backs PC0/PC1 up by one instruction, reason $A0
   2000ae8:  c6430a00  mfsr     gr67, PC0                  ; [delay slot]
   2000aec:  25434304  sub      gr67, gr67, $04         
   2000af0:  ce000a43  mtsr     PC0, gr67               
@@ -785,6 +913,7 @@ L_2000ad4:
   2000afc:  ce000b43  mtsr     PC1, gr67               
   2000b00:  a0070042  jmp      $2002808                   ; -> L_2002808
   2000b04:  03004da0  const    gr77, $00a0                ; [delay slot]
+*  VECTOR 16 -- INTR0: runs the handler enabled at $4C00617C via $20010A4, else reason $96
   2000b08:  c6540600  mfsr     gr84, CHC               
   2000b0c:  81555415  sll      gr85, gr84, $15         
   2000b10:  a4005504  jmpf     gr85, $2000b20             ; -> L_2000b20
@@ -803,6 +932,7 @@ L_2000b20:
 L_2000b40:
   2000b40:  a0070032  jmp      $2002808                   ; -> L_2002808
   2000b44:  03004d96  const    gr77, $0096                ; [delay slot]
+*  VECTOR 17 -- INTR1: clears the source ($44000058 <- 0), handler word $4C006180 via $20010A4, else reason $97
   2000b48:  c6540600  mfsr     gr84, CHC               
   2000b4c:  81555415  sll      gr85, gr84, $15         
   2000b50:  a4005504  jmpf     gr85, $2000b60             ; -> L_2000b60
@@ -825,6 +955,10 @@ L_2000b60:
 L_2000b90:
   2000b90:  a007001e  jmp      $2002808                   ; -> L_2002808
   2000b94:  03004d97  const    gr77, $0097                ; [delay slot]
+*  VECTOR 18 -- INTR2: handler word $4C006184.  If none is registered it runs
+*  the VidComm service $2000C14 and iretinv's; otherwise it acknowledges the
+*  status registers ($44000050/54, only where $44000064/68 say they are set)
+*  and dispatches the handler through $20010A4.
   2000b98:  c6540600  mfsr     gr84, CHC               
   2000b9c:  81555415  sll      gr85, gr84, $15         
   2000ba0:  a4005504  jmpf     gr85, $2000bb0             ; -> L_2000bb0
@@ -860,6 +994,17 @@ L_2000c08:
   2000c08:  a8004503  call     gr69, $2000c14             ; -> L_2000c14
   2000c0c:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   2000c10:  8c000000  iretinv                          
+* ==================================================================
+*  $2000C14 -- VIDEO COMMAND SERVICE ($4C007300 VidComm).  Called from
+*  INTR2 and from the mailbox poll.  Checks the busy/status registers
+*  ($44000064/50), reads the command word and parameters (+08..+1C), does
+*  a 32-step multiply with the Q register to turn them into an address /
+*  size, then (by command code) performs bulk word copies between the
+*  $4C000000 window and card RAM with a 16-byte stride, saves/restores
+*  gr96..gr103 at $40003400, clears the TLB ('mttlb' loop) and the
+*  $4C002818 / $4C002CA8 tables, and re-enters init ($2001FFC).
+*  (Exact command numbering not worked out.)
+* ==================================================================
 L_2000c14:
   2000c14:  03004600  const    gr70, $0000                ; [delay slot]
   2000c18:  03004764  const    gr71, $0064             
@@ -1157,11 +1302,13 @@ L_2001024:
   2001048:  03684728  const    gr71, $6828             
   200104c:  024c4700  consth   gr71, $4c00             
   2001050:  1e004d47  store    0, 0, gr77, gr71        
+*  common return of $2000C14 (jmpi gr69); the next line reports reason $98
 L_2001054:
   2001054:  c0000045  jmpi     gr69                    
   2001058:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   200105c:  a00500eb  jmp      $2002808                   ; -> L_2002808
   2001060:  03004d98  const    gr77, $0098                ; [delay slot]
+*  VECTOR 19 -- INTR3: handler word $4C006188 via $20010A4, else reason $99
   2001064:  c6540600  mfsr     gr84, CHC               
   2001068:  81555415  sll      gr85, gr84, $15         
   200106c:  a4005504  jmpf     gr85, $200107c             ; -> L_200107c
@@ -1180,6 +1327,12 @@ L_200107c:
 L_200109c:
   200109c:  a00500db  jmp      $2002808                   ; -> L_2002808
   20010a0:  03004d99  const    gr77, $0099                ; [delay slot]
+* ------------------------------------------------------------------
+*  $20010A4  INTERRUPT DISPATCH: if no dispatch is already active ($4C00618C)
+*  it marks one active, re-enables interrupts, saves PC0/PC1/OPS/CHA/CHC/CHD
+*  and gr96..gr99 in a frame at $4C00618C+4, sets OPS = $086E and iret's to
+*  the registered handler (address in gr72).
+* ------------------------------------------------------------------
 L_20010a4:
   20010a4:  0361468c  const    gr70, $618c             
   20010a8:  024c4600  consth   gr70, $4c00             
@@ -1222,6 +1375,7 @@ L_20010a4:
   200113c:  88000000  iret                             
 L_2001140:
   2001140:  88000000  iret                                ; [delay slot]
+*  VECTOR 20 -- TRAP0: reason $9A
   2001144:  c6540600  mfsr     gr84, CHC                  ; [delay slot]
   2001148:  81555415  sll      gr85, gr84, $15         
   200114c:  a4005504  jmpf     gr85, $200115c             ; -> L_200115c
@@ -1231,6 +1385,7 @@ L_2001140:
 L_200115c:
   200115c:  a00500ab  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   2001160:  03004d9a  const    gr77, $009a                ; [delay slot]
+*  VECTOR 21 -- TRAP1: reason $9B
   2001164:  c6540600  mfsr     gr84, CHC               
   2001168:  81555415  sll      gr85, gr84, $15         
   200116c:  a4005504  jmpf     gr85, $200117c             ; -> L_200117c
@@ -1240,6 +1395,9 @@ L_200115c:
 L_200117c:
   200117c:  a00500a3  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   2001180:  03004d9b  const    gr77, $009b                ; [delay slot]
+*  VECTOR 61 -- REGISTER STACK SPILL (overflow): checks the new bound
+*  against the stack limit (reason $A5 if exceeded), then storem's
+*  lr0.. into the memory stack and moves gr126/gr127.
   2001184:  24797e01  sub      gr121, gr126, gr1       
   2001188:  247e7f79  sub      gr126, gr127, gr121     
   200118c:  46457e41  cpleu    gr69, gr126, gr65       
@@ -1254,6 +1412,7 @@ L_200117c:
 L_20011b0:
   20011b0:  a0050096  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   20011b4:  03004da5  const    gr77, $00a5                ; [delay slot]
+*  VECTOR 62 -- REGISTER STACK FILL (underflow): loadm refills lr0.. from the memory stack
   20011b8:  03027900  const    gr121, $0200            
   20011bc:  9279797f  or       gr121, gr121, gr127     
   20011c0:  ce008179  mtsr     IPA, gr121              
@@ -1266,6 +1425,17 @@ L_20011b0:
   20011dc:  817f8100  sll      gr127, lr1, $00         
   20011e0:  36000079  loadm    0, 0, gr0, gr121        
   20011e4:  88000000  iret                             
+* ==================================================================
+*  VECTOR 63 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
+*  $B6+$D5 index the jump table at $4C002500 (probably the PrivNZ section,
+*  pointers to the stubs below); anything else returns gr96 = $FFFFFFD6, gr121 = 0.
+*  Arguments in lr2/lr3, result in gr96.  Service stubs that follow:
+*    $2001224  wait for / clear the INTR2 status ($44000054 <- all-ones,
+*              poll $44000068, then clear)       $2001250  gr96 = [$4C00682C]
+*    $2001260  read/modify the word at $4C00643C (and mirror it to $46000000)
+*              $2001294  restart kernel ($2001FFC) if gr64 bit 28 is set
+*    $20012AC  free stack/heap space = gr127 - $3000 - gr65 ... (more below)
+* ==================================================================
   20011e8:  157a7900  add      gr122, gr121, $00          ; [delay slot]
   20011ec:  257a7ab6  sub      gr122, gr122, $b6       
   20011f0:  ac007a0a  jmpt     gr122, $2001218            ; -> L_2001218
@@ -1442,6 +1612,17 @@ L_2001458:
   200146c:  a8004503  call     gr69, $2001478             ; -> L_2001478   ; [delay slot]
   2001470:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   2001474:  88000000  iret                             
+* ==================================================================
+*  $2001478 / $2001604  MEMORY-REGION TABLE MANAGEMENT.  The table at
+*  $4C003168 (count) / $4C00316C (12-byte entries: base, size, aux) lists
+*  the address ranges the TLB handlers accept.  $2001478 INSERTS a range
+*  (lr2 = base, lr3 = size, lr4 = aux; both must be 1 KB aligned; merges /
+*  rejects overlaps; sets gr64 bit $08000000 when the table was empty) and
+*  $2001604 REMOVES / trims a range (lr2 = $FFFFFFFF clears the table);
+*  both then rebuild the hardware TLB ('mftlb'/'mttlb' scan, entries
+*  tagged $36 are the ones re-written).  (Parameter roles are a reading of
+*  the loads/compares, not confirmed against a caller.)
+* ==================================================================
 L_2001478:
   2001478:  01fc4300  constn   gr67, $fc00                ; [delay slot]
   200147c:  90468243  and      gr70, lr2, gr67         
@@ -1866,6 +2047,15 @@ L_2001a44:
   2001a64:  88000000  iret                             
   2001a68:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
   2001a6c:  88000000  iret                             
+* ==================================================================
+*  VECTOR 66 -- SERVICE CALL (second set).  gr121 = service:
+*    $101  sbrk:  gr96 = old break (gr65), break += lr2 rounded up to 4;
+*                 fails ($0C in gr121) if it would cross gr127 - $3000
+*    $102  compares lr2 with the limit at $4C006410; gr96 = 0
+*    $103  gr96 = $400 (page / unit size)
+*    $121  lr2 = $40 -> gr92 = lr3, lr2 = $41 -> gr93 = lr3 (set globals)
+*  further numbers are handled below and end in $2002650 (report to host).
+* ==================================================================
   2001a70:  157a7900  add      gr122, gr121, $00          ; [delay slot]
   2001a74:  03017901  const    gr121, $0101            
   2001a78:  60797a79  cpeq     gr121, gr122, gr121     
@@ -1992,6 +2182,13 @@ L_2001c20:
   2001c20:  60794747  cpeq     gr121, gr71, gr71       
   2001c24:  15604700  add      gr96, gr71, $00         
   2001c28:  88000000  iret                             
+* ==================================================================
+*  $2001C2C  RANGE CLIP / VALIDATE.  In: gr70 = address, gr71 = length,
+*  gr91 = region mask.  Walks the (base, size) table at $4C00316C with
+*  CPS = $047F (interrupts masked), trims the request to the matching
+*  region(s) and returns the allowed length in gr71 / adjusted address in
+*  gr70; return = jmpi gr69.  Used by the unaligned handler and others.
+* ==================================================================
 L_2001c2c:
   2001c2c:  81434004  sll      gr67, gr64, $04            ; [delay slot]
   2001c30:  c4004345  jmpfi    gr67, gr69              
@@ -2055,6 +2252,14 @@ L_2001cf8:
   2001cfc:  92464651  or       gr70, gr70, gr81        
   2001d00:  c0000045  jmpi     gr69                    
   2001d04:  03004700  const    gr71, $0000                ; [delay slot]
+* ==================================================================
+*  VECTORS 22..60 (default): any unexpected vector -> reason $A3.
+*  $2001D10  PAGER (a reading): reached when the TLB miss handlers find no
+*  entry.  Takes a slot from the pools at $4C002810 / $4C002818 / $4C002898 / $4C002CA8 /
+*  $4C002D78 / $4C002E48 (20-byte entries; 0x34 slots), links it into the
+*  hash bucket for the page, and fills the new entry from the region table.
+*  Failures here give reasons $9E / $A1.
+* ==================================================================
   2001d08:  a00200c0  jmp      $2002808                   ; -> L_2002808
   2001d0c:  03004da3  const    gr77, $00a3                ; [delay slot]
 L_2001d10:
@@ -2260,6 +2465,14 @@ L_2001fbc:
   2001ff0:  1e00514c  store    0, 0, gr81, gr76        
   2001ff4:  a0f900be  jmp      $20006ec                   ; -> L_20006ec
   2001ff8:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
+* ==================================================================
+*  $2001FFC  KERNEL INIT (reached from Boot, and from the restart service).
+*  CFG = $D0, CPS = $047F; gr64 <- PublicIn+$18 (host flags); acknowledges
+*  and clears $44000050/54; clears the region table ($4C003168), the
+*  interrupt handler words ($4C00617C..) and $4C006830.. counters; stores
+*  $A2 at $4C006A5C; clears VidComm ($4C007300..) and then sets up the
+*  vector/TLB state and falls into the main wait loop.
+* ==================================================================
 L_2001ffc:
   2001ffc:  040003d0  mtsrim   CFG, $00d0              
   2002000:  0404027f  mtsrim   CPS, $047f              
@@ -2702,6 +2915,16 @@ L_20025e8:
   2002644:  8c000000  iretinv                          
   2002648:  a0000070  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
   200264c:  03004d9e  const    gr77, $009e                ; [delay slot]
+* ==================================================================
+*  $2002650  REPORT TO HOST (mailbox $4C007000).  Saves PC0/PC1/OPS/CHC/CHA/CHD,
+*  then loops: if the video status register ($44000064) asks for service it
+*  calls $2000C14; reads the mailbox word; if it is $73333337 ('s337', the
+*  host's acknowledge written by DRVR.s) it writes the reason code (gr77, with a
+*  flag) to $4C007004, reads the host argument from $4C007008 and returns;
+*  if it is $96666669 (the card's own 'posted' marker) keeps waiting; any other
+*  value ends the wait.  Before waiting it posts: reason -> +04, a 16-word
+*  register dump (storem from lr2) -> +10, $96666669 -> +00, and echoes +0C.
+* ==================================================================
 L_2002650:
   2002650:  c6590b00  mfsr     gr89, PC1               
   2002654:  c6580a00  mfsr     gr88, PC0               
@@ -2791,6 +3014,11 @@ L_2002770:
   2002788:  ce00065a  mtsr     CHC, gr90               
   200278c:  c0000046  jmpi     gr70                    
   2002790:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
+* ==================================================================
+*  $2002794  PC TRACE: increments the count at $4C0061C0 (limit $80) and
+*  stores PC1 at $4C006A7C + 4*count, a ring of recent trap return
+*  addresses; at the limit it reports reason $B5 through $2002650.
+* ==================================================================
 L_2002794:
   2002794:  036147c0  const    gr71, $61c0             
   2002798:  024c4700  consth   gr71, $4c00             
@@ -2823,6 +3051,15 @@ L_20027d0:
   20027fc:  024c4700  consth   gr71, $4c00             
   2002800:  a0ff00ec  jmp      $20027b0                   ; -> L_20027b0
   2002804:  03004800  const    gr72, $0000                ; [delay slot]
+* ==================================================================
+*  $2002808  FATAL-TRAP REPORTER.  Entry with gr77 = reason code.  Saves
+*  the trap context (VAB, OPS, CPS, CFG, CHA, CHD, CHC, RBP, TMC, TMR, PC0,
+*  PC1, PC2, LRU, the global and local registers) into the dump area at
+*  $4C006748, moves it into lr2.. and calls $2002650 to tell the host; the
+*  rest of the routine (to $2002D14) restores the register file in the order
+*  VAB, OPS, CPS, CFG, CHA, CHD, CHC, RBP, TMC, TMR, PC0, PC1, PC2, LRU and
+*  returns with iret.
+* ==================================================================
 L_2002808:
   2002808:  61464d92  cpeq     gr70, gr77, $92         
   200280c:  ac004606  jmpt     gr70, $2002824             ; -> L_2002824
