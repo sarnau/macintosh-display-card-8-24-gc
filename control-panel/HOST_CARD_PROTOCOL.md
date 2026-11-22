@@ -270,10 +270,31 @@ neither from data the fit used:
   rate on decoded `sub gr1,gr1,N` prologues is at chance (13% vs 13%), so the
   runs point at case labels, not functions.
 
-Lead for the upper bits: within one switch table the targets mostly share their
-upper bits. So for consecutive `.lit` words `raw >> 13` is `key >> 13` XOR a
-nearly constant value, which would give dense, consecutive upper-bit key
-differences.
+### Antelope mask: the `.lit` switch tables as an upper-bit source
+
+* **`.lit` uses the full `.text` key at the same word index**, all 23 bits, not
+  just the low ones. 31 relocated `.lit` words have a `.text` sample at the same
+  index. `raw XOR key` gives a full target for each, and all 31 land inside
+  `.text` (`$0F0`..`$5948`, versus 1 in 33 by chance each). Adjacent entries
+  agree with the decoded low 13 bits of their neighbours.
+* **Extending this to whole tables works only partly.** I fixed one table entry
+  from a sample and walked outward, choosing for each word the value that
+  matches its low 13 bits and is nearest its neighbour's target. This
+  reproduces 21 of 23 other anchors. Four tables drift into negative targets
+  (their case labels jump more than 4 KB). Three tables (`.lit` words 2-51,
+  138-175, 990-1030) are clean and give about 129 consecutive full keys. Their
+  bits 13 and up change only slowly: `key >> 13` is `0` for words 2-38, then
+  `1`; around `6`/`7` near word 140; `$13` near word 1000.
+* Against the existing samples in the same `k mod 6144` class, those
+  reconstructions agree on bit 13 in 35 of 44 cases (chance: about 22). The 9
+  misses cluster where a table's targets cross an 8 KB boundary, which the
+  nearest-neighbour rule cannot resolve. So the reconstructed keys are right
+  inside an 8 KB block and unreliable at crossings. They are not added to
+  `mask_samples.tsv`.
+* **`.data`, `.data1`, `Apple` and `Code` do not share this keystream.** None
+  matches the `.text` key at the same index. No offset from 0 to 70,000 words
+  makes even 5% of `.data`'s low 13 bits decode to zero, although 919 of its
+  1,596 words have a zero top byte.
 
 ## 8. The kernel's service table (vector 66)
 
