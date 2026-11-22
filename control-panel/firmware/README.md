@@ -581,6 +581,37 @@ for P in {64, 96, 128, 192, 256, 384, 512} does not collapse to a function of
 `k mod 512`/`1024`. So bits 15-23 are a sparse-sample-fitted staircase at best,
 and `unmask_runtime.py` still leaves them masked.
 
+**`PublicIn`, `PublicOu` and the other `0x4C...` sections (what the mask hides).**
+The same split of each word into a plain high half and a key-masked low half
+holds here, but each section has its own key, so neither `Vec`'s nor `Hand`'s
+applies (zero hits on `PublicIn`/`PublicOu`/`PrivNZ`/`Apple` with `Hand`'s key;
+`Vec`'s only decodes `Apple`):
+
+* `PublicIn` is the key and nothing else: its low halves are `0, 0x1fd, 0x2b9,
+  0x27a, 0x271, 0x32b, 0x348` (the small start of the ramp, like `Vec[4] =
+  0x344`) followed by the ramp `0x7c21, 0x7c6d, ...`, with the low 7 bits
+  repeating every 48 words in 192 of 193 comparisons; every high half is 0 or
+  1 (bit 16 of the key). So `PublicIn` holds no data of its own -- it is an
+  all-zero input area, masked.
+* `PublicOu`'s plain high halves are `3210, 0070, 0, 4C00, 4C00, 4C00, 4C00,
+  0001, 0, ...` for words 0-15, then 0 or 1 (key bit 16) for the rest, with one
+  `FFFF` at word 15. Words 3-6 are therefore 32-bit pointers whose high half is
+  `0x4C00` (the card's `0x4C000000` window) and whose low halves are
+  key only, i.e. base-address-like values that the card overwrites at run time.
+  Word 0 reads `0x32100456`, the `Init29K` handshake constant, directly in the
+  file (so the host sees the masked pattern as loaded).
+* `PublicOu` words 324-367 hold another copy of the copyright text in their high
+  halves with the second byte's low bit flipped by key bit 16 ("(b" is "(c",
+  "18" is "19", "ld" is "le", " @" is " A", ...), again with every other
+  two-character chunk missing: `(c 19 " A" le om te " I" ". " "l " gh " R" er
+  ...` -- the tail of "(c) 1989, Apple Computer, Inc. All Rights Reserved".
+
+The per-phase low-7-bit table of `PublicOu` is dominated (218 of 360 words
+agree per phase-48 class, against about 17% for random data), so a key table
+exists for it as for `Hand`, but its row part did not fit the period-48 model
+(only 72 of 360 words reach zero after the fit), so `PublicOu`'s other 330
+words are not yet decoded.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
