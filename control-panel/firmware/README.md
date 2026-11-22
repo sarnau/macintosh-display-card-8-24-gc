@@ -14,12 +14,12 @@ and the DRVR) and what could be recovered from it.
 | `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
 | `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
 | `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked**: bits 0-12 of every word (`text.low13.bin`, `lit.low13.bin`: RB/low immediate byte and RA's low 5 bits); bits 13-23 still masked (the key is 24 bits); `disasm/text.asm` is *not* real code (opcode byte only) |
+| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin`, `lit.partial.bin` + `.known` sidecar): bits 0-12 of every word (RB/low immediate byte, RA's low 5 bits), bits 13-14 for 96% and bit 15 for 55% of words (RA complete); bits 16-23 (RC, high immediate byte) still masked (the key is 24 bits); `disasm/text.asm` is *not* real code (opcode byte only) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
 Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
 `../am29k_dasm.py` (Am29000 disassembler), `../unmask_runtime.py` (second mask,
-`Hand`/`Boot`), `../unmask_antelope_low.py` (bits 0-12 of Antelope's mask),
+`Hand`/`Boot`), `../unmask_antelope_low.py` (the known low bits of Antelope's mask),
 `../extract_resources.py` (resource fork).
 
 ## The ACEF format (reverse-engineered)

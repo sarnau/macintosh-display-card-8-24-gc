@@ -252,8 +252,9 @@ With the corrected samples the generator has a clean structure:
   spacing of 48 to 480 words.
 
 **Partial unmask: `unmask_antelope_low.py`.** It rebuilds `J` from the
-samples file and XORs bits 0-12 of every word of a section. The outputs are
-`firmware/ACEF_100_Antelope/text.low13.bin` and `lit.low13.bin`. Bits 13-22
+samples file and XORs bits 0-12 of every word of a section. (It now goes
+further; see "deeper levels" below. Its outputs are
+`firmware/ACEF_100_Antelope/text.partial.bin` and `lit.partial.bin`.) Bits 13-22
 stay masked, and so does bit 23 (Antelope's key is 24 bits wide; see the idiom
 section below). In an Am29000 word that leaves plain the RB field or low
 immediate byte, and the low 5 bits of RA. Still masked are RA's top 3 bits
@@ -312,6 +313,45 @@ What the high bits look like: `key >> 16` runs `00 02 1c 1e 19 1b 15 17 16 10
 12 2d 2f 2b 24 27 21 23 22 3d 39 ...` as `k` grows. The high nibble steps
 `0 1 2 3 c d e f` over the section, and the low nibble falls with small jitter
 inside each step, like `Hand`'s negated `-(r>>16)` field.
+
+### Antelope mask: deeper levels (bits 13-15)
+
+The same shape repeats one level up, with a longer table. Each line is exact
+on all 4,620 samples. Each is also tested by fitting the table on about 3,700
+random samples and predicting the rest:
+
+| bits | model | table classes covered | held-out |
+|---|---|---|---|
+| 0-12 | `J13[k mod 384] + $0400*(k div 384)` | 384/384 | 920/920 |
+| 0-14 | `J15[k mod 1536] + $7000*(k div 1536)` | 1,472/1,536 (96%) | 851/851 |
+| 0-15 | `J16[k mod 6144] + $4000*(k div 6144)` | 3,353/6,144 (55%) | 397/397 |
+
+The steps are consistent with each other: `$7000*4 = $1C000`, which is
+`$4000` mod 2^16 per 6144 words. The steps also agree with a slope of
+`$18` (24) per word mod 32. Only the per-class tables are unknown, and they
+grow with each bit (tried and failed: a 48-entry table plus linear or
+XOR-combined counters, and affine functions of the bits of `k div 48`). A
+closed form for the tables is not found, so the upper levels are filled only
+where the samples reach.
+
+`unmask_antelope_low.py` now unmasks each word as far as its class is
+covered:
+
+* bits 0-12 for all 62,134 `.text` words;
+* bits 0-14 for 59,550;
+* bits 0-15 for 33,837.
+
+It writes `text.partial.bin` / `lit.partial.bin` plus a `.known` sidecar (one
+byte per word: the number of plain low bits). Bits 13-15 are RA's top three
+bits, so RA is now complete (local vs global) for more than half of all
+instructions.
+
+Independent check, on words that are not samples: for `add` with an immediate
+and all 16 low bits plain, RA decodes to `gr125` (446; `msp`, the memory stack
+pointer in the AMD calling convention), `gr96` (402), `lr10`, `lr8`, `lr2`,
+`lr3`, `lr11`, `lr9`, `gr98`, `gr97`, `gr100`, `lr16`, ... These are the
+return, temporary, argument and local registers that compiled 29K code uses.
+Random bits would spread over all 256 register numbers.
 
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 
