@@ -453,6 +453,26 @@ may not be a genuine `iret`. Candidate next experiment: use `mtsr` words
 (operand RC must be 0, which pins key bits 16-23) and `mfsr`/`halt` words to
 add samples, then fit `m(k)` per 24-word block.
 
+**Result: bits 0-14 of the `Hand` mask are now determined (for 79% of words).**
+Adding `iretinv` words and re-fitting with period 48 for the row part (not 24;
+the same `k mod 24` phase gives two different rows 24 words apart), the key is
+
+    key(k) = 0x80*m(k) + COL[k mod 24]          bits 0-6  = COL (24 constants)
+    m(k) mod 256 = (ROW[k mod 48] - k) mod 256  bits 7-14 = ROW (38 of 48 known)
+
+`COL` and `ROW` are in [`../unmask_runtime.py`](../unmask_runtime.py). Held-out
+check (not used in the fit): after unmasking, **all 86 `mfsr` words whose
+phase is known have RB == 0**, as an assembler would emit; earlier, all 113
+`mfsr` words had low 7 bits equal to `COL` and all 89 whose phase was known
+had the predicted bit 7. Bits 15-23 of the key (the 0x8000 / 0x18000 steps
+and a one-word excursion at k = 1537) and 10 of the 48 `ROW` phases (2, 4, 17,
+18, 22, 34, 37, 38, 40, 43) are still unknown, so the script outputs a
+`.low15.bin` plus a `.known.bin` mask and does not claim a full unmask. Each
+unmasked word therefore has its RB field and the low 7 bits of RA valid, but
+not RC (the register field) -- so a full disassembly is still out of reach.
+`Boot` has not been checked against these constants (it has almost no
+`mfsr`/`iret` words to test with).
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
