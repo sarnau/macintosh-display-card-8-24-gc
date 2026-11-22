@@ -112,20 +112,14 @@ interrupt-handler setup); 6 land in the small gap between `Hand`'s end
 `scnptr` is a leftover alias of the next section's file offset, the normal
 COFF convention for empty bss, not a missed-extraction bug).
 
-So `Boot`'s own control flow depends on real code sitting in a region that
-ships **empty** in this firmware image — it must get populated at runtime,
-before those jumps execute, by something not captured in this static file.
-Unlike the `DRVR.s`/`INIT_main.s` misdecodes found earlier, this isn't a
-decode error to fix — it's an architectural fact, and `Cache`'s vaddr/name
-already point at the read: this is very plausibly the Am29000's on-chip
-instruction RAM, a real, documented feature of that architecture usable as
-directly-addressable RAM instead of transparent cache. The natural
-conclusion is that `Boot` shadows/decompresses a second boot stage into that
-RAM before jumping into it, consistent with the copy/checksum-shaped code
-right before those targets — but that stage's actual payload isn't present
-anywhere in `ACEF_1.bin`. All of this is flagged inline in
-[`disasm/Boot.asm`](disasm/) (`-> Hand` / `-> UNMAPPED (gap)` /
-`-> UNMAPPED (Cache)` on the relevant jump lines) and in its header.
+> **Superseded.** This section originally concluded that `Boot` shadows a
+> second stage into `Cache`. Later work (see "Is `Boot`/`Hand` assembler output
+> at all?" and "`Vec` is a keystream" below) shows the section bytes carry a
+> second masking layer, so the decoded jumps -- including the ones into
+> `Cache` -- are not trustworthy and no missing payload need be assumed. The
+> branch-target counts above remain as a record of what the *unmasked* decode
+> shows; the inline `-> UNMAPPED` flags in `disasm/Boot.asm` are likewise
+> artefacts of that decode.
 
 ### Is `Boot`/`Hand` assembler output at all? (evidence says no)
 
@@ -152,9 +146,9 @@ Caveat found while testing this: a crude "reads a register nothing wrote"
 statistic scores `Boot` 73% but also real `Antelope` code 77-86% (register
 windows), so it is **not** evidence either way and was discarded. The
 don't-care-field test above is the one that holds up, but it only shows the
-opcode bytes were chosen and the operands filled with noise (the same style of
-noise as `Vec`), not why. `Boot`/`Hand` should therefore not be labelled as
-handlers; the ~2 KB `Boot` and 11 KB `Hand` may be filler.
+opcode bytes were chosen and the operands filled with noise -- and the `Apple` section shows that noise is a second mask
+(`Vec` as keystream, next section), so `Boot`/`Hand` are probably real code
+that is still masked. They should not be labelled as handlers until unmasked.
 
 ## Disassembly
 
@@ -394,8 +388,38 @@ perturbed by 7 low-order noise bits). So the three tables are three noisy
 renderings of one 128-byte-stride address sequence; what the stride addresses
 *mean* is still unknown. (Rules out: not a vector table, not plain data.)
 
-How these were produced (a deliberate mask, an uninitialised-memory dump
-that the linker captured, or something the Boot code undoes) is **not
-determined**. It is also unknown where Boot's `Cache` second stage comes
-from; the new evidence only rules out the simple idea that `Vec` is an
-ordinary vector table of handler addresses.
+### `Vec` is a keystream: the Runtime sections have a second mask
+
+`Apple.bin` (77 bytes) reads, in the high 16 bits of its words 4-18: `Co ri
+"t " ") " 89 Ap "e " mp er In " A" " R" ht Re rv` -- every *other* two-character
+chunk of "Copyright (c) 1989, Apple Computer, Inc. All Rights Reserved". The
+missing chunks are in the low 16 bits, XORed with a keystream. That keystream
+is the low half of `Vec.bin`'s words with the same index:
+
+    word  low16   Vec[k]  low16^Vec[k]
+      4   0x733d  0x0344  0x7079 'py'
+      5   0x1bf0  0x7c98  0x6768 'gh'
+      6   0x54f3  0x7c90  0x2863 '(c'
+      7   0x4dd5  0x7cec  0x3139 '19'
+
+All 15 words from index 4 on decode to the missing chunks (`py gh (c 19 ", "
+pl Co ut ", " c. ll ig "s " se ed`). So the three "noise" tables are not noise:
+`Vec` is (a copy of) the keystream, i.e. an all-zero section masked with
+itself. Words 0-3 of `Apple` do not decode this way (they are likely a
+header). Antelope's own `Apple` section (88 bytes) holds the same text with
+the same plaintext high halves but a *different* low-half keystream, so each
+ACEF has its own.
+
+What this does **not** solve: the same keystream applied at any offset to
+`PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
+valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
+bytes in their high halves too, so the code sections are masked differently
+(or over more bits) than `Apple`. `PublicIn`/`PublicOu` after XOR with `Vec`
+become small integers (mostly under 0x800) -- plausibly real data, with
+residual noise in the low ~10 bits -- but `PublicOu` word 0 (`0x32100456`,
+which the host matches exactly) must be left unmasked, so words 0-3 are
+probably outside the mask. The generator for `Vec` beyond its 252 words
+(needed for the 2,885-word `Hand`) is unknown. Until the code sections can be
+unmasked, disassembly of `Boot` and `Hand` should be treated as unreliable;
+`Antelope`'s `.text` is unaffected (it is real compiled code and decodes
+coherently).
