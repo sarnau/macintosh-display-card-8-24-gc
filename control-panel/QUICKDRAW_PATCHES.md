@@ -370,7 +370,6 @@ calls the original `CopyBits` with all six stack arguments through
 `StoreCtxWord_AA6($11B0)`. The one accelerated query associated with it is
 `sub_494E`, which sends **command `$17`** with one long (a pointer to a record at
 `*(unit+$0C) + $604`) after a readiness check; reply `1` stores the record's
-second long in `globals+$182`. So `CopyBits` acceleration happens one level down
-(the original `CopyBits` ends in `StdBits`, which is not patched here and so
-reaches the card through other handlers), and `$17` looks like a status/handshake
-query, not a blit.
+second long in `globals+$182`. How `CopyBits` itself reaches the card was not found in
+this handler (`StdBits` is not in the patch list), and `$17` looks like a
+status/handshake query, not a blit.
