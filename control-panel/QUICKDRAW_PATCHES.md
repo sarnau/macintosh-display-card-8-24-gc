@@ -343,3 +343,34 @@ commands in the previous table: the card keeps shadow copies of the pen,
 colours, patterns, clip and device state, so the shape handlers only have to
 send the geometry and a verb.
 
+
+## `GA_StdText` and `GA_CopyBits`
+
+**StdText** (`GA_StdText`, command `$21`). The patch takes the four StdText
+arguments (`count`, `textAddr`, `numer`, `denom`), returns immediately if
+`count <= 0`, and, if the pen is visible and the port's text mode is plain,
+builds a small record on its stack: `+0 count (word)`, `+2 textAddr (long)`,
+`+6 numer (Point)`, `+10 denom (Point)` followed by port state (font, face,
+size, pen mode, colours). The helper at `$3868` (the code just before
+`GA_StdText`) sets up the foreground colour via `_PaletteDispatch` and
+`_RGBForeColor`, then sends **four longs**: the count sign-extended, the text
+address, a pointer to `numer` and a pointer to `denom`
+(`EngineDispatch(4, &block, $21)`). Reply `1` means drawn; `2` runs the original
+with the pen hidden, as for the shapes; otherwise the original is called. Before
+that the handler measures the text itself (`_StdTxMeas`, `_GetFontInfo`) and
+builds a region (`_NewRgn`, `_RectRgn`) so that it can restore the port's pen
+and clip afterwards.
+
+**CopyBits** (`GA_CopyBits`) does **not** call the card itself. It is a
+bracketing patch: it keeps a nesting counter at `globals+$18`, clears a pair of
+saved longs at `globals+$40/$44` when the counter is zero, calls
+`sub_86d6`/`sub_879a` around the original (the same port-state save/restore as
+the shape handlers) when the destination device record has `+$5C` set, and
+calls the original `CopyBits` with all six stack arguments through
+`StoreCtxWord_AA6($11B0)`. The one accelerated query associated with it is
+`sub_494E`, which sends **command `$17`** with one long (a pointer to a record at
+`*(unit+$0C) + $604`) after a readiness check; reply `1` stores the record's
+second long in `globals+$182`. So `CopyBits` acceleration happens one level down
+(the original `CopyBits` ends in `StdBits`, which is not patched here and so
+reaches the card through other handlers), and `$17` looks like a status/handshake
+query, not a blit.
