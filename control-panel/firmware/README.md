@@ -112,7 +112,7 @@ interrupt-handler setup); 6 land in the small gap between `Hand`'s end
 `scnptr` is a leftover alias of the next section's file offset, the normal
 COFF convention for empty bss, not a missed-extraction bug).
 
-> **Superseded.** This section originally concluded that `Boot` shadows a
+> **Superseded -- see "The second mask" below: `Boot` is now decoded and has no `Cache` second stage.** This section originally concluded that `Boot` shadows a
 > second stage into `Cache`. Later work (see "Is `Boot`/`Hand` assembler output
 > at all?" and "`Vec` is a keystream" below) shows the section bytes carry a
 > second masking layer, so the decoded jumps -- including the ones into
@@ -188,11 +188,41 @@ The earlier hand fits (the `N(k)` tables, the failed threshold rules and the
 note that bits 15-23 were unknown) are superseded by this formula; the
 `hand_mask_samples.tsv` data are no longer needed.
 
-**`Boot` does not use these tables.** Its five SPR instructions fit the same
-formula only if `ROW`/`COL` are shifted, and no shift reproduces more than half
-of its `const`/`consth` register pairs, so `Boot.bin` has its own `COL`/`ROW`
-(the generator is the same). `disasm/Boot.asm` is therefore still the masked
-decode.
+**`Boot` uses the same generator with its own tables, which had to be
+fitted.** `Boot.bin` has no `iret` words and only five SPR instructions, so
+`COL`/`ROW` could not be read off as for `Hand`. They were found by maximum
+likelihood: for each candidate parameter set, the decoded words are scored
+against per-opcode field statistics learned from the unmasked `Hand`
+(a blind fit on `Hand`'s own first 512 words recovers its true tables, and wrong
+offsets score about 4 nats per word worse), then refined with hard
+constraints -- adjacent `const`/`consth` pairs share their register, jump
+targets lie inside the code, SPR numbers are valid, `mfsr` RB = 0, `mtsr`
+RC = 0. Result ([`unmask_runtime.py`](../unmask_runtime.py), `COL_BOOT`/`ROW_BOOT`,
+[`ACEF_1_Runtime/Boot.unmasked.bin`](ACEF_1_Runtime/Boot.unmasked.bin)): 89 of 99
+adjacent pairs agree (Hand: 235 of 257), all 58 direct jumps land inside the
+code, and the code does exactly what the host side of the protocol expects
+(below). Treat individual register fields in `Boot.asm` with care: a few
+`gr70`/`gr71` swaps remain.
+
+#### What `Boot` does
+
+1. Touches a block of card registers from `$4400000C` and sets `CPS` to
+   `$0000` then `$047F` (the same `CPS` constants `Hand` uses).
+2. **Polls `$4C006400` (`PublicIn` word 0) until it reads `$42005300`** -- the
+   value `DRVR.s`'s `Init29K` pokes to `image+$00` after uploading `Runtime` --
+   then writes 0 back.
+3. Copies a parameter block from `PublicIn` (the flags and sizes `DRVR.s`
+   publishes at `+$18`, `+$20`...`+$2C`).
+4. Sets `VAB = $4C000000` (the `Vec` section) and `CFG |= $10`, and **fills the
+   trap vector table** with handler addresses `$0200xxxx` (`$2000000`,
+   `$2000008`, `$2000908`, ... and `$2001D08` for the unused entries). So the
+   "noise" the host sees in `Vec` and the pointer-looking `PrivNZ` words are
+   this table's initial image.
+5. Reads the three hardware-ID bits at `$44000044/48/4C` (the host's
+   `$0400004C/48/44`, the readiness bits `BuildUnitRecords` reads), picks a
+   board configuration value (`$1E0`, `$366`, `$1E6`, `$180`, `$240`, `$270`)
+   and stores it to `$4C006828` (`PublicOu+$28`).
+6. `jmp $2001FFC` into `Hand`'s reset/initialisation routine.
 
 #### What `Hand` contains
 
