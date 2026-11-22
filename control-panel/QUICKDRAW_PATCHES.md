@@ -153,3 +153,50 @@ confirmed table.
   names above carry over (a command is the unit of naming; many functions
   below it are shared helpers).
 
+
+## What a patched routine does on the host (read from `GA_StdLine`, `GA_StdRect`, `GA_StdRgn`, `GA_StdOval`, `GA_StdPoly`, `GA_StdRRect`, `GA_StdArc`, `GA_CopyBits`)
+
+All the shape bottlenecks share one skeleton; the card is asked first and the
+original QuickDraw routine is the fallback.
+
+1. **Port state.** `GetA5 -> [A5] -> QD globals -> thePort`; the handler reads
+   `thePort^.pnVis` (GrafPort offset `$42`). If the pen is hidden (negative) it
+   does not ask the card to draw: it issues the synchronise command
+   (`sub_4822`, `EngineDispatch(arg 8, 0, cmd $26)`) and calls the original.
+2. **Ask the card.** `EngineDispatch(cmd, paramPtr, count)` (`$49C4`): the
+   handler builds an array of longs on its stack and `CopyParamsToQueue` copies
+   `count` of them after the command header (section 7 of `HOST_CARD_PROTOCOL.md`).
+   Pointers are passed as **host addresses** (rectangles, regions and polygons
+   stay in host memory), and bytes/words are sign- or zero-extended to longs.
+3. **Return code** (the word the card writes at `header+$1C`, or 0 when the card
+   is not ready):
+   * `1` -- drawn by the card; the handler returns at once;
+   * `2` -- the card drew, but the 68k still runs the original with the pen
+     forced hidden (`pnVis = -1` around the call) so that the *state* (pen
+     position, etc.) is updated without drawing twice;
+   * anything else -- not handled: the original is called normally.
+   The original routine's address is fetched by `StoreCtxWord_AA6(tableAddr, ...)`
+   (the trap-table address from the dispatch entry, e.g. `$1040` for `StdLine`)
+   and called with the unchanged arguments. Around the fallback, `sub_86d6`
+   / `sub_879a` save and restore a small piece of port state (it takes
+   `&thePort^.portBits`), apparently making the bitmap safe for software drawing.
+
+Packet parameters (longs after the header) as built by each handler:
+
+| command | routine | count | parameters |
+|---|---|--:|---|
+| `$20` | StdLine | 1 | address of the argument area on the 68k stack (the `newPt` Point) |
+| `$24` | StdRect | 2 | verb (`frame/paint/erase/invert/fill`, zero-extended), `Rect*` |
+| `$2F` | StdOval | 2 | verb, `Rect*` |
+| `$18` | StdRgn | 2 | verb, `RgnHandle` |
+| `$31` | StdPoly | 2 | verb, `PolyHandle` |
+| `$2E` | StdRRect | 4 | verb, `Rect*`, `ovalWidth`, `ovalHeight` (word -> long) |
+| `$23` | StdArc | 4 | verb, `Rect*`, `startAngle`, `arcAngle` (word -> long) |
+
+Port and colour state travels through the other commands (`$35`/`$36`/`$37`
+pen / foreground / background colour, `$2A` patterns, `$32` clip, `$10`
+regions), so the card keeps its own copy of the drawing state; the text
+(`$21`) and `CopyBits` paths use a longer parameter block. These layouts are what
+the Am29000 side must parse; they are exact for the handlers listed, from the
+code, but the meaning of the verb values and of the replies beyond `1`/`2` is
+inferred from QuickDraw's own conventions.
