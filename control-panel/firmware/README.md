@@ -432,6 +432,27 @@ so `Hand`/`Boot` still cannot be unmasked. Next step: fit `n(k)` and the
 jitter from the `iret` (and `mfsr`/`mtsr` RB/RC) samples, then check that the
 unmasked words disassemble with zero don't-care fields.
 
+**Further fit on `Hand` (still unsolved).** Writing each `iret` key as
+`key = 0x80*m(k) + col(k mod 24)`, the low 7 bits (`col`, a 4-aligned
+column inside a 128-byte line) are a stable per-phase constant -- every
+alternative value seen for a phase differs by a multiple of 0x80, never in the
+low 7 bits. From the 74 samples, `col` by `k mod 24` is:
+
+    0:00 1:60 2:64 3:40 4:68 5:5c 6:70 7:50 8:04 9:10 10:38 11:5c
+    12:20 13:00 14:64 15:20 16:48 17:1c 18:10 19:70 20:04 21:30 22:58 23:1c
+
+(phases 2 and 4 rest on one or two samples). This table is **different from
+`Vec`'s** (`Vec`'s columns are 18 10 6c 78 48 04 08 40 0c 08 58 04 18 50 2c 78
+08 44 08 00 4c 08 18 44 by `(k-5) mod 24`), so the column table is not shared
+between `Vec` and `Hand` even though the structure is the same -- yet `Apple`
+decodes with `Vec`'s. The row part `m(k)` descends by about one per word with
+occasional extra steps of 0x80 and jumps of 0x18000 (seen at k ~ 648, 1160 and
+1681), and the 74 samples are too sparse to reconstruct it for all 2,885
+words. One sample (k = 1537) sits about 0x7e00 below the surrounding ramp and
+may not be a genuine `iret`. Candidate next experiment: use `mtsr` words
+(operand RC must be 0, which pins key bits 16-23) and `mfsr`/`halt` words to
+add samples, then fit `m(k)` per 24-word block.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
