@@ -568,6 +568,19 @@ loads or stores, and how the routines call each other is unknown. Labels in
 `disasm/Hand.asm` would therefore be guesses; the routine boundaries above are
 from `iret` positions, whose opcode byte is not masked.
 
+**Bit 15-23 samples (data, no rule yet).** Every `mfsr`/`mtsr`/`mtsrim` whose
+RA field is a protected SPR (< 128) pins key bit 15, and every `mtsr` also pins
+bits 16-23 (its RC must be 0). [`hand_mask_samples.tsv`](hand_mask_samples.tsv)
+lists all 295 such samples (179 with the full `N`, 116 with bit 15 only; phases
+with an unknown `ROW` are skipped). In the first 400 words `N` flips between
+neighbouring values every 30-100 words (1, 2, 1, 2, 3, 4, 5, 4, 5, 4, ...), the
+spacing grows to ~250 words by k ~ 1000, and +3 steps recur near k = 133 + 512j
+(Vec's k = 133, then 646, ~1152, ~1676). Tests that did not produce a rule:
+bit 15 is not a function of `k mod M` for any M < 1100; `N - floor((k+d)/P)`
+for P in {64, 96, 128, 192, 256, 384, 512} does not collapse to a function of
+`k mod 512`/`1024`. So bits 15-23 are a sparse-sample-fitted staircase at best,
+and `unmask_runtime.py` still leaves them masked.
+
 What this does **not** solve: the same keystream applied at any offset to
 `PublicIn`, `PublicOu`, `PrivNZ`, `Boot` and `Hand` does not give zeros or
 valid code (best offset scores 1 hit), and `Hand`'s `iret` words have non-zero
