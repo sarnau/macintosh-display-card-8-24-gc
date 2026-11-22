@@ -154,3 +154,32 @@ its delay slot holds the assert), the word before an `asgeu 64` is
 shows sawtooth runs (slope about +1.5 rows per word, reset every ~80 words,
 amplitude ~200 rows) in dense stretches, i.e. a multi-level counter rather
 than `Hand`'s single ramp. A closed form was not found.
+
+### Antelope mask: second attempt (more plaintext, still unsolved)
+
+Counting idioms through the (unmasked) opcode byte gives far more known
+plaintext than the spill/fill words alone: **all 2,064 words with opcode `$70`
+are the NOP `aseq trap64,gr1,gr1` (`$70400101`)** -- each agrees with the
+48-entry low-bit table -- and 915 of the 997 `$C0` words are `jmpi lr0`
+(`$C0000080`). With the 747 spill/fill words that is 3,726 full 23-bit key values,
+about one per 17 words, in `firmware/ACEF_100_Antelope/mask_samples.tsv`.
+
+What the denser data show (no closed form yet):
+
+* Within a 100-200 word stretch the row part (`key >> 7`, plus the word index)
+  is a staircase: it rises by about **64 rows** every 20-35 words, four times,
+  then drops by about 192 (= 3 x 64); occasional jumps of +320 (5 x 64) and
+  +1336 appear at larger scale. That is a mixed-radix counter with a base-4
+  digit of weight 64 rows, not `Hand`'s single ramp.
+* Small jitter (+-6 rows) rides on top, but it is **not** a fixed function of
+  `k mod 48`: two samples in adjacent phases of the same 48-word block differ by
+  values that scatter over about +-10 rows from block to block, so the
+  jitter/staircase is indexed by something other than the word index mod 48.
+* The jump positions do not follow a fixed period (best-fit periods explain
+  under 40% of them), and `key >> 7` is not additive in a per-phase table plus a
+  per-block table.
+
+Conclusion: Antelope's 243 KB stays masked; a solution would need the real
+generator (probably the same structure as `Hand`'s, with several more levels)
+rather than more fitting of samples, or a larger known-plaintext set such as the
+`.data`/`.lit` sections' repeating constants.
