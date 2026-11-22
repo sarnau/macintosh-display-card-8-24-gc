@@ -3407,7 +3407,13 @@ ClassifyTrapNum:
   027fe:  4e 75                rts      
 * AliasCheck(addrA, addrB, slot) -> long: two-address memory probe used by
 * Init29K when sizing DRAM; nonzero = pass (Init29K treats 0 as failure).
-* Shape only -- the exact pattern is not traced.
+* Traced: it reads and saves both longwords; then for bit 0..31 writes
+* (1<<bit) to A and 0 to B and requires A to read back as exactly 1<<bit
+* (a data line stuck or shorted, or B aliasing onto A, fails); then writes
+* A's own address value to A and its complement to B and requires A to read
+* back unchanged, then the complement to A and the plain value to B with the
+* same check (the restore of the saved longwords at the end is not traced).
+* So it is an aliasing / data-line test -- the name fits.
   02800:  4e 56 ff f8          link.w   a6, #$fff8
   02804:  48 e7 0f 00          movem.l  d4-d7, -(a7)
   02808:  28 2e 00 0c          move.l   $c(a6), d4

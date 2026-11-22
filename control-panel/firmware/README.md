@@ -127,6 +127,35 @@ anywhere in `ACEF_1.bin`. All of this is flagged inline in
 [`disasm/Boot.asm`](disasm/) (`-> Hand` / `-> UNMAPPED (gap)` /
 `-> UNMAPPED (Cache)` on the relevant jump lines) and in its header.
 
+### Is `Boot`/`Hand` assembler output at all? (evidence says no)
+
+Follow-up on the `Cache` question above: the thing that looks wrong is not a
+missing payload but the *code itself*. An assembler leaves an instruction's
+don't-care fields zero. Counting that over the raw sections:
+
+| instruction (ignored field) | `Hand` | `Boot` |
+|---|---|---|
+| `iret` (all 24 operand bits) | 0 of 74 zero | - |
+| `mfsr` (RB byte) | 1 of 113 zero | 0 of 1 |
+| `mtsr` (RC byte) | 11 of 120 zero | 2 of 2 |
+
+74 `iret` instructions in 2,885 words, with garbage in every one of their
+ignored fields, is not hand-written handler code. The SPR numbers used by
+`Hand`'s `mtsr`/`mfsr`/`mtsrim` spread over 154 distinct values across 0-255
+(only SPRs 0-14 and 128-135 are architecturally defined on the Am29000), so
+**SPRs 88/89/122/124 in `Boot` are not a missing name-table entry**: SPR
+numbers in this code are essentially arbitrary. The ~43 `jmp` targets into
+`Cache` are then just random targets of random branches, which also explains
+why they land everywhere (`Hand`, the gap, `Cache`) with no structure.
+
+Caveat found while testing this: a crude "reads a register nothing wrote"
+statistic scores `Boot` 73% but also real `Antelope` code 77-86% (register
+windows), so it is **not** evidence either way and was discarded. The
+don't-care-field test above is the one that holds up, but it only shows the
+opcode bytes were chosen and the operands filled with noise (the same style of
+noise as `Vec`), not why. `Boot`/`Hand` should therefore not be labelled as
+handlers; the ~2 KB `Boot` and 11 KB `Hand` may be filler.
+
 ## Disassembly
 
 These are **Am29000** (big-endian, 32-bit fixed instructions). Capstone and
@@ -353,6 +382,17 @@ What *is* solid:
 * `PublicOu` from `+$50C` holds text-like bytes interleaved with noise
   (two ASCII-range bytes, two high bytes per word) that does not decode as
   a plain string.
+
+**New structural facts (period and stride).** Skipping the 4 header words,
+`Vec[n+24] - Vec[n]` is exactly `-0xC00` for 203 of 228 pairs (the rest are
+the wrap, `+0x17400`), i.e. `Vec[n] = C - 0x80*n + j(n mod 24)`: a descending
+**128-byte stride** (252 entries x 0x80 ~ 0x7E00, almost exactly the 32 KB
+`0x4C000000` window) plus a 24-entry jitter pattern that is itself made of
+ascending runs of 9-10 entries. `PublicIn`/`PublicOu` follow the same
+`-0xC00`-per-24 rule only approximately (their jitter is additionally
+perturbed by 7 low-order noise bits). So the three tables are three noisy
+renderings of one 128-byte-stride address sequence; what the stride addresses
+*mean* is still unknown. (Rules out: not a vector table, not plain data.)
 
 How these were produced (a deliberate mask, an uninitialised-memory dump
 that the linker captured, or something the Boot code undoes) is **not
