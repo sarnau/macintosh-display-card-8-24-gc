@@ -459,6 +459,46 @@ table's per-module `.text`/`.lit` entries). For the dispatcher table the
 targets are, in addition, among the about 37 case-block starts in
 `$31E20`-`$328C8`.
 
+**The case blocks.** I split `$31E20`-`$328C8` at the word after each
+unconditional `jmp` and its delay slot. This gives 37 blocks. Most read
+their arguments the same way:
+
+1. `rec = [global+4]`;
+2. `p = [rec+$10]`, a pointer to the longs the host copied after the header;
+3. the arguments are `p[0]`, `p[1]`, … in `lr2`, `lr3`, …;
+4. the block calls a handler with `calli`.
+
+The packet sets the reply to 1 on entry, so a block that stores nothing
+answers "drawn". The blocks, by shape:
+
+| block(s) | what it does |
+|---|---|
+| `$32468` `$32498` `$324C8` `$324F8` `$32570` `$325A0` `$325D0` | `handler(p[0])`, no reply stored: 7 one-long commands |
+| `$32080` | `handler(p[0])`, then reply `lr12` (`$??00`, probably 0) |
+| `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command |
+| `$32408` | `handler(p[0..5])`: six longs |
+| `$322D4`-`$323D0` | `p[0]` is a bit mask. Bits 0, 1, 3, 2 and 4, tested in that order, each take two or three more longs and call their own handler. A zero result ends the chain. |
+| `$32600`, `$32688` | `handler(6, p[0])`, and the reply depends on the result |
+| `$3279C` | stores `p[0]` and `p[1]` in two globals; no call |
+| `$32234`, `$32284` | unless `[msp+8] = -1`, stores `[p[0]+4]` at offset `$..C0` of a global block (two near-identical cases) |
+| `$31F7C` | after a mask test on the command: `reply = handler(cmd, [rec+$0C], [rec+$10])`, a generic forwarder |
+| `$31FE8` | local call with `[rec+$0C]`, clears a global, then a local call with `($..64, 1, 0)` |
+| `$327D8`, `$327F8` | only store reply `lr12` (`$??00`): "not handled", so the host runs the original |
+| **`$32818`** | **default**. The `cpgtu` branch lands one word in, because its delay slot holds the block's first word. It calls a reporter with `($..68, cmd)`, so it is probably a "bad command" message. |
+
+On the host side (`QUICKDRAW_PATCHES.md`) the commands with one long are
+`$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37` `$3C`.
+Those with two longs are `$18` `$24` `$2A` `$2F` `$31`, and those with four
+are `$21` `$23` `$2E`. So the block shapes fit the host's commands in
+number: many one-long handlers, a few two-long ones. But the shapes alone do
+not say which block is which command. That still needs the 61 table words.
+
+The default label should be the known plaintext for every unused entry. But
+with `.text`'s key, `$32818` appears in none of the 61 entries, not even in
+bits 0-6 (2 hits, both chance). With the same key, raw `.lit` words 48
+apart agree in bits 2-6 at chance rate (10 of 402). So `.lit` does not
+repeat `.text`'s period-48 low table above bit 1 either.
+
 **First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
 `.lit` words whose target range is under 8 KB (175 in small modules, plus
 the 61 dispatcher entries, whose range is the dispatcher function). A
