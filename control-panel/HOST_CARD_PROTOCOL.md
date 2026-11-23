@@ -1790,6 +1790,35 @@ follows both branches and stops at the jump back to the loop:
 Every drawing case brackets its drawing with the cursor hand-off described
 in "The cursor".
 
+**The rectangle case** (`$0C754`-`$0D050`), per device (`lr76`):
+1. **Skip** the device if its per-device flag (`+$1A4` slot) is clear.
+2. **Choose the fast path** only if all of these hold:
+   * the device's type word (`+$3C0` in its 44-byte record) is 5;
+   * neither the visible nor the clip region is non-rectangular (the
+     per-device slots `+$17C` and `+$154` that the region case fills are 0);
+   * the record's frame flag (`lr82`) is 0, so it is a paint, erase,
+     invert or fill rather than a frame;
+   * the per-device mode byte from the refresh (`+$B4` slot, the
+     `.data+$3D8` lookup) is 0 or 2.
+3. **Fast path** (`$0C80C`-`$0CA50`):
+   * clip the rectangle against the device's `minRect` (the `+$14` table
+     the region case filled with RSect);
+   * set the shield rectangle (`$1553C`) and take ShieldCursor;
+   * fill through the small helpers `$13F54`, `$1701C`, `$00348` and
+     `$37D68`;
+   * release the cursor (`$32EF8`).
+4. **General path** (`$0CA64`-`$0D050`):
+   * RSect (`$01494`), then TrimRect (`$01654`) for each region;
+   * set the shield rectangle and take ShieldCursor (`$0CCA0`);
+   * then twice, a per-depth column switch (`$0CD30`, `$0CEE4`, below)
+     and a row-fill pair (`$09270`, `$09020`);
+   * release the cursor at `$0D050`.
+
+Two columns and two rows is the shape of a framed rectangle (left and right
+edge, top and bottom edge). That fits frames being sent this way, but it is
+a reading. How this path handles a non-rectangular clip is not read; no
+direct call to RgnBlt appears in the case.
+
 **The polygon case** (`$0C398`) reads the Polygon in place:
 
 ```
