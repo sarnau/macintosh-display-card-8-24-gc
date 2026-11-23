@@ -135,8 +135,7 @@ C library `$39118`-`$3C340` (see "The C library"). `antelope_partial_dasm.py`
 prints these names in `text.partial.asm`.
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the exact register roles in DrawText's glyph loop;
-- the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the strike conversion on font upload (`$14564`);
 - kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
 - why the status bit at `$4400007C` gates the two-colour block fill;
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
@@ -2266,17 +2265,43 @@ The style comes from the `FMOutput` of the `$67` record. One pointer
 
 So bold, italic, underline, shadow and scaling are applied on the card.
 
-**The glyph loop** (`$12308`-`$123A8`) reads the strike in QuickDraw's
-`FontRec` layout, as `DrawText.a` does:
+**The glyph loop** (`$122F4`-`$123A8`, read from fully decoded words). Its
+inputs come from three pointers in the drawing globals:
+* `lr60 = [extern#1772+$60]`, the `FMOutput` (above);
+* `lr46 = [extern#1772+$68]`, the width table (256 Fixed entries indexed
+  by character code). `lr70` is its entry for the space (`+$80`), which the
+  text record also carries;
+* `lr41 = [extern#1772+$64]`, the card's record for the cached strike. This
+  is not `FontRec` but the card's own layout, with longs where `FontRec`
+  has words:
+
+| `lr41` offset | register | use in the loop |
+|---|---|---|
+| `+$18` | `lr50` | a long per glyph (read into `gr109`): presumably its bit offset in the strike image, the converted `locTable` |
+| `+$1C` | `lr9` | a halfword per glyph that must be > 0 (else the glyph is skipped): presumably its image width; left + width gives the right edge |
+| `+$20`, `+$24` | `lr7`, `lr40` | set-up only (`1 << lr7` is formed) |
+| `+$28` | `lr49` | `firstChar` |
+| `+$2C` | `lr5 = lastChar - firstChar` | |
+| `+$44` | `lr44` | the offset/width table (`owTable`, a halfword per glyph, `$FFFF` = missing) |
+| `+$48` | `lr48` | optional (0 = none): a halfword per glyph into `lr59`, as `FontRec`'s optional height table (first row, row count) |
+
+Per character (`lr67` walks the text, `lr4` is the pen, Fixed):
 
 ```
-c     = (ch - firstChar) & $FF        if c > lastChar - firstChar: the missing glyph
-ow    = half[owTable + 2c]            (lr44)
-if ow == $FFFF: ow = half[owTable + 2(lastChar - firstChar + 1)]
-                                      the missing-character glyph, after lastChar
-left  = (ow >> 8) + (pen >> 16)       kern offset plus the pen's integer part
-pen  += long[widths + 4c] + extra     the width table entry (lr46), Fixed
-loc   = half[locTable + 2c]           (lr48): where the glyph starts in the bit image
+ch = byte[lr67++]
+if ch == ' ':  pen += lr70; next              the space is never drawn
+w  = long[lr46 + 4*ch] + lr55                 width-table entry by character code, plus extra
+c  = (ch - firstChar) & $FF
+ow = c > lastChar-firstChar ? $FFFF : half[lr44 + 2c]
+if ow == $FFFF:                               missing: the glyph after lastChar
+    c = (lastChar-firstChar+1) & $FF; ow = half[lr44 + 2c]
+    if ow == $FFFF: skip ($12C64)
+left = (ow >> 8) + (pen >> 16)                the high byte is the kern offset
+pen += w
+loc   = long[lr50 + 4c]
+width = half[lr9 + 2c];  if width <= 0: skip
+right = left + width
+if lr48: height = half[lr48 + 2c]
 ```
 
 After the glyphs are built into the buffer, a row loop (`$12E8C`-`$12EB8`)
@@ -2284,18 +2309,20 @@ ORs each long with itself shifted left by one, with a NOR term on the
 carried-out bit. That is the smear that bold (and, with the NOR, outline)
 applies in `DrawText.a`.
 
-The register roles come from estimated words, and registers are reused, so
-which strike field feeds `lr44`/`lr48` is a reading. Still, the structure
-(the `$FFFF` missing-glyph test, the high byte as kern offset, the 4-byte
-width entries) is `FontRec`'s and nothing else's. So the cached strike is
-the glyph source, and the uploaded width table gives the advances.
+An earlier reading of this loop, made from estimated words, had the width
+table indexed by `c` and `lr48` as the location table. The full decode
+shows the width table indexed by the character code (as QuickDraw's is),
+`lr48` as the optional height table, and the space fast path. What is still
+inferred are the roles of the `+$18`/`+$1C` tables, from their use. The
+strike conversion that builds them on upload (`$14A80` → `$14564`) is not
+read.
 
 ##### Open points
 
 * **The per-device state refresh** is read only in outline: the mode table
   at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
   masked, and ColorMap's alpha-channel part is not checked.
-* **The glyph loop** in `$11AD8` is read in structure (`FontRec` owTable, locTable, widths), not in its exact register roles.
+* **The strike conversion** on upload (`$14564`, called by `$14A80`), which builds the per-glyph tables DrawText reads (`lr41 +$18`/`+$1C`).
 
 #### The dispatcher prologue and packet layout
 
