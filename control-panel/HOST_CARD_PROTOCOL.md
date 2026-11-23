@@ -1741,14 +1741,33 @@ $0B450` back to the loop. The sizes found that way match the host's layouts
 for every case that has been read.
 
 The two 6-entry tables `.lit $0454` and `$046C` are not opcode tables. They
-are sub-switches on `lr94` (0-5) in the drawing code at `$0CD30` and
-`$0CEE4`, right after `$1553C` and `$32C10`:
-* cases 0-2 call `$09430`;
-* case 3 calls `$09578`;
-* cases 4-5 go elsewhere.
+are sub-switches on `lr94` (0-5) inside the rectangle case (`$0CD30`,
+`$0CEE4`), right after `$1553C` and `$32C10`. With the pinned key all twelve
+entries decode:
 
-`lr94` is probably the fill kind, and `$09020`-`$09660` the fill loops. That
-is not checked.
+| `lr94` | `.lit $0454` | `.lit $046C` | routine called |
+|---|---|---|---|
+| 0, 1, 2, 4 | `$0CD58` | `$0CF10` | `$09430(row, …, lr94, …)` |
+| 3 | `$0CD8C` | `$0CF44` | `$09578` |
+| 5 | `$0CDB0` | `$0CF68` | `$09660` |
+
+`$09578` (estimated words) fills a one-pixel-wide column:
+* the x offset is `rect.left − bounds.left` and the row count is
+  `rect.bottom − rect.top`;
+* it stores one byte per row, stepping by `rowBytes`, unrolled by two;
+* mode 1 inverts each byte (NOR); otherwise it stores the foreground or
+  background long (`+$1C`/`+$20`).
+
+`$09660` does the same with long stores, and `$09430` with masked long
+read-modify-writes (AND, ANDN, OR, XOR) and `lr94` as an argument. So `lr94`
+is `log2(pixel depth)`:
+* 3 is 8 bits, handled with bytes;
+* 5 is 32 bits, handled with longs;
+* 0, 1, 2 and 4 (1, 2, 4 and 16 bits) share the masked routine.
+
+These are the narrow-rectangle (vertical strip) fast paths. The general
+rows go through `$09020` and `$09270`, which mask the edge longs and store
+whole longs between them, as BitBlt-style fill loops do.
 
 **What each case calls.** A trace from each case through the estimated words
 follows both branches and stops at the jump back to the loop:
