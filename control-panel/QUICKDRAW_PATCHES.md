@@ -19,24 +19,32 @@ commands, not the operation itself; the operation-specific ones are in bold.
 This list is extracted mechanically and is a reading of the code, not a
 confirmed table.
 
+The traps `$AB11`, `$AB23`, `$AB27` and `$AB9A` are not in the public
+headers. They are QuickDraw's internal traps, named in System 7.1
+`QuickDraw/QDTrapInstall.a` (`QDEntry $311, OldPatToNew`, `$323 SetFillPat`,
+`$327 StretchBits`, `$39A PicItem1`). The low-memory entries below `$E00`
+are the cursor jump vectors from `Interfaces/AIncludes/Private.a`
+(`JHideCursor` `$800` … `JCrsrObscure` `$81C`, `JSetCCrsr` `$890`,
+`JCrsrTask` `$8EE`), plus `$644`, which is `_Translate24To32`'s OS trap entry.
+
 | # | trap table addr | trap | QuickDraw / Toolbox routine | 68k handler | card commands |
 |--:|---|---|---|---|---|
 | 0 | $644 | $A091 (OS) | _Translate24To32 | `$7F50` | - |
-| 1 | $8EE | - | - | `$801C` | - |
+| 1 | $8EE | - | JCrsrTask (vector: CrsrVBLTask) | `$801C` | - |
 | 2 | $11B0 | $A8EC | _CopyBits | `$483C` | $0D **$38** |
 | 3 | $1040 | $A890 | _StdLine | `$3682` | $0D **$20** $26 **$38** |
 | 4 | $10F4 | $A8BD | _StdArc | `$3DDC` | $0D **$23** $26 **$38** |
 | 5 | $1008 | $A882 | _StdText | `$3A9C` | $0D **$21** $26 **$38** |
-| 6 | $1A9C | $AB27 | StretchBits (internal; signature matches `QuickDraw/Stretch.a`, see HOST_CARD_PROTOCOL.md) | `$32BC` | $0D **$15** **$38** |
-| 7 | $800 | - | - | `$42B8` | - |
-| 8 | $804 | - | - | `$420C` | - |
-| 9 | $808 | - | - | `$44C4` | - |
-| 10 | $1C68 | $AB9A | (not in Traps.h) | `$9278` | **$2A** |
+| 6 | $1A9C | $AB27 | StretchBits (internal; QDTrapInstall.a `$327`; signature matches `Stretch.a`) | `$32BC` | $0D **$15** **$38** |
+| 7 | $800 | - | JHideCursor (vector) | `$42B8` | - |
+| 8 | $804 | - | JShowCursor (vector) | `$420C` | - |
+| 9 | $808 | - | JShieldCursor (vector) | `$44C4` | - |
+| 10 | $1C68 | $AB9A | PicItem1 (internal; QDTrapInstall.a `$39A`) | `$9278` | **$2A** |
 | 11 | $1064 | $A899 | _SetPenState | `$9F04` | **$2A** **$35** |
 | 12 | $106C | $A89B | _PenSize | `$9FD0` | **$35** |
 | 13 | $1070 | $A89C | _PenMode | `$A060` | - |
 | 14 | $1078 | $A89E | _PenNormal | `$A1E2` | **$2A** **$35** |
-| 15 | $1A8C | $AB23 | (not in Traps.h) | `$7DAC` | - |
+| 15 | $1A8C | $AB23 | SetFillPat (internal; `$323`) | `$7DAC` | - |
 | 16 | $F88 | $A862 | _ForeColor | `$ADF0` | **$36** |
 | 17 | $1650 | $AA14 | _RGBForeColor | `$AE56` | **$36** |
 | 18 | $185C | $AA97 | _PmForeColor | `$AF00` | **$36** |
@@ -53,7 +61,7 @@ confirmed table.
 | 29 | $1620 | $AA08 | _DisposPixPat | `$987E` | **$2C** |
 | 30 | $1624 | $AA09 | _CopyPixPat | `$98B2` | **$2A** |
 | 31 | $1634 | $AA0D | _MakeRGBPat | `$9948` | **$2A** |
-| 32 | $1A44 | $AB11 | (not in Traps.h) | `$99D6` | **$2A** |
+| 32 | $1A44 | $AB11 | OldPatToNew (internal; `$311`) | `$99D6` | **$2A** |
 | 33 | $FD4 | $A875 | _SetPBits | `$9BCA` | $26 |
 | 34 | $FD8 | $A876 | _PortSize | `$9C62` | $26 |
 | 35 | $FDC | $A877 | _MovePortTo | `$9CF2` | $26 |
@@ -90,10 +98,10 @@ confirmed table.
 | 66 | $1A74 | $AB1D | _QDExtensions | `$8118` | - |
 | 67 | $1664 | $AA19 | _GetForeColor | `$B43E` | **$36** |
 | 68 | $1668 | $AA1A | _GetBackColor | `$B4CA` | **$37** |
-| 69 | $814 | - | - | `$45D4` | - |
-| 70 | $818 | - | - | `$433E` | - |
-| 71 | $81C | - | - | `$43CA` | - |
-| 72 | $890 | - | - | `$4444` | - |
+| 69 | $814 | - | JInitCrsr (vector) | `$45D4` | - |
+| 70 | $818 | - | JSetCrsr (vector) | `$433E` | - |
+| 71 | $81C | - | JCrsrObscure (vector) | `$43CA` | - |
+| 72 | $890 | - | JSetCCrsr (vector: set colour cursor) | `$4444` | - |
 | 73 | $16B4 | $AA2D | _SetDeviceAttribute | `$9634` | $26 **$29** |
 | 74 | $16C0 | $AA30 | _DisposGDevice | `$9684` | **$2B** |
 | 75 | $11D8 | $A8F6 | _DrawPicture | `$472A` | $26 |
@@ -119,7 +127,7 @@ confirmed table.
 | 95 | $FBC | $A86F | _OpenPort | `$46AC` | $26 |
 | 96 | $1604 | $AA01 | _InitCPort | `$46D6` | $26 |
 | 97 | $1600 | $AA00 | _OpenCPort | `$4700` | $26 |
-| 98 | $1608 | $AA02 | (not in Traps.h) | `$BC22` | - |
+| 98 | $1608 | $AA02 | CloseCPort (`$AA02`, per Traps.a "should never be used") | `$BC22` | - |
 | 99 | $16B8 | $AA2E | _InitGDevice | `$9706` | **$12** **$13** **$14** **$16** $26 **$29** |
 | 100 | $115C | $A8D7 | _BitMapRgn | `$BF0C` | $0D **$38** |
 | 101 | $168C | $AA23 | _CharExtra | `$BC42` | $26 |

@@ -1302,7 +1302,10 @@ are, the selectors whose entry has low byte `$70` (`$18`, `$20`-`$25`, `$27`, `$
 conclusion no longer depends on the fit, only on the exact low byte and on
 the block layout.
 
-One oddity remains. `$2A` (sent by `GA_TrapAB9A`, trap `$AB9A`) is in the
+One oddity remains. `$2A` is sent by the patches of `PicItem1` (`$AB9A`)
+and `OldPatToNew` (`$AB11`), two internal QuickDraw traps (see
+`QUICKDRAW_PATCHES.md`). `PicItem1` plays back one picture opcode, and
+`OldPatToNew` turns an old 8x8 pattern into a pixel pattern. `$2A` is in the
 accept list of the nested wait (`$33404`: `$26`, `$38`, `$30`, `$0C`, `$2A`,
 `$2C`), although its case is the default. An unhandled command gets reply 0
 whether it is accepted or rejected, so this changes nothing visible. It is
