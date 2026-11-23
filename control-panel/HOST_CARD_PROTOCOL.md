@@ -69,7 +69,7 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 **Named card functions** (the evidence is in the sections below): the
 dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
-(likely); text `$11AD8` (likely); QuickPolys `$19270` (likely), DrawLine/DrawArc
+(likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); QuickPolys `$19270` (likely), DrawLine/DrawArc
 `$075DC`/`$08618` (order unknown); ITabMatch `$06650`; BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
@@ -80,8 +80,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject's opcode → case mapping (the high bits of its table
-  targets);
+- the exact meaning of DrawMultiObject's opcodes (mapped by class, from estimated words);
 - which of `$075DC`/`$08618` is lines and which arcs (`$19270` is likely polygons);
 - what the card's ShieldCursor (`$32C10`/`$32EF8`) does when the cursor overlaps;
 - kernel service `$D2`'s exact role;
@@ -1245,7 +1244,7 @@ and font cache entries. So `lr94` is probably the fill kind (old pattern,
 pixel pattern, RGB pattern …), and `$09020`-`$09660` are the fill loops.
 That reading is not checked.
 
-**The opcode → block mapping is not reliable yet.** The table words give
+**The opcode → block mapping from the table alone (superseded below).** The table words give
 only the low 12 bits of each target, and the module is `$3680` bytes long.
 For every entry, exactly one block start (a word after a jump) matches, but
 several of the picks are clearly wrong: `$0B8C4` (opcodes 2 and `$6A`) tests
@@ -1254,6 +1253,51 @@ several of the picks are clearly wrong: `$0B8C4` (opcodes 2 and `$6A`) tests
 into shared code. Naming the opcodes needs the high bits from somewhere
 else, for example by estimating bits 16-23 of the case blocks'
 `jmp` words (`antelope_estimate_words.py`).
+
+**DrawMultiObject's opcodes, mapped through the estimated words.**
+`antelope_estimate_words.py` decodes 3,256 of DrawMultiObject's 3,488 words
+(491 samples, 2,765 estimates from neighbouring samples; 232 are left). That gives most
+jump targets in full:
+
+* The compare chain resolves directly: opcode 7 → `$0C398`, 8 → `$0D6E8`,
+  `$64` → `$0B230`, `$66` → `$0B458`, `$67` → `$0DE00`, `$68` → `$0BD7C`.
+  Anything unmatched goes to `$0E20C` (the "unknown opCode" message).
+* For the table entries, the candidate after a `jmp` and its delay slot is
+  taken, as before.
+* For opcode 6 (its jump is not estimated), only one of the possible targets
+  follows a `jmp`: `$0E018`.
+* `$6F` → `$0B228` is `jmp $0B450` with `lr38 += 4` in the delay slot,
+  and `$72` → `$0E22C` is the dispatch itself: both skip operands and read
+  the next opcode.
+
+A trace from each case through the estimated words, following both branches
+and stopping at the dispatch, gives the first drawing routine each one
+reaches:
+
+| opcodes | first drawing call | reading |
+|---|---|---|
+| 3, 4 | `$075DC` (drawer A) | a shape |
+| 5 | BitBlt / RgnBlt, then the fill loops `$09020`/`$09270` | rectangle or region fill |
+| **6** | **`$11AD8` (text)** | **text**; this is the only path to the text call at `$0E1B0` |
+| 7 | `$08618` (drawer B), then `$19270` (polygons) | a shape |
+| 8 | RgnBlt | region |
+| `$73` | `$08618` (drawer B) | a shape |
+| 2, `$6A`, `$71`, `$74`, `$75` | none; they reach the pattern-cache routines `$1610C`, `$15E8C`, `$15154`, `$15FF4`, `$1518C` | set a pattern |
+| `$64`, `$66`, `$6D`, `$6F` | none; they reach request 13 (`$0688C`, colour → index through the search procs) | set an RGB colour |
+| `$68`, `$6C`, `$6E` | none; they reach `Entry2Index` | set a palette-entry colour |
+| `$67`, `$70` | none | other state |
+| `$72` | none | skip |
+| 1 | not resolved | |
+
+So the stream mixes drawing opcodes (3-8, `$73`) with state opcodes
+(pattern, colour). That is the same split as a QuickDraw picture, though
+with its own numbering. Its text opcode confirms `$11AD8` as the text
+routine. Lines versus arcs stays open: drawer A is reached from two
+opcodes (3, 4) and drawer B from two (7, `$73`), which does not decide it.
+
+This mapping rests on estimated words ("=" in the tool's output, not
+samples). The estimates have been right wherever they could be checked (the
+dispatcher), but each row here is a reading, not a proof.
 
 **Who reaches DrawMultiObject.** Inside Antelope only `$13770` calls it, and
 `$13770` is reached only by command `$2D` (and the entry table). No `gc24`
