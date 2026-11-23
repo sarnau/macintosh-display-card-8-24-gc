@@ -1041,6 +1041,46 @@ So the table is Antelope's QuickDraw core, handed to host-loaded modules: the
 blitters, the shape drawers, text, and the support routines for host memory
 and callbacks.
 
+**DrawMultiObject's opcodes (partial).** `$0AD18` runs a loop over an opcode
+stream. The opcode is in `lr81`, the operands are read through `lr38`
+(`[lr38+2]`, `+4`, `+6`, …: halfword fields), and the dispatch sits at the
+loop's end (`$0E22C`-`$0E2EC`):
+
+| opcodes | dispatch |
+|---|---|
+| 1-5 | table `.lit $0484` (`opcode - 1`, 5 entries) |
+| 6, 7, 8, `$64`, `$66`, `$67`, `$68` | compare chain |
+| `$6A`-`$75` | table `.lit $0498` (`opcode - $6A`, 12 entries) |
+| anything else | "DrawMultiObject: unknown opCode %d" (`.lit $0430`) |
+
+That is 24 opcodes; `$65` and `$69` are not used. The values do not follow
+the PICT opcode numbering.
+
+The two 6-entry tables (`.lit $0454`, `$046C`) are not opcode tables. They
+are sub-switches on `lr94` (0-5), inside the drawing code at `$0CD30` and
+`$0CEE4`. Cases 0-2 call `$09430`, case 3 calls `$09578`, and cases 4-5 go
+elsewhere. Both switches come right after `$1553C` and `$32C10`, and
+DrawMultiObject's own messages are about pattern, "thickPat", RGB-pattern
+and font cache entries. So `lr94` is probably the fill kind (old pattern,
+pixel pattern, RGB pattern …), and `$09020`-`$09660` are the fill loops.
+That reading is not checked.
+
+**The opcode → block mapping is not reliable yet.** The table words give
+only the low 12 bits of each target, and the module is `$3680` bytes long.
+For every entry, exactly one block start (a word after a jump) matches, but
+several of the picks are clearly wrong: `$0B8C4` (opcodes 2 and `$6A`) tests
+`lr6`, not the opcode, and `$0D9C4` (opcodes 3, 4) tests for opcode 2. The
+"word after a jump" test is too loose inside this function, where cases fall
+into shared code. Naming the opcodes needs the high bits from somewhere
+else, for example by estimating bits 16-23 of the case blocks'
+`jmp` words (`antelope_estimate_words.py`).
+
+**Who reaches DrawMultiObject.** Inside Antelope only `$13770` calls it, and
+`$13770` is reached only by command `$2D` (and the entry table). No `gc24`
+code sends `$2D`. So the multi-object drawing engine is not used by the
+standard QuickDraw patches. It serves code that sends `$2D` itself, or a
+host-loaded module through the entry table.
+
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
 16-23 from the full samples on both sides of a word where they agree. It
