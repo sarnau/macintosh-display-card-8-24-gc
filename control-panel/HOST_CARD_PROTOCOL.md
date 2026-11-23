@@ -586,7 +586,7 @@ about 85% of the time. All case-block offsets are below `$1000`, so bits
 That holds for 55 of the 61 entries. Six are uncertain, and both
 candidates are listed in the table below:
 
-* `$0D`, `$17` and `$2C` have two blocks that match their bits 0-9.
+* `$0D`, `$17` and `$2C` have two blocks that match their bits 0-9. (`$17`/`$2C` is settled by the handler's name; see below.)
 * `$01`/`$12` (swapped) and `$1B` come out differently when the fit also
   uses the other `.lit` tables (`antelope_lit_key.py ACEF_100.bin`). Their
   bit-9/10/11 classes hold no string words, so the choice rests on weak
@@ -642,9 +642,9 @@ With the handlers from the case-block table above:
 | `$00` | `$327D8` | reply 0 ("not handled") |
 | `$01` | `$326E8` (or `$31FE8`, swapped with `$12`) | system call `$??CD` |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
-| `$03`, `$33` | `$324F8` | one long -> `$14034` |
+| `$03`, `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen** |
 | `$04` | `$32040` | |
-| `$0C` | `$32408` | six longs -> `$151C4` |
+| `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat** |
 | `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
 | `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
 | `$11` | `$3210C` | |
@@ -653,13 +653,13 @@ With the handlers from the case-block table above:
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
 | `$15` | `$32148` | |
 | `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
-| `$17`, `$2C` | `$324C8` (or `$320C8`) | one long -> `$158F4` |
-| `$19` | `$32570` | one long -> `$14168` |
-| `$1A` | `$325A0` | one long -> `$141F8` |
+| `$17`, `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (`$2C` is the host's DisposPixPat, which settles the earlier `$320C8` alternative) |
+| `$19` | `$32570` | one long -> `$14168` **FlushOffscreen** |
+| `$1A` | `$325A0` | one long -> `$141F8` **FlushColorTable** (the host's SetEntries) |
 | `$1B` | `$323D0` (or `$325D0` -> `$14274`) | the bit-mask chain entered at its last step (bit 4 -> `$14A80`) |
 | `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
-| `$29` | `$32468` | one long -> `$15808` |
-| `$2B` | `$32498` | one long -> `$15808` |
+| `$29` | `$32468` | one long -> `$15808` **FlushGDevice** (the host's AddSearch/…/SetDeviceAttribute) |
+| `$2B` | `$32498` | one long -> `$15808` **FlushGDevice** |
 | `$2D` | `$32188` | |
 | `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`) |
 | `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
@@ -673,6 +673,70 @@ Points that fit the host side (`QUICKDRAW_PATCHES.md`):
 * `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute), `$33`,
   `$17` and `$2C` (DisposPixPat) are one-long commands on the host, and all
   go to one-long handlers.
+
+**The handlers name themselves.** Many functions pass a `.lit` string to
+the reporter `sub_00140`. Each string's address is in the relocation comments
+of `text.partial.asm`, and with bits 0-11 of the `.lit` key the strings
+read. The functions:
+
+| function | message (decoded, a few characters still wrong) | role |
+|---|---|---|
+| `$0AD18` | "DrawMultiObject/…: can't get a RGBPatCacheEntry for RGB Pattern", "… font is not in cache", "DrawMultiObject: unknown opCode %d" | **the drawing engine**: an opcode interpreter (its jump table is `.lit $0454`) |
+| `$14034` | "DisposeOffscreen: NULL offscreen Handle" | command `$03`/`$33` |
+| `$14168` | "FlushOffscreen: NULL offscreen Handle" | command `$19` |
+| `$141F8` | "FlushColorTable: NULL color table handle" | command `$1A` |
+| `$14F64` | "CacheGDevice: NULL GDevice" | |
+| `$151C4` | "CachePixPat: NULL pixPatHandle" | command `$0C` |
+| `$15808` | "FlushGDevice: NULL GDevice" | commands `$29`, `$2B` |
+| `$158F4` | "FlushPixPat: NULL pixPatHandle" | commands `$17`, `$2C` |
+| `$15DF8` | "Cache still busy, cacheType = %d, cache = %lx" | |
+| `$161F8` | "PRInit: Unable to allocate mega buff" | initialisation |
+| `$16A04` | "PRAlloc: numBytes is not multiple of FOUR", "PRAlloc: Unable to allocate frame buffer size = 0x%x" | frame-buffer allocator |
+| `$22A8C` | "ScaleClut/IndexToGray: unsupported depth = %d", "ScaleClut: unknown scaleNum = %d" | |
+| `$31E20` | the sequence-error message, "Unknown Function: 0x%x" | the command dispatcher |
+| `$33680` | "malloc: allocated … bytes outside of the heap bounds …" | |
+| `$33EBC` | "CallBack … during interrupt …" | |
+
+So the card keeps caches of the host's pixel patterns, colour tables,
+GDevices and offscreens. The one-long commands keep those caches in step:
+flush or dispose an entry when the host's object changes. Drawing itself
+is `DrawMultiObject`.
+
+**An exported entry table.** `PRInit` (`$161F8`) allocates 100 bytes,
+stores the pointer in the external `extern#1636`, and fills it with 24
+function pointers:
+
+    +$00 $2D7B8   +$04 $13770   +$08 $0AD18 DrawMultiObject   +$0C $01A50
+    +$10 $19DA4   +$14 $22A8C   +$18 $3008C   +$1C $075DC   +$20 $08618
+    +$24 $11AD8   +$28 $19270   +$2C $1701C   +$30 $17264   +$34 $153D4
+    +$38 $1553C   +$3C $32C10   +$40 $32EF8   +$44 $33EBC   +$48 $3373C
+    +$4C $33A9C   +$50 $31E20 (the dispatcher)  +$54 $00248  +$58 $00348
+    +$5C $00294   +$60 an argument of PRInit
+
+Many are module entry points (`$075DC`, `$08618`, `$11AD8`, `$3008C` are
+four bytes into their modules). `$14020` returns the table pointer, and it
+is one case of a second service switch, `sub_379A0`. That switch handles
+`$8008`-`$8019` (18 cases, `.lit $0FC0`): allocate and free (`$3779C`,
+`$377CC`), getters (`$13FCC`, `$13FE0`, `$13FF4`, `$1400C`, `$14020`),
+`$16BA0`, `$33A9C`, `$378DC(p0..p2)` and `$3791C(p0..p3)`. Command `$8001`
+passes exactly `sub_379A0` to the code it calls: `p[2](p[0], p[1],
+sub_379A0)` (the `$274` there is `$379A0` relative to the module base).
+So code that the host uploads and starts with `$8001` gets a service
+callback into Antelope, including the entry table with `DrawMultiObject`.
+
+**The host side of `$80xx`.** `gc24.s`:
+
+* `$1720` sends `$8004` with `$11111111`, `$22222222` and `$33333333`, an
+  echo test whose expected reply is the sum.
+* `sub_1E7E` and `sub_1FD6` send `$8001`. `sub_1E7E` first checks that the
+  request's tag word is `$54xxxxxx` and copies the argument longs.
+* `sub_21BC` and `sub_220C` send `$8002` and `$8003`.
+
+These routines sit in one switch just before `ACEFLoad` (`L1510`: `$152E`
+calls `sub_1E7E`, `$1540` calls `sub_1FD6`), and `$1C38` builds a tag
+`$54000000 | id`. It looks like a host API for uploading code to the card
+and calling it. Which host code ends up calling `DrawMultiObject` this
+way, if any, is the next question.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
