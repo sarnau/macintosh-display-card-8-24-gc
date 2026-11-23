@@ -22021,7 +22021,7 @@ sub_14f64:   ; CacheGDevice
   15108:  03??8201  const    lr2, $??01   ; [delay slot]
   1510c:  15??6000  add      ?, gr96, $00
   15110:  03006000  const    gr96, $0000   ; lo of .text+$37000
-  15114:  02006000  consth   gr96, $0000   ; -> .text $37000 (sub_37000)
+  15114:  02006000  consth   gr96, $0000   ; -> .text $37000 (sub_37000 TestSlotBurst)
   15118:  c8??8060  calli    lr0, gr96
   1511c:  16??8287  load     ?, ?, lr2, lr7   ; [delay slot]
   15120:  16??608e  load     ?, ?, gr96, lr14
@@ -57429,7 +57429,7 @@ sub_36f4c:
   36ff8:  90??6260  and      ?, gr98, gr96   ; [delay slot]
   36ffc:  00??0200  .word    $00??0200
 
-sub_37000:
+sub_37000:   ; TestSlotBurst
   37000:  25010118  sub      gr1, gr1, $18
   37004:  5e40017e  asgeu    trap64, gr1, gr126
   37008:  15810124  add      lr1, gr1, $24

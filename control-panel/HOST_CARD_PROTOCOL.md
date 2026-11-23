@@ -1898,6 +1898,14 @@ in "The cursor".
             mask), then clear bit 22 again (`and $FFBFFFFF`) and finish the
             tail with single stores.
 
+         `$17264` (the two-value fill) loads the same two registers with
+         *different* values, `a` to `+$00` and `b` to `+$04`. Its pointers are
+         also 4 bytes apart. So register `+$00` serves the even longs of
+         each 32-byte block and `+$04` the odd ones, and a single-value fill
+         simply loads both with the same value. Nothing on the host side
+         touches this range: the video driver and the INIT never address
+         `$0CC00000` or a bit-22 alias.
+
          This is the shape of a VRAM block write: colour registers loaded
          once, then each store to the alias writes the colour into the
          bytes its mask enables. That explains why this path needs no
@@ -1973,14 +1981,36 @@ in "The cursor".
        fill into host memory through the kernel's mapping, presumably
        with NuBus block transfers set up by `$B8`/`$B9`/`$BF`. What
        `$D1`, `$BB`, `$B8`, `$B9`, `$BF` and `$D4` do in the kernel is not
-       shown, because the service table's pointers are approximate. One
-       candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
+       shown, because the service table's pointers are approximate. **`$D5`
+       is settled by its use:** Hand's stub `$2001260` returns
+       `[$4C00643C]` (`PublicIn+$3C`) when its argument is negative, and
+       otherwise clears bit `lr2` of that word and mirrors the result to
+       `$46000000`. `$37000` calls `$D5(-1)` to read the mask and
+       `$D5(slot)` to drop a slot that failed. So the word is a per-slot
+       "burst transfers work" mask, and `$46000000` presumably the hardware
+       copy of it. The host's command `$14` (`$D5(p[0])`, sent from the
+       InitGDevice patch) can drop a slot as well.
+
+       `.data+$280`, read by every caller of the fills (`$03838`, `$03A28`,
+       `$04110`, `$09020`, `$09270`, `$0E4CC`, `$0E804`, `$11460`-`$11918`,
+       `$1C298`, `$1C8A8`), is a shared flag. PRInit stores its *address*
+       in the descriptor it builds for modules (`$16748`), so code outside
+       Antelope can change it. Its meaning and initial value are in masked
+       `.data`. `$04110`, `$0E804` and `$1C8A8` (pattern fills) have no
+       const references; only `$0E804` has a known caller (`$1114C`). They
+       are left unnamed. One candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
        `gr64`, the feature flags the host wrote to `PublicIn+$18`. In those
        flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
        unit's config word `+$128` has bit `$40`. The config word comes from
        Control calls 17 and 50, and nothing in the INIT, cdev or gc24 code
-       sends those. So if `$BB` is that stub, the host-memory `storem` path
-       is an option that an outside client turns on. This is not
+       sends those. The INIT's `ControlDriverSync` callers use csCodes 99,
+       20, 13, 14 and 21; the control panel's use 99, 13, 14, 2, 3 and 5.
+       So in the System 7 software the config word keeps its initial
+       `$80000000`, and feature flag `$200` stays clear. The same holds for
+       cs50's `$100`, so the "mailbox not enabled" bit `$800` stays set as
+       well. (The System 6 package, "8•24 GC SW 1.1", is not disassembled.)
+       If `$BB` is the flags stub, the host-memory `storem` path is never
+       taken with this software. That `$BB` is the flags stub is not
        confirmed. A neighbouring stub `$2001A48` returns `[$4C006804]`
        (`PublicOu+$04`), a candidate for `$D1`.
        The same service sequence appears in three more entry points (the
@@ -1991,6 +2021,7 @@ in "The cursor".
        |---|---|---|
        | `$37C10` | pattern fill: a 1-, 2-, 4-, 8- or 16-long pattern (`lr19` = period) loaded into `gr96`-`gr111`, then `$37D68`'s body (`$37DF0`) | `$04110`, `$0E804` (3), `$1C8A8` |
        | `$37D68` | fill with one long | the row fills `$09020`/`$09270`, DrawMultiObject, `$11460`-`$11918` (text), `$03838`, `$03A28`, `$0E4CC`, `$1C298` |
+       | `$37000` (not in the family) | **burst self-test of a slot** (`addr`): takes the slot nibble, reads the slot mask with `$D5(-1)` and returns `$100` if the slot's bit is clear. It then reserves `$200` bytes on the memory stack and checks `CopyLongsStorem` against single loads and stores: burst-read 64 and 60 longs, invert the target with single stores, and burst-write it back. On any mismatch it restores the memory, calls `$D5(slot)` to clear the slot's bit, and returns -1 | CacheGDevice `$14F64` (once per device, between `$D3` calls) |
        | `$16C48` (not in the family) | the copy helper behind CallBack requests 8 and 18 | uses `$38218` twice |
        | `$38218` | forward copy (`dst`, `src`, `count`): `loadm`/`storem` 64 bytes at a time; calls `$D4` for both pointers | ShieldCursor `$32C10` and `$32EF8` (saving and restoring the pixels under the cursor), `$02DE0`, `$16C48` (2), `$1B61C`, `$37000` (4) |
        | `$388D0` | backward copy: the same with both pointers counting down, for overlapping moves | through the jump table at `.lit $0FFC` (base `$3772C`) |

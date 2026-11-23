@@ -56,7 +56,7 @@ NAMES = {
     0x19270: 'QuickPolys', 0x19DA4: 'RgnBlt', 0x22A8C: 'scaleBlt',
     0x253D4: 'GetSeek', 0x2D7B8: 'StretchBits', 0x31E20: 'CommandDispatcher',
     0x32C10: 'ShieldCursor', 0x32EF8: 'ShowCursorAfterDraw', 0x3373C: 'MapVirtual',
-    0x33A9C: 'UnmapAll', 0x33EBC: 'CallBack', 0x37C10: 'FillPatternStorem',
+    0x33A9C: 'UnmapAll', 0x33EBC: 'CallBack', 0x37000: 'TestSlotBurst', 0x37C10: 'FillPatternStorem',
     0x37D68: 'FillLongsStorem', 0x38218: 'CopyLongsStorem', 0x388D0: 'CopyLongsBackStorem',
     # C library (HIF)
     0x39214: 'vprintf', 0x39284: 'printf', 0x39304: 'fseek', 0x39864: 'sprintf',
