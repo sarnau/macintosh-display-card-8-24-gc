@@ -127,7 +127,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the glyph loop in DrawText;
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the exact register roles in DrawText's glyph loop;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -1908,17 +1908,38 @@ The style comes from the `FMOutput` of the `$67` record. One pointer
 | `+$12`/`+$14` | `numer` |
 | `+$16` | `denom` |
 
-So bold, italic, underline, shadow and scaling are applied on the card. The
-glyph loop itself, which reads the strike's location table and bit image,
-is not decoded. The cached strike is the only font data on the card, so it
-has to be the source.
+So bold, italic, underline, shadow and scaling are applied on the card.
+
+**The glyph loop** (`$12308`-`$123A8`) reads the strike in QuickDraw's
+`FontRec` layout, as `DrawText.a` does:
+
+```
+c     = (ch - firstChar) & $FF        if c > lastChar - firstChar: the missing glyph
+ow    = half[owTable + 2c]            (lr44)
+if ow == $FFFF: ow = half[owTable + 2(lastChar - firstChar + 1)]
+                                      the missing-character glyph, after lastChar
+left  = (ow >> 8) + (pen >> 16)       kern offset plus the pen's integer part
+pen  += long[widths + 4c] + extra     the width table entry (lr46), Fixed
+loc   = half[locTable + 2c]           (lr48): where the glyph starts in the bit image
+```
+
+After the glyphs are built into the buffer, a row loop (`$12E8C`-`$12EB8`)
+ORs each long with itself shifted left by one, with a NOR term on the
+carried-out bit. That is the smear that bold (and, with the NOR, outline)
+applies in `DrawText.a`.
+
+The register roles come from estimated words, and registers are reused, so
+which strike field feeds `lr44`/`lr48` is a reading. Still, the structure
+(the `$FFFF` missing-glyph test, the high byte as kern offset, the 4-byte
+width entries) is `FontRec`'s and nothing else's. So the cached strike is
+the glyph source, and the uploaded width table gives the advances.
 
 ##### Open points
 
 * **The per-device state refresh** is read only in outline: the mode table
   at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
   masked, and ColorMap's alpha-channel part is not checked.
-* **The glyph loop** in `$11AD8` is not decoded.
+* **The glyph loop** in `$11AD8` is read in structure (`FontRec` owTable, locTable, widths), not in its exact register roles.
 
 #### The dispatcher prologue and packet layout
 
