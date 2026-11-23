@@ -998,6 +998,49 @@ StretchBits: the strings of its neighbour `$22A8C` (entry `+$14`), "ScaleC…
 IndexTo…: unsupported dstDepth" and "unknown scaleNum", match Stretch.a's
 `ScaleBlt` and `Scale…toIndexed` families.
 
+**The entry table read against System 7.1 QuickDraw.** Antelope looks like
+compiled C (printf-style messages, C frames), not a port of the 68k sources, so names come from matching roles: the
+strings, who calls whom, and which routines use the region seek code. The
+anchors:
+
+* `$253D4` prints a message that reads roughly "GetSeek(): invalid
+  rectType for maskmode = %d" (the string is partly masked). In `QuickDraw/SeekMask.a`, `GETSEEK` combines the clip
+  regions (and a mask) into a per-scanline seek routine. Its 68k callers are
+  `Stretch.a`, `ScaleBlt.a`, `RgnBlt.a`, `DrawLine.a`, `DrawArc.a` and
+  `QuickPolys.a`, but not `BitBlt.a`.
+* `$22A8C` prints "ScaleC…/…IndexTo…: unsupported dstDepth" and "…: unknown
+  scaleNum". `ScaleBlt.a`'s `scaleBlt` picks a depth-conversion loop
+  (`scaleCase`) from a table and imports `GetSeek`. `$22A8C` calls
+  `GetSeek` and 19 workers (`$230B4`-`$25354`).
+* `$2D7B8` is StretchBits (command `$15`, above). It calls `GetSeek`,
+  `$22A8C`, `$01A50` and `$19DA4`, as Stretch.a calls `GetSeek`, `scaleBlt`,
+  and the blitters for the unscaled cases.
+
+| entry | function | name | evidence |
+|---|---|---|---|
+| `+$00` | `$2D7B8` | **StretchBits** | host trap `$AB27`, the parameter block |
+| `+$14` | `$22A8C` | **scaleBlt** | strings; `GetSeek` + a family of depth loops |
+| `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits and the shape drawers; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
+| `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; four mode loops `$1B33C`-`$1BDE8` |
+| `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: **DrawLine, DrawArc, QuickPolys** in some order | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
+| `+$24` | `$11AD8` | **text** (likely) | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw), RgnBlt, BitBlt; uses `extern#1772+$60`-`$6C` |
+| `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
+| `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
+| `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
+| `+$3C`, `+$40` | `$32C10`, `$32EF8` | a near-identical pair called by every blitter after `MapVirtual`. Both use a rectangle at `extern#1772+$78`-`$7E` and services `$D3`/`$39050`. A cursor-shield / screen-access bracket would fit, but that is not checked | |
+| `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle (`$1553C` stores four words at `+$78`-`$7E`) | |
+| `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
+| `+$50` | `$31E20` | the command dispatcher | |
+| `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers (`$00348` is called by nearly every blitter) | |
+
+Two more names come from the strings: `$06650` "ITabMatch: Inverse Table is
+not up to date", and `$06BEC` "BitsToPixMap: bounds …" (called from
+StretchBits).
+
+So the table is Antelope's QuickDraw core, handed to host-loaded modules: the
+blitters, the shape drawers, text, and the support routines for host memory
+and callbacks.
+
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
 16-23 from the full samples on both sides of a word where they agree. It
