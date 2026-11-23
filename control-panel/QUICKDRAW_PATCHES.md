@@ -19,6 +19,32 @@ commands, not the operation itself; the operation-specific ones are in bold.
 This list is extracted mechanically and is a reading of the code, not a
 confirmed table.
 
+**Most of these commands never travel as commands.** `EngineDispatch`
+writes the drawing commands and the drawing-state commands as records of a
+stream in card memory, which the card plays back (DrawMultiObject; see
+`HOST_CARD_PROTOCOL.md`, "DrawMultiObject: the batched drawing stream"):
+
+| command | stream record |
+|---|---|
+| `$20` StdLine | 1 |
+| `$23` StdArc | 2 |
+| `$2F` StdOval | 3 |
+| `$2E` StdRRect | 4 (or 5 when the oval is zero) |
+| `$24` StdRect | 5 |
+| `$21` StdText | `$67` (font) and 6 |
+| `$31` StdPoly | 7 |
+| `$18` StdRgn | 8 |
+| `$10` visible region | `$6C` |
+| `$32` clip | `$6A` |
+| `$35` pen size | `$6E` |
+| `$36` foreground | `$66`/`$64` |
+| `$37` background | `$6D`/`$6B` |
+
+Pen location, mode, patterns, `patAlign` and Op/Hilite colour are compared
+with cached copies at each drawing call and written as records when they
+changed. The stream itself is carried by `$2D` (start), `$38` (more records)
+and `$26` (flush/end, with a reason code). Fonts are uploaded by `$30`.
+
 The traps `$AB11`, `$AB23`, `$AB27` and `$AB9A` are not in the public
 headers. They are QuickDraw's internal traps, named in System 7.1
 `QuickDraw/QDTrapInstall.a` (`QDEntry $311, OldPatToNew`, `$323 SetFillPat`,
@@ -153,19 +179,19 @@ are the cursor jump vectors from `Interfaces/AIncludes/Private.a`
   StdPoly, `$18` StdRgn, `$10` the region operations, `$32` clip / rectangle ops,
   `$35`/`$36`/`$37` pen, foreground and background colour state, `$2A` pen and
   pixel patterns, `$29` colour-table / device operations.
-* **Naming Antelope's functions from this is not yet possible.** The card-side
-  command table lives in `.lit`/`.data`, whose relocation records all point at a
-  single placeholder symbol and whose target offsets are in the *masked* word
-  contents; `.text` itself is masked as well. Once Antelope's mask is solved,
-  the command table gives command -> function entry directly, and the
-  names above carry over (a command is the unit of naming; many functions
-  below it are shared helpers).
+* **Antelope's side is now largely named** (`HOST_CARD_PROTOCOL.md`): the
+  command dispatcher's table and DrawMultiObject's record tables decode
+  through the recovered `.lit` key. DrawMultiObject, DrawLine, DrawArc,
+  QuickPolys, DrawText, ColorMap, RSect, TrimRect, StretchBits, scaleBlt and
+  the caches are identified there.
 
 
 ## What a patched routine does on the host (read from `GA_StdLine`, `GA_StdRect`, `GA_StdRgn`, `GA_StdOval`, `GA_StdPoly`, `GA_StdRRect`, `GA_StdArc`, `GA_CopyBits`)
 
-All the shape bottlenecks share one skeleton; the card is asked first and the
-original QuickDraw routine is the fallback.
+All the shape bottlenecks share one skeleton; `EngineDispatch` is asked
+first and the original QuickDraw routine is the fallback. (For these
+commands `EngineDispatch` does not wait for the card. It appends a stream
+record and replies at once; see the note above the main table.)
 
 1. **Port state.** `GetA5 -> [A5] -> QD globals -> thePort`; the handler reads
    `thePort^.pnVis` (GrafPort offset `$42`). If the pen is hidden (negative) it
@@ -174,14 +200,18 @@ original QuickDraw routine is the fallback.
 2. **Ask the card.** `EngineDispatch(cmd, paramPtr, count)` (`$49C4`): the
    handler builds an array of longs on its stack and `CopyParamsToQueue` copies
    `count` of them after the command header (section 7 of `HOST_CARD_PROTOCOL.md`).
-   Pointers are passed as **host addresses** (rectangles, regions and polygons
-   stay in host memory), and bytes/words are sign- or zero-extended to longs.
+   Pointers are passed as **host addresses**, and bytes/words are sign- or
+   zero-extended to longs. For the batched commands `EngineDispatch` then
+   copies the data (rectangle, angles, polygon, region, text) into the
+   stream record, so the card does not read host memory for them.
 3. **Return code** (the word the card writes at `header+$1C`, or 0 when the card
    is not ready):
-   * `1` -- drawn by the card; the handler returns at once;
-   * `2` -- the card drew, but the 68k still runs the original with the pen
-     forced hidden (`pnVis = -1` around the call) so that the *state* (pen
-     position, etc.) is updated without drawing twice;
+   * `1` -- taken by the card (for the batched commands: recorded in the
+     stream); the handler returns at once;
+   * `2` -- taken by the card, but the 68k still runs the original with the
+     pen forced hidden (`pnVis = -1` around the call). `EngineDispatch`
+     returns this when the port is recording a picture, region or polygon,
+     so that the recording happens without drawing twice;
    * anything else -- not handled: the original is called normally.
    The original routine's address is fetched by `StoreCtxWord_AA6(tableAddr, ...)`
    (the trap-table address from the dispatch entry, e.g. `$1040` for `StdLine`)
@@ -347,9 +377,10 @@ only) or reach it through a shared helper.
 | `$00`, `$02`, `$11`, `$26:14` | the three control records (`$FFFFFFFF`, `$FFFFFFFE`) | 0-1 | engine start-up / shut-down and mode handshakes (not QuickDraw traps) |
 
 Every command above is a *state-mirroring* call except the shape and text
-commands in the previous table: the card keeps shadow copies of the pen,
-colours, patterns, clip and device state, so the shape handlers only have to
-send the geometry and a verb.
+commands in the previous table. `$10`, `$32`, `$35`, `$36` and `$37` become
+stream records (see the note at the top). The others (`$29`, `$1A`, `$1B`,
+`$2B`, `$2C`, `$33`/`$0F`) are sent as commands, and keep the card's caches
+of host objects (GDevices, colour tables, pixel patterns) up to date.
 
 
 ## `GA_StdText` and `GA_CopyBits`
@@ -363,7 +394,9 @@ size, pen mode, colours). The helper at `$3868` (the code just before
 `GA_StdText`) sets up the foreground colour via `_PaletteDispatch` and
 `_RGBForeColor`, then sends **four longs**: the count sign-extended, the text
 address, a pointer to `numer` and a pointer to `denom`
-(`EngineDispatch(4, &block, $21)`). Reply `1` means drawn; `2` runs the original
+(`EngineDispatch(4, &block, $21)`). `EngineDispatch` then measures the text,
+uploads the font if the card lacks it (`$30`), and writes a `$67` font
+record (when the font changed) and a text record 6. Reply `1` means drawn; `2` runs the original
 with the pen hidden, as for the shapes; otherwise the original is called. Before
 that the handler measures the text itself (`_StdTxMeas`, `_GetFontInfo`) and
 builds a region (`_NewRgn`, `_RectRgn`) so that it can restore the port's pen
@@ -371,13 +404,19 @@ and clip afterwards.
 
 **CopyBits** (`GA_CopyBits`) does **not** call the card itself. It is a
 bracketing patch: it keeps a nesting counter at `globals+$18`, clears a pair of
-saved longs at `globals+$40/$44` when the counter is zero, calls
+saved longs at `globals+$40/$44` when the counter is zero (these are the
+deferred-cursor counters: while the counter is raised, the cursor patches
+only record ShieldCursor/ShowCursor/HideCursor), calls
 `sub_86d6`/`sub_879a` around the original (the same port-state save/restore as
 the shape handlers) when the destination device record has `+$5C` set, and
 calls the original `CopyBits` with all six stack arguments through
 `StoreCtxWord_AA6($11B0)`. The one accelerated query associated with it is
 `sub_494E`, which sends **command `$17`** with one long (a pointer to a record at
 `*(unit+$0C) + $604`) after a readiness check; reply `1` stores the record's
-second long in `globals+$182`. How `CopyBits` itself reaches the card was not found in
-this handler (`StdBits` is not in the patch list), and `$17` looks like a
-status/handshake query, not a blit.
+second long in `globals+$182`. `CopyBits` reaches the card through its own call to
+StretchBits: the internal trap `$AB27` is patched (`GA_TrapAB27`) and sends
+command `$15` with a parameter block. If the card does the transfer, the
+recorded cursor calls are dropped; otherwise they are replayed and the 68K
+StretchBits runs (`HOST_CARD_PROTOCOL.md`, "StretchBits" and "Deferred
+cursor calls during CopyBits"). `$17` looks like a status/handshake query,
+not a blit.
