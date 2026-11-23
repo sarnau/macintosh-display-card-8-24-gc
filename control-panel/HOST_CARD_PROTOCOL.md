@@ -504,6 +504,45 @@ amount that follows no visible pattern (the lag itself drifts by a word or so).
 So the next model to try is the `.text` generator's structure with `.lit`'s
 own low tables, fitted to the repeating entries.
 
+**Fitting the dispatcher table directly (not solved).** Working assumptions:
+the table is indexed by the command itself (`cpgtu lr8, $3C`, then
+`add ?, lr8, 0`), the `.lit` key's bits 0-6 repeat every 24 words, and bits
+9-13 follow the `.text` key 19 words earlier. That lag predicts bits 9-13 for
+18 of the 23 entries in the repeating rows, but only bits 9 and up. The
+candidate decode it gives is not usable:
+
+* **The repeated value is not the unused-command default.** It sits at
+  entries 3, 8-11, 16, 28-35, 40, 52-55 and 57-59. Those include
+  commands the host does send: `$10`, `$20` StdLine, `$21` StdText, `$23`
+  StdArc, and `$35`-`$37` (pen size, colours). So the repeated value is a
+  shared path for several commands, not `$A70`.
+* **Its identity stays open.** The lag fixes only its bits 9-13. Every
+  block start from `$A30` to `$B1C` (`$327D8`-`$328C4`, the "reply 0"
+  blocks, the default, and the code right after the `jmpi`) scores the same,
+  18 of 23. Its low 7 bits are circular, because the key's low bits were
+  derived from it.
+* **The low-7-bit clustering is unreliable.** Two entries can agree in bits
+  0-6 and still differ above them: in row 3, entries 3 and 51 share bits
+  0-6 but decode to different values.
+
+**`.lit` strings: a better source of known plaintext.** The mask covers only
+bits 0-23, so the top byte of each `.lit` word is plain. Read as one
+character per word, `.lit` holds several ASCII messages, every fourth
+character visible:
+
+* `.lit $0500`-`$0760`, `$0900`-`$0A20`, `$0D60`-`$0DE0` and `$0F00`-`$0F70`
+  hold readable runs, for example `Dofr:Lfr dFhseN ...` and `Po:anpol %Mtnener
+  %f daf d`.
+* The default reporter's argument, `.lit $0DC8` (words 882-887), reads
+  `U o F t : %`, one character per word. That fits a format string like
+  "Unknown Function: 0x%x" (a guess).
+
+Each guessed string gives the full 24-bit key at each word. Two checks come
+for free: bits 0-1 must match the `.text` key at the same index, and bits
+0-6 must repeat 24 words apart. The words sit just before the dispatcher
+table (words 888-948), in the same 24-word classes, so a confirmed string
+would also fix the table's low key bits.
+
 The constraint for a future solution is clear: every relocated `.lit` word
 is a code offset inside its own module (module ranges come from the symbol
 table's per-module `.text`/`.lit` entries). For the dispatcher table the
