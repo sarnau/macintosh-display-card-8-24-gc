@@ -74,7 +74,7 @@ dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
-(from its region opcode); ITabMatch `$06650`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
+(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -1631,11 +1631,21 @@ estimated). For each device (`lr76` up to `lr105`):
 1. it loads that device's values into the drawing-context globals,
    `extern#1772` `+$0C`, `+$10`, `+$14`, `+$18`, `+$20`, `+$24` and `+$74`.
    These are the same stores every drawing case makes before it draws;
-2. it calls `$06F1C`. That routine makes three colour → index requests
-   (request 13, `$0688C`) and two calls to `$16034`, and reads the colour
-   globals (`extern#1772` `+$28`-`+$40`). That is the work of QuickDraw's
-   `ColorMap`: map the foreground and background colours to the device's
-   indices and adjust the mode. So `$06F1C` is probably ColorMap;
+2. it calls **`$06F1C`, ColorMap**, which follows `ColorMap` in
+   `QDUtil.a` step for step (estimated words):
+
+   | `ColorMap` (68K) | `$06F1C` |
+   |---|---|
+   | split the mode into the pattern bit and the rest | `gr99 = mode & 8`, `lr17 = mode & ~8` (`lr17` mode, `lr16` depth) |
+   | an arithmetic mode (bit 5) at 1 bit per pixel goes through `arithMode`, 8 bytes | the same test, and `mode & 7` indexes an 8-byte table at `.data+$2EC` |
+   | old port or new (`portBits.rowBytes` sign) | tests `extern#1772+$3E` |
+   | fore- and background RGB from the port | loads the RGBs at `extern#1772+$28` and `+$30`, and tests for black on white |
+   | at depth ≤ 2, if fore- and background map to the same index although their RGBs differ, invert the foreground and map it again (`@goOnAndFlip`) | the same comparisons, then `$06B1C` (invert) and `$0688C` (colour → index, request 13) |
+   | replicate the pixel through a long, by depth | a switch on `depth − 1` through `.lit+$128` |
+
+   The `.lit` group at base `$06BAC`, which the key fit leaves out as "not
+   a case-block table", is ColorMap's switch tables (`.lit+$128`, `$168`,
+   `$1A8`, `$1B8`). Their targets are the per-depth replication blocks.
 3. it looks up a byte in an 8-entry table at `.data+$3D8`, indexed by
    `(mode xor lr42) & 7`, or takes −1, and stores it in a per-device slot
    (`+$B4`). That is a per-device choice of blit loop by mode, as
@@ -1829,8 +1839,8 @@ has to be the source.
 * **Four sub-switch entries** (`.lit $0464`, `$0468`, `$047C`, `$0480`)
   match no clean case entry.
 * **The per-device state refresh** is read only in outline: the mode table
-  at `.data+$3D8` is masked, and `$06F1C` (probably ColorMap) is not
-  decoded.
+  at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
+  masked, and ColorMap's alpha-channel part is not checked.
 * **The glyph loop** in `$11AD8` is not decoded.
 
 #### The dispatcher prologue and packet layout
