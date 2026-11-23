@@ -1571,6 +1571,27 @@ set a dirty flag:
 Before a drawing record, if any flag is set, the loop head runs a
 per-device refresh (`$0AFC0`-`$0B1F0`) and clears them all (`$0B1F4`).
 
+**The refresh**, read in outline (about a third of its words are not
+estimated). For each device (`lr76` up to `lr105`):
+1. it loads that device's values into the drawing-context globals,
+   `extern#1772` `+$0C`, `+$10`, `+$14`, `+$18`, `+$20`, `+$24` and `+$74`.
+   These are the same stores every drawing case makes before it draws;
+2. it calls `$06F1C`. That routine makes three colour → index requests
+   (request 13, `$0688C`) and two calls to `$16034`, and reads the colour
+   globals (`extern#1772` `+$28`-`+$40`). That is the work of QuickDraw's
+   `ColorMap`: map the foreground and background colours to the device's
+   indices and adjust the mode. So `$06F1C` is probably ColorMap;
+3. it looks up a byte in an 8-entry table at `.data+$3D8`, indexed by
+   `(mode xor lr42) & 7`, or takes −1, and stores it in a per-device slot
+   (`+$B4`). That is a per-device choice of blit loop by mode, as
+   QuickDraw's mode tables do. `.data` is masked, so the table's values
+   are not known;
+4. it sets a per-device flag (`+$1CC` slot) unless the byte is `$64`.
+
+So colours and mode are mapped per device once per change, not once per
+drawing record. A stream that draws many shapes in one colour pays for the
+mapping once.
+
 Each case ends by advancing `lr38`, usually in the delay slot of its `jmp
 $0B450` back to the loop. The sizes found that way match the host's layouts
 for every case that has been read.
@@ -1752,8 +1773,9 @@ has to be the source.
 
 * **Four sub-switch entries** (`.lit $0464`, `$0468`, `$047C`, `$0480`)
   match no clean case entry.
-* **The per-device state refresh** (`$0AFC0`-`$0B1F0`) is not read in
-  detail.
+* **The per-device state refresh** is read only in outline: the mode table
+  at `.data+$3D8` is masked, and `$06F1C` (probably ColorMap) is not
+  decoded.
 * **The glyph loop** in `$11AD8` is not decoded.
 
 #### The dispatcher prologue and packet layout
