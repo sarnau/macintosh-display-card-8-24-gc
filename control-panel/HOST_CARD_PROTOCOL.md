@@ -74,7 +74,8 @@ scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
-`$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; `CallBack`
+`$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; ShieldCursor
+`$32C10`/`$32EF8`; `CallBack`
 `$33EBC`; the request wrappers `$33BD0`-`$33E88`; the card heap
 `$372D0`-`$3772C`.
 
@@ -82,7 +83,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 - DrawMultiObject's opcode → case mapping (the high bits of its table
   targets);
 - which of `$075DC`/`$08618`/`$19270` is lines, arcs and polygons;
-- the twin `$32C10`/`$32EF8`;
+- what the card's ShieldCursor (`$32C10`/`$32EF8`) does when the cursor overlaps;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
 
@@ -1119,7 +1120,7 @@ anchors:
 | `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
 | `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
-| `+$3C`, `+$40` | `$32C10`, `$32EF8` | a near-identical pair called by every blitter after `MapVirtual`. Both use a rectangle at `extern#1772+$78`-`$7E` and services `$D3`/`$39050`. A cursor-shield / screen-access bracket would fit, but that is not checked | |
+| `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (one and two rectangles): the cursor lock with the host, see "The cursor" below | |
 | `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle (`$1553C` stores four words at `+$78`-`$7E`) | |
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
@@ -1132,6 +1133,56 @@ StretchBits).
 So the table is Antelope's QuickDraw core, handed to host-loaded modules: the
 blitters, the shape drawers, text, and the support routines for host memory
 and callbacks.
+
+#### The cursor: a lock shared by host and card
+
+The host patches every cursor vector (`JHideCursor`, `JShowCursor`,
+`JShieldCursor`, `JInitCrsr`, `JSetCrsr`, `JCrsrObscure`, `JSetCCrsr`,
+`JCrsrTask`). The patches send no commands. Instead the host and the card
+share a lock in the packet. `DRVR.s` (`$122E`-`$1312`) points the engine
+globals into the packet:
+
+| global | packet | role |
+|---|---|---|
+| `+$08` | `+$1D4` | host claim: the vector being run (`$800`, `$804`, …), 0 = free |
+| `+$0C` | `+$1D8` | card busy: 1 while the card draws |
+| `+$10` | `+$1DC` | the card's drawing rectangle (8 bytes) |
+| `+$1C` | `+$130` | a second rectangle (8 bytes) |
+| `+$28`, `+$2C` | `+$1EC`, `+$1F0` | |
+| `+$30`, `+$34` | `+$5F0`, `+$5F4` | |
+
+**Host side** (for example `GA_LowMem0800`, `$42B8`, `JHideCursor`):
+1. save `*[+$08]`;
+2. wait until `*[+$0C]` (card busy) is 0;
+3. write the vector number to `*[+$08]`;
+4. if the card has become busy meanwhile, restore and retry;
+5. if `*[+$30]` is set, clear `CrsrBusy` (`$8CC`) and the flag;
+6. run the original cursor routine, call `sub_C034`, and restore
+   `*[+$08]`.
+
+`EngineDispatch` and `sub_6442` also wait for `*[+$08]` to be 0 before they
+touch the packet (`$5F04`, `$646C`). `JHideCursor`/`JShowCursor` only count
+(`+$40`, `+$44`) while `+$18` is set.
+
+**Card side** (`$32C10`, `$32EF8`, entry table `+$3C`/`+$40`, called by every
+blitter):
+1. wait until packet `+$1D4` is 0;
+2. set `+$1D8` = 1, and back off if the host claimed it meanwhile;
+3. copy the drawing rectangle (`extern#1772+$78`-`$7E`, set by `$1553C`) to
+   `+$1DC`;
+4. compare it with the cursor's position;
+5. set a flag at `+$?F0` (high byte masked: `$1F0` or `$5F0`) and release
+   `+$1D8`.
+
+`$32EF8` does the same and also merges a second rectangle into
+`extern#1772+$78`. That fits shielding a source and a destination, as
+CopyBits does, but it is not checked.
+
+So `$32C10`/`$32EF8` are the card's **ShieldCursor**: the 68k code draws the
+cursor, and this lock keeps the card from drawing over it while it does.
+That is the lock half, and it is read from both sides. What the card does
+when the rectangles overlap is less clear, because the comparison and the
+`+$?F0` flag are partly masked.
 
 #### DrawMultiObject
 
