@@ -587,7 +587,7 @@ That holds for 55 of the 61 entries. Six are uncertain, and both
 candidates are listed in the table below:
 
 * `$0D`, `$17` and `$2C` have two blocks that match their bits 0-9. (`$17`/`$2C` is settled by the handler's name; see below.)
-* `$01`/`$12` (swapped) and `$1B` come out differently when the fit also
+* `$01`/`$12` (swapped; settled by the reset in `$31FE8`, see `CallBack` below) and `$1B` come out differently when the fit also
   uses the other `.lit` tables (`antelope_lit_key.py ACEF_100.bin`). Their
   bit-9/10/11 classes hold no string words, so the choice rests on weak
   evidence either way. This replaces the earlier lag-19 estimate, which had
@@ -640,7 +640,7 @@ With the handlers from the case-block table above:
 | command | case block | handler / what it does |
 |---|---|---|
 | `$00` | `$327D8` | reply 0 ("not handled") |
-| `$01` | `$326E8` (or `$31FE8`, swapped with `$12`) | system call `$??CD` |
+| `$01` | `$31FE8` | reset: sequence counter to 0, request 100 to the host (settled by `CallBack`, below) |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
 | `$03`, `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen** |
 | `$04` | `$32040` | |
@@ -648,7 +648,7 @@ With the handlers from the case-block table above:
 | `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
 | `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
 | `$11` | `$3210C` | |
-| `$12` | `$31FE8` (or `$326E8`) | local calls |
+| `$12` | `$326E8` | system call `$??CD` |
 | `$13` | `$32740` | system call `$??CC` |
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
 | `$15` | `$32148` | |
@@ -799,9 +799,8 @@ count, argv}` and runs `sub_18BE`:
 
 `sub_6442` is also called from six wait loops inside `EngineDispatch`
 (`$60B0`, `$612E`, `$62E8`, `$6362`, `$6EC8`, `$71A2`), so the card can make
-a request while the host waits on any command. On the card, the code that
-makes these requests is probably the "CallBack" module (`$33EBC`, entry
-table `+$44`), whose message mentions an interrupt, but that is not checked.
+a request while the host waits on any command. On the card, these requests
+are made by `CallBack` (`$33EBC`, entry table `+$44`; decoded below).
 
 So the card runs host-loaded modules as tasks. A task gets messages through
 `$8001`, answers with request `$8002`, and can call back to host routines
@@ -853,6 +852,57 @@ foreground/hilite colours. Codes 15/16 are the interesting ones. Under
 virtual memory they lock a host buffer and give the card its physical
 pages, so the card can read or write host memory directly as a NuBus
 master. That is presumably how it reaches host-side pixel maps.
+
+**The card side of the requests (`sub_33EBC` "CallBack", decoded).**
+`CallBack(code, wait, nargs, a0, …, a7)`:
+1. The mailbox is `[.bss] + $24`, the same packet base the dispatcher reads
+   commands from.
+2. Code 100 first zeroes the request counter (`.data+$F0C`).
+3. If the host's packet `+$14` is set (a command is being serviced), it
+   prints the `.lit $0F4C` message ("CallBack … during interrupt") and
+   returns.
+4. It stores three arguments (eight if `nargs > 3`) at `[mailbox+$14]`,
+   the counter at `+$0C` (and increments it), and the code at `+$04`.
+5. It sets bit 2 of packet `+$18`, and of `*[packet+$20]` if that is set:
+   the status bit the host's idle routine tests.
+6. If `wait` is set, it spins until the host has set `+$04` back, then
+   returns `+$08`, the reply.
+
+The calls, found by relocation (const/consth) and by call displacement (the
+low byte is exact, and the candidates are near):
+
+| wrapper | code | args | called from |
+|---|---|---|---|
+| `$33BD0` | 13 (search procs) | 5: RGB, …, the current GDevice `[extern#1772+$74]` | `$0688C`, `$2BCEC`, `$2BE2C`, `$2BF80`, `$2C094`, `$2C1A8`, `$2C324` |
+| `$33C6C` | 14 (complement procs) | 5 | `$06B1C` |
+| `$33CFC` | 22 (`GetSystemClientProcess`) | 0, then copies the PSN out | `$1437C` |
+| `$33D58` | 17 (`Entry2Index`) | 2: entry, the current GDevice | `$06844`, **`$0AD18` DrawMultiObject** (twice) |
+| `$33D98` | 12 (`MakeITable`) | 3 | `$14D78` (next to CacheGDevice `$14F64`) |
+| `$33DD4` | 8 (copy) | 3 | `$16C48` |
+| `$33E10` | 18 (copy from a handle) | 3 | `$16C48` |
+| `$33E4C` | 21 (copy into a handle) | 3 | `$14478` |
+| `$33E88` | 1, no wait, no arguments | | no caller found; the host's `sub_6442` ignores code 1 |
+| `$3373C`, `$33A9C` | 15 (lock + physical pages) | 4 or 3 | see below |
+| `$37730` | 999 (module request) | 4: task, selector, count, argv | the `$80xx` service switch `sub_379A0` (out-of-range cases) and `$377FC`, `$37838`, `$3786C`, `$378A8` |
+| dispatcher `$31FE8` | 100 (reset) | 0 | command `$01` |
+
+Not found on the card: codes 3-7 (handles, resources), 16 and 20. They are
+open to host-loaded modules, which get `CallBack` as entry-table `+$44`.
+
+**`$3373C` and `$33A9C` (entry table `+$48`, `+$4C`) map host memory.** They
+are the only users of code 15, and they are called from the first entry-table
+functions: `$2D7B8` (`+$00`), `$13770` (`+$04`), `$01A50` (`+$0C`),
+`$19DA4` (`+$10`), `$22A8C` (`+$14`), `$3008C` (`+$18`), and from `PRInit`.
+So those six entry points are the ones that read or write host memory
+directly: they are presumably the transfer routines (CopyBits-like) for
+pixel maps in host RAM. `DrawMultiObject` itself only asks for
+`Entry2Index`.
+
+**This settles dispatcher entry `$01`.** The case at `$31FE8` sets the
+command sequence counter `[.bss+8]` to 0 and sends request 100 (reset the
+host's request counter). Command `$01` is the one command the sequence check
+lets through, so it is the reset command and its case is `$31FE8`. That makes
+`$12` the `$326E8` case.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
@@ -985,7 +1035,7 @@ packet pointer is at `.bss+$0000`.
 | `$3279C` | stores `p[0]` and `p[1]` in two globals; no call | - |
 | `$32234`, `$32284` | unless `[msp+8] = -1`, stores `[p[0]+4]` at offset `$..C0` of a global block (two near-identical cases) | - |
 | `$31F7C` | after a mask test on the command: `reply = handler(cmd, [rec+$0C], [rec+$10])`, a generic forwarder | `$38F64` (system call `$??D2`) |
-| `$31FE8` | local calls with `[rec+$0C]`, clears a global, then a local call with `($..64, 1, 0)` | (local `call`) |
+| `$31FE8` | command `$01`: a local call with `[rec+$0C]`, sequence counter `[.bss+8]` = 0, then `CallBack(100, 1, 0)` | (local `call`) |
 | `$320A8`-`$32230` | blocks not split out above | `$161F8` (twice), `$15D84`, `$16BA0`, `$2D7B8`, `$13770` |
 | `$326BC`-`$32798` | blocks that go through system calls and an external data block (`extern#1772+$88`..`$90`) | `$39028` (`$??CD`), `$390B4` (`$??D3`), `$39018` (`$??CC`) |
 | `$327D8`, `$327F8` | only store reply `lr12` (`$??00`): "not handled", so the host runs the original | - |
