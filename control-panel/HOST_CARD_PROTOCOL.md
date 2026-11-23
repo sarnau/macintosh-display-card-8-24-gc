@@ -657,6 +657,54 @@ all, it does so before the switch. The only call there is system call
 `$??D2`, made for every accepted command, without arguments, and before the
 `$8000` test. Its service in the runtime (`Hand`) is the next thing to name.
 
+**The `$80xx` commands (`sub_37B58`, decoded).** The function's arguments
+start at `lr8` (frame of 6 registers): `lr8` = command, `lr9` = `[rec+$0C]`
+(count), `lr10` = `[rec+$10]` = `p`. It switches on `cmd - $8000` (0-4,
+anything else returns `-$32`) through `.lit $1008`, the module's `.lit` base
+`$0FC0` plus `$48`. The five case blocks have different low bytes, and the
+string-derived `.lit` key decodes all five entries to exactly one of them:
+
+| command | case | does |
+|---|---|---|
+| `$8000` | `$37B94` | return 0 |
+| `$8001` | `$37B9C` | return `p[2](p[0], p[1], $274)`: call code at a host-given address |
+| `$8002` | `$37BC4` | return `sub_37658(p[0])`: allocate `p[0]` bytes from the card heap |
+| `$8003` | `$37BD4` | `sub_376A0(p[0])`: free a block |
+| `$8004` | `$37BE4` | return `p[0] + p[1] + p[2]` (an echo/arithmetic test) |
+
+The allocator is the module `$372D0`-`$3772C`:
+
+* Its heap descriptor sits at `.data+$1388`.
+* It is created on first use by `sub_372D4`:
+  1. call service `$C1` (stub `$38F24`);
+  2. subtract `$1000`;
+  3. call service `$01` (stub `$39008`) with that size, retrying 1,000 bytes
+     smaller until it returns non-zero;
+  4. store the block and build a free list in it (`sub_373A0`).
+* `sub_37470(heap, n)` and `sub_3754C(heap, ptr)` are allocate and free.
+
+This also names two services by use. `$C1` is "free memory": its `PrivNZ`
+pointer `$20012E0` lies inside `Hand`'s "free stack/heap space" routine
+`$20012AC`-`$20012E4`. `$01` (masked high byte, so probably `$101`) is the
+program break (`sbrk`), as `Hand`'s register notes say (`gr65`, service
+`$101`).
+
+**The wait loop (`sub_33374`, the nested dispatcher caller).** It waits
+until packet `+$1C0` reaches `*target` (argument `lr13`), counting spins
+in packet `+$1C4`. The host side:
+
+* it writes its own counter `$C0(a4)` into `+$1C0` (`gc24.s` `$5962`, right
+  after sending command `$38`);
+* it watches `+$1C4` change while it waits (`$60D4`, `$6306`), and calls
+  `sub_75FE` when it stops.
+
+So `+$1C4` is the card's heartbeat. While waiting, whenever the host posts a
+request, the card services only commands `$0C`, `$26`, `$2A`, `$2C`, `$30`
+and `$38` (through `sub_31e20(6, …)`). Depending on the result, it either
+goes on waiting or returns early: -7 after `$17`, -5 otherwise, `$C8`/`$C9`
+after `$26`/`$30`. The exact branch structure is less certain than the rest,
+because several of these words are estimates.
+
 The constraint for a future solution is clear: every relocated `.lit` word
 is a code offset inside its own module (module ranges come from the symbol
 table's per-module `.text`/`.lit` entries). For the dispatcher table the
