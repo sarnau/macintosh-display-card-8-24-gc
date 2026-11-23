@@ -1777,7 +1777,7 @@ follows both branches and stops at the jump back to the loop:
 |---|---|---|---|
 | 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
 | 2/3/4 arc, oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
-| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68`, ShieldCursor pair, `$1701C`, BitBlt |
+| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68` (`storem` fill), ShieldCursor pair, `$1701C`, BitBlt |
 | 6 text | `$0E018` | 98 (0) | none before its unestimated jump; DrawText `$11AD8` follows at `$0E1B0` |
 | 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
 | 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
@@ -1825,26 +1825,74 @@ in "The cursor".
        * otherwise it tests bit 31 of the absolute word `$??000080`. There
          is no relocation on the pair, so this is a hardware register, not
          a variable. The key estimate gives `$44000080`, a status register
-         that Hand also tests: the video command service waits on it and on
-         `$4400007C` before reconfiguring, and the pixel-clock stub
-         `$20012E8` halves its two values when bit 31 is set;
+         that Hand also tests (see below);
        * bit 31 clear: call `$00348`;
        * bit 31 set: its own loop. It aligns with 1-7 single stores
          (`dst>>2 & 7`, through `.lit+$548`), fills 32 longs per loop while
          alternating between two pointers (`gr99`/`gr98`), and finishes
          with a remainder chain.
 
-       So the "burst allowed" condition is a hardware bit. When it is set,
-       the fill avoids `storem` and writes through two interleaved
-       pointers instead. What the bit means (a VRAM layout or bank mode is
-       likely, given the video service's linear/4-way interleave
-       conversion) is not shown;
+       **What the bit means, from Hand.** The video command service
+       (`$2000C14`) converts the 2 MB window at `$4C000000` between two
+       layouts, `$1000` bytes at a time through a buffer at `$40003800`:
+       * page configuration 1 reads the buffer with a 16-byte stride
+         (offsets 0, 8, 4, `$C`) and writes the window linearly. So it turns
+         the 4-way word-interleaved layout into the linear one. Afterwards
+         it waits until `$4400007C` bit 31 is clear and then until
+         `$44000080` bit 31 is set (`$2000F2C`-`$2000F48`);
+       * page configuration 2 does the reverse (linear to interleaved) and
+         then waits until `$4400007C` is set and `$44000080` is clear
+         (`$2000E5C`-`$2000E78`).
+
+       So `$44000080` bit 31 reads 1 while the frame buffer is in the
+       linear layout and 0 while it is interleaved; `$4400007C` is its
+       complement. The kernel's pixel-clock stub `$20012E8` also halves both
+       of its values when the bit is set. For `$1701C` this means:
+       interleaved memory gets the `storem` burst, and linear memory gets
+       the two-pointer loop. Why linear memory avoids `storem` is not
+       shown. Which depths use which layout is a host-side setting (the
+       page configuration word at VidComm `+$1C`) and is not traced here;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
        `.lit` jump into the unrolled register loads and one final `storem`.
        Nearly every blitter calls it for solid runs;
-     * `$37D68` is not named;
+     * **`$37D68(dst, value, count)`**, a `storem` fill for any memory.
+       The "call to the next instruction" at its start is a direct `call`
+       with an R_IREL relocation (type 24): the file stores displacement 0
+       and the loader fills it in (see "Relocations name the targets"). Its
+       calls all go to kernel service stubs:
+       1. `$C4` (`$38F34`): the card's slot nibble, as in `$13F54`, kept in
+          `gr120`;
+       2. `$D1` (`$390F4`): if the result's top nibble is 0, take the
+          direct path. Otherwise `$BB` (`$38F44`): if its bit 9 (`$200`) is
+          0, take the direct path too;
+       3. it copies `value` into `gr96`-`gr111` (16 registers);
+       4. `count` < 16 longs: the direct path;
+       5. `dst` on this card: the direct path. That covers `$Fs......`,
+          `$s.......`, and `$4.......` (the card's local view, which it
+          first rewrites to `$s` plus the low 28 bits);
+       6. otherwise (host or another slot) it saves state and sets it:
+          `$B9(1)`, clears `CFG` bit 5, `$B8(0)`, `$BF(1)`, `$D3(0)`. If
+          `$D3` returned non-zero, `$D4(dst, bytes)` translates `dst` and the
+          result becomes the destination. When `count * 4` overflows, it
+          instead restores `$D3` and fills untranslated. A misaligned
+          destination skips the alignment step. Otherwise it stores up to
+          64-byte alignment, writes 64 bytes per
+          `storem` (`CR = $F`), stores the rest, and restores everything
+          with the saved values (`$38114`-`$38138`);
+       7. the direct path (`$381CC`) is the same 64-byte `storem` loop
+          without the services.
+
+       `$D3` is the service that brackets the host-memory mapping (1 on
+       entry, 0 on release; see "Card: `MapVirtual` and host memory"). So step 6 is a
+       fill into host memory through the kernel's mapping, presumably
+       with NuBus block transfers set up by `$B8`/`$B9`/`$BF`. What
+       `$D1`, `$BB`, `$B8`, `$B9`, `$BF` and `$D4` do in the kernel is not
+       shown, because the service table's pointers are approximate.
+       The same service sequence appears in `$37C10`, `$38218`, `$385C8`,
+       `$388D0` and `$38C3C`, so these look like one family of
+       `storem` fill and copy routines;
    * release the cursor (`$32EF8`).
 4. **General path** (`$0CA64`-`$0D050`):
    * RSect (`$01494`), then TrimRect (`$01654`) for each region;
@@ -2323,6 +2371,26 @@ behaving like Hand's high field: a slow 3-bit count, sign-extended
 (`$0x`, `$1x`, `$2x`, `$3x`, then `$Cx`, `$Dx`, `$Ex`, `$Fx` from word
 about 27,000). `text.partial.asm` now decodes these words in full and
 comments each pair with its target.
+
+**Direct calls have relocations too.** Besides the const/consth types,
+`.text` has 133 relocations of type 24 (R_IREL). Each one sits on a `call`
+(opcode `$A8`) whose displacement low byte is 0: the file holds
+displacement 0, and the loader fills in the PC-relative distance. The symbol
+is the entry itself (`.text`, value = target), or the next one when the
+entry is `(-3, 0)`, as for const/consth (4 cases). So these 133 calls have
+known targets although their displacement's high byte is masked:
+* the calls in `$37C10`-`$38C3C` go to kernel service stubs (`$B8` `$B9`
+  `$BB` `$BF` `$C4` `$D1` `$D3` `$D4`): a family of `storem` fill/copy
+  routines (see `$37D68` under "the rectangle case");
+* the rest are in `$39118`-`$3C340`, calling each other and the
+  low-numbered services `$01`, `$14` and `$15` (HIF-style exit, write and
+  so on). This looks like the C library.
+
+`antelope_partial_dasm.py` now prints these targets
+(`call lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)`).
+The displacement's masked high byte is plaintext 0 in all 133 words, so
+they are also 133 more key samples for bits 16-23, which
+`antelope_reloc_samples.py` does not yet use.
 
 **First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
 `.lit` words whose target range is under 8 KB (175 in small modules, plus

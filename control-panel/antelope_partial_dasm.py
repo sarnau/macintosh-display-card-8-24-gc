@@ -17,7 +17,8 @@ jmpi lr0, the spill/fill asserts, sub/add gr1/lr1 frame words, and the
 relocated const/consth words) are decoded in full.  Function labels come from
 the ACEF symbol table (symbols.txt, 768 .text entries), which is not masked.
 
-Given the ACEF file, each relocated const/consth also gets its target as a
+Given the ACEF file, each direct call with an R_IREL relocation (type 24,
+133 of them) gets its target, and each relocated const/consth its target as a
 comment ('-> .text $15808', '-> .bss+$0004').  The symbol a relocation names
 is the entry AFTER its symbol index (the index points at a (-3, 0) entry in
 front of the real one; checked on the dispatcher's table, whose const names
@@ -97,7 +98,11 @@ def reloc_targets(path):
     ihc = {va - t['vaddr']: si for va, si, ty in R if ty == 28}
     out = {}
     for va, si, ty in R:
-        if ty in (26, 27):
+        if ty == 24:                            # R_IREL: a direct 'call'
+            n = si + 1 if sym(si)[0] == -3 else si
+            sc, v = sym(n)
+            out[va - t['vaddr']] = (SECNAME.get(sc, str(sc)), v, ty)
+        elif ty in (26, 27):
             n = si + 1 if sym(si)[0] == -3 else si
             sc, v = sym(n)
             if sc == 0:                         # undefined: an external symbol
@@ -125,6 +130,10 @@ def main():
         p = ln.split()
         if len(p) == 2 and p[0] == '.text':
             syms.add(int(p[1], 16))
+    def tgt_is_stub(v):                     # 'const gr121, N' starts a stub
+        x = U[v // 4]
+        return x >> 24 == 0x03 and (x >> 8) & 0xFF == 121
+
     out, delay = [], False
     mix = collections.Counter()
     for i, w in enumerate(U):
@@ -149,6 +158,13 @@ def main():
             sec, v, ty = rel[pc]
             if ty == 26:
                 ann += '   ; lo of %s' % sec + ('+$%x' % v if v else '')
+            elif ty == 24:
+                ops = '%s, $%05x' % (ops.split(',')[0], v)
+                ann += '   ; R_IREL call -> %s $%05x' % (sec, v)
+                if sec == '.text' and tgt_is_stub(v):
+                    ann += ' (service $??%02x)' % (U[v // 4] & 0xFF)
+                elif sec == '.text' and v in syms:
+                    ann += ' (sub_%05x)' % v
             else:
                 add = ihc.get(pc)
                 tgt = v + (add or 0)
@@ -171,7 +187,10 @@ def main():
         '*  relocated const/consth) are decoded completely.  A relocated',
         '*  const/consth pair is commented with its target ("-> .text $15808",',
         '*  "-> .bss+$0004"; "extern#N" is an undefined symbol, N its index',
-        '*  in the symbol table).  The hex column shows the unmasked word',
+        '*  in the symbol table).  A direct call with an R_IREL relocation',
+        '*  (displacement 0 in the file, filled in by the loader) shows its',
+        '*  target and, for the 16-byte system-call stubs, the service.',
+        '*  The hex column shows the unmasked word',
         '*  with the masked byte as "??".  Labels sub_XXXXX are the 768',
         '*  .text entries of the (unmasked) ACEF symbol table.',
         '*',
