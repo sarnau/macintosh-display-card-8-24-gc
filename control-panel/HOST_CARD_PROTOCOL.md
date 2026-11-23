@@ -759,6 +759,29 @@ key fits this table's real structure better. Its match count in the table
 above (18 of 32) means little: it is a stride table, not a case-block one. Bits 8-11 are weakest where a class
 holds few constraints, which is the case for these words.
 
+**A stride prior does not help.** Under the pinned key many tables step
+regularly between neighbouring words:
+
+| table | regular step | pairs |
+|---|---|---|
+| `$2D7B4` | +12 | 45 |
+| `$30088` | −16 | 24 |
+| `$19DA0` | −16 | 13 |
+| `$13F50` | ±8 | 11 |
+| `$0E394` | +12 | 18 |
+
+Many of the remaining steps are that step ± 512, 1024, 1536 or 2048, which
+looks like single wrong key classes in bits 9-11. A score that rewards
+neighbours differing by at most 64 was tried in the fit:
+* at all of bits 8-11, it wrecked the fit (dispatcher 22 of 61);
+* at bits 10-11 only, at weight 1, it kept the dispatcher (61 of 61) and the
+  DrawMultiObject pins, but lost case-block matches elsewhere (`$01A4C` 41
+  → 31, `$19DA0` 53 → 46, `$2D7B4` 81 → 79). Losing 10 matches at 17%
+  chance each is not luck. So the tables mix stride runs with ordinary case
+  jumps, and a general small-step rule is wrong for those classes.
+
+The script keeps the case-block evidence only.
+
 **`.data` has a key of its own, and it does not fall to the same method.**
 `.data` (1,596 words) holds strings from `$0F20` on: 305 words have a
 printable top byte. The tests:
