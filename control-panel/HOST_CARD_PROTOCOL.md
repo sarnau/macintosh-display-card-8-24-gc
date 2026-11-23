@@ -1417,33 +1417,36 @@ jump targets in full:
   start of the compare chain, which is probably wrong (see the compare
   chain below).
 
-A trace from each case through the estimated words, following both branches
-and stopping at the dispatch, gives the first drawing routine each one
-reaches:
+A trace from each case through the estimated words gives the routines each
+one calls. The trace follows both branches, stops at the jump back to the
+loop (`$0B450`), and does not fall through after an unconditional jump's
+delay slot (an earlier version did, and its traces ran on into the next
+cases). Targets are the pinned `.lit` entries and the host's record names
+(see "The host side of DrawMultiObject"):
 
-| opcodes | first drawing call | reading |
-|---|---|---|
-| 3, 4 | `$075DC` (drawer A) | **arc** (and probably oval / round rect) |
-| 5 | BitBlt / RgnBlt, then the fill loops `$09020`/`$09270` | rectangle or region fill |
-| **6** | **`$11AD8` (text)** | **text**; this is the only path to the text call at `$0E1B0` |
-| 7 | `$08618` (drawer B), then `$19270` (polygons) | **polygon** (inline `Polygon` record) |
-| 8 | RgnBlt | region |
-| `$73` | `$08618` (drawer B) | **line** |
-| 2, `$6A`, `$71`, `$74`, `$75` | none; they reach the pattern-cache routines `$1610C`, `$15E8C`, `$15154`, `$15FF4`, `$1518C` | set a pattern |
-| `$64`, `$66`, `$6D` | none; they reach request 13 (`$0688C`, colour → index through the search procs) | set an RGB colour |
-| `$68`, `$6C`, `$6E` | none; they reach `Entry2Index` | set a palette-entry colour |
-| `$67`, `$70` | none | other state |
-| `$6F`, `$72` | none | skip |
+| record | case | words traced (not estimated) | routines reached |
+|---|---|---|---|
+| 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
+| 2 arc | `$0B8C4` | 270 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`); the rest goes through a jump that is not estimated |
+| 3/4 oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
+| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68`, ShieldCursor pair, `$1701C`, BitBlt |
+| 6 text | `$0E018` | 98 (0) | none before its unestimated jump (DrawText `$11AD8` follows, at `$0E1B0`) |
+| 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
+| 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
+| `$64`, `$66`, `$6D` colours | `$0B230`, `$0B458`, `$0B584` | 69-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
+| `$67` font | `$0DE00` | 134 | `$15E8C`, the cache lookup with time stamp |
+| `$6A`/`$6C` regions | `$0BBC4` | 110 | RSect, TrimRect |
+| `$68`, `$6E`, `$6F`, `$70`, `$71`, `$72`, `$74`, `$75` | | 2-23 | none: they only store state |
+| `$73` slot | `$0C1D4` | 387 (8) | DrawLine and the ShieldCursor pair |
 
-(The traces for the state opcodes run on through the loop head into the
-next dispatch, so their "reach" column is weaker than the drawing rows. The
-record layouts below are read from the case code directly.)
-| 1 | not resolved | |
+Two rows do not fit their records:
+* `$73`'s entry (not pinned) lies inside the line case and reaches DrawLine,
+  so it is probably still decoded wrongly.
+* The arc case reaches only the pattern cache before an unestimated jump;
+  DrawArc is presumably after it.
 
-So the stream mixes drawing opcodes (3-8, `$73`) with state opcodes
-(pattern, colour). That is the same split as a QuickDraw picture, though
-with its own numbering. Its text opcode confirms `$11AD8` as the text
-routine. Opcode 7's operands then settle lines versus arcs (next paragraph).
+So the stream mixes drawing records (1-8) with state records (`$64`-`$75`):
+the same split as a QuickDraw picture, with its own numbering.
 
 **Opcode 7 is a polygon, and that settles lines vs arcs.** Its case
 (`$0C398`, estimated words, the operand pointer `gr96 = lr38 + 4` set in
@@ -1820,8 +1823,8 @@ drew nothing.
   (`lr19`).**
 * **`$68` is MoveTo** with `pnLocHFrac` at `+2`. **`$6E` is the pen size.**
 
-The "first drawing call" table and the record table above were read from
-the card alone. Where they differ from this, this section is the reference.
+The record table above was read from the card alone. Where it differs
+from this section, this section is the reference.
 
 
 **DrawMultiObject's prologue and loop head (`$0AD18`-`$0AF90`).**
