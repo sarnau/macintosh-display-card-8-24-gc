@@ -117,7 +117,7 @@ dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
-(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
+(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` and `$00348` (`storem` bursts); the own-memory test `$13F54`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -1304,7 +1304,7 @@ anchors:
 | `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle (`$1553C` stores four words at `+$78`-`$7E`) | |
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
-| `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers (`$00348` is called by nearly every blitter) | |
+| `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers: `$1701C` the long fill, `$00348` the `storem` burst fill (called by nearly every blitter) | |
 
 **The three shape drawers (profile, not settled).** The partial disassembly
 gives each one's instruction mix, data references and callees:
@@ -1804,8 +1804,24 @@ in "The cursor".
    * clip the rectangle against the device's `minRect` (the `+$14` table
      the region case filled with RSect);
    * set the shield rectangle (`$1553C`) and take ShieldCursor;
-   * fill through the small helpers `$13F54`, `$1701C`, `$00348` and
-     `$37D68`;
+   * fill through the long-fill helpers (estimated words):
+     * **`$13F54(addr)`** is an address-space test. It returns 1 when
+       `addr`'s top nibble matches the one a kernel service (stub `$38F34`)
+       returns, or when the top nibble is `$F` and bits 24-27 (the NuBus
+       slot) match. So it answers "is this pixmap in the card's own
+       memory?";
+     * **`$1701C(dst, value, count)`**, a long fill. Short runs (< 8) take a
+       small path. An aligned destination, when a global flag allows it,
+       goes to `$00348`. Otherwise it aligns with 1-7 single stores, fills
+       32 longs per loop while alternating between two pointers (`gr99`/
+       `gr98`, presumably the frame buffer's interleave), and finishes with
+       a remainder chain;
+     * **`$00348(dst, value, count)`**, a burst fill. It loads the value
+       into 24 global registers (`gr96`-`gr119`) and writes them with
+       `storem`, 96 bytes per instruction. The remainder goes through a
+       `.lit` jump into the unrolled register loads and one final `storem`.
+       Nearly every blitter calls it for solid runs;
+     * `$37D68` is not named;
    * release the cursor (`$32EF8`).
 4. **General path** (`$0CA64`-`$0D050`):
    * RSect (`$01494`), then TrimRect (`$01654`) for each region;
