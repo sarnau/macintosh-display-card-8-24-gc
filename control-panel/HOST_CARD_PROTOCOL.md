@@ -84,7 +84,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject's opcodes are named from the host writer; still open are the two longs at `+4`/`+8` of the text record and the font id in `$67`, and why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
+- DrawMultiObject's opcodes are named from the host writer; still open is why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -742,7 +742,7 @@ With the handlers from the case-block table above:
 | `$29` | `$32468` | one long -> `$15808` **FlushGDevice** (the host's AddSearch/…/SetDeviceAttribute) |
 | `$2B` | `$32498` | one long -> `$15808` **FlushGDevice** |
 | `$2D` | `$32188` | -> `$13770` (not sent by `gc24`) |
-| `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`) |
+| `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`): **font upload** from `sub_88E6` (width table, font strikes; see "Text and fonts") |
 | `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
 | `$3C` | `$32528` | two longs in a frame -> `$140CC` |
 | all others | `$32818` | default: prints "Unknown Function: 0x%x" |
@@ -1598,7 +1598,7 @@ meaning of reply 2.
 | `$2F` (StdOval) | **3** | 12: verb, rect |
 | `$2E` (StdRRect) | **4** | 16: verb, rect, `+$C` ovalWidth, `+$E` ovalHeight |
 | `$24` (StdRect) | **5** | 12: verb, rect |
-| `$21` (StdText) | `$67` if the font changed, then **6** | `$67`: 32 bytes, `+2` the 26-byte `FMOutput` record, `+$1C` a long from `$106(a4)` (a font id set by `sub_88E6`). 6: `+2` count, `+4` and `+8` two longs from `sub_88E6`, `+$0C` the text's width (Fixed, from `StdTxMeas`), `+$10` the text |
+| `$21` (StdText) | `$67` if the font changed, then **6** | `$67`: 32 bytes, `+2` the 26-byte `FMOutput` record (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle`, the key of the card's width-table cache. 6: `+2` count, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text |
 | `$31` (StdPoly) | **7** | verb, the Polygon (`BlockMove`, `(polySize + 7) & ~3`) |
 | `$18` (StdRgn) | **8** | verb, the Region |
 | `$10` (visRgn changed; also sent from the port check at `$51A4`) | `$6C` | the Region at `+2`, `(rgnSize + 5) & ~3` |
@@ -1645,6 +1645,41 @@ QuickDraw does. `frame` is −1 for the frame verb and 0 otherwise. It is the
 word at `+2` of the shape records, so the card's "verb" word (`lr82`) is a
 "frame" flag. The mode is compared with the cached one (`$CC(a4)`): a change
 emits `$69`. The slot goes into `$73` and into `$F2(a4)`.
+
+**Text and fonts (`sub_88E6`).** For StdText the host does the font work
+itself and sends the card only what it lacks:
+1. **Measure.** `_StdTxMeas(count, text, numer, denom, info)`. The
+   QuickDraw global `fixTxWid` (−172) gives the Fixed width; `FixScale`
+   scales it by `numer.h/denom.h` when they differ.
+2. **Bail out to the 68K** when the width table (`WidthTabHandle`, `$B2A`)
+   has `WidthIsSpline` set (`+$436`): TrueType is not accelerated.
+3. **Look for what is new**, as bits in a mask:
+
+   | bit | meaning | arguments added |
+   |---|---|---|
+   | 0 | the width table is new | `WidthTabHandle` and its pointer |
+   | 1 | the font strike (`WidTabFont`, `+$400`) is not yet on the card | handle, pointer, size (`sub_BFDE`) |
+   | 2 | `FMOutput`'s strike differs from it and is not on the card | handle, pointer, size |
+   | 3 | a script font (`WidthAFID` ≥ `$4000`) and the text has bytes `$84`-`$9E` | the strike's handle and pointer (no size) |
+   | 4 | the same for the `FMOutput` strike | its handle and pointer |
+
+   A width table is recognised by an id (`sub_7E8C`) that the host writes
+   into its `WidthHint` field (`+$432`, marked "unimplemented" in
+   `fontPrivate.a`, so free for this). A strike counts as uploaded once bit
+   `$800` of its first word is set.
+4. **Upload.** If the current stream uses the old font, it first flushes it
+   (`$38`). Then it sends `$30` with (mask, arguments). On the card that is
+   the bit-mask chain: bit 0 → `$14B64` (two longs, the width table), bits
+   1-4 → `$14A80` (a strike: three longs for bits 1/2, two for 3/4). On success the strikes get bit
+   `$800`. On failure the `WidthHint` is restored and the call goes to the
+   68K.
+5. **Remember** the width table (`$106(a4)` = the handle, `$1AC(a4)` = a copy
+   of its first `$434` bytes) and the `FMOutput` (`$192(a4)`), so that the
+   next StdText with the same font sends nothing new and no `$67`.
+
+So the card's "font is not in cache" and "width table is not in the cache"
+messages are about this upload: DrawMultiObject looks up the `$67` record's
+`WidthTabHandle` and the `FMOutput` strike in what `$30` delivered.
 
 **After a StdText record** the host advances its own pen by the measured
 width: integer part to `pnLoc.h`, fraction to `pnLocHFrac`. It writes both
