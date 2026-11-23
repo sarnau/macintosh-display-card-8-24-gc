@@ -76,13 +76,13 @@ scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; ShieldCursor
-`$32C10`/`$32EF8`; `CallBack`
+`$32C10` and its after-drawing counterpart `$32EF8`; `CallBack`
 `$33EBC`; the request wrappers `$33BD0`-`$33E88`; the card heap
 `$372D0`-`$3772C`.
 
 **Still open:**
 - the exact meaning of DrawMultiObject's opcodes (mapped by class, from estimated words);
-- what the card's ShieldCursor (`$32C10`/`$32EF8`) does when the cursor overlaps;
+- the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
 
@@ -1120,7 +1120,7 @@ anchors:
 | `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
 | `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
-| `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (one and two rectangles): the cursor lock with the host, see "The cursor" below | |
+| `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (before drawing) and its counterpart (after drawing): the cursor lock with the host, see "The cursor" below | |
 | `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle (`$1553C` stores four words at `+$78`-`$7E`) | |
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
@@ -1182,7 +1182,7 @@ globals into the packet:
 | `+$08` | `+$1D4` | host claim: the vector being run (`$800`, `$804`, …), 0 = free |
 | `+$0C` | `+$1D8` | card busy: 1 while the card draws |
 | `+$10` | `+$1DC` | the card's drawing rectangle (8 bytes) |
-| `+$1C` | `+$130` | a second rectangle (8 bytes) |
+| `+$1C` | `+$130` | the union of deferred ShieldCursor rectangles (8 bytes; see "Deferred cursor calls" below) |
 | `+$28`, `+$2C` | `+$1EC`, `+$1F0` | |
 | `+$30` | `+$5F0` | card → host: "I removed the cursor" (the host clears `CrsrVis`) |
 | `+$34` | `+$5F4` | card → host: "redraw the cursor" (the host sets `CrsrNew`) |
@@ -1255,40 +1255,73 @@ read, but the intent is not settled.
 touch the packet (`$5F04`, `$646C`). `JHideCursor`/`JShowCursor` only count
 (`+$40`, `+$44`) while `+$18` is set.
 
-**Card side** (`$32C10`, `$32EF8`, entry table `+$3C`/`+$40`, called by every
-blitter):
-1. wait until packet `+$1D4` is 0;
-2. set `+$1D8` = 1, and back off if the host claimed it meanwhile;
-3. copy the drawing rectangle (`extern#1772+$78`-`$7E`, set by `$1553C`) to
-   `+$1DC`;
-4. compare it with the cursor's position;
-5. if the rectangles meet and `CrsrVis` is set, remove the cursor itself:
-   it reads `CCSTATEREGS` from the save area (`+$1E4` → `+$3E` ROWCNT,
-   `+$40` LONGCNT, `+$44` DSTBUMP, `+$48` DSTLEFT) and copies the saved bits
-   (`+$1E8`, or `+$1EC` when that is set) back to the screen row by row
-   (`$38218`). That is `UnblitCursor` from `CCrsrCore.a`, moved to the
-   card. The 68K version ends with `CLR.B CrsrVis`, which the card leaves to
-   the host: it sets `+$5F0` instead;
-6. release `+$1D8`.
+**Card side.** Every drawing routine brackets its work the same way:
+1. `$1553C` sets the drawing rectangle (`extern#1772+$78`-`$7E`);
+2. `$32C10` runs before the drawing;
+3. the drawing;
+4. `$32EF8` runs after it.
 
-`$32EF8` does the same and also merges a second rectangle into
-`extern#1772+$78`. At its end (`$33148`) it sets `+$5F4` = 1 and clears the
-rectangle at `+$1DC`, so the host's next cursor task draws the cursor again. That fits shielding a source and a destination, as
-CopyBits does, but it is not checked.
+For example: DrawLine `$087EC` … `$08FD4`, BitBlt `$01E9C` … `$02D04`,
+DrawArc `$07CAC` … `$07DE0`, and DrawMultiObject's line case `$0BFBC`,
+`$0BFCC` … `$0C070`. Both are in the entry table (`+$3C`, `+$40`).
 
-So `$32C10`/`$32EF8` are the card's **ShieldCursor**: the 68k code draws the
-cursor, and this lock keeps the card from drawing over it while it does.
-The full cycle is:
-1. the card takes the lock;
-2. it removes the cursor if its drawing would overlap it;
-3. it draws;
-4. it raises `+$5F0` ("cursor gone": the host clears `CrsrVis`) and
-   `+$5F4` ("redraw": the host sets `CrsrNew`);
-5. the host's cursor task puts the cursor back.
+Both start the same way:
+1. if `extern#1772+$90` is set, call service `$D3` (`$390B4`) with 0, and
+   with 1 on the way out;
+2. take the lock: wait until packet `+$1D4` (host claim) is 0, set `+$1D8`
+   = 1, and back off and retry if the host claimed it meanwhile;
+3. copy `CrsrRect` through the pointer at `+$5F8` (`$3B600`, 8 bytes);
+4. look up `CrsrDevice` (`+$600`) with `$15D28(2, gdevice)`. If the cursor
+   is not on a device this card drives, skip to the end. Otherwise take
+   the device's offset from the result (`+$32`);
+5. test the drawing rectangle against the cursor rectangle, side by side
+   (`$78`/`$7A`/`$7C`/`$7E` against the device-relative `CrsrRect`). No
+   overlap: skip to the end.
+
+**`$32C10`, before drawing: remove the cursor.** It publishes the drawing
+rectangle at `+$1DC` (`loadm`/`storem` from `extern#1772+$78`). If `CrsrVis`
+(through `+$5FC`) is set and `+$5F0` is not already raised, it does
+`UnblitCursor` from `CCrsrCore.a`:
+* it reads `CCSTATEREGS` from the save area (`+$1E4` → `+$3E` ROWCNT, `+$40`
+  LONGCNT, `+$44` DSTBUMP, `+$48` DSTLEFT);
+* it copies the saved bits back to the screen row by row:
+  `$38218(screen row, save buffer, longs)`, with the screen pointer stepped
+  by DSTBUMP;
+* the 68K version ends with `CLR.B CrsrVis`. The card leaves that to the
+  host and raises `+$5F0` instead.
+
+Then it releases `+$1D8`. The rectangle at `+$1DC` stays published.
+
+**`$32EF8`, after drawing: re-save and ask for a redraw.**
+* It runs the same row loop with the two pointers swapped,
+  `$38218(save buffer, screen row, longs)`, so the freshly drawn pixels
+  under the cursor become the new save-under bits. There is no `CrsrVis`
+  test.
+* It stores a size computed with the multiply millicode `$3B814` (rows ×
+  longs) at `+$1EC`.
+* Then it raises `+$5F4` ("redraw", `$33148`). It clears both the published
+  rectangle (`+$1DC`-`+$1E2`) and the drawing rectangle
+  (`extern#1772+$78`-`$7E`), and releases `+$1D8`.
+
+(The old reading of `$32EF8` as "ShieldCursor with two rectangles" was
+wrong: it clears the rectangle, it does not merge one.)
+
+**The full cycle:**
+1. the card takes the lock and, if its drawing overlaps a visible cursor,
+   restores the bits under it (`+$5F0`: the host clears `CrsrVis`);
+2. it draws;
+3. it takes the lock again, copies the new pixels under the cursor into
+   the save buffer, and raises `+$5F4` (the host sets `CrsrNew`);
+4. the host's cursor task draws the cursor again.
+
+Re-saving means a 68K hide that runs before the host has seen `+$5F0` restores
+the new pixels, not stale ones. That would explain why the card bothers, but
+it is a reading.
 
 The high bytes of the flag offsets are masked (`$??F0`, `$??F4`), so `$5F0`
-and `$5F4` come from matching them with the host side. The overlap test
-itself is not decoded.
+and `$5F4` come from matching them with the host side. The argument order of
+`$38218` (destination first) is inferred from the two calls being mirror
+images. What `+$1EC` is used for later is not found.
 
 #### DrawMultiObject
 
