@@ -566,38 +566,55 @@ about the table:
   entries decode to the low byte of a case-block start. Chance is about 47%
   per entry, so 61 of 61 is about 10^-20.
 
-The table's bits 8-13 are estimated from the `.text` key 19 words earlier.
-Each entry is then matched to the case block with the same low byte nearest
-that estimate. 33 entries match the estimate exactly. The rest differ by 1 to 11 pages of `$100`, most by 1,
-and "or" gives the second candidate where one exists. With the handlers
-from the case-block table above, the table is:
+**Bits 8-11, and the exact table.** `.lit`'s key bit b repeats every
+24·2^(b-6) words (96, 192, 384 and 768 for bits 8-11). Bit 15 is plain in
+string words (ASCII bit 7 of the third character). For each bit and class,
+`antelope_lit_key.py` picks the value from two sources:
+
+* the class's string words, scored by an English two-letter model of their
+  middle characters (counted over this repository's `.md` prose);
+* the class's dispatcher entries, by whether they still match a case-block
+  start.
+
+With every other bit fixed, the two sources decide independently and agree:
+bit 8 in 46 of 46 classes, bit 9 in 46 of 47. Bits 10-11 come mostly from
+the table: the strings reach only 5 of its classes there. Still, all 61
+entries find a block in bits 0-11, which a wrong bit 0-9 would make fail
+about 85% of the time. All case-block offsets are below `$1000`, so bits
+0-11 fix the block. This replaces the earlier lag-19 estimate, which had
+bits 8-11 wrong for `$01`, `$03`, `$12`, `$17`, `$1B` and `$2C`. The strings
+also read further, for example "FlushOffscreen: NULL offscreen Handle",
+"CacheDevice: NULL GDevice", "PAlloc: numBytes is not multiple of FOUR",
+"PAlloc: Unable to allocate frame buffer size = 0x%x", "malloc: allocated
+… bytes outside of the heap bounds".
+
+With the handlers from the case-block table above:
 
 | command | case block | handler / what it does |
 |---|---|---|
 | `$00` | `$327D8` | reply 0 ("not handled") |
-| `$01` | `$31FE8` | local calls |
+| `$01` | `$326E8` | system call `$??CD` |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
-| `$03` | `$327F8` | reply 0 |
-| `$04` | `$32040` (or `$32740`) | |
+| `$03`, `$33` | `$324F8` | one long -> `$14034` |
+| `$04` | `$32040` | |
 | `$0C` | `$32408` | six longs -> `$151C4` |
-| `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
-| `$0F` | `$32688` (or `$32188`) | `handler(6, p[0])` -> `$15D28` |
+| `$0D` | `$32600` | `handler(6, p[0])` -> `$15D28` |
+| `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
 | `$11` | `$3210C` | |
-| `$12` | `$326E8` | system call `$??CD` |
-| `$13` | `$32740` (or `$32040`) | system call `$??CC` |
+| `$12` | `$31FE8` | local calls |
+| `$13` | `$32740` | system call `$??CC` |
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
 | `$15` | `$32148` | |
 | `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
-| `$17`, `$2C` | `$320C8` (or `$324C8` -> `$158F4`) | |
+| `$17`, `$2C` | `$324C8` | one long -> `$158F4` |
 | `$19` | `$32570` | one long -> `$14168` |
 | `$1A` | `$325A0` | one long -> `$141F8` |
-| `$1B` | `$325D0` (or `$323D0`) | one long -> `$14274` |
+| `$1B` | `$323D0` | the bit-mask chain entered at its last step (bit 4 -> `$14A80`) |
 | `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
 | `$29` | `$32468` | one long -> `$15808` |
 | `$2B` | `$32498` | one long -> `$15808` |
-| `$2D` | `$32188` (or `$32688`) | |
+| `$2D` | `$32188` | |
 | `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`) |
-| `$33` | `$324F8` | one long -> `$14034` |
 | `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
 | `$3C` | `$32528` | two longs in a frame -> `$140CC` |
 | all others | `$32818` | default: prints "Unknown Function: 0x%x" |
@@ -606,8 +623,9 @@ Points that fit the host side (`QUICKDRAW_PATCHES.md`):
 
 * `$26` and `$38` are the twin "store `[p[0]+4]`" blocks. The host issues
   both around every drawing operation (`$0D ... $26 ... $38`).
-* `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute, one long)
-  and `$33` go to one-long handlers.
+* `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute), `$33`,
+  `$17` and `$2C` (DisposPixPat) are one-long commands on the host, and all
+  go to one-long handlers.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
