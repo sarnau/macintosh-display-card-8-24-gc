@@ -1805,17 +1805,40 @@ in "The cursor".
      the region case filled with RSect);
    * set the shield rectangle (`$1553C`) and take ShieldCursor;
    * fill through the long-fill helpers (estimated words):
-     * **`$13F54(addr)`** is an address-space test. It returns 1 when
-       `addr`'s top nibble matches the one a kernel service (stub `$38F34`)
-       returns, or when the top nibble is `$F` and bits 24-27 (the NuBus
-       slot) match. So it answers "is this pixmap in the card's own
-       memory?";
-     * **`$1701C(dst, value, count)`**, a long fill. Short runs (< 8) take a
-       small path. An aligned destination, when a global flag allows it,
-       goes to `$00348`. Otherwise it aligns with 1-7 single stores, fills
-       32 longs per loop while alternating between two pointers (`gr99`/
-       `gr98`, presumably the frame buffer's interleave), and finishes with
-       a remainder chain;
+     * **`$13F54(addr)`** asks "is this address on this card?". It calls
+       kernel service `$C4` (stub `$38F34`: `const gr121, $??C4` /
+       `asneq`; the high byte and the trap number are masked, and `$C4`
+       lies in the vector-66 range), takes the result's top nibble `s`, and returns 1 when
+       `addr` is `$s.......` or `$Fs......`, else 0. Those are the card's
+       NuBus super-slot and standard-slot spaces, so `s` is the card's slot
+       number. The kernel has a matching stub. Boot stores a value shifted
+       left by 28 at `$4C00682C` (`PublicOu+$2C`), and Hand's stub
+       `$2001250` returns that word (`gr96 = [$4C00682C]`). The service
+       table's pointers are too approximate to prove that `$C4` lands on
+       `$2001250` (section 8), but no other stub returns such a value.
+       Pixmap base addresses arrive as host addresses, so this is how the
+       card tells its own frame buffer from host or other-slot memory;
+     * **`$1701C(dst, value, count)`**, a long fill (`lr8`-`lr10`). The
+       branches below are plain bits:
+       * `count` < 8 goes to a small path (`$171D0`);
+       * `dst & 3` ≠ 0 goes straight to `$00348`;
+       * otherwise it tests bit 31 of the absolute word `$??000080`. There
+         is no relocation on the pair, so this is a hardware register, not
+         a variable. The key estimate gives `$44000080`, a status register
+         that Hand also tests: the video command service waits on it and on
+         `$4400007C` before reconfiguring, and the pixel-clock stub
+         `$20012E8` halves its two values when bit 31 is set;
+       * bit 31 clear: call `$00348`;
+       * bit 31 set: its own loop. It aligns with 1-7 single stores
+         (`dst>>2 & 7`, through `.lit+$548`), fills 32 longs per loop while
+         alternating between two pointers (`gr99`/`gr98`), and finishes
+         with a remainder chain.
+
+       So the "burst allowed" condition is a hardware bit. When it is set,
+       the fill avoids `storem` and writes through two interleaved
+       pointers instead. What the bit means (a VRAM layout or bank mode is
+       likely, given the video service's linear/4-way interleave
+       conversion) is not shown;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
@@ -2389,6 +2412,11 @@ plain:
 * `$01 $11 $12 $13 $14 $15 $16 $21`: low numbers, probably the `$1`/`$1xx`
   services that the second dispatcher at `$2001B74` handles (`$111`/`$112`
   time, `$121` set globals, `$1` exit). Their high byte is masked.
+
+The rectangle fast path's own-memory test `$13F54` uses `$C4` through stub
+`$38F34`. It needs a value whose top nibble is the card's slot. That matches
+the stub `$2001250` (`gr96 = [$4C00682C]`, a word Boot fills with a value
+shifted left by 28). See "the rectangle case".
 
 The command dispatcher uses `$D2` (for every accepted command, before the
 `$8000` test), `$D5` (command `$14`, with `p[0]`), and `$CC`, `$CD`, `$D3`
