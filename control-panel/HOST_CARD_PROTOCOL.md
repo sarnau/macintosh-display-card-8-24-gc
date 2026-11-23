@@ -1282,10 +1282,14 @@ reaches:
 | 8 | RgnBlt | region |
 | `$73` | `$08618` (drawer B) | **line** |
 | 2, `$6A`, `$71`, `$74`, `$75` | none; they reach the pattern-cache routines `$1610C`, `$15E8C`, `$15154`, `$15FF4`, `$1518C` | set a pattern |
-| `$64`, `$66`, `$6D`, `$6F` | none; they reach request 13 (`$0688C`, colour → index through the search procs) | set an RGB colour |
+| `$64`, `$66`, `$6D` | none; they reach request 13 (`$0688C`, colour → index through the search procs) | set an RGB colour |
 | `$68`, `$6C`, `$6E` | none; they reach `Entry2Index` | set a palette-entry colour |
 | `$67`, `$70` | none | other state |
-| `$72` | none | skip |
+| `$6F`, `$72` | none | skip |
+
+(The traces for the state opcodes run on through the loop head into the
+next dispatch, so their "reach" column is weaker than the drawing rows. The
+record layouts below are read from the case code directly.)
 | 1 | not resolved | |
 
 So the stream mixes drawing opcodes (3-8, `$73`) with state opcodes
@@ -1321,6 +1325,50 @@ through `QuickPolys`. So:
 
 Opcodes 3/4's case (`$0D9C4`) is not estimated (no samples nearby), so its
 operands are not read.
+
+**The record format.** Each case ends by advancing `lr38`, usually in the
+delay slot of its `jmp $0B450` back to the loop. That gives every record's
+size, and the case's loads give the fields. The loop head reads the opcode as
+a signed half at `lr38+0` (`$0AF90`) and runs while `lr38 < lr37`, the end of
+the stream. The table dispatch's delay slot (`$0E268`) sets `gr96 = lr38+4`,
+the payload. So a record is a 2-byte opcode, a 2-byte word at `+2`, then the
+payload, padded to a multiple of 4:
+
+| opcode | case | size | fields (offsets from the record start) |
+|---|---|---|---|
+| 5 | `$0C754` | 12 | `+2` verb (`lr82`), `+4` Rect |
+| 6 | `$0E018` | `(n + $13) & ~3` | `+2` n, a byte count; `+4` and `+8` longs; `+$10` the n text bytes. `$11AD8` gets the count, a pointer to the bytes, and both longs |
+| 7 | `$0C398` | `(polySize + 7) & ~3` | `+2` verb, `+4` Polygon |
+| 8 | `$0D6E8` | `(rgnSize + 7) & ~3` | `+4` Region (`rgnSize` first) |
+| line | `$0BDB0` | 8 | `+4` v, `+6` h of the end point. It draws through DrawLine (`$08618` at `$0C284`), with ShieldCursor `$32C10`/`$32EF8` around it, then sets the pen (`lr25`, `lr36`) to the end point (`$0C388`): **LineTo** |
+| `$68` | `$0BD7C` | 8 | `+2` a word (`lr103`), `+4` v, `+6` h into `lr25`/`lr36`, the pen position the line case draws from: **MoveTo**. Opcode 7 also sets them, from the first point, when its verb is non-zero |
+| `$6E` | `$0BD98` | 8 | `+4` v, `+6` h into `lr49`/`lr48`, a second point (pen size, perhaps) |
+| `$71` | `$0B6D8` | 12 | `+2` slot 1, 2 or 3; `+4` an 8-byte bit Pattern; the slot's kind is set to 0 |
+| (none found) | `$0B72C` | 8 | `+2` slot 1-3; `+4` a long (a PixPat, perhaps); kind 1 |
+| `$74` | `$0B788` | 12 | `+4` slot 1-3; `+6` an RGBColor; kind 2 (the "RGB Pattern" of the cache message) |
+| `$75` | `$0B7B8` | 8 | `+4` a long, stored to a global |
+| `$70` | `$0BB7C` | 16 | `+4` long and `+8` half, stored to a global; `+$0A` an RGBColor, passed to a call |
+| `$6C` | `$0BBC4` | `(len + 5) & ~3` | a block at `+2` whose first half `len` counts its own bytes, as `rgnSize` and `polySize` do: an inline region, probably. `$6C` keeps a pointer to it in `lr54`; another opcode sharing the code (not identified) keeps it in `lr19` |
+| `$64` | `$0B230` | 12 | `+2` onwards handed to a call with a global address: an RGBColor at `+4`, probably |
+| `$66`, `$6D` | `$0B458`, `$0B584` | 16 | colour records; `$66` reads `+8` and `+$0C` |
+| `$67` | `$0DE00` | 32 | compares the long at `+$1C` with a cached value before calling out (a font or width table selection, perhaps; the "not in cache" messages are about fonts and width tables) |
+| `$6F` | `$0B228` | 4 | nothing |
+
+So the three pattern slots each come in three kinds: an old 8-byte pattern
+(`$71`), a long (`$0B72C`), or an RGB colour (`$74`). These fit pen, fill and
+background patterns, though the order of the slots is not known.
+
+**Two open points in the table dispatch.**
+* The `.lit` value for `$73` gives `$0C1D4`, which lies inside the line
+  case's body, not at its entry `$0BDB0`. The line case is entered at
+  `$0BDB0` cleanly (after a `jmp` and its delay slot), but none of the
+  table values gives that address.
+* The values for opcode 1 (`$xBB0`) and `$6B` (`$xB440`) give no clean
+  entry in any 4-KB page.
+
+So either the estimates near those targets are off, or these entries point
+into shared code. Which opcode is LineTo is therefore not certain: `$73` is
+the best candidate.
 
 This mapping rests on estimated words ("=" in the tool's output, not
 samples). The estimates have been right wherever they could be checked (the
