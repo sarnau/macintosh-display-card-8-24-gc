@@ -1562,9 +1562,12 @@ Both start the same way:
 4. look up `CrsrDevice` (`+$600`) with `$15D28(2, gdevice)`. If the cursor
    is not on a device this card drives, skip to the end. Otherwise take
    the device's offset from the result (`+$32`);
-5. test the drawing rectangle against the cursor rectangle, side by side
-   (`$78`/`$7A`/`$7C`/`$7E` against the device-relative `CrsrRect`). No
-   overlap: skip to the end.
+5. test the drawing rectangle (`extern#1772+$78`-`$7E`, global) against
+   `CrsrRect`, after subtracting the device's origin (the cached entry's
+   `+$32`, v then h). The four exits are `bottom < crsr.top`,
+   `right <= crsr.left`, `top >= crsr.bottom` and `left >= crsr.right`,
+   so a drawing whose bottom edge touches the cursor's top row still
+   counts as overlapping. No overlap: skip to the end.
 
 **`$32C10`, before drawing: remove the cursor.** It publishes the drawing
 rectangle at `+$1DC` (`loadm`/`storem` from `extern#1772+$78`). If `CrsrVis`
@@ -1573,8 +1576,14 @@ rectangle at `+$1DC` (`loadm`/`storem` from `extern#1772+$78`). If `CrsrVis`
 * it reads `CCSTATEREGS` from the save area (`+$1E4` → `+$3E` ROWCNT, `+$40`
   LONGCNT, `+$44` DSTBUMP, `+$48` DSTLEFT);
 * it copies the saved bits back to the screen row by row:
-  `$38218(screen row, save buffer, longs)`, with the screen pointer stepped
-  by DSTBUMP;
+  `$38218(screen row, save buffer, longs)`, `ROWCNT+1` rows of
+  `LONGCNT+1` longs, with the screen pointer stepped by
+  `DSTBUMP + 4*(LONGCNT+1)`, exactly as `UnblitCursor`'s
+  `MOVE.L (A1)+,(A2)+` / `ADD D4,A2` loop does. If `extern#1772+$88` is
+  set, DSTLEFT first goes through the `$D4` stub `$39050` (address
+  translation);
+* the save buffer is the card's own copy at packet `+$1F0` when `+$1EC` is
+  non-zero, and otherwise the host's `CCSAVE` bits (`+$1E8`);
 * the 68K version ends with `CLR.B CrsrVis`. The card leaves that to the
   host and raises `+$5F0` instead.
 
@@ -1582,11 +1591,13 @@ Then it releases `+$1D8`. The rectangle at `+$1DC` stays published.
 
 **`$32EF8`, after drawing: re-save and ask for a redraw.**
 * It runs the same row loop with the two pointers swapped,
-  `$38218(save buffer, screen row, longs)`, so the freshly drawn pixels
-  under the cursor become the new save-under bits. There is no `CrsrVis`
-  test.
-* It stores a size computed with the multiply millicode `$3B814` (rows ×
-  longs) at `+$1EC`.
+  `$38218(packet+$1F0, screen row, longs)`, so the freshly drawn pixels
+  under the cursor are saved, into the card's own buffer in the packet
+  (`$400` bytes, the size of the host's `CCSAVE` area), not into the
+  host's. There is no `CrsrVis` or `+$5F0` test.
+* It stores the number of longs minus 1, `(ROWCNT+1)*(LONGCNT+1) - 1`
+  (multiply millicode `$3B814`), at `+$1EC`, which marks the card's copy as
+  valid.
 * Then it raises `+$5F4` ("redraw", `$33148`). It clears both the published
   rectangle (`+$1DC`-`+$1E2`) and the drawing rectangle
   (`extern#1772+$78`-`$7E`), and releases `+$1D8`.
@@ -1599,17 +1610,24 @@ wrong: it clears the rectangle, it does not merge one.)
    restores the bits under it (`+$5F0`: the host clears `CrsrVis`);
 2. it draws;
 3. it takes the lock again, copies the new pixels under the cursor into
-   the save buffer, and raises `+$5F4` (the host sets `CrsrNew`);
+   its own buffer at packet `+$1F0` (count at `+$1EC`), and raises `+$5F4`
+   (the host sets `CrsrNew`);
 4. the host's cursor task draws the cursor again.
 
-Re-saving means a 68K hide that runs before the host has seen `+$5F0` restores
-the new pixels, not stale ones. That would explain why the card bothers, but
-it is a reading.
+The card's copy is used in two places. The card's next ShieldCursor restores
+from it instead of the host's save area. And the host's reset routine
+(`gc24` `sub_6F4E`, `$7046`) `_BlockMove`s `(n+1)*4` bytes of it into the
+host's `CCSAVE` bits (engine global `+$04`, set by `DRVR.s` `$121E`) and
+clears `+$1EC`. Why the card keeps its own copy rather than writing the
+host's save area directly is not stated anywhere. Its save area is host
+memory reached through a mapping, the packet is local, and a reset is the
+point where the host takes over the cursor again; those may be the reasons.
 
-The high bytes of the flag offsets are masked (`$??F0`, `$??F4`), so `$5F0`
-and `$5F4` come from matching them with the host side. The argument order of
-`$38218` (destination first) is inferred from the two calls being mirror
-images. What `+$1EC` is used for later is not found.
+These readings now rest on fully decoded words (key bits 16-23 estimated
+from the neighbours, see section 6): the offsets `$5F0`/`$5F4`/`$1EC`/`$1F0`
+and the branch structure are no longer matched from the host side only.
+Still inferred: the argument order of `$38218` (destination first), from
+the two calls being mirror images.
 
 #### DrawMultiObject: the batched drawing stream
 
