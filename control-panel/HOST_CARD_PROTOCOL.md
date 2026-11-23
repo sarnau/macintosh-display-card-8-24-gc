@@ -1338,8 +1338,9 @@ Readings:
   6-way sub-switches in DrawMultiObject (`lr94`), so both probably select
   by the same kind of value.
 
-So only QuickPolys = `$19270` is a likely name. Which of `$075DC`/`$08618`
-draws lines needs their DrawMultiObject opcodes, which are not mapped yet.
+So only QuickPolys = `$19270` was a likely name here. DrawMultiObject's
+polygon and line records settled the rest later: `$08618` is DrawLine and
+`$075DC` DrawArc (see "DrawMultiObject: the batched drawing stream").
 
 Two more names come from the strings: `$06650` "ITabMatch: Inverse Table is
 not up to date", and `$06BEC` "BitsToPixMap: bounds …" (called from
@@ -2000,22 +2001,20 @@ epilogue. Annotated (`rec` = packet `+$44`, see below):
   `const gr96, $8000` / `cpneq`. Commands `$80xx` go to `sub_37B58`, and
   everything else goes to the switch.
 
-#### The Std* selectors are not handled on the card
+#### The Std* selectors at the card's dispatcher
 
 (These selectors never arrive here in practice: `EngineDispatch` turns them
-into DrawMultiObject records instead of sending them. See "The host side of
-DrawMultiObject". What follows is what the card's dispatcher would do with
-them.)
+into DrawMultiObject records instead of sending them. See "DrawMultiObject:
+the batched drawing stream". What follows is what the card's dispatcher
+would do with them, and how the host reacts to each reply.)
 
 **So the drawing selectors reach the default.** `$20` StdLine, `$21`
 StdText, `$23` StdArc, `$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`,
 `$32` and `$35`-`$37` decode to low byte `$70`. Inside `sub_31e20`
 (`$31E20`-`$328C8`), the only block starting at an offset `$x70` is the
 default `$32818`. The low byte comes from the strings and is exact. So in
-this switch they print "Unknown Function". If Antelope accelerates them at
-all, it does so before the switch. The only call there is system call
-`$??D2`, made for every accepted command, without arguments, and before the
-`$8000` test. Its service in the runtime (`Hand`) is the next thing to name.
+this switch they would print "Unknown Function". They are accelerated
+before they get here, by the host writing them into the drawing stream.
 
 **What the default does, and what the host does with it.** The default
 block `$32818`:
@@ -2030,40 +2029,35 @@ The reporter is gated by a level word at `.data+$284`: 0 returns at once,
 read, because `.data` is masked too. So the message is probably silent in
 normal use.
 
-On the host, `GA_StdLine` (`$3682`) is typical. It sends `$20` with one
-argument (a pointer to its own parameters), then acts on the reply:
+On the host, `GA_StdLine` (`$3682`) is typical. It calls
+`EngineDispatch($20, …)` with one argument (a pointer to its own
+parameters), then acts on the reply:
 
 | reply | host does |
 |---|---|
-| 1 | nothing more: the card drew it |
+| 1 | nothing more: the record is in the stream, and the card draws it |
 | 2 | runs the original `StdLine` with `pnVis` set to -1 (the pen moves, nothing is drawn), then restores `pnVis` |
 | anything else (0) | runs the original `StdLine` |
 
 Before the fallback, it calls `sub_86D6`, which sends `$38` (synchronise)
 and works out the destination pixmap. After the fallback, it calls
-`sub_879A` when `sub_86D6` asked for it. So with this Antelope, every
-`StdLine`, `StdText`, `StdArc` and `StdRect` costs a round trip to the card,
-gets reply 0, and is drawn by the 68k QuickDraw. That is a working design:
-the screen is in card memory, which the host can write over NuBus.
+`sub_879A` when `sub_86D6` asked for it. The fallback runs only when
+`EngineDispatch` returns 0: no current port, no room, a TrueType font, a
+failed font upload. Then the 68k QuickDraw draws into the card's frame
+buffer over NuBus.
 
-**So the open question closes** (the condition below is checked in the next paragraph). The card accelerates:
+**So the card accelerates:**
 - StretchBits (command `$15`, and through it CopyBits);
-- the cache commands;
-- the `$80xx` module interface;
-- `DrawMultiObject` through `$2D`.
+- the Std\* drawing calls, as stream records through `$2D`/`$38`/`$26`
+  (DrawMultiObject);
+- the cache commands, including the font upload `$30`;
+- the `$80xx` module interface.
 
-It does not handle the Std* drawing selectors itself. The condition is the
-dispatcher table: all 61 entries are fitted in bits 0-11, and the Std*
-entries come out at the default's low byte `$70`. Bits 0-7 of those
-entries are exact; bits 8-11 come from the joint fit, which is checked but
-not certain for every class, as the six uncertain entries show. The pre-switch service `$D2` runs for every
-accepted command, but takes no arguments and does not touch `rec`, so it
-cannot draw a line from the packet.
+The card's dispatcher itself has no case for the Std\* selectors. That
+holds without the uncertain key bits: the next paragraph checks it.
 
-That fits the gc24 being more general than this firmware. Its patches are
-written for a card that might accelerate every selector, and the reply
-protocol (0 = do it yourself) lets one gc24 work with firmware that handles
-fewer.
+The reply protocol (0 = do it yourself) also lets one `gc24` work with a
+firmware that handles fewer calls.
 
 **The condition checked without bits 8-11.** The low byte `$70` of the
 Std* entries is exact. All case blocks lie below module offset `$1000`, so
@@ -2378,8 +2372,8 @@ What the approximate pointers allow, for the dispatcher's services:
 
 So `$D2` is not where drawing happens: it is not one of the stubs near its
 pointer, which all return at once and touch no command data. The drawing
-selectors are not handled on the card at all (see "What the default does"
-above).
+selectors have no case in the dispatcher; they reach the card as stream
+records instead (see "DrawMultiObject: the batched drawing stream").
 
 ### Antelope mask: the `.lit` jump/command tables (partial result)
 
