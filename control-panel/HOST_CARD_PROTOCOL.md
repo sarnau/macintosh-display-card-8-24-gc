@@ -8,12 +8,58 @@ card addresses; the host reaches `0x4Cxxxxxx` at slot base `+ 0x0Cxxxxxx` and th
 card registers `0x44xxxxxx` at `+ 0x04xxxxxx`. "Verified" means both sides were
 read and agree; "reading" means one side was read and the other inferred.
 
+## Reader's guide
+
+**The card in one paragraph.** The 8·24 GC is a NuBus video card with an
+Am29000. Its driver uploads a small kernel (`Runtime`) and then the
+accelerator, **Antelope** (ACEF_100). The host's QuickDraw patches (`gc24`)
+send the card work in three ways:
+1. **Commands**, for whole bit transfers (CopyBits/StretchBits) and for
+   keeping the card's caches of host objects (GDevices, colour tables,
+   pixel patterns, offscreens) up to date.
+2. **A drawing stream.** The QuickDraw bottlenecks (lines, rectangles,
+   ovals, round rects, arcs, polygons, regions and text) are not sent one
+   by one. They are written as records into a buffer in card memory, which
+   the card plays back (DrawMultiObject). The host measures text and
+   uploads fonts. The card clips, maps colours (its own ColorMap), applies
+   the text style and draws.
+3. **Requests back to the host**, for Memory Manager calls, resources,
+   colour searches and host memory.
+
+Card and host share the cursor through a lock. The card removes the cursor
+before drawing over it and asks the host to redraw it afterwards.
+
+**Where to read what:**
+
+| topic | section |
+|---|---|
+| the three channels, what is accelerated, named functions, open questions | "Overview" (next) |
+| power-up, loading the firmware, the boot mailbox and video commands | sections 1-5 |
+| the command dispatcher, its case blocks and the packet layout | "Antelope: the command dispatcher" and its `####` sub-sections, including "The dispatcher prologue and packet layout" and "The case blocks" |
+| the module API, the card's requests, `CallBack`, `MapVirtual` | "Host: the module/task API", "Host: the card's requests", "Card: `CallBack`…", "Card: `MapVirtual`…" |
+| CopyBits/StretchBits | "StretchBits (command `$15`)" |
+| the cursor | "The cursor: a lock shared by host and card" |
+| the drawing stream, text and fonts, the host-object cache | "DrawMultiObject: the batched drawing stream" |
+| the encryption ("mask") of Antelope and how much of it is solved | section 6 and the "Antelope mask: …" sections, including the `.lit` key and its pins |
+| the kernel's services | section 8 |
+
+**How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
+Antelope is masked:
+* opcode bytes and the low 15-19 bits of each word are known;
+* most register and immediate high bits are estimated from neighbouring
+  samples (`antelope_estimate_words.py`);
+* `.lit` has a separate key, recovered in bits 0-11 with host-confirmed
+  pins;
+* `.data` is still masked.
+
+So card-side details are readings unless the text says they are checked
+against the host or against QuickDraw's sources (`System 7.1 Source Code`).
+
 ## Overview: what the card does, and how the host talks to it
 
-This is a summary of the sections below. Most of it was found in
-the long section "Antelope: the command dispatcher", which now has `####`
-sub-headings for each topic. Later findings correct some earlier
-paragraphs, and this overview gives the current state.
+This summarises the sections below and gives the current state. Where an
+older paragraph further down disagrees, this overview and the
+DrawMultiObject section are the reference.
 
 **Three channels**, all in one shared block in card memory (the "packet",
 `[.bss]` on the card, `$C(device record)` on the host):
@@ -45,15 +91,12 @@ sequence numbers on both sides.
 | `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "DrawMultiObject: the batched drawing stream") |
 | `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
 
-**The Std\* drawing calls are batched, not sent.** `StdLine` (`$20`),
-`StdText` (`$21`), `StdArc` (`$23`), `StdRect` (`$24`) and the other drawing
-selectors would go to "Unknown Function" if they reached the card's
-dispatcher. They do not reach it: `EngineDispatch` turns them into records
-of a DrawMultiObject stream (opcodes 1-8 plus state records), which it
-appends to a buffer in card memory and hands over with `$2D`, `$38` and `$26`.
-(An earlier version of this document concluded that they were not
-accelerated at all. That was wrong.) When the stream cannot be used, for
-example with no current port, `EngineDispatch` returns 0 and the 68K draws.
+**The Std\* drawing calls are batched, not sent.** If they reached the
+card's dispatcher they would go to "Unknown Function". Instead
+`EngineDispatch` turns them into stream records (an earlier version of this
+document wrongly concluded that they were not accelerated). When the stream
+cannot be used, for example with no current port or a TrueType font,
+`EngineDispatch` returns 0 and the 68K draws.
 
 **What the card asks the host for (request codes):** Memory Manager calls
 (3-6), resources (7), block copies to and from handles (8, 18, 21),
@@ -72,7 +115,7 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 **Named card functions** (the evidence is in the sections below): the
 dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
-(likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
+(likely); DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
 (from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
@@ -84,7 +127,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are its per-device state refresh, the glyph loop in DrawText, and four sub-switch entries;
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables), the glyph loop in DrawText, and four sub-switch entries;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
