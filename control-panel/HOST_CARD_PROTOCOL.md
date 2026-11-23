@@ -2002,16 +2002,32 @@ in "The cursor".
        `gr64`, the feature flags the host wrote to `PublicIn+$18`. In those
        flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
        unit's config word `+$128` has bit `$40`. The config word comes from
-       Control calls 17 and 50, and nothing in the INIT, cdev or gc24 code
-       sends those. The INIT's `ControlDriverSync` callers use csCodes 99,
-       20, 13, 14 and 21; the control panel's use 99, 13, 14, 2, 3 and 5.
-       So in the System 7 software the config word keeps its initial
-       `$80000000`, and feature flag `$200` stays clear. The same holds for
-       cs50's `$100`, so the "mailbox not enabled" bit `$800` stays set as
-       well. (The System 6 package, "8•24 GC SW 1.1", is not disassembled.)
-       If `$BB` is the flags stub, the host-memory `storem` path is never
-       taken with this software. That `$BB` is the flags stub is not
-       confirmed. A neighbouring stub `$2001A48` returns `[$4C006804]`
+       Control call 17 (cs50 is the same plus `$100`, "mailbox allowed").
+       Both 68k clients send cs17, in the System 7 and the System 6
+       packages alike:
+       * the control panel (`cdev.s` `$0E02`) passes bytes 8-11 of `PupS`
+         resource 0, which the driver stores at `+$128` (`csParam+2`);
+       * `gc24` resource 32 (`$052E`) also reads `PupS` (`$0388`), may flip
+         bits `$90` of the word, and sends cs17.
+
+       All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
+       (System 6: last long `$3C0`). So the config word is `$60` by default:
+       bits `$20` and `$40` are set, and `SetFeatureFlags` turns them into
+       feature flags `$1` and `$200`. No client sends cs50, so `$100` stays
+       clear and the "mailbox not enabled" bit `$800` stays set: the card's
+       debug messages are not delivered. If `$BB` is the flags stub, the
+       host-memory `storem` path is **on by default**. That `$BB` is the
+       flags stub is not confirmed. (An earlier version of this paragraph
+       said that no client sends cs17. That came from scanning only some of
+       the control panel's `_Control` calls.)
+
+       The System 6 package ("8•24 GC SW 1.1") has the same resource set,
+       with its own `ACEF` 100 (357,228 bytes against 323 KB), `ACEF` 1,
+       driver and INIT. Its 68k clients send the same csCodes: control panel
+       2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5, 13, 14, 17,
+       18, 19, 20; INIT 13, 14, 20, 21, 99.
+
+       A neighbouring stub `$2001A48` returns `[$4C006804]`
        (`PublicOu+$04`), a candidate for `$D1`.
        The same service sequence appears in three more entry points (the
        others with services are shared restore tails: `$38574`, `$385C8`,
