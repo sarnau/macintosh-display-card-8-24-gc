@@ -2011,7 +2011,20 @@ in "The cursor".
          bits `$90` of the word, and sends cs17.
 
        All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
-       (System 6: last long `$3C0`). So the config word is `$60` by default:
+       (System 6: last long `$3C0`). The record is four longs:
+
+       | offset | default | used by |
+       |---|---|---|
+       | `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
+       | `+$4` | `$D2` (210) | not read by either path seen |
+       | `+$8` | `$60` | the config word, sent with cs17 |
+       | `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002` (purpose not traced) |
+
+       `gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
+       each followed by a check that maps a failure to errors
+       `$D8DB`-`$D8DF`. Before its cs17 it would XOR the config with `$90`
+       if a local flag (`d5`) were set, but `d5` is cleared at entry and
+       never set, so this is dead code. So the config word is `$60` by default:
        bits `$20` and `$40` are set, and `SetFeatureFlags` turns them into
        feature flags `$1` and `$200`. No client sends cs50, so `$100` stays
        clear and the "mailbox not enabled" bit `$800` stays set: the card's
