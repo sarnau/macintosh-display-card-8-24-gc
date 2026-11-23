@@ -1129,6 +1129,54 @@ all, it does so before the switch. The only call there is system call
 `$??D2`, made for every accepted command, without arguments, and before the
 `$8000` test. Its service in the runtime (`Hand`) is the next thing to name.
 
+**What the default does, and what the host does with it.** The default
+block `$32818`:
+1. calls the reporter `$00140` with "Unknown Function: 0x%x" and the
+   command;
+2. ORs `$11` into packet word 0;
+3. jumps to the common exit at `$328A4`, which stores reply 0 at packet
+   `+$1C`.
+
+The reporter is gated by a level word at `.data+$284`: 0 returns at once,
+1 goes to `$39284`, anything else to `$00F84`. Its initial value cannot be
+read, because `.data` is masked too. So the message is probably silent in
+normal use.
+
+On the host, `GA_StdLine` (`$3682`) is typical. It sends `$20` with one
+argument (a pointer to its own parameters), then acts on the reply:
+
+| reply | host does |
+|---|---|
+| 1 | nothing more: the card drew it |
+| 2 | runs the original `StdLine` with `pnVis` set to -1 (the pen moves, nothing is drawn), then restores `pnVis` |
+| anything else (0) | runs the original `StdLine` |
+
+Before the fallback, it calls `sub_86D6`, which sends `$38` (synchronise)
+and works out the destination pixmap. After the fallback, it calls
+`sub_879A` when `sub_86D6` asked for it. So with this Antelope, every
+`StdLine`, `StdText`, `StdArc` and `StdRect` costs a round trip to the card,
+gets reply 0, and is drawn by the 68k QuickDraw. That is a working design:
+the screen is in card memory, which the host can write over NuBus.
+
+**So the open question closes, with one condition.** The card accelerates:
+- StretchBits (command `$15`, and through it CopyBits);
+- the cache commands;
+- the `$80xx` module interface;
+- `DrawMultiObject` through `$2D`.
+
+It does not handle the Std* drawing selectors itself. The condition is the
+dispatcher table: all 61 entries are fitted in bits 0-11, and the Std*
+entries come out at the default's low byte `$70`. Bits 0-7 of those
+entries are exact; bits 8-11 come from the joint fit, which is checked but
+not certain for every class, as the six uncertain entries show. The pre-switch service `$D2` runs for every
+accepted command, but takes no arguments and does not touch `rec`, so it
+cannot draw a line from the packet.
+
+That fits the gc24 being more general than this firmware. Its patches are
+written for a card that might accelerate every selector, and the reply
+protocol (0 = do it yourself) lets one gc24 work with firmware that handles
+fewer.
+
 **The `$80xx` commands (`sub_37B58`, decoded).** The function's arguments
 start at `lr8` (frame of 6 registers): `lr8` = command, `lr9` = `[rec+$0C]`
 (count), `lr10` = `[rec+$10]` = `p`. It switches on `cmd - $8000` (0-4,
@@ -1400,9 +1448,10 @@ What the approximate pointers allow, for the dispatcher's services:
 | `$CD` | `$2001504` | inside the region-table code `$2001478`-`$2001604` (insert/remove a range) | - |
 | `$D3` | `$20019CC` | `$20019B4` (returns -1), `$20019BC` | - |
 
-So where drawing happens is still open. If it is `$D2`, it is not one of the
-stubs near its pointer. They all return at once and touch no command
-data.
+So `$D2` is not where drawing happens: it is not one of the stubs near its
+pointer, which all return at once and touch no command data. The drawing
+selectors are not handled on the card at all (see "What the default does"
+above).
 
 ### Antelope mask: the `.lit` jump/command tables (partial result)
 
