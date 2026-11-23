@@ -807,8 +807,52 @@ So the card runs host-loaded modules as tasks. A task gets messages through
 `$8001`, answers with request `$8002`, and can call back to host routines
 registered for it. This is a general extension mechanism. The ordinary
 QuickDraw patches do not use it: they send selectors `$0C`-`$38` straight
-through `EngineDispatch`. The other card requests (codes 3-22) are a
-separate, unread set.
+through `EngineDispatch`.
+
+**The card's requests to the host (`sub_6442`, decoded).** The mailbox is at
+card address `+$24`: `+$04` request code, `+$08` reply, `+$0C` sequence
+number, `+$14` argument pointer (`p`, a card address; the host forms it from
+the slot base and the low 20 bits). The handler:
+1. waits until the device is idle;
+2. reads the code and sets it to -1;
+3. checks the sequence number against its own counter. On a mismatch it
+   replies -1, takes the card's number and returns. Code 100 skips the check
+   and resets the counter to 0 (reply 1);
+4. runs the request, writes the reply to `+$08`, and counts the request.
+
+The codes are all host services that 68k code has to perform for the card:
+
+| code | does | reply |
+|---|---|---|
+| 3 | `NewHandle(p[0])` | the handle |
+| 4 | `DisposHandle(p[0])` | |
+| 5 | `ReallocHandle(p[0], p[1])` | |
+| 6 | `SetPtrSize(p[0], p[1])` | |
+| 7 | `RGetResource(p[0], p[1])` (type, id) | the handle |
+| 8 | copy `p[2]` longs from `p[1]` to `p[0]`, in 32-bit mode | the source address |
+| 18 | the same, from the data of handle `p[1]` | the source address |
+| 21 | the same, into the data of handle `p[0]` (skipped if it is purged) | |
+| 12 | `MakeITable(p[0], p[1], p[2])` (colour table, inverse table, resolution) | `QDErr` |
+| 13 | colour to index through the GDevice's search procs: for GDevice `p[4]` (or the current one), call each `SearchProc` on RGB `p[1..3]` | 1 and the index in `p[0]` if a proc handled it; the RGB is written back |
+| 14 | the same with a list of complement procs at `p[0]` | 1 if handled |
+| 17 | `Entry2Index(p[0])` (`PaletteDispatch` 0) on GDevice `p[1]` | the index, -1 on `QDErr` |
+| 15 / 16 | physical addresses of a buffer (`p[0]`, or the data of handle `p[0]`) of `p[1]` bytes: `LockMemory`, then `GetPhysical` in runs of 8, the `(address, length)` pairs go to `p[3]`; then `UnlockMemory` | the number of runs, -2 if `p[2]` runs were not enough; -1 if bit 3 of the card's word `+$04` is clear |
+| 20 | `OpColor` and `HiliteColor` of the device's port (`HiliteRGB` for a black-and-white port) | in `p[0..5]` |
+| 22 | `GetSystemClientProcess` (`OSDispatch` `$3F`), if the Process Manager is present; otherwise `{0, 1}` | the PSN in `p[0..1]` |
+| 100 | reset the sequence counter | 1 |
+| 999 | a request to a host-loaded module (above) | |
+
+Code 8 has one more fix: in 24-bit mode, a source address `$8xxxxx` gets
+`$40000000` added (ROM in 32-bit space). Code 7's arguments are a type and an
+id, so the card can read resources.
+
+So the card handles its own drawing. It calls the host only for what lives
+in 68k memory and code: handles and resources, user-installed colour search
+and complement procs (which are 68k code), inverse tables, and the
+foreground/hilite colours. Codes 15/16 are the interesting ones. Under
+virtual memory they lock a host buffer and give the card its physical
+pages, so the card can read or write host memory directly as a NuBus
+master. That is presumably how it reaches host-side pixel maps.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
