@@ -138,7 +138,7 @@ prints these names in `text.partial.asm`.
 - kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
 - the block-write details: the colour-register and status addresses (`$??C00000`, `$??00007C`) are estimated, and why `$7C` gates the two-colour fill is not known;
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
-- the Control 18 word (`PupS +$C`, stored at unit `+$002`): its use is not traced (section 9);
+- the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - `.text` key bits 19-23, and so the masked fields of most instructions;
 - the System 6 Antelope has its own key, not fitted (section 10).
 
@@ -2763,7 +2763,7 @@ All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
 | `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
 | `+$4` | `$D2` (210) | not read by either path seen |
 | `+$8` | `$60` | the config word, sent with cs17 |
-| `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002` (purpose not traced) |
+| `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002`: the card-response timeout in ticks (below) |
 
 `gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
 each followed by a check that maps a failure to errors
@@ -2776,6 +2776,38 @@ clear and the "mailbox not enabled" bit `$800` stays set: the card's
 debug messages are not delivered. (An earlier version of this paragraph
 said that no client sends cs17. That came from scanning only some of
 the control panel's `_Control` calls.)
+
+**The Control 18 word is the card-response timeout, in ticks.** The
+driver never reads unit `+$002` itself, apart from returning it with
+Status. It sets it to 300 (5 s) when it builds the unit record (`DRVR.s`
+`$2156`), cs18 replaces it with the `PupS` value (1200 = 20 s; System 6:
+960 = 16 s), and cs54 forces it to 2000 (33 s) while it calls client
+hook 3 (`$0F0A`), then restores it. Its readers are `gc24`'s three wait
+loops, which all compute `deadline = Ticks + unit+$002` and re-arm the
+deadline when the card makes progress (it posts a request, which
+`sub_6442` serves, or its heartbeat at packet `+$1C4` changes):
+
+| loop | waits for | on timeout |
+|---|---|---|
+| `EngineDispatch` (`$6062`-`$610E`) | the reply to a command | `sub_75FE(unit, 2, 0)`: records reason 2 at unit `+$15C` and returns 0, so the 68K routine draws |
+| `sub_624A` (`$628E`-`$6342`) | the card to finish (a sync) | reason 2 at unit `+$15C`, returns -1 |
+| `sub_6F4E` (`$7130`-`$71EE`) | the reply to command `$01` (the sequence reset) | the first try waits only 5 ticks, then up to three more with the timeout. After the fourth it calls `sub_75FE(unit, 3, 1)` |
+
+**`sub_75FE(unit, reason, disable)` is the give-up routine.** It stores
+`reason` at unit `+$15C`. With `disable` > 0 it then:
+1. sets state flag `$200` in unit `+$008`, the flag that makes later
+   cs13/17/50/51 calls refuse;
+2. puts back the original trap addresses from its patch table
+   (`globals+$278`, 16 bytes per entry);
+3. posts a Notification Manager alert (`_NMInstall`), "Graphics
+   accelerator is having difficulty. You will need to reboot to re-enable
+   it." (Pascal string at `$76CA`).
+
+It skips all of this if the config word has bit `$80`. That is one of the
+two bits `gc24` 32's dead `eori #$90` would have flipped, so `$80` looks
+like a "never give up" debug setting. The other callers pass reasons 4,
+6 and 9 (`$6FC8`, `$72F4`, `$730C`, `$734E`), not traced. A gc24 entry at
+`$1068` returns unit `+$15C`, the last reason.
 
 ## 10. The System 6 package ("8•24 GC SW 1.1")
 
