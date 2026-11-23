@@ -568,7 +568,7 @@ about the table:
 
 The table's bits 8-13 are estimated from the `.text` key 19 words earlier.
 Each entry is then matched to the case block with the same low byte nearest
-that estimate. 27 entries are exact, the rest within 1-3 pages of `$100`,
+that estimate. 33 entries match the estimate exactly. The rest differ by 1 to 11 pages of `$100`, most by 1,
 and "or" gives the second candidate where one exists. With the handlers
 from the case-block table above, the table is:
 
