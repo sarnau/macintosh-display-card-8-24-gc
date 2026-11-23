@@ -74,7 +74,7 @@ dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
-(from its region opcode); ITabMatch `$06650`; BitsToPixMap
+(from its region opcode); ITabMatch `$06650`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -1694,6 +1694,53 @@ itself and sends the card only what it lacks:
 5. **Remember** the width table (`$106(a4)` = the handle, `$1AC(a4)` = a copy
    of its first `$434` bytes) and the `FMOutput` (`$192(a4)`), so that the
    next StdText with the same font sends nothing new and no `$67`.
+
+**The card side of the upload: a cache of host objects.** Both handlers
+use one cache, kept per kind and keyed by the host handle:
+
+* `extern#1745` is an array of 24-byte descriptors, one per kind. `+$08`
+  heads a linked list, `+$0C` gives the entry size, and `+$10` the data size
+  in longs.
+* Each entry is: `+$00` a timestamp, `+$04`/`+$08` prev/next, `+$0C` the host
+  handle (the key), `+$10` the data.
+* **`$15D28(kind, key)` finds** an entry by walking the list.
+  **`$15E8C`** does the same and stamps a hit with the clock (service `$11`,
+  stub `$38FE8`) for LRU replacement. **`$15EE4` creates** an entry:
+  1. `$15A7C` makes room, by evicting if needed;
+  2. `$15958` allocates the entry;
+  3. it stamps the entry, zeroes its data, puts the key at `+$0C` and links
+     it at the head;
+  4. `$15ACC` counts it.
+* **`$15FF4(kind, key)`** is find-or-create.
+
+The kinds seen so far:
+* 2: GDevice (the cursor code looks up `CrsrDevice` with
+  `$15D28(2, …)`);
+* 6: commands `$0D`/`$0F`;
+* 8: font strike;
+* `$0A`: width table.
+
+**`$14B64(handle, ptr)`, a width table.** Find-or-create kind `$0A`, then
+copy `$434` bytes from the host pointer into the entry with `$16C48`, the
+copy helper behind requests 8/18. It returns the entry's data.
+
+**`$14A80(handle, ptr, size)`, a strike.** Find-or-create kind 8. If the
+entry is new, or holds another handle, it copies `size` bytes in (`$16C48`,
+mode 3). If that fails it retries through `$14564` (presumably by freeing
+space). Then it clears the top bit of the entry's first word and puts the
+entry in LRU order (`$15B3C(8, entry)`).
+
+**The card draws the text itself.** DrawMultiObject's text case calls
+`$11AD8`, a 7 KB routine with the shape of QuickDraw's `DrawText.a`:
+* the clipping set-up: RSect `$01494`, TrimRect `$01654` twice;
+* the ShieldCursor pair `$32C10`/`$32EF8`;
+* a buffer from PRAlloc `$16A04`, which it builds the glyphs into;
+* then the transfer: StretchBits `$2D7B8` (twice), scaleBlt `$22A8C` and
+  RgnBlt `$19DA4`, as `DrawText.a` hands its buffer to StretchBits.
+
+The glyphs come from the strike copied into the cache, the metrics from the
+width table, and the style (bold, italic, underline, shadow) from the
+`FMOutput` in the `$67` record. The glyph loop itself is not decoded.
 
 So the card's "font is not in cache" and "width table is not in the cache"
 messages are about this upload: DrawMultiObject looks up the `$67` record's
