@@ -457,18 +457,52 @@ the end of `.text`. `lit.partial.bin` is therefore right only in bits 0-1.
 **Rechecked with the entries read as module offsets.** A relocated `.lit`
 word names the module's `.text` section symbol (for this table, symbol
 1129+1 = `.text $31DA8`). So it holds the target's *offset* from the module
-start, not the absolute address. A sharper test: a case block starts right
-after a `jmp`/`jmpi` and its delay slot. That holds for 19 of the 19 known
-dispatcher blocks, against about 4% of random code words. Decoded with the
-`.text` key, relocated `.lit` words land after a jump at chance, both as
-offsets (25 of 662) and as absolute addresses (45 of 662; 37 expected). A
-constant added to or XORed onto the `.text` key, searched over all of
-`.lit` and per run, scores no better than chance (best 41 of 653 over
-12,288 constants). So the conclusion stands: `.lit` has its own key.
-Its bits above the offset's width are visible directly, though. For
-offsets below `$4000`, raw bits 14-23 are key bits, and they track the
-`.text` key at the same index (for example at word 994: `.lit` raw
-`$026472`, `.text` key `$027EE6`).
+start, not the absolute address. The default case is then the known offset
+`$32818 - $31DA8 = $A70`.
+
+(A "case blocks start right after a `jmp`" test used in the previous round is
+**withdrawn**: its 19-of-19 score on the dispatcher blocks was circular,
+because those blocks had been found by splitting after `jmp`. The negative
+results below do not depend on it.)
+
+What holds:
+
+* **The `.lit` key is its own, but related.** Raw bits above the offset's
+  width are key bits. They equal the `.text` key at the same index in 431 of
+  492 words (bits 14 and up, small modules; most misses are borrows, the
+  `.lit` key one lower). Fitting per run, seven of the ten runs prefer lag 0.
+  Three prefer a lag: run `$0958` about 10 words, the dispatcher table
+  `$0DE0` 19 (the `.text` key's high bits jump at word 889, the table's at
+  908), run `$0F78` about 12.
+* **The dispatcher table repeats a plaintext.** Raw entries 24 apart agree in
+  bits 0-6 in 16 of 50 pairs, and 48 apart in 4 of 13 (chance 1.6 and 0.4).
+  At distance 12 the excess is only what the 24- and 48-pairs bring in. So
+  the `.lit` key's bits 0-6 repeat every 24 words (in `.text`, bit 6 needs
+  48), and many entries share one value, presumably the default `$A70`.
+  Rows 9-11 agree across all three of their entries (for example entries
+  9, 33 and 57 all end in `$C8`). Over all of `.lit` the distance-24 excess
+  is 29 of 300 against 9.4, most of it from this table.
+* **For comparison, the `.text` key's own periods**, measured on the bit
+  0-12 model: bit 0 repeats every 3 words, bits 0-1 every 6, bits 0-4 every
+  12, bit 5 every 24, bit 6 every 48, and each higher bit doubles it
+  (bit 12: 3,072). So the key is three interleaved streams (k mod 3), each
+  with T-function periods.
+
+What was ruled out, scored by how many dispatcher entries decode to exactly
+`$A70` (and how many small-module entries land in range):
+
+* every index shift `.lit` k -> `.text` k+δ, δ = 0..3,071 (all distinct
+  shifts of bits 0-12): at most 2 entries hit `$A70`;
+* a constant added to or XORed onto the `.text` key's bits 0-12: at most 2;
+* affine maps k -> a·k+b, a in {-2, -1, 1, 2, 3, 4}: assuming the 23 entries
+  in the repeating rows are all `$A70`, at most 1 of 23 keys reproduced;
+* a per-run unknown base for the decoded offsets: no run better than chance.
+
+Under the 19-word lag, the keys implied by the 23 presumed defaults match the
+`.text` key in bits 8-15 over long stretches. The low byte differs by an
+amount that follows no visible pattern (the lag itself drifts by a word or so).
+So the next model to try is the `.text` generator's structure with `.lit`'s
+own low tables, fitted to the repeating entries.
 
 The constraint for a future solution is clear: every relocated `.lit` word
 is a code offset inside its own module (module ranges come from the symbol
