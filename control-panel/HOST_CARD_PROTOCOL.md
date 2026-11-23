@@ -84,7 +84,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject's opcodes are named from the host writer; its `.lit` entries are pinned from the host's record layouts and the rest of `.lit` agrees; `$6B`'s entry is still unresolved;
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are its per-device state refresh, the glyph loop in DrawText, and four sub-switch entries;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -695,14 +695,14 @@ above chance in bits 0-11:
 | `$174FC` | 6 | 6 | 6% |
 | `$372D0` | 4 | 4 | 2% |
 | `$31DA8` (dispatcher) | 61 | 61 | 4% |
-| `$2D7B4` | 86 | 80 | 15% |
+| `$2D7B4` | 86 | 81 | 15% |
 | `$3772C` | 23 | 21 | 19% |
 | `$25350` | 27 | 23 | 12% |
-| `$0AD14` | 29 | 24 (14 pinned, below) | 11% |
+| `$0AD14` | 29 | 25 (17 pinned, below) | 11% |
 | `$01A4C` | 50 | 41 | 17% |
 | `$19DA0` | 66 | 53 | 25% |
-| `$13F50` | 32 | 21 | 15% |
-| `$27674` | 16 | 15 | 20% |
+| `$13F50` | 32 | 18 | 15% |
+| `$27674` | 16 | 16 | 20% |
 
 So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
 holds across all of `.lit`.
@@ -717,33 +717,38 @@ wrongly:
 | `.lit $0484` | 1 (line) | `$69C` | `$09C` → `$0BDB0` | bits 9-10 |
 | `.lit $0498` | `$6A` (clip region) | `$BB0` → `$0B8C4` | `$EB0` → `$0BBC4`, the `$6C` case | bits 8, 10 |
 | `.lit $04B8` | `$72` (long pattern) | `$518` → `$0E22C` | `$A18` → `$0B72C` | bits 8-11 |
+| `.lit $0488` | 2 (arc) | `$BB0` → `$0B8C4`, inside the `$73` case | `$CB0` → `$0D9C4`, which tests for opcode 2 | bits 8-10 |
+| `.lit $049C` | `$6B` (background colour) | `$72C`, no case | `$62C` → `$0B340`, the twin of `$64` | bit 8 |
+| `.lit $04BC` | `$73` (pattern slot) | `$4C0` → `$0C1D4`, inside the line case | `$AC0` → `$0B7D4`, which reads the slot | bits 9-10 |
 
-`antelope_lit_key.py` now takes host-confirmed targets as constraints
-(`PINS`). Pinning only these three is not enough: it moved shared key
-classes and broke opcode 3 (to `$0BBC4`, the region code, which cannot parse
-an oval record) and `$6E` (away from `$0BD98`, whose layout the host
-confirms). So every entry whose record layout the host confirms is pinned:
-1, 3, 4, 5, `$6A`, `$6C`-`$72`, `$74` and `$75`. Opcodes 3 and 4 are pinned
-to `$0D9C4` because QuickDraw draws ovals and round rects through DrawArc,
-and the unpinned fit gave both the same value.
+`antelope_lit_key.py` takes these targets as constraints (`PINS`): every
+entry of DrawMultiObject's two opcode tables (1-5 and `$6A`-`$75`), each
+from the host's record layout and the case code read on the card.
+* Opcodes 2-4 share `$0D9C4`, as QuickDraw draws arcs, ovals and round
+  rects through DrawArc.
+* Pinning only the first three entries was not enough: that moved shared
+  key classes and broke opcodes 3 and `$6E` instead.
 
-The refit leaves the dispatcher table at 61 of 61. The other tables do as
-well as or better than the unpinned fit:
+The refit leaves the dispatcher table at 61 of 61. Against the unpinned
+fit:
 
 | table | unpinned | pinned |
 |---|---|---|
-| `$2D7B4` | 78 | 80 |
-| `$27674` | 13 | 15 |
+| `$2D7B4` | 78 | 81 |
+| `$27674` | 13 | 16 |
 | `$01A4C` | 40 | 41 |
 | `$25350` | 22 | 23 |
-| `$13F50` | 21 | 21 |
+| `$13F50` | 21 | 18 |
 
-So the pins agree with the rest of `.lit`. Bits 8-11 are weakest where a
-class holds few constraints, which is the case for these words.
+`$13F50` loses three words, `.lit $0788`, `$079C` and `$07BC`. Each shares
+its bit-9 class (period 192) with one of the last three pins (2, `$6B`,
+`$73`). Either those three matches were chance (15% each for that table), or
+bit 9 does not follow the period exactly there. The pins rest on case code
+read on the card, so they are kept. Bits 8-11 are weakest where a class
+holds few constraints, which is the case for these words.
 
-Still unresolved in this table: `$6B` (`$72C`, background colour) and four
-entries of the 6-way sub-switch tables (`.lit $0464`, `$0468`, `$047C`,
-`$0480`) match no clean case entry. Two groups are not case-block tables and are
+Still unresolved: four entries of the 6-way sub-switch tables (`.lit $0464`,
+`$0468`, `$047C`, `$0480`) match no clean case entry. Two groups are not case-block tables and are
 left out of the fit:
 
 * base `$06BAC`: one repeated value ending in `$B0`, which follows no jump;
@@ -1473,7 +1478,7 @@ host") and the compare chain.
 | record | written for (command) | size: layout | card case |
 |---|---|---|---|
 | **1** line | StdLine (`$20`) | 8: `+4` the new point, which also becomes `pnLoc` | `$0BDB0`: draws from the pen with DrawLine, then moves the pen there |
-| **2** arc | StdArc (`$23`) | 16: `+2` frame, `+4` rect, `+$C` startAngle, `+$E` arcAngle | `$0B8C4` |
+| **2** arc | StdArc (`$23`) | 16: `+2` frame, `+4` rect, `+$C` startAngle, `+$E` arcAngle | `$0D9C4` (DrawArc; the case tests for opcode 2) |
 | **3** oval | StdOval (`$2F`) | 12: frame, rect | `$0D9C4` (DrawArc) |
 | **4** round rect | StdRRect (`$2E`) | 16: frame, rect, `+$C` ovalWidth, `+$E` ovalHeight | `$0D9C4` (DrawArc) |
 | **5** rect | StdRect (`$24`) | 12: frame, rect | `$0C754` |
@@ -1481,10 +1486,10 @@ host") and the compare chain.
 | **7** poly | StdPoly (`$31`) | `(polySize + 7) & ~3`: frame, the Polygon | `$0C398` |
 | **8** region | StdRgn (`$18`) | `(rgnSize + 7) & ~3`: frame, the Region | `$0D6E8` |
 | `$64`, `$66` foreground colour | ForeColor, RGBForeColor, PmForeColor (`$36`) | 12 / 16: `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917E` gives an index | `$0B230`, `$0B458` |
-| `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54` | `$0B584` for `$6D`; `$6B` unresolved |
+| `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54` | `$0B584` for `$6D`, `$0B340` for `$6B` (the twin of `$64`, storing to the background global) |
 | `$67` font | StdText, when the font changed | 32: `+2` the 26-byte `FMOutput` (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle` | `$0DE00` |
 | `$68` MoveTo | the pen location changed (`sub_8DA4`) | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` | `$0BD7C` |
-| `$69` mode | the transfer mode changed (`sub_8E38`) | 4: `+2` the mode | compare chain (not found) |
+| `$69` mode | the transfer mode changed (`sub_8E38`) | 4: `+2` the mode | `$0B214`: the mode into `lr24` |
 | `$6A` clip region | SetClip, ClipRect (`$32`) | `(rgnSize + 5) & ~3`: the Region at `+2` | `$0BBC4`, into `lr19` |
 | `$6C` visible region | visRgn changed (`$10`, also from the port check at `$51A4`) | the same | `$0BBC4`, into `lr54` |
 | `$6E` pen size | PenSize, SetPenState, PenNormal (`$35`) | 8: `+4` pnSize | `$0BD98` |
@@ -1492,11 +1497,11 @@ host") and the compare chain.
 | `$70` hilite/op colour | OpColor or HiliteColor changed (`sub_8DF2`) | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` | `$0BB7C` |
 | `$71` bit pattern | a pattern slot changed (`sub_8F04` result 1) | 12: `+2` slot, `+4` an 8-byte Pattern | `$0B6D8`: kind 0 |
 | `$72` pixel pattern | `sub_8F04` result 2 or 4 | 8: `+2` slot, `+4` a long (a PixPat) | `$0B72C`: kind 1 |
-| `$73` slot | the verb's pattern slot changed | 4: `+2` slot (1 pen, 2 background, 3 fill) | `$0C1D4` (probably wrong, see "Open points") |
+| `$73` slot | the verb's pattern slot changed | 4: `+2` slot (1 pen, 2 background, 3 fill) | `$0B7D4`: skipped if the slot is current and no pattern changed; otherwise it makes the slot current (`lr20`) and builds its pattern by kind |
 | `$74` RGB pattern | `sub_8F04` result 3 | 12: `+4` slot, `+6` an RGB colour | `$0B788`: kind 2, the "RGB Pattern" of the cache message |
 | `$75` patAlign | `patAlign` changed (QuickDraw global −168) | 8: `+4` `patAlign` | `$0B7B8`: stored to a global |
 
-The card handles 24 opcodes; `$65` and `$69` are not among them. The
+The card handles 24 opcodes (`$65` is the only gap in `$64`-`$75`). The
 numbering does not follow PICT,
 but the split into drawing records (1-8) and state records (`$64`-`$75`)
 is the one a QuickDraw picture makes.
@@ -1539,15 +1544,32 @@ cached state starts out empty.
   [lr53]` without resetting `lr38`. It goes on with the records the host
   appended. Most likely `$C8` means "more records" and `$C9` "last batch".
 
-**Dispatch (`$0E22C`-`$0E2EC`).** The opcode is in `lr81`:
+**Dispatch.** The opcode is in `lr81`. The loop head (`$0AF94`) sends
+opcodes above 9 straight to `$0B204`. For the drawing opcodes (1-9) it
+first checks the dirty flags (below), then also continues at `$0B204`:
 
 | opcodes | dispatch |
 |---|---|
+| above `$69` | `$0B204` → `$0E2CC` |
+| `$69` | `$0B204` → `$0B214` |
 | 1-5 | table `.lit $0484` (`opcode − 1`); the delay slot (`$0E268`) sets the data pointer `gr96 = lr38 + 4` |
 | 6 | compare chain (`$0E22C`-`$0E23C`, read from the known low bits); its delay slot sets the pointer to `lr38 + $0C` |
 | 7, 8, `$64`, `$66`, `$67`, `$68` | compare chain: 7 → `$0C398`, 8 → `$0D6E8`, `$64` → `$0B230`, `$66` → `$0B458`, `$67` → `$0DE00`, `$68` → `$0BD7C` |
 | `$6A`-`$75` | table `.lit $0498` (`opcode − $6A`) |
 | anything else | `$0E20C`: "DrawMultiObject: unknown opCode %d" (`.lit $0430`) |
+
+**State is applied lazily.** The state records only store their values and
+set a dirty flag:
+
+| flag | set by |
+|---|---|
+| `lr71`, foreground | `$64`, `$66` |
+| `lr70`, background | `$6B`, `$6D` |
+| `lr72`, mode | `$69` |
+| `lr75`, pattern | `$73` |
+
+Before a drawing record, if any flag is set, the loop head runs a
+per-device refresh (`$0AFC0`-`$0B1F0`) and clears them all (`$0B1F4`).
 
 Each case ends by advancing `lr38`, usually in the delay slot of its `jmp
 $0B450` back to the loop. The sizes found that way match the host's layouts
@@ -1569,17 +1591,16 @@ follows both branches and stops at the jump back to the loop:
 | record | case | words traced (not estimated) | routines reached |
 |---|---|---|---|
 | 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
-| 2 arc | `$0B8C4` | 270 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`), then a jump that is not estimated |
-| 3/4 oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
+| 2/3/4 arc, oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
 | 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68`, ShieldCursor pair, `$1701C`, BitBlt |
 | 6 text | `$0E018` | 98 (0) | none before its unestimated jump; DrawText `$11AD8` follows at `$0E1B0` |
 | 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
 | 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
-| `$64`, `$66`, `$6D` | `$0B230`, `$0B458`, `$0B584` | 69-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
+| `$64`, `$66`, `$6B`, `$6D` | `$0B230`, `$0B458`, `$0B340`, `$0B584` | 68-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
 | `$67` | `$0DE00` | 134 | `$15E8C`, the cache lookup with time stamp |
 | `$6A`/`$6C` | `$0BBC4` | 110 | RSect, TrimRect |
-| `$68`, `$6E`, `$6F`, `$70`-`$72`, `$74`, `$75` | | 2-23 | none: they only store state |
-| `$73` | `$0C1D4` | 387 (8) | DrawLine and the ShieldCursor pair |
+| `$68`, `$69`, `$6E`, `$6F`, `$70`-`$72`, `$74`, `$75` | | 2-23 | none: they only store state |
+| `$73` | `$0B7D4` | 295 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`) |
 
 Every drawing case brackets its drawing with the cursor hand-off described
 in "The cursor".
@@ -1729,18 +1750,10 @@ has to be the source.
 
 ##### Open points
 
-* **`$73`'s card case.** Its entry (not pinned) lies inside the line case
-  and reaches DrawLine, which does not fit a 4-byte "select slot" record.
-* **`$6B`.** Its entry (`$72C`) matches no clean case entry. It is the
-  background colour in the same layout as `$64`.
-* **`$69`.** The host writes it when the transfer mode changes, but the
-  card's dispatch has no case for it: it is in neither table nor the
-  compare chain, so it would reach "unknown opCode". Either the host never
-  emits it in practice, or the dispatch as read is incomplete.
-* **The arc case** reaches only the pattern cache before a jump that is not
-  estimated, so DrawArc's call for record 2 is not seen.
 * **Four sub-switch entries** (`.lit $0464`, `$0468`, `$047C`, `$0480`)
   match no clean case entry.
+* **The per-device state refresh** (`$0AFC0`-`$0B1F0`) is not read in
+  detail.
 * **The glyph loop** in `$11AD8` is not decoded.
 
 #### The dispatcher prologue and packet layout
