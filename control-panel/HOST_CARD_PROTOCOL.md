@@ -842,8 +842,47 @@ addresses: an `iret` no-op, "free memory" (`gr96 = heap end - break`), a 10-bit
 serial shift-out of `lr4` to `$440000A0` (the pixel-clock chip, same shape as the
 video driver's `SerialShiftOut`), writing three bytes from `lr3..lr5` to a port
 at `$460004C0`, region-table add (`$200147C`) and remove (`$2001604`), and
-register-dump helpers. Since Antelope does not call the services (section 6),
-none of this is exercised by the accelerator proper.
+register-dump helpers.
+
+**Correction: Antelope does call the services.** The partial disassembly
+shows 35 stubs of the form `const gr121, N` / `asneq 69` / `jmpi lr0` at
+`$38F24`-`$39104`, `$3B404`-`$3B4DC` and `$3C9EC`. The low bytes of N are
+plain:
+
+* `$B8 $B9 $BB $BF $C0 $C1 $C4 $C5 $C6 $C7 $C8 $CB $CC $CD $CE $CF $D0 $D1 $D2
+  $D3 $D5 $D6`: the vector-66 table range above;
+* `$01 $11 $12 $13 $14 $15 $16 $21`: low numbers, probably the `$1`/`$1xx`
+  services that the second dispatcher at `$2001B74` handles (`$111`/`$112`
+  time, `$121` set globals, `$1` exit). Their high byte is masked.
+
+The command dispatcher uses `$D2` (for every accepted command, before the
+`$8000` test), `$D5` (command `$14`, with `p[0]`), and `$CC`, `$CD`, `$D3`
+(the `$326BC`-`$32798` blocks).
+
+**Naming them from the `PrivNZ` table failed.** The `PublicIn`-unmasked
+pointers are only approximate:
+
+* `$B7`, `$B8`, `$BA` and `$CC` all decode to `$2001B94`-`$2001B9C`, which
+  is inside the second dispatcher.
+* No other keystream or offset gives more than 3 exact stub starts out of 33:
+  `PublicIn`, `PublicOu`, `Vec`, `Apple`, or the `Hand`/`Boot` generator at
+  any of 20,000 offsets.
+* `PublicIn`'s low 7 bits repeat every 48 words (1 conflict in 201), so a
+  `PrivNZ` table of the same kind has no repeats among its 33 words to fit.
+
+What the approximate pointers allow, for the dispatcher's services:
+
+| service | decoded pointer | nearby stubs (role) | fits Antelope's use? |
+|---|---|---|---|
+| `$D2` | `$20012E0` | `$20012AC`/`$20012C8` free stack/heap space; `$20012E8` pixel-clock serial write (`lr2`, `lr4`); `$2001294` restart if `gr64` bit 28 | called with no arguments, result discarded: the restart check fits best, not shown |
+| `$D5` | `$200123C` | `$2001224` wait/clear INTR2; `$2001250` read `[$4C00682C]`; `$2001260` clear bit `lr2` of `[$4C00643C]`, mirror to `$46000000` | called with one argument (`p[0]` of command `$14`): `$2001260` fits |
+| `$CC` | `$2001B98` | inside the second dispatcher | - |
+| `$CD` | `$2001504` | inside the region-table code `$2001478`-`$2001604` (insert/remove a range) | - |
+| `$D3` | `$20019CC` | `$20019B4` (returns -1), `$20019BC` | - |
+
+So where drawing happens is still open. If it is `$D2`, it is not one of the
+stubs near its pointer. They all return at once and touch no command
+data.
 
 ### Antelope mask: the `.lit` jump/command tables (partial result)
 
