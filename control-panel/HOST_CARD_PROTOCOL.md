@@ -647,11 +647,11 @@ With the handlers from the case-block table above:
 | `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat** |
 | `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
 | `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
-| `$11` | `$3210C` | |
+| `$11` | `$3210C` | -> `$15D84`, `$16BA0` (start-up control record) |
 | `$12` | `$326E8` | system call `$??CD` |
 | `$13` | `$32740` | system call `$??CC` |
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
-| `$15` | `$32148` | |
+| `$15` | `$32148` | -> `$2D7B8`: bit transfer between host pixel maps (host: `GA_TrapAB27`), via `MapVirtual` |
 | `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
 | `$17`, `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (`$2C` is the host's DisposPixPat, which settles the earlier `$320C8` alternative) |
 | `$19` | `$32570` | one long -> `$14168` **FlushOffscreen** |
@@ -660,7 +660,7 @@ With the handlers from the case-block table above:
 | `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
 | `$29` | `$32468` | one long -> `$15808` **FlushGDevice** (the host's AddSearch/…/SetDeviceAttribute) |
 | `$2B` | `$32498` | one long -> `$15808` **FlushGDevice** |
-| `$2D` | `$32188` | |
+| `$2D` | `$32188` | -> `$13770` (not sent by `gc24`) |
 | `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`) |
 | `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
 | `$3C` | `$32528` | two longs in a frame -> `$140CC` |
@@ -903,6 +903,59 @@ command sequence counter `[.bss+8]` to 0 and sends request 100 (reset the
 host's request counter). Command `$01` is the one command the sequence check
 lets through, so it is the reset command and its case is `$31FE8`. That makes
 `$12` the `$326E8` case.
+
+**`$3373C` is `MapVirtual` (its `.lit $0F34` message reads roughly
+"MapVirtual: bytes == 0").** `MapVirtual(addr, len)`:
+1. `len == 0`: print the message, return -1.
+2. Look `[addr, addr+len)` up in a list of mapped ranges
+   (`extern#1772+$00` head, `+$04` tail). The entries are
+   `{+$00 addr, +$04 len, +$08 runs, +$0C run table, +$10 next}`. A covered
+   range is reused.
+3. Otherwise build an entry. `CallBack(15, wait, 4, addr, len, max, table)`
+   has the host lock the buffer and return its physical runs.
+4. For each run, call services `$CC` (`$39018`) and `$CD` (`$39028`, once
+   per page). `$CD`'s decoded pointer lies in the kernel's region-table
+   insert/remove code, so this presumably enters the host pages into the
+   card's address map.
+5. If that fails, `CallBack(15, …, 0)` unlocks again (on the host, a run
+   count of 0 means `UnlockMemory`), and it returns -1.
+6. The entry is allocated with `PRAlloc` and linked in.
+
+A flag at `extern#1772+$90` brackets this with service `$D3` (`$390B4`, 1 on
+entry, 0 on release).
+
+`$33A9C` is the release, `UnmapAll`: if the `+$90` flag is set it calls
+`$D3(0)`; then for every entry it calls `$CD` per page and
+`CallBack(15, 1, 3, addr, len, 0)` to unlock.
+
+**Which commands reach host memory.** Two dispatcher cases call the
+entry-table functions:
+
+| command | case | calls | sent by the host |
+|---|---|---|---|
+| `$15` | `$32148` | `$2D7B8` (entry `+$00`) | `GA_TrapAB27` (`gc24.s` `$32BC`), one argument |
+| `$2D` | `$32188` | `$13770` (entry `+$04`) | no `gc24` code sends `$2D` |
+| `$11` | `$3210C` | `$15D84`, then `$16BA0` | the control record `$FFFFFFFE` (start-up) |
+
+`GA_TrapAB27` patches trap `$AB27`, which is not in the System 7.1 headers.
+It takes a CopyBits-sized argument list (four longs, a word, a long that must
+be 0, a word, six more longs). It runs only if:
+- the device's flags have bits `$27` set and bits `$600` clear;
+- that long argument is 0.
+
+`sub_8262` then builds a parameter block in card memory (packet `+$58`), and
+the patch sends `$15` with a pointer to it. A reply of 1 means the card did
+the transfer; the patch then sets bit 7 of `HiliteMode` (`$938`), as
+QuickDraw does after a drawing call, and skips the original. On the card,
+`$2D7B8` is a large routine that:
+- calls `MapVirtual` three times;
+- uses the GDevice cache (`$14F64`, `$14D78` `MakeITable`, `$14BD4`) and
+  the copy helper `$16C48` (codes 8 and 18);
+- calls `$01494`/`$01654` repeatedly and `$3B600` twice.
+
+So **command `$15` is the card's bit transfer between host pixel maps**: the
+CopyBits path for memory the card cannot address directly. The card maps the
+host pages and moves the pixels itself.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
