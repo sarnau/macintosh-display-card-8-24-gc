@@ -742,9 +742,21 @@ fit:
 
 `$13F50` loses three words, `.lit $0788`, `$079C` and `$07BC`. Each shares
 its bit-9 class (period 192) with one of the last three pins (2, `$6B`,
-`$73`). Either those three matches were chance (15% each for that table), or
-bit 9 does not follow the period exactly there. The pins rest on case code
-read on the card, so they are kept. Bits 8-11 are weakest where a class
+`$73`). Those matches were chance, because `$13F50` is mostly not a
+case-block table:
+* Its decoded values run in strides of 8: `$D5C`, `$D64`, … `$D7C`; then
+  `$ADC`, `$AD4`, `$ACC`, `$AC4`; then `$3DC`, `$3E4`, `$3EC`, … `$40C`.
+  These are offsets into unrolled code, like the excluded `$30088` group.
+* With the pins, `$0788` becomes `$D84` (after `$D7C`) and `$07BC` becomes
+  `$404` (between `$3FC` and `$40C`). Under the old key they broke their
+  runs (`$A84`, `$A04`).
+* Counting neighbouring words that differ by exactly ±8 over all tables
+  gives 23 pairs under the pinned key against 20 before. All three new pairs
+  are in `$13F50`.
+
+So the lost "matches" were chance hits on case-block starts, and the pinned
+key fits this table's real structure better. Its match count in the table
+above (18 of 32) means little: it is a stride table, not a case-block one. Bits 8-11 are weakest where a class
 holds few constraints, which is the case for these words.
 
 Still unresolved: four entries of the 6-way sub-switch tables (`.lit $0464`,
