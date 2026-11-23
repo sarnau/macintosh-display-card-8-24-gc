@@ -41,7 +41,9 @@ BR = {'jmp', 'jmpf', 'jmpt', 'jmpfdec', 'call', 'jmpi', 'jmpfi', 'calli',
 # Function names established in HOST_CARD_PROTOCOL.md (by role where the
 # original name is unknown).  Printed on the label line and after targets.
 NAMES = {
-    0x00140: 'Report', 0x00348: 'FillLongsBurst', 0x00F84: 'ReportToLog',
+    0x00140: 'Report', 0x00248: 'CopyLongsBurst', 0x00294: 'Fill2LongsBurst',
+    0x00348: 'FillLongsBurst', 0x00F84: 'ReportToLog', 0x16C48: 'CopyHostMemory',
+    0x17264: 'Fill2Longs', 0x3B814: 'mul_millicode',
     0x01494: 'RSect', 0x01654: 'TrimRect', 0x01A50: 'BitBlt',
     0x06650: 'ITabMatch', 0x06BEC: 'BitsToPixMap', 0x06F1C: 'ColorMap',
     0x075DC: 'DrawArc', 0x08618: 'DrawLine', 0x0AD18: 'DrawMultiObject',

@@ -1881,10 +1881,30 @@ in "The cursor".
          a variable. The key estimate gives `$44000080`, a status register
          that Hand also tests (see below);
        * bit 31 clear: call `$00348`;
-       * bit 31 set: its own loop. It aligns with 1-7 single stores
-         (`dst>>2 & 7`, through `.lit+$548`), fills 32 longs per loop while
-         alternating between two pointers (`gr99`/`gr98`), and finishes
-         with a remainder chain.
+       * bit 31 set: a **hardware block fill** (estimated words,
+         `$17078`-`$171CC`):
+         1. align `dst` to 32 bytes with 1-7 single stores of the value
+            (`dst>>2 & 7`, through `.lit+$548`);
+         2. store the value to two registers at `$??C00000` and
+            `$??C00004` (the masked byte estimates as `$4C`, so
+            `$4CC00000`/`$4CC00004`);
+         3. set bit 22 of the destination (`gr99 = dst | $00400000`), an
+            alias of the frame buffer;
+         4. store `$FFFFFFFF` through two pointers 4 bytes apart (`gr99`,
+            `gr98`), each stepping 32 bytes. Eight stores cover 32 longs, so
+            each store fills 4 longs (16 bytes);
+         5. handle the 1-3 remaining blocks the same way, with a store
+            value derived from the remaining count (presumably a partial
+            mask), then clear bit 22 again (`and $FFBFFFFF`) and finish the
+            tail with single stores.
+
+         This is the shape of a VRAM block write: colour registers loaded
+         once, then each store to the alias writes the colour into the
+         bytes its mask enables. That explains why this path needs no
+         `storem`: one store already does four longs. The register and
+         alias addresses rest on estimated high bytes; the low bytes
+         (`$00`, `$04`, `$40` in `consth`) and the structure are plain or
+         estimated consistently.
 
        **What the bit means, from Hand.** The video command service
        (`$2000C14`) converts the 2 MB window at `$4C000000` between two
@@ -1900,15 +1920,22 @@ in "The cursor".
 
        So `$44000080` bit 31 reads 1 while the frame buffer is in the
        linear layout and 0 while it is interleaved; `$4400007C` is its
-       complement. The kernel's pixel-clock stub `$20012E8` also halves both
-       of its values when the bit is set. For `$1701C` this means:
-       interleaved memory gets the `storem` burst, and linear memory gets
-       the two-pointer loop. Why linear memory avoids `storem` is not
-       shown. The host sends the page configuration (section 5): linear
-       means every depth on the Apple monitors and 24 bpp on TV output
-       (section 5). So `$1701C` uses the two-pointer loop almost
-       everywhere, and the `storem` burst `$00348` only for 1-8 bpp
-       NTSC/PAL frame buffers;
+       complement (but see section 5: the host writes `+$7C` from its timing
+       table). The kernel's pixel-clock stub `$20012E8` also halves both of
+       its values when the bit is set. For `$1701C` this means: the block
+       write works only in the linear layout, and interleaved memory falls
+       back to the `storem` burst. The host sets the layout (section 5):
+       linear on every Apple monitor at every depth, and on TV output at
+       24 bpp. So `$1701C` uses the block write almost everywhere, and
+       `$00348` only for 1-8 bpp NTSC/PAL frame buffers.
+
+       `$17264(dst, a, b, count)` (entry-table `+$30`) is the two-value
+       version. With `a` = `b` it calls `$1701C`. Otherwise it tests bit 31
+       of `$??00007C` (estimated `$4400007C`) the same way, before its own
+       aligned paths. So the second status register gates the two-colour
+       case. The matching burst helpers are `$00294`, which loads two
+       alternating values into the burst registers, and `$00248` (`+$54`),
+       a copy that moves 29 longs per `loadm`/`storem` pair;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
@@ -1946,7 +1973,16 @@ in "The cursor".
        fill into host memory through the kernel's mapping, presumably
        with NuBus block transfers set up by `$B8`/`$B9`/`$BF`. What
        `$D1`, `$BB`, `$B8`, `$B9`, `$BF` and `$D4` do in the kernel is not
-       shown, because the service table's pointers are approximate.
+       shown, because the service table's pointers are approximate. One
+       candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
+       `gr64`, the feature flags the host wrote to `PublicIn+$18`. In those
+       flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
+       unit's config word `+$128` has bit `$40`. The config word comes from
+       Control calls 17 and 50, and nothing in the INIT, cdev or gc24 code
+       sends those. So if `$BB` is that stub, the host-memory `storem` path
+       is an option that an outside client turns on. This is not
+       confirmed. A neighbouring stub `$2001A48` returns `[$4C006804]`
+       (`PublicOu+$04`), a candidate for `$D1`.
        The same service sequence appears in three more entry points (the
        others with services are shared restore tails: `$38574`, `$385C8`,
        `$38C3C`). Together they are one family:
@@ -1955,6 +1991,7 @@ in "The cursor".
        |---|---|---|
        | `$37C10` | pattern fill: a 1-, 2-, 4-, 8- or 16-long pattern (`lr19` = period) loaded into `gr96`-`gr111`, then `$37D68`'s body (`$37DF0`) | `$04110`, `$0E804` (3), `$1C8A8` |
        | `$37D68` | fill with one long | the row fills `$09020`/`$09270`, DrawMultiObject, `$11460`-`$11918` (text), `$03838`, `$03A28`, `$0E4CC`, `$1C298` |
+       | `$16C48` (not in the family) | the copy helper behind CallBack requests 8 and 18 | uses `$38218` twice |
        | `$38218` | forward copy (`dst`, `src`, `count`): `loadm`/`storem` 64 bytes at a time; calls `$D4` for both pointers | ShieldCursor `$32C10` and `$32EF8` (saving and restoring the pixels under the cursor), `$02DE0`, `$16C48` (2), `$1B61C`, `$37000` (4) |
        | `$388D0` | backward copy: the same with both pointers counting down, for overlapping moves | through the jump table at `.lit $0FFC` (base `$3772C`) |
 
