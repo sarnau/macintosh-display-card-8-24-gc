@@ -2712,6 +2712,33 @@ vector patching shows it is the same family), but bits 2-12 follow a
 different table. Recovering it needs known plaintext inside `.lit`, for
 example a switch whose case labels are all identifiable in `.text`.
 
+### Antelope mask: `.lit` bits 12-23 (`antelope_lit_high.py`)
+
+* **Bits 18-23 of `.lit`'s key are 0.** Every relocated `.lit` word has raw
+  bits 18-23 = 0, and its plaintext is a `.text` offset below `$40000`. All
+  1,097 `.lit` words lie inside the key's first plateau, as the first 1,389
+  words of `.text` do.
+* **Bits 12-17 step like `.text`'s high bits.** In the dispatcher table,
+  whose offsets are all below `$1000`, the raw bits are the key: `$3B` ×20,
+  `$24` ×34, `$25` ×7. Over the other tables, each entry's bits 0-11 select
+  the case-block candidates with the same low 12 bits. Each candidate
+  implies a key value, and the single-candidate entries step the same way
+  (`$0C`→`$0D`→`$0E`, `$3C`→`$3D`→`$3E`→`$3F`→`$38`, `$3B`→`$24`→`$25`→`$26`→`$27`).
+* `antelope_lit_high.py` takes for each entry the candidate whose implied
+  value is the mode of its neighbours. Of 535 table entries:
+  * 357 single-candidate entries agree with their neighbours;
+  * 41 entries with several candidates are resolved to one;
+  * 33 single-candidate entries are outliers against a clear mode;
+  * 51 entries are unclear, and 53 have no candidate.
+
+  The outliers and the missing candidates are concentrated in the three
+  tables whose bits 0-11 fit worst (bases `$01A4C`, `$13F50`, `$19DA0`; see
+  the table above). So they point at wrong low-bit fits or at case blocks
+  the "word after an unconditional jump" rule misses, not at the step model.
+
+The command table itself needed none of this: bits 0-11 already pick each
+of its 61 blocks uniquely.
+
 ### Antelope mask: the `.lit` switch tables as an upper-bit source
 
 **Withdrawn.** The first bullet below is wrong; see "the command dispatcher"
