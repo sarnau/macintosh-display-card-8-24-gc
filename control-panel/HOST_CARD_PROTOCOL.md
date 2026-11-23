@@ -8,6 +8,84 @@ card addresses; the host reaches `0x4Cxxxxxx` at slot base `+ 0x0Cxxxxxx` and th
 card registers `0x44xxxxxx` at `+ 0x04xxxxxx`. "Verified" means both sides were
 read and agree; "reading" means one side was read and the other inferred.
 
+## Overview: what the card does, and how the host talks to it
+
+This is a summary of the sections below. Most of it was found in
+the long section "Antelope: the command dispatcher", which now has `####`
+sub-headings for each topic. Later findings correct some earlier
+paragraphs, and this overview gives the current state.
+
+**Three channels**, all in one shared block in card memory (the "packet",
+`[.bss]` on the card, `$C(device record)` on the host):
+
+| channel | direction | where | host side | card side |
+|---|---|---|---|---|
+| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44` | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` |
+| requests | card → host | `+$24` mailbox: `+$04` code, `+$08` reply, `+$0C` sequence, `+$14` args | `sub_6442`, called from the idle routine and from `EngineDispatch`'s wait loops | `CallBack` `$33EBC` |
+| modules | host → card code | commands `$8001`-`$8004` and request 999 | `sub_1404` (gc24 entry #105) | `sub_37B58`, `sub_379A0` |
+
+Bit 2 of packet `+$18` tells the host that a request is waiting. Packet
+`+$1C0`/`+$1C4` are a host counter and the card's heartbeat (the nested wait
+loop). Separate from all of this are the boot mailbox (section 4) and the
+video command block (section 5).
+
+**Commands and replies.** The host sends a selector (`$0C`-`$3C` for drawing
+and caches, `$80xx` for modules). A reply of 1 means "done". 0 means "not
+handled", and the host runs the original 68k QuickDraw routine. Some patches
+use 2 ("run the original without drawing"). Command `$01` resets the
+sequence numbers on both sides.
+
+**What the card accelerates (this firmware, ACEF_100 "32-Bit Antelope"):**
+
+| command | host routine | card |
+|---|---|---|
+| `$15` | `StretchBits` (trap `$AB27`; CopyBits ends here) | `$2D7B8` StretchBits, with `scaleBlt`, BitBlt and RgnBlt. Reaches host pixel maps through `MapVirtual` |
+| `$03`/`$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
+| `$26`, `$38`, `$0D`, … | begin / synchronise around drawing | state and bookkeeping |
+| `$2D` | (no gc24 sender) | `$13770` → `DrawMultiObject`, a 24-opcode drawing engine |
+| `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
+
+**What it does not accelerate.** `StdLine` (`$20`), `StdText` (`$21`),
+`StdArc` (`$23`), `StdRect` (`$24`) and the other selectors with low byte
+`$70` in the command table go to "Unknown Function" and get reply 0. The 68k
+QuickDraw draws them into the card's frame buffer over NuBus. This is
+checked independently of the uncertain key bits ("The condition checked
+without bits 8-11").
+
+**What the card asks the host for (request codes):** Memory Manager calls
+(3-6), resources (7), block copies to and from handles (8, 18, 21),
+`MakeITable` (12), the GDevice's search and complement procs (13, 14),
+`Entry2Index` (17), locking host memory and its physical pages (15, 16),
+`OpColor`/`HiliteColor` (20), `GetSystemClientProcess` (22), reset (100),
+and module requests (999).
+
+**Host-loaded modules.** Through gc24 entry #105 a program can load ACEF
+code onto the card (`$8002` + `ACEFLoad`) and run it as tasks (`$8001` runs
+the entry point on a message). Its code gets a service callback, and through
+it Antelope's exported entry table: the QuickDraw core (StretchBits,
+scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
+`CallBack`, `MapVirtual` and the dispatcher.
+
+**Named card functions** (the evidence is in the sections below): the
+dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
+scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
+(likely); text `$11AD8` (likely); DrawLine/DrawArc/QuickPolys `$075DC`,
+`$08618`, `$19270` (order unknown); ITabMatch `$06650`; BitsToPixMap
+`$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
+FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
+FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
+`$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; `CallBack`
+`$33EBC`; the request wrappers `$33BD0`-`$33E88`; the card heap
+`$372D0`-`$3772C`.
+
+**Still open:**
+- DrawMultiObject's opcode → case mapping (the high bits of its table
+  targets);
+- which of `$075DC`/`$08618`/`$19270` is lines, arcs and polygons;
+- the twin `$32C10`/`$32EF8`;
+- kernel service `$D2`'s exact role;
+- `.text` key bits 19-23, and so the masked fields of most instructions.
+
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
 | step | host (`DRVR.s`) | card |
@@ -674,6 +752,8 @@ Points that fit the host side (`QUICKDRAW_PATCHES.md`):
   `$17` and `$2C` (DisposPixPat) are one-long commands on the host, and all
   go to one-long handlers.
 
+#### Handlers named by their messages; the entry table
+
 **The handlers name themselves.** Many functions pass a `.lit` string to
 the reporter `sub_00140`. Each string's address is in the relocation comments
 of `text.partial.asm`, and with bits 0-11 of the `.lit` key the strings
@@ -723,6 +803,8 @@ passes exactly `sub_379A0` to the code it calls: `p[2](p[0], p[1],
 sub_379A0)` (the `$274` there is `$379A0` relative to the module base).
 So code that the host uploads and starts with `$8001` gets a service
 callback into Antelope, including the entry table with `DrawMultiObject`.
+
+#### Host: the module/task API (`sub_1404`)
 
 **The host side of `$80xx`: a module/task API (`gc24.s` `$1404`-`$239A`).**
 `sub_1404(selector, params, &handle)` is a public entry point: gc24 exports it
@@ -808,6 +890,8 @@ registered for it. This is a general extension mechanism. The ordinary
 QuickDraw patches do not use it: they send selectors `$0C`-`$38` straight
 through `EngineDispatch`.
 
+#### Host: the card's requests (`sub_6442`)
+
 **The card's requests to the host (`sub_6442`, decoded).** The mailbox is at
 card address `+$24`: `+$04` request code, `+$08` reply, `+$0C` sequence
 number, `+$14` argument pointer (`p`, a card address; the host forms it from
@@ -852,6 +936,8 @@ foreground/hilite colours. Codes 15/16 are the interesting ones. Under
 virtual memory they lock a host buffer and give the card its physical
 pages, so the card can read or write host memory directly as a NuBus
 master. That is presumably how it reaches host-side pixel maps.
+
+#### Card: `CallBack` and the request wrappers
 
 **The card side of the requests (`sub_33EBC` "CallBack", decoded).**
 `CallBack(code, wait, nargs, a0, …, a7)`:
@@ -904,6 +990,8 @@ host's request counter). Command `$01` is the one command the sequence check
 lets through, so it is the reset command and its case is `$31FE8`. That makes
 `$12` the `$326E8` case.
 
+#### Card: `MapVirtual` and host memory
+
 **`$3373C` is `MapVirtual` (its `.lit $0F34` message reads roughly
 "MapVirtual: bytes == 0").** `MapVirtual(addr, len)`:
 1. `len == 0`: print the message, return -1.
@@ -955,6 +1043,8 @@ So **command `$15` is the card's bit transfer between host pixel maps**: the
 CopyBits path for memory the card cannot address directly. The card maps the
 host pages and moves the pixels itself.
 
+#### StretchBits (command `$15`)
+
 **Trap `$AB27` is `StretchBits`, and command `$15` carries its parameter
 block.** The argument list of `GA_TrapAB27` is exactly the one in the System
 7.1 source (`QuickDraw/Stretch.a`):
@@ -997,6 +1087,8 @@ the handles. That is what `MapVirtual` is for. `$2D7B8` is then the card's
 StretchBits: the strings of its neighbour `$22A8C` (entry `+$14`), "ScaleC…
 IndexTo…: unsupported dstDepth" and "unknown scaleNum", match Stretch.a's
 `ScaleBlt` and `Scale…toIndexed` families.
+
+#### The entry table, named
 
 **The entry table read against System 7.1 QuickDraw.** Antelope looks like
 compiled C (printf-style messages, C frames), not a port of the 68k sources, so names come from matching roles: the
@@ -1041,6 +1133,8 @@ So the table is Antelope's QuickDraw core, handed to host-loaded modules: the
 blitters, the shape drawers, text, and the support routines for host memory
 and callbacks.
 
+#### DrawMultiObject
+
 **DrawMultiObject's opcodes (partial).** `$0AD18` runs a loop over an opcode
 stream. The opcode is in `lr81`, the operands are read through `lr38`
 (`[lr38+2]`, `+4`, `+6`, …: halfword fields), and the dispatch sits at the
@@ -1081,6 +1175,8 @@ code sends `$2D`. So the multi-object drawing engine is not used by the
 standard QuickDraw patches. It serves code that sends `$2D` itself, or a
 host-loaded module through the entry table.
 
+#### The dispatcher prologue and packet layout
+
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
 16-23 from the full samples on both sides of a word where they agree. It
@@ -1118,6 +1214,8 @@ epilogue. Annotated (`rec` = packet `+$44`, see below):
 * **The constants:** `const gr96, $FF00` / `and gr97, lr8, gr96` /
   `const gr96, $8000` / `cpneq`. Commands `$80xx` go to `sub_37B58`, and
   everything else goes to the switch.
+
+#### The Std* selectors are not handled on the card
 
 **So the drawing selectors reach the default.** `$20` StdLine, `$21`
 StdText, `$23` StdArc, `$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`,
@@ -1210,6 +1308,8 @@ accept list of the nested wait (`$33404`: `$26`, `$38`, `$30`, `$0C`, `$2A`,
 whether it is accepted or rejected, so this changes nothing visible. It is
 probably left over from a version that handled `$2A`.
 
+#### The `$80xx` commands, the card heap, the wait loop
+
 **The `$80xx` commands (`sub_37B58`, decoded).** The function's arguments
 start at `lr8` (frame of 6 registers): `lr8` = command, `lr9` = `[rec+$0C]`
 (count), `lr10` = `[rec+$10]` = `p`. It switches on `cmd - $8000` (0-4,
@@ -1263,6 +1363,8 @@ is a code offset inside its own module (module ranges come from the symbol
 table's per-module `.text`/`.lit` entries). For the dispatcher table the
 targets are, in addition, among the about 37 case-block starts in
 `$31E20`-`$328C8`.
+
+#### The case blocks
 
 **The case blocks.** I split `$31E20`-`$328C8` at the word after each
 unconditional `jmp` and its delay slot. This gives 37 blocks. Most read
