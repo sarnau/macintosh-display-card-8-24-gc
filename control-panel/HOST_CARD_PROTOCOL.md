@@ -124,7 +124,10 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; ShieldCursor
 `$32C10` and its after-drawing counterpart `$32EF8`; `CallBack`
 `$33EBC`; the request wrappers `$33BD0`-`$33E88`; the card heap
-`$372D0`-`$3772C`.
+`$372D0`-`$3772C`; the `storem` fill `$37D68` and its family
+`$37C10`-`$38C3C`; the reporter `$00140` and its log buffer `$00F84`; the
+C library `$39118`-`$3C340` (see "The C library"). `antelope_partial_dasm.py`
+prints these names in `text.partial.asm`.
 
 **Still open:**
 - DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the exact register roles in DrawText's glyph loop;
@@ -228,10 +231,21 @@ bit 11 is set and the depth really changes:
   it also sets GFlags bit 9);
 * to 2 when the old depth was 24 bpp (and clears bit 9).
 
-Bit 11 is `Interlaced` in Apple's JMFB equates, but this driver sets it for
-every monitor sense code except 1, 2, 3 and 6 (`$53CC`). So on those
-monitors the frame buffer is interleaved at 1-8 bpp and linear at 24 bpp.
-On the others no conversion is ever requested. When `savePageCfg` is
+Bit 11 is `Interlaced` in Apple's JMFB equates, and it means that here too.
+`VideoOpen` maps the sense lines to an ID (`$5326`-`$538E`):
+* raw codes 0-6 stay as they are, except raw 0, which becomes 7;
+* raw 7 (extended sense) becomes 4 for extended code `$14`, 0 for `$00`,
+  and 9 otherwise.
+
+IDs 1, 2, 3 and 6 get their own timing tables: 870, 384, 870 and 480 lines
+(Apple's portrait, 12" RGB, two-page and 13" RGB monitors). Every other ID
+sets bit 11 (`$53CC`) and takes a TV path that knows only two cases: ID 4
+gives 480 lines (NTSC), anything else gives 576 lines with underscan
+(PAL). The sResource ID's bit 3 picks a second pair of tables (convolved
+or overscan variants). So the layout conversion happens only on NTSC and
+PAL output: there the frame buffer is interleaved at 1-8 bpp and linear at
+24 bpp. On the Apple monitors no conversion is ever requested, and which
+layout they use is not shown. When `savePageCfg` is
 non-zero, the driver also waits an extra delay after the card acknowledges
 (`$5F78`).
 
@@ -1867,8 +1881,9 @@ in "The cursor".
        interleaved memory gets the `storem` burst, and linear memory gets
        the two-pointer loop. Why linear memory avoids `storem` is not
        shown. The host sends the page configuration (section 5): linear
-       means 24 bpp on monitors whose GFlags bit 11 is set. So in practice
-       `$1701C` avoids `storem` only in 24-bit mode on those monitors;
+       means 24 bpp on NTSC or PAL output. So `$1701C` avoids `storem` in
+       24-bit TV modes, and its behaviour on the Apple monitors depends on
+       a layout that is not shown;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
@@ -2438,9 +2453,19 @@ answers `$103` with `$400` (getpsize: the page size), `$104` with the
 and `$101` grows the heap (sysalloc). Other numbers are passed to the host
 through the mailbox reporter `$2002650`. So a level-1 report (`$00140` ->
 `printf`) becomes a HIF write and reaches the host as a mailbox message.
-Level 2 goes to `$00F84`, which formats with `$39864` into a buffer at
-`.data+$288`-`$298` (allocated through `$33680`) and then prints with
-`printf`.
+Level 2 goes to `$00F84`, a log buffer:
+* globals: buffer `.data+$288`, write pointer `.data+$28C`, size
+  `.data+$298`;
+* on first use it allocates `size + $100` bytes through `$33680`. If that
+  fails, it prints the message directly with `printf`;
+* each message is `sprintf`'d (`$39864`) at the write pointer, which then
+  moves to the terminating NUL;
+* when the pointer reaches `buffer + size`, it `printf`s the whole buffer to
+  the host and starts again at the beginning.
+
+So at level 2 the host sees messages only in batches. Between flushes they
+sit in card memory, where a debugger could read them through the buffer
+pointer. The levels' initial values are in masked `.data`.
 
 These are names by role: the library's own names and version are not in
 the file.

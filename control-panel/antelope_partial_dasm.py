@@ -38,6 +38,39 @@ BR = {'jmp', 'jmpf', 'jmpt', 'jmpfdec', 'call', 'jmpi', 'jmpfi', 'calli',
       'jmpti', 'iret', 'iretinv'}
 
 
+# Function names established in HOST_CARD_PROTOCOL.md (by role where the
+# original name is unknown).  Printed on the label line and after targets.
+NAMES = {
+    0x00140: 'Report', 0x00348: 'FillLongsBurst', 0x00F84: 'ReportToLog',
+    0x01494: 'RSect', 0x01654: 'TrimRect', 0x01A50: 'BitBlt',
+    0x06650: 'ITabMatch', 0x06BEC: 'BitsToPixMap', 0x06F1C: 'ColorMap',
+    0x075DC: 'DrawArc', 0x08618: 'DrawLine', 0x0AD18: 'DrawMultiObject',
+    0x11AD8: 'DrawText', 0x13F54: 'IsOnThisCard', 0x14034: 'DisposeOffscreen',
+    0x14168: 'FlushOffscreen', 0x141F8: 'FlushColorTable', 0x14A80: 'UploadFontStrike',
+    0x14B64: 'UploadWidthTable', 0x14F64: 'CacheGDevice', 0x151C4: 'CachePixPat',
+    0x15808: 'FlushGDevice', 0x158F4: 'FlushPixPat', 0x15D28: 'CacheFind',
+    0x15E8C: 'CacheFindStamp', 0x15EE4: 'CacheCreate', 0x15FF4: 'CacheFindOrCreate',
+    0x161F8: 'PRInit', 0x16A04: 'PRAlloc', 0x1701C: 'FillLongs',
+    0x19270: 'QuickPolys', 0x19DA4: 'RgnBlt', 0x22A8C: 'scaleBlt',
+    0x253D4: 'GetSeek', 0x2D7B8: 'StretchBits', 0x31E20: 'CommandDispatcher',
+    0x32C10: 'ShieldCursor', 0x32EF8: 'ShowCursorAfterDraw', 0x3373C: 'MapVirtual',
+    0x33A9C: 'UnmapAll', 0x33EBC: 'CallBack', 0x37D68: 'FillLongsStorem',
+    # C library (HIF)
+    0x39214: 'vprintf', 0x39284: 'printf', 0x39304: 'fseek', 0x39864: 'sprintf',
+    0x399E0: '_doprnt', 0x3AA9C: 'isupper', 0x3AAB8: 'islower', 0x3AAD4: 'isalpha',
+    0x3AAF0: 'isdigit', 0x3AB0C: 'isxdigit', 0x3AB28: 'isspace', 0x3AB44: 'ispunct',
+    0x3AB60: 'isalnum', 0x3AB7C: 'isgraph', 0x3AB98: 'isprint', 0x3ABB4: 'iscntrl',
+    0x3ABD0: 'isascii', 0x3ABF8: 'toupper', 0x3AC24: 'tolower', 0x3AC88: 'exit',
+    0x3B404: '_hif_close', 0x3B428: '_hif_exit', 0x3B44C: '_hif_lseek',
+    0x3B470: '_hif_open', 0x3B494: '_hif_read', 0x3B4B8: '_hif_21',
+    0x3B4DC: '_hif_write', 0x3B500: 'memset',
+}
+
+
+def tname(v):
+    return ' (sub_%05x %s)' % (v, NAMES[v]) if v in NAMES else ' (sub_%05x)' % v
+
+
 def reg(n):
     return 'gr%d' % n if n < 128 else 'lr%d' % (n - 128)
 
@@ -140,7 +173,7 @@ def main():
         pc = 4 * i
         if pc in syms:
             out.append('')
-            out.append('sub_%05x:' % pc)
+            out.append('sub_%05x:' % pc + ('   ; %s' % NAMES[pc] if pc in NAMES else ''))
         n = known[i]
         if i in plain:
             p = plain[i]
@@ -164,14 +197,14 @@ def main():
                 if sec == '.text' and tgt_is_stub(v):
                     ann += ' (service $??%02x)' % (U[v // 4] & 0xFF)
                 elif sec == '.text' and v in syms:
-                    ann += ' (sub_%05x)' % v
+                    ann += tname(v)
             else:
                 add = ihc.get(pc)
                 tgt = v + (add or 0)
                 ann += '   ; -> %s $%05x' % (sec, tgt) if sec == '.text' else \
                        '   ; -> %s+$%04x' % (sec, tgt)
                 if sec == '.text' and tgt in syms:
-                    ann += ' (sub_%05x)' % tgt
+                    ann += tname(tgt)
         out.append('  %05x:  %s  %-8s %s%s' % (pc, hexs, mn, ops, ann))
         delay = mn in BR
     head = [
@@ -192,7 +225,10 @@ def main():
         '*  target and, for the 16-byte system-call stubs, the service.',
         '*  The hex column shows the unmasked word',
         '*  with the masked byte as "??".  Labels sub_XXXXX are the 768',
-        '*  .text entries of the (unmasked) ACEF symbol table.',
+        '*  .text entries of the (unmasked) ACEF symbol table.  Functions',
+        '*  named in HOST_CARD_PROTOCOL.md carry their name on the label line',
+        '*  and after each target that points at them (NAMES in the script;',
+        '*  names by role where the original is unknown).',
         '*',
         '*  Instruction mix (top 24 mnemonics):',
     ]
