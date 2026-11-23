@@ -12,8 +12,11 @@ records, not traps.
 
 The "card commands" column lists the command codes (`$0C`-`$38`) that the
 handler (and the helpers it calls, to depth 3) passes to `EngineDispatch` as
-its selector -- the value stored at `header+$48` of the command block the
-Am29000 receives (see `HOST_CARD_PROTOCOL.md` section 7). Codes shared by many
+its selector. For the drawing and drawing-state codes, that is not what the
+card receives: `EngineDispatch` turns them into stream records (see the
+table below this introduction). For the other codes, it is the selector the
+Am29000 receives, at packet `+$48` (see `HOST_CARD_PROTOCOL.md`, "The
+dispatcher prologue and packet layout"). Codes shared by many
 handlers (`$0D`, `$26`, `$38` and a few more) are begin/end/synchronise
 commands, not the operation itself; the operation-specific ones are in bold.
 This list is extracted mechanically and is a reading of the code, not a
@@ -199,7 +202,7 @@ record and replies at once; see the note above the main table.)
    (`sub_4822`, `EngineDispatch(arg 8, 0, cmd $26)`) and calls the original.
 2. **Ask the card.** `EngineDispatch(cmd, paramPtr, count)` (`$49C4`): the
    handler builds an array of longs on its stack and `CopyParamsToQueue` copies
-   `count` of them after the command header (section 7 of `HOST_CARD_PROTOCOL.md`).
+   `count` of them after the command header (see the packet layout in `HOST_CARD_PROTOCOL.md`).
    Pointers are passed as **host addresses**, and bytes/words are sign- or
    zero-extended to longs. For the batched commands `EngineDispatch` then
    copies the data (rectangle, angles, polygon, region, text) into the
@@ -361,11 +364,11 @@ only) or reach it through a shared helper.
 
 | command | used by | params (longs) | meaning (inferred) |
 |---|---|--:|---|
-| `$10` + `$32` | `CopyRgn`, `SetRecRgn`, `RectRgn`, `OffsetRgn`, `InsetRgn`, `SectRgn`, `UnionRgn`, `DiffRgn`, `XOrRgn`, `MapRgn`, `SetEmptyRgn`, `SectRect` | 1 + 1 | region/rectangle arithmetic: a region operation on the host followed by a clip/region update on the card |
-| `$32` | `SetClip`, `ClipRect` | 1 | clip region changed |
-| `$35` | `PenSize`, `SetPenState`, `PenNormal` | 1 | pen state (size, mode, location) |
-| `$36` | `ForeColor`, `RGBForeColor`, `PmForeColor`, `GetForeColor` | 1 | foreground colour |
-| `$37` | `BackColor`, `RGBBackColor`, `PmBackColor`, `GetBackColor` | 1 | background colour |
+| `$10` or `$32` | `CopyRgn`, `SetRecRgn`, `RectRgn`, `OffsetRgn`, `InsetRgn`, `SectRgn`, `UnionRgn`, `DiffRgn`, `XOrRgn`, `MapRgn`, `SetEmptyRgn`, `SectRect` | 1 | the patch runs the original, then sends `$10` if the destination is the region the engine caches as the visible region (`$120` of its globals), or `$32` if it is the cached clip region (`$124`). Other regions send nothing (`GA_CopyRgn` `$A472`; it also skips equal regions with `_EqualRgn`). Stream record `$6C` or `$6A` |
+| `$32` | `SetClip`, `ClipRect` | 1 | clip region changed: stream record `$6A` |
+| `$35` | `PenSize`, `SetPenState`, `PenNormal` | 1 | pen size: stream record `$6E` |
+| `$36` | `ForeColor`, `RGBForeColor`, `PmForeColor`, `GetForeColor` | 1 | foreground colour: stream record `$66` or `$64` |
+| `$37` | `BackColor`, `RGBBackColor`, `PmBackColor`, `GetBackColor` | 1 | background colour: stream record `$6D` or `$6B` |
 | `$2A` | `PenPat`, `BackPat`, `PenPixPat`, `BackPixPat`, `CopyPixPat`, `MakeRGBPat`, `SetPenState`, `CharExtra` | 2 | pattern / pixel-pattern (pointer plus a second long) |
 | `$2C` | `DisposPixPat` | 1 | pixel pattern disposed (release the card's copy) |
 | `$29` | `AddSearch`, `DelSearch`, `AddComp`, `DelComp`, `SetDeviceAttribute`, `SetEntries`, `InitGDevice` | 1 | search/complement procs and device attributes |
