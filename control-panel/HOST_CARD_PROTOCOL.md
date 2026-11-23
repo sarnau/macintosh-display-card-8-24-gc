@@ -2029,6 +2029,19 @@ in "The cursor".
 
        A neighbouring stub `$2001A48` returns `[$4C006804]`
        (`PublicOu+$04`), a candidate for `$D1`.
+
+       **`$D4` and `gr122`.** Antelope has two `$D4` stubs, and both use
+       `gr122` as a second result. `$39064` sets `gr96 = lr3` before the
+       trap and returns at once if `gr122` is 0. `$39050` loads `gr96` from
+       `*lr3` and stores `gr122` back there. Hand has a region-table
+       translator of that shape: `$2001774` requires a 1 KB-aligned
+       `lr2`, looks it up in the table at `$4C003168`, and returns
+       `gr96 = 0` and `gr122 = aux + (lr2 - base)`. `$2001808` is a second
+       stub that returns its input in `gr96` and a computed value in
+       `gr122`. These fit `$D4` as "translate a host address through the
+       mapping table", but the service table cannot say which stub is
+       `$D4`, and the estimated stub words are not exact enough to settle
+       how the two results are combined.
        The same service sequence appears in three more entry points (the
        others with services are shared restore tails: `$38574`, `$385C8`,
        `$38C3C`). Together they are one family:
