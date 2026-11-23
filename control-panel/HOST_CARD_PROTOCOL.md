@@ -543,6 +543,80 @@ for free: bits 0-1 must match the `.text` key at the same index, and bits
 table (words 888-948), in the same 24-word classes, so a confirmed string
 would also fix the table's low key bits.
 
+**Solved: `.lit` key bits 0-7, and the command table.**
+`antelope_lit_key.py` does this from the strings alone, with no assumption
+about the table:
+
+* **Bits 0-6.** They repeat every 24 words, and bits 0-1 equal the `.text`
+  key's. So each class k mod 24 has 32 candidates. For every class, one
+  candidate makes the fourth character of its 15-18 string words read as
+  English. It wins by 10-30 log units, except one close call (class 8),
+  which the table confirms.
+* **Bit 7** is the raw bit 7, since ASCII bit 7 is 0. It repeats every 48
+  words, with 0 conflicts in 348 repeats. The pattern continues upward:
+  `.lit`'s key bit b repeats every 24·2^(b-6) words, half of `.text`'s.
+* **Result.** The fourth character of every string word is now plain, and
+  the strings read:
+  * `.lit $0DC8`: `U..no.. F..ct..n:..x%` ("Unknown Function: 0x%x", the
+    default case's message);
+  * `.lit $02C0`: a series of `DrawM..ti..je../o..` messages
+    ("DrawMultiObject/..."?);
+  * `.lit $0548`: `PAlloc: ...`, `Flush`, `Cache` messages.
+* **Check on data the fit never used.** With these bits, all 61 dispatcher
+  entries decode to the low byte of a case-block start. Chance is about 47%
+  per entry, so 61 of 61 is about 10^-20.
+
+The table's bits 8-13 are estimated from the `.text` key 19 words earlier.
+Each entry is then matched to the case block with the same low byte nearest
+that estimate. 27 entries are exact, the rest within 1-3 pages of `$100`,
+and "or" gives the second candidate where one exists. With the handlers
+from the case-block table above, the table is:
+
+| command | case block | handler / what it does |
+|---|---|---|
+| `$00` | `$327D8` | reply 0 ("not handled") |
+| `$01` | `$31FE8` | local calls |
+| `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
+| `$03` | `$327F8` | reply 0 |
+| `$04` | `$32040` (or `$32740`) | |
+| `$0C` | `$32408` | six longs -> `$151C4` |
+| `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
+| `$0F` | `$32688` (or `$32188`) | `handler(6, p[0])` -> `$15D28` |
+| `$11` | `$3210C` | |
+| `$12` | `$326E8` | system call `$??CD` |
+| `$13` | `$32740` (or `$32040`) | system call `$??CC` |
+| `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
+| `$15` | `$32148` | |
+| `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
+| `$17`, `$2C` | `$320C8` (or `$324C8` -> `$158F4`) | |
+| `$19` | `$32570` | one long -> `$14168` |
+| `$1A` | `$325A0` | one long -> `$141F8` |
+| `$1B` | `$325D0` (or `$323D0`) | one long -> `$14274` |
+| `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
+| `$29` | `$32468` | one long -> `$15808` |
+| `$2B` | `$32498` | one long -> `$15808` |
+| `$2D` | `$32188` (or `$32688`) | |
+| `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`) |
+| `$33` | `$324F8` | one long -> `$14034` |
+| `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
+| `$3C` | `$32528` | two longs in a frame -> `$140CC` |
+| all others | `$32818` | default: prints "Unknown Function: 0x%x" |
+
+Points that fit the host side (`QUICKDRAW_PATCHES.md`):
+
+* `$26` and `$38` are the twin "store `[p[0]+4]`" blocks. The host issues
+  both around every drawing operation (`$0D ... $26 ... $38`).
+* `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute, one long)
+  and `$33` go to one-long handlers.
+
+Open point: the host's operation-specific commands land in the default
+here, unless they take another path. These are `$10`, `$18`, `$20`
+StdLine, `$21` StdText, `$23` StdArc, `$24` StdRect, `$2A`, `$2E`, `$2F`,
+`$31`, `$32` and `$35`-`$37`. The likely reading is that they are taken
+before the switch. `$31F7C`, entered after "a mask test on the command",
+forwards `(cmd, ...)` to system call `$??D2`, so the switch would never see
+them. That needs the mask test's constant, which is still masked.
+
 The constraint for a future solution is clear: every relocated `.lit` word
 is a code offset inside its own module (module ranges come from the symbol
 table's per-module `.text`/`.lit` entries). For the dispatcher table the
