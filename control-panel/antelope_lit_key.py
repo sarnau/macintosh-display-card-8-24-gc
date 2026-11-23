@@ -33,10 +33,17 @@ Where both decide, they agree: bit 8 in 46 of 46 classes, bit 9 in 46 of
 entries match a block start in bits 0-11, and every block offset is below
 $1000, so bits 0-11 pick the block uniquely.
 
-Usage:  antelope_lit_key.py            # strings and the dispatcher table
+Usage:  antelope_lit_key.py [ACEF_100.bin]
+        Without the ACEF file: the strings and the dispatcher table.  With it,
+        every relocated .lit word is used (grouped by its relocation base, the
+        symbol after the relocation's index), and all tables are decoded.
+        Two groups are not case-block tables and are left out of the fit:
+        base $06BAC (one repeated value, ending in $B0, that follows no jmp)
+        and base $30088 (offsets stepping by -$10: jumps into unrolled code).
+
         (takes a minute: the bits 8-11 search is brute force)
 """
-import collections, math, os
+import collections, math, os, sys
 import unmask_antelope_low as u
 
 ANT = u.ANT
@@ -82,7 +89,7 @@ def blocks():
     return sorted(B | {0xA70})
 
 
-def main():
+def main(acef=None):
     W = u.words(os.path.join(ANT, 'lit.bin'))
     key = u.Key()
     sw, low8 = fit(W, key)
@@ -99,7 +106,19 @@ def main():
             s = ''.join(ch(W[k] >> 24) + '..' + ch((W[k] ^ low8(k)) & 0xFF) for k in range(r[0], r[-1] + 1))
             print('  .lit $%04x  %s' % (4 * r[0], s))
     B = blocks()
-    fixed, check = fit_mid(W, key, sw, low8, B)
+    groups = {MODULE: list(range(TABLE, TABLE + NCMD))}
+    cand = {MODULE: B}
+    if acef:
+        groups, cand = lit_tables(acef)
+    # a group is used only if the string-derived bits 0-7 already fit it
+    # (two groups are not case-block tables: see the docstring)
+    use = {}
+    for b, ks in groups.items():
+        lows = {c & 0xFF for c in cand[b]}
+        fit8 = sum(((W[k] ^ low8(k)) & 0xFF) in lows for k in ks)
+        use[b] = fit8 >= 0.8 * len(ks)
+    cons = {k: cand[b] for b, ks in groups.items() if use[b] for k in ks}
+    fixed, check = fit_mid(W, key, sw, low8, cons)
     for bit, (a, d) in check.items():
         print('bit %d: table and strings both decided %d classes, disagree in %d' % (bit, a + d, d))
     print('\ndispatcher table .lit $%04x (command -> case block, bits 0-11 exact):' % (4 * TABLE))
@@ -108,7 +127,56 @@ def main():
         x = (W[k] ^ mid12(k, low8, fixed)) & 0xFFF
         c = [b for b in B if b & 0xFFF == x]
         print('  $%02X  -> %s' % (i, ' '.join('$%05X' % (MODULE + b) for b in c) or 'none'))
+    if not acef:
+        return
+    print('\nall relocated .lit words, by relocation base (match = a case-block start in bits 0-n):')
+    for b, ks in sorted(groups.items()):
+        row = []
+        for bit in (7, 9, 11):
+            m = (1 << (bit + 1)) - 1
+            hit = sum(any((c & m) == ((W[k] ^ mid12(k, low8, fixed)) & m) for c in cand[b]) for k in ks)
+            chance = min(1.0, len({c & m for c in cand[b]}) / ((m + 1) / 4))
+            row.append('0-%d: %d/%d (%.0f%%)' % (bit, hit, len(ks), 100 * chance))
+        print('  base $%05X  .lit $%04x  %3d words  %s%s' % (b, 4 * ks[0], len(ks), '  '.join(row),
+              '' if use[b] else '   [not a case-block table]'))
+    print('\ndecoded tables (offset bits 0-11 -> matching case blocks):')
+    for b, ks in sorted(groups.items()):
+        if not use[b] or b == MODULE:
+            continue
+        print('  base $%05X:' % b)
+        for k in ks:
+            x = (W[k] ^ mid12(k, low8, fixed)) & 0xFFF
+            c = [b + o for o in cand[b] if o & 0xFFF == x]
+            print('    .lit $%04x  $%03x -> %s' % (4 * k, x, ' '.join('$%05X' % t for t in c[:3]) or '?'))
 
+
+def lit_tables(acef):
+    """Relocated .lit words grouped by relocation base, and each base's
+    case-block candidates (offsets of words after an unconditional jump,
+    inside the module that holds the base)."""
+    import apply_reloc as ar
+    d, _, sp, ns, secs = ar.load(acef)
+    sym, _, _ = ar.make_resolver(d, sp, ns, secs)
+    lit = [x for x in secs if x['name'] == '.lit'][0]
+    groups = collections.defaultdict(list)
+    for va, si, ty in sorted(ar.get_relocs(d, lit)):
+        groups[sym(si + 1)[1]].append(va // 4)        # the symbol after the index
+    mods = set()
+    for ln in open(os.path.join(ANT, 'symbols.txt')):
+        f = ln.split()
+        if len(f) == 2 and f[0] == '.lit':
+            mods.add(prev)
+        if len(f) == 2 and f[0] == '.text':
+            prev = int(f[1], 16)
+    T = u.words(os.path.join(ANT, 'text.bin'))
+    ends = sorted(mods | {4 * len(T)})
+    cand = {}
+    for b in groups:
+        lo = max(x for x in ends if x <= b)
+        hi = min(x for x in ends if x > b)
+        cand[b] = sorted(a - b for a in range(lo + 8, hi, 4) if T[a // 4 - 2] >> 24 in (0xA0, 0xA1, 0xC0, 0xC1))
+    cand[MODULE] = blocks()
+    return dict(groups), cand
 
 LEVELS = [(8, 96), (9, 192), (10, 384), (11, 768)]
 
@@ -117,8 +185,11 @@ def mid12(k, low8, fixed):
     return low8(k) | sum(fixed.get((b, k % P), 0) << b for b, P in LEVELS)
 
 
-def fit_mid(W, key, sw, low8, B):
-    """Key bits 8-11 per class, from the strings and the dispatcher table."""
+def fit_mid(W, key, sw, low8, cons):
+    """Key bits 8-11 per class, from the strings and from table words.
+
+    cons maps a relocated .lit word to its candidate plaintexts (case-block
+    offsets from the word's relocation base)."""
     import glob
     here = os.path.dirname(os.path.abspath(__file__))
     txt = ''.join(open(f, errors='ignore').read() for f in
@@ -129,7 +200,7 @@ def fit_mid(W, key, sw, low8, B):
     lp = lambda a, b: math.log((big[(ch(a), ch(b))] + 0.1) / (uni[ch(a)] + 9.6))
     ok = lambda c: c in (0, 10) or 32 <= c < 127
     fixed, swset = {}, set(sw)
-    tab = range(TABLE, TABLE + NCMD)
+    tab = set(cons)
 
     def sscore(k):
         w, best = W[k], -99.0
@@ -146,10 +217,19 @@ def fit_mid(W, key, sw, low8, B):
                     best = max(best, lp(b0, b1) + lp(b1, b2) + lp(b2, b3))
         return best
 
+    weight = {}
+
     def tmatch(k, bit):
+        # a match counts by how unlikely it is by chance: -ln(chance) for
+        # this word's candidate set at this bit (a big module's many block
+        # starts make a match weak evidence)
         m = (1 << (bit + 1)) - 1
+        key_ = (id(cons[k]), bit)
+        if key_ not in weight:
+            ch = len({b & m for b in cons[k]}) / ((m + 1) / 4)
+            weight[key_] = -math.log(min(max(ch, 0.02), 0.98))
         x = (W[k] ^ mid12(k, low8, fixed)) & m
-        return any((b & m) == x for b in B)
+        return weight[key_] if any((b & m) == x for b in cons[k]) else 0.0
 
     for bit, P in LEVELS:
         cls = collections.defaultdict(list)
@@ -159,7 +239,7 @@ def fit_mid(W, key, sw, low8, B):
             score = {}
             for v in (0, 1):
                 fixed[(bit, c)] = v
-                score[v] = sum(sscore(k) for k in ks if k in swset) + 8.0 * sum(tmatch(k, bit) for k in ks if k in tab)
+                score[v] = sum(sscore(k) for k in ks if k in swset) + 4.0 * sum(tmatch(k, bit) for k in ks if k in tab)
             fixed[(bit, c)] = max(score, key=score.get)
     # check, with every other bit fixed: the strings alone against the table alone
     check = {}
@@ -167,13 +247,14 @@ def fit_mid(W, key, sw, low8, B):
         agree = dis = 0
         for c in sorted({k % P for k in tab}):
             ks = [k for k in sw if k % P == c]
+            ks_t = [k for k in tab if k % P == c]
             if not ks:
                 continue
             keep, st, tt = fixed[(bit, c)], {}, {}
             for v in (0, 1):
                 fixed[(bit, c)] = v
                 st[v] = sum(sscore(k) for k in ks)
-                tt[v] = sum(tmatch(k, bit) for k in tab if k % P == c)
+                tt[v] = sum(tmatch(k, bit) for k in ks_t)
             fixed[(bit, c)] = keep
             if abs(st[0] - st[1]) >= 1.0 and tt[0] != tt[1]:
                 if max(st, key=st.get) == max(tt, key=tt.get): agree += 1
@@ -183,4 +264,4 @@ def fit_mid(W, key, sw, low8, B):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else None)

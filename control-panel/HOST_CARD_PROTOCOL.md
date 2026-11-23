@@ -581,35 +581,82 @@ bit 8 in 46 of 46 classes, bit 9 in 46 of 47. Bits 10-11 come mostly from
 the table: the strings reach only 5 of its classes there. Still, all 61
 entries find a block in bits 0-11, which a wrong bit 0-9 would make fail
 about 85% of the time. All case-block offsets are below `$1000`, so bits
-0-11 fix the block. This replaces the earlier lag-19 estimate, which had
+0-11 fix the block.
+
+That holds for 55 of the 61 entries. Six are uncertain, and both
+candidates are listed in the table below:
+
+* `$0D`, `$17` and `$2C` have two blocks that match their bits 0-9.
+* `$01`/`$12` (swapped) and `$1B` come out differently when the fit also
+  uses the other `.lit` tables (`antelope_lit_key.py ACEF_100.bin`). Their
+  bit-9/10/11 classes hold no string words, so the choice rests on weak
+  evidence either way. This replaces the earlier lag-19 estimate, which had
 bits 8-11 wrong for `$01`, `$03`, `$12`, `$17`, `$1B` and `$2C`. The strings
 also read further, for example "FlushOffscreen: NULL offscreen Handle",
 "CacheDevice: NULL GDevice", "PAlloc: numBytes is not multiple of FOUR",
 "PAlloc: Unable to allocate frame buffer size = 0x%x", "malloc: allocated
 … bytes outside of the heap bounds".
 
+**All `.lit` tables.** Given the ACEF file, `antelope_lit_key.py` groups
+every relocated `.lit` word by its relocation base, the symbol after the
+relocation's index. These bases are often a function, not the module start
+(`$01A4C`, `$13F50`, `$19DA0`, `$27674`). Each word is fitted against the
+case-block starts of that base's module. 16 of the 18 groups then match far
+above chance in bits 0-11:
+
+| base | words | matching a block start in bits 0-11 | chance |
+|---|---|---|---|
+| `$075D8` | 11 | 11 | 4% |
+| `$08614` | 38 | 38 | 11% |
+| `$0E394` | 32 | 32 | 16% |
+| `$22A88` | 40 | 40 | 7% |
+| `$34048` | 14 | 14 | 14% |
+| `$174FC` | 6 | 6 | 6% |
+| `$372D0` | 4 | 4 | 2% |
+| `$31DA8` (dispatcher) | 61 | 61 | 4% |
+| `$2D7B4` | 86 | 78 | 15% |
+| `$3772C` | 23 | 21 | 19% |
+| `$25350` | 27 | 22 | 12% |
+| `$0AD14` | 29 | 23 | 11% |
+| `$01A4C` | 50 | 40 | 17% |
+| `$19DA0` | 66 | 53 | 25% |
+| `$13F50` | 32 | 21 | 15% |
+| `$27674` | 16 | 13 | 20% |
+
+So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
+holds across all of `.lit`. Two groups are not case-block tables and are
+left out of the fit:
+
+* base `$06BAC`: one repeated value ending in `$B0`, which follows no jump;
+* base `$30088`: offsets stepping down by `$10` per entry, restarting
+  several times, which looks like computed jumps into unrolled code.
+
+Part of the `$01A4C` table (from `.lit $0094`) steps by `-$10` the same
+way, and `$075D8`'s steps by `+$8`. Their bits 8-11 rest on weak evidence,
+so only the high-scoring groups should be read entry by entry.
+
 With the handlers from the case-block table above:
 
 | command | case block | handler / what it does |
 |---|---|---|
 | `$00` | `$327D8` | reply 0 ("not handled") |
-| `$01` | `$326E8` | system call `$??CD` |
+| `$01` | `$326E8` (or `$31FE8`, swapped with `$12`) | system call `$??CD` |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
 | `$03`, `$33` | `$324F8` | one long -> `$14034` |
 | `$04` | `$32040` | |
 | `$0C` | `$32408` | six longs -> `$151C4` |
-| `$0D` | `$32600` | `handler(6, p[0])` -> `$15D28` |
+| `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
 | `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
 | `$11` | `$3210C` | |
-| `$12` | `$31FE8` | local calls |
+| `$12` | `$31FE8` (or `$326E8`) | local calls |
 | `$13` | `$32740` | system call `$??CC` |
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
 | `$15` | `$32148` | |
 | `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
-| `$17`, `$2C` | `$324C8` | one long -> `$158F4` |
+| `$17`, `$2C` | `$324C8` (or `$320C8`) | one long -> `$158F4` |
 | `$19` | `$32570` | one long -> `$14168` |
 | `$1A` | `$325A0` | one long -> `$141F8` |
-| `$1B` | `$323D0` | the bit-mask chain entered at its last step (bit 4 -> `$14A80`) |
+| `$1B` | `$323D0` (or `$325D0` -> `$14274`) | the bit-mask chain entered at its last step (bit 4 -> `$14A80`) |
 | `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
 | `$29` | `$32468` | one long -> `$15808` |
 | `$2B` | `$32498` | one long -> `$15808` |
