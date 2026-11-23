@@ -14,7 +14,7 @@ and the DRVR) and what could be recovered from it.
 | `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
 | `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
 | `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only; `.lit` has its own key, whose bits 0-11 `../antelope_lit_key.py` recovers from the `.lit` strings and host-confirmed pins): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 19-23 (most of RC, high immediate byte) still masked (the key is 24 bits) except at the 3,755 relocated `const`/`consth` words and the 133 relocated direct `call`s (R_IREL), whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
+| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only; `.lit` has its own key, whose bits 0-11 `../antelope_lit_key.py` recovers from the `.lit` strings and host-confirmed pins): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 16-23 (RC, high immediate byte) estimated for 98% of words from the neighbouring samples, because the key's high bits are a step function (`HOST_CARD_PROTOCOL.md` section 6; every estimated direct call lands on a function start), and exact at the 3,755 relocated `const`/`consth` words and the 133 relocated direct `call`s (R_IREL), whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
 Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
@@ -185,8 +185,9 @@ delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
   meaningful. The 768 function entry addresses (from the symbol table) are real.
 * `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
   known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
-  plain; RC, the high immediate byte and branch targets print as `?` or as
-  estimates from neighbouring key samples (`../antelope_estimate_words.py`).
+  plain. For 98% of the words RC, the high immediate byte and branch
+  targets are estimated from neighbouring key samples and decoded in full
+  (marked `~`, or `!` inside a step of the key); the rest print as `?`.
   Direct calls with an R_IREL relocation print their exact target, and about
   80 identified functions print with their names.
   Run with `ACEF_100.bin` as argument, it comments every relocated
@@ -333,8 +334,9 @@ info) — none is present in the shipped control-panel software.
 
 ## What is open
 
-* `Antelope`'s key bits 19-23 (most RC fields and high immediates), its
-  `.data` key, and the System 6 Antelope's separate key.
+* A closed form for `Antelope`'s key (bits 16-23 are only estimated, and
+  1,277 words stay undecoded), its `.data` key, and the System 6 Antelope's
+  separate key.
 * `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
 * In `Hand`: most services behind vector 66 (`$D5`, the slot burst mask, is
   settled; `$BB`, `$D1`, `$D4` have candidates) and which feature each

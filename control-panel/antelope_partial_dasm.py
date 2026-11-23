@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """antelope_partial_dasm.py -- partial disassembly of Antelope's .text.
 
-Uses unmask_antelope_low.py for the low key bits it knows (bits 0-14 of every
-word, bit 15 for ~96%, bits 16-17 for some).  Fields that are still masked
-print as '?':
+Uses unmask_antelope_low.py for the key: its exact low bits (bits 0-14 of
+every word, bit 15 for ~96%, bits 16-18 for some) and, for 98% of the words,
+bits 16-23 from the neighbouring samples (unmask_antelope_low.high_key; '~'
+after the hex word, or '!' where the word lies inside a step of the key and
+the switch point was chosen from opcode statistics).  Those words decode in
+full, with jump and call targets.  In the rest, fields that are still
+masked print as '?':
 
     RB / I8 (bits 0-7)    always plain
     RA      (bits 8-15)   plain when 16 bits are known, else '?rN' = gr/lr N
-    RC      (bits 16-23)  '?' (masked), except in fully known sample words
+    RC      (bits 16-23)  '?'
     I16 high byte         '??' (it lives in the RC field)
-    jump / call targets   unknown (their displacement's high byte is in RC);
-                          shown as '?' with the known low displacement byte
+    jump / call targets   '?' with the known low displacement byte
 
 Words whose whole plaintext is known (the samples in mask_samples.tsv: nop,
 jmpi lr0, the spill/fill asserts, sub/add gr1/lr1 frame words, and the
@@ -151,6 +154,7 @@ def reloc_targets(path):
 def main():
     W = u.words(os.path.join(ANT, 'text.bin'))
     U, known = u.unmask_best(W)
+    E, flag = u.unmask_estimated(W)
     S, kind = u.load_samples()
     plain = {}
     for k in S:
@@ -178,18 +182,29 @@ def main():
             out.append('')
             out.append('sub_%05x:' % pc + ('   ; %s' % NAMES[pc] if pc in NAMES else ''))
         n = known[i]
+        jann = ''
         if i in plain:
             p = plain[i]
             mn, ops, _ = decode(p, pc)
             if p == 0x70400101:
                 mn, ops = 'nop', ''
-            hexs = '%08x' % p
+            hexs = '%08x ' % p
+        elif flag[i] in '=t':
+            p = E[i]
+            mn, ops, tgt = decode(p, pc)
+            if p == 0x70400101:
+                mn, ops = 'nop', ''
+            hexs = '%08x%s' % (p, '~' if flag[i] == '=' else '!')
+            if tgt is not None and mn in ('jmp', 'jmpf', 'jmpt', 'jmpfdec', 'call') \
+                    and not p & 0x01000000 and pc not in rel:
+                if tgt in syms:
+                    jann = '   ; ->' + tname(tgt)
         else:
             mn, ops = partial(w, n, pc)
-            hexs = '%02x??%04x' % (w >> 24, w & 0xFFFF) if n >= 16 else \
-                   '%02x??%04x' % (w >> 24, w & 0x7FFF)
+            hexs = '%02x??%04x ' % (w >> 24, w & 0xFFFF) if n >= 16 else \
+                   '%02x??%04x ' % (w >> 24, w & 0x7FFF)
         mix[mn] += 1
-        ann = '   ; [delay slot]' if delay else ''
+        ann = jann + ('   ; [delay slot]' if delay else '')
         if pc in rel:
             sec, v, ty = rel[pc]
             if ty == 26:
@@ -226,8 +241,12 @@ def main():
         '*  in the symbol table).  A direct call with an R_IREL relocation',
         '*  (displacement 0 in the file, filled in by the loader) shows its',
         '*  target and, for the 16-byte system-call stubs, the service.',
-        '*  The hex column shows the unmasked word',
-        '*  with the masked byte as "??".  Labels sub_XXXXX are the 768',
+        '*  The hex column shows the unmasked word.  A "~" after it marks',
+        '*  bits 16-23 taken from the neighbouring samples (both sides',
+        '*  agree), a "!" bits 16-23 inside a step of the key, where the',
+        '*  switch point was chosen from opcode statistics (less sure).',
+        '*  Both are decoded in full, with jump and call targets.  "??" is',
+        '*  a byte still masked (no estimate).  Labels sub_XXXXX are the 768',
         '*  .text entries of the (unmasked) ACEF symbol table.  Functions',
         '*  named in HOST_CARD_PROTOCOL.md carry their name on the label line',
         '*  and after each target that points at them (NAMES in the script;',

@@ -24,8 +24,10 @@ dispatcher"); lit.partial.bin is not valid above bit 1.  The tables are rebuilt 
 samples, plus 16-bit 'pattern16' samples (see HOST_CARD_PROTOCOL.md) that
 feed only the levels up to bit 15.  J13 and J15 are complete, J16 covers 98%,
 J17 52%, J18 30% and J19 16% of their classes, so a word gets the deeper bits
-only where its class holds a sample.  Bits 19-23 stay masked except at sample
-words; bits 24-31 (opcode) were never masked.
+only where its class holds a sample.  Bits 16-23 come, for 98% of the
+words, from the neighbouring samples (high_key(), unmask_estimated(): the
+key's high bits are a monotone step function of k); bits 24-31 (opcode)
+were never masked.
 
 What that means for an Am29000 word (op | RC | RA | RB/I):
     bits  0- 7  RB / low immediate byte      -> plain
@@ -119,6 +121,86 @@ def unmask_best(W):
         out.append(w ^ v)
         known.append(n)
     return out, known
+
+
+# ---------------------------------------------------------------------------
+# Bits 16-23 by neighbours.  key >> 16 is a monotone step function of k
+# (about 240 steps over .text): between two full samples with the same
+# key >> 16 every word has that value (leave-one-out: 8,268 of 8,268), and
+# where they differ the value switches once, from the left to the right one.
+# The switch point is chosen by how well the decoded words' bits 16-23 fit
+# the per-opcode statistics of the sample words (held out at transitions:
+# 703 of 703 right, with the statistics fitted on the other half).
+
+MARGIN = 3.0        # log-likelihood margin for a transition to count as fixed
+
+
+def high_key(W, S=None, key=None):
+    """k -> (key >> 16, how) for the words of .text W.  how: 'S' sample,
+    '=' both neighbouring samples agree, 't' inside a transition, chosen by
+    the opcode statistics.  Words not in the result are ambiguous."""
+    import math
+    if S is None:
+        S, _ = load_samples()
+    key = key or Key()
+    cnt = collections.defaultdict(collections.Counter)
+    for k, kv in S.items():
+        p = W[k] ^ kv
+        cnt[p >> 24][(p >> 16) & 0xFF] += 1
+
+    def lp(k, h):
+        p = W[k] ^ (h << 16)
+        c = cnt.get(p >> 24)
+        if not c:
+            return math.log(1 / 256)
+        return math.log((c[(p >> 16) & 0xFF] + 0.05) / (sum(c.values()) + 12.8))
+
+    def fits(k, h):                     # agrees with the model's known bits
+        v, n = key(k)
+        return not ((h << 16) ^ v) & ((1 << n) - 1) & ~0xFFFF
+
+    ks = sorted(S)
+    res = {k: (S[k] >> 16, 'S') for k in ks}
+    for a, b in zip(ks, ks[1:]):
+        ha, hb = S[a] >> 16, S[b] >> 16
+        inner = range(a + 1, b)
+        if ha == hb:
+            for k in inner:
+                res[k] = (ha, '=')
+            continue
+        cand = []
+        for t in range(a + 1, b + 1):   # words < t keep ha, words >= t take hb
+            if all(fits(k, ha if k < t else hb) for k in inner):
+                cand.append((sum(lp(k, ha if k < t else hb) for k in inner), t))
+        if not cand:
+            continue
+        top = max(cand)[0]
+        near = [t for sc, t in cand if sc > top - MARGIN]
+        for k in inner:
+            if k < min(near):
+                res[k] = (ha, 't')
+            elif k >= max(near):
+                res[k] = (hb, 't')
+    return res
+
+
+def unmask_estimated(W):
+    """Full 24-bit unmask where bits 16-23 are known or estimated.
+    Returns (words, flags) with flags[k] in 'S=t' or '?' (low bits only)."""
+    key = Key()
+    H = high_key(W, key=key)
+    out, flags = [], []
+    for i, w in enumerate(W):
+        if i in H:
+            v, n = key(i)
+            h, how = H[i]
+            out.append(w ^ ((h << 16) | (v & 0xFFFF)) if n >= 16 else w)
+            flags.append(how if n >= 16 else '?')
+        else:
+            v, _ = key(i)
+            out.append(w ^ v)
+            flags.append('?')
+    return out, flags
 
 
 def check():

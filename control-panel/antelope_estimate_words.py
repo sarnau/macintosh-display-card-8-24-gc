@@ -1,50 +1,38 @@
 #!/usr/bin/env python3
-"""antelope_estimate_words.py -- full decode of Antelope .text words by
-borrowing key bits 16-23 from neighbouring samples.
+"""antelope_estimate_words.py -- full decode of Antelope .text words, with
+key bits 16-23 from unmask_antelope_low.high_key().
 
-Key bits 18-23 change slowly (a 3-bit count, sign-extended), and bits 16-17
-often stay put for a dozen words.  So where the nearest full 24-bit samples
-on both sides of a word share bits 16-23, the word very likely has them too
-('='); where they share only bits 18-23 and the low key model gives bits
-16-17, those are combined ('~').  '-' is like '=' but bit 15 (RA's gr/lr
-bit) is not known.  'S' is a sample word, '?' not estimated.
+key >> 16 is a monotone step function of the word index (about 240 steps
+over .text).  Flags:
+    S   a sample word (its key is known)
+    =   both neighbouring samples have the same bits 16-23 (never wrong in a
+        leave-one-out test on 8,268 samples)
+    t   inside a step: the switch point was chosen from opcode statistics
+        (703/703 held-out samples right, but those are idiom words)
+    ?   not estimated (ambiguous step, or bit 15 unknown): low bits only
 
-Checked on the dispatcher (sub_31e20): every estimated compare writes the
-register its conditional jump tests, the wait loop jumps back to its own
-start, and the exits land on the common epilogue.
+Independent check (not used in the fit): of the 7,773 direct jumps and
+calls among '=' and 't' words, every call lands on a function start and
+all jumps but one stay in their function or are tail jumps to a function
+start.
 
 Usage:  antelope_estimate_words.py START END     (hex .text addresses)
 """
-import bisect, os, sys
+import os, sys
 import unmask_antelope_low as u
 from am29k_dasm import decode
 
 
 def main(lo, hi):
-    T = u.words(os.path.join(u.ANT, 'text.bin'))
-    key = u.Key()
-    S, _ = u.load_samples()
-    ks = sorted(S)
+    W = u.words(os.path.join(u.ANT, 'text.bin'))
+    E, F = u.unmask_estimated(W)
     for a in range(lo, hi, 4):
         k = a // 4
-        if k in S:
-            kv, f = S[k], 'S'
-        else:
-            v, n = key(k)
-            i = bisect.bisect_left(ks, k)
-            ha, hb = S[ks[i - 1]] >> 16, S[ks[min(i, len(ks) - 1)]] >> 16
-            if ha == hb and n >= 16:
-                kv, f = (ha << 16) | (v & 0xFFFF), '='
-            elif ha == hb:                      # bit 15 (RA bit 7) not known
-                kv, f = (ha << 16) | (v & 0x7FFF), '-'
-            elif ha >> 2 == hb >> 2 and n >= 18:
-                kv, f = ((ha >> 2) << 18) | (v & 0x3FFFF), '~'
-            else:
-                print('  %05x ?' % a)
-                continue
-        p = T[k] ^ kv
-        mn, ops, _ = decode(p, a)
-        print('  %05x %s %08x  %-8s %s' % (a, f, p, mn, ops))
+        if F[k] == '?':
+            print('  %05x ? %02x??%04x' % (a, E[k] >> 24, E[k] & 0xFFFF))
+            continue
+        mn, ops, _ = decode(E[k], a)
+        print('  %05x %s %08x  %-8s %s' % (a, F[k], E[k], mn, ops))
 
 
 if __name__ == '__main__':

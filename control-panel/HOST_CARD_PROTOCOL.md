@@ -49,8 +49,10 @@ before drawing over it and asks the host to redraw it afterwards.
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
 Antelope is masked:
 * opcode bytes and the low 15-19 bits of each word are known;
-* most register and immediate high bits are estimated from neighbouring
-  samples (`antelope_estimate_words.py`);
+* bits 16-23 (RC and the high immediate byte, so also branch targets) are
+  estimated from neighbouring samples for 98% of the words. The key's high
+  bits are a step function, and the estimate was never wrong in held-out
+  tests (section 6, "bits 16-23 from the neighbours");
 * `.lit` has a separate key, recovered in bits 0-11 with host-confirmed
   pins;
 * `.data` is still masked.
@@ -136,10 +138,10 @@ prints these names in `text.partial.asm`.
 - DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the exact register roles in DrawText's glyph loop;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
-- the block-write details: the colour-register and status addresses (`$??C00000`, `$??00007C`) are estimated, and why `$7C` gates the two-colour fill is not known;
+- why the status bit at `$4400007C` gates the two-colour block fill;
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
-- `.text` key bits 19-23, and so the masked fields of most instructions;
+- a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
 - the System 6 Antelope has its own key, not fitted (section 10).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
@@ -551,6 +553,50 @@ Independent checks, on words that are not samples of any kind:
   `msp`, the memory stack pointer in the AMD calling convention), `gr96`
   (633), then `lr8`, `lr2`, `lr10`, `lr3`, `lr11`, `gr97`, `gr98`, `lr4`, ...:
   the return, temporary, argument and local registers compiled 29K code uses.
+
+### Antelope mask: bits 16-23 from the neighbours (a step function)
+
+No closed form for the tables above was found, but bits 16-23 do not need
+one. **`key >> 16` is a monotone step function of the word index.**
+* Leave-one-out on the 8,508 full samples: where the samples on both sides
+  of a sample have the same bits 16-23, the middle one has them too, in
+  8,268 of 8,268 cases. Where they differ (240 cases), its value is always
+  one of the two. Bits 19-23 alone have only 16 plateaus of about 4,180
+  words. Their values 00, 03, 02, 05, 04, 07, 06, 19, 18, 1B, 1A, 1D, 1C, 1F,
+  1E, 11 follow `v ^ ((v & 8) << 1)` with `v = i + 2*(i & 1)` for plateau
+  `i`, the same kind of sign-folded count as `Hand`'s high field.
+* So between two samples with equal bits 16-23 every word has them. Between
+  two that differ, the value switches once. `high_key()` in
+  `unmask_antelope_low.py` tries every switch point, scores the decoded
+  bits 16-23 against how often each opcode carries each value in the sample
+  words, and keeps the words whose value is the same for every switch point
+  within a likelihood margin. Held out at transitions, with the statistics
+  fitted on the other half of the samples, it was right for 703 of 703
+  words. Those are idiom words, which are easier than average code.
+
+Result for `.text`: bits 16-23 for 60,857 of 62,134 words (8,508 samples,
+48,826 with agreeing neighbours, 3,523 inside a step). The other 1,277 are
+ambiguous steps or words whose bit 15 is unknown.
+
+**Independent check: the branch targets.** None of this used jump or call
+displacements, whose high byte is in bits 16-23. Of the 7,773 direct
+relative jumps and calls among the estimated words (relocated calls left
+out):
+* all 415 calls land exactly on a function start of the symbol table;
+* 7,251 jumps stay inside their own function, and 106 go to a function
+  start (tail jumps);
+* one does not: `$34F34`, a word inside a step.
+
+`antelope_partial_dasm.py` decodes these words in full (marked `~`, or `!`
+inside a step), with branch targets and names. `antelope_estimate_words.py`
+uses the same estimate. The earlier readings that rested on estimated words
+hold: the block-write registers `$4CC00000`/`$4CC00004` and the alias
+`$00400000` in `$1701C`, the status word `$4400007C` in `$17264`, and the
+`$200` test after service `$BB` in `$37D68`.
+
+One more negative result for a closed form: a constant XOR in front of a
+linear count, `(key ^ C) - M*k` depending only on `k mod 48` (Hand's shape),
+has no solution beyond bit 7.
 
 ### Antelope: partial disassembly
 

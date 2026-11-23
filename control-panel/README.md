@@ -321,10 +321,10 @@ boot-time **`INIT`**s. Remaining, on request:
 * **Am29000 side** — see [`firmware/`](firmware/) and
   [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md): the kernel (`Boot`, `Hand`) is
   unmasked and disassembled and the host/card protocol is cross-checked. The
-  accelerator (`ACEF 100`) is partly unmasked (the low 15-19 bits of each code
-  word, `.lit` bits 0-11). That is enough to name its dispatcher, the command
+  accelerator (`ACEF 100`) is partly unmasked: the low 15-19 bits of each code
+  word exactly, bits 16-23 estimated for 98% of the words, `.lit` bits 0-11. That is enough to name its dispatcher, the command
   cases, DrawMultiObject and its drawers, the fills and copies and the C
-  library (`firmware/disasm/text.partial.asm`). Still open: key bits 19-23,
+  library (`firmware/disasm/text.partial.asm`). Still open: a closed form for the key,
   the `.data` key and the System 6 package's own key (see the "Still open"
   list in `HOST_CARD_PROTOCOL.md`).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
