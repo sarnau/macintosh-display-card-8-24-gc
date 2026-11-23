@@ -2797,8 +2797,10 @@ deadline when the card makes progress (it posts a request, which
 `reason` at unit `+$15C`. With `disable` > 0 it then:
 1. sets state flag `$200` in unit `+$008`, the flag that makes later
    cs13/17/50/51 calls refuse;
-2. puts back the original trap addresses from its patch table
-   (`globals+$278`, 16 bytes per entry);
+2. clears `globals+$257` and walks the table at `globals+$278` (16 bytes
+   per entry, count at `+$22C`), copying each used entry's `+4` long to
+   `globals+$14+n`. This presumably switches the patches back to the
+   original routines; the installer side was not checked;
 3. posts a Notification Manager alert (`_NMInstall`), "Graphics
    accelerator is having difficulty. You will need to reboot to re-enable
    it." (Pascal string at `$76CA`).
