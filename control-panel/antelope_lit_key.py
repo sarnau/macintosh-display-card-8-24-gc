@@ -38,8 +38,9 @@ Usage:  antelope_lit_key.py [ACEF_100.bin]
         every relocated .lit word is used (grouped by its relocation base, the
         symbol after the relocation's index), and all tables are decoded.
         Two groups are not case-block tables and are left out of the fit:
-        base $06BAC (one repeated value, ending in $B0, that follows no jmp)
-        and base $30088 (offsets stepping by -$10: jumps into unrolled code).
+        base $06BAC (ColorMap's switch tables, mostly its default $0735C;
+        pinned below instead) and base $30088 (offsets stepping by -$10:
+        jumps into unrolled code).
 
         (takes a minute: the bits 8-11 search is brute force)
 """
@@ -201,6 +202,21 @@ _DMO = {0x01: 0x0BDB0, 0x02: 0x0D9C4, 0x03: 0x0D9C4, 0x04: 0x0D9C4, 0x05: 0x0C75
         0x75: 0x0B7B8}
 PINS = {(0x484 + 4 * (op - 1) if op < 0x6A else 0x498 + 4 * (op - 0x6A)) // 4:
         (0x0AD14, t) for op, t in _DMO.items()}
+
+# ColorMap ($06F1C) replicates the fore/background pixel through a long with
+# three switches on depth-1 (16 entries each).  Each enters an unrolled
+# doubling chain (shift by 1, 2, 4, 8, 16) at the depth's step; every other
+# depth goes to the switch's default.  A fourth switch, on mode & 3, sends
+# srcXor (2) to the default.
+def _depth_table(lit, chain, default):
+    entry = {0: 0, 1: 16, 3: 32, 7: 48, 15: 64}
+    return {lit // 4 + i: (0x06BAC, chain + entry[i] if i in entry else default)
+            for i in range(16)}
+
+PINS.update(_depth_table(0x128, 0x0710C, 0x0735C))
+PINS.update(_depth_table(0x168, 0x071EC, 0x0735C))
+PINS.update(_depth_table(0x1B8, 0x0754C, 0x0759C))
+PINS[0x1A8 // 4 + 2] = (0x06BAC, 0x0735C)
 
 
 def mid12(k, low8, fixed):

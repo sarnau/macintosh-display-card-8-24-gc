@@ -127,7 +127,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables), the glyph loop in DrawText, and four sub-switch entries;
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the glyph loop in DrawText;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -738,13 +738,13 @@ above chance in bits 0-11:
 | `$174FC` | 6 | 6 | 6% |
 | `$372D0` | 4 | 4 | 2% |
 | `$31DA8` (dispatcher) | 61 | 61 | 4% |
-| `$2D7B4` | 86 | 81 | 15% |
+| `$2D7B4` | 86 | 82 | 15% |
 | `$3772C` | 23 | 21 | 19% |
-| `$25350` | 27 | 23 | 12% |
-| `$0AD14` | 29 | 25 (17 pinned, below) | 11% |
-| `$01A4C` | 50 | 41 | 17% |
+| `$25350` | 27 | 19 (partly a stride table) | 12% |
+| `$0AD14` | 29 | 29 (17 pinned, below) | 11% |
+| `$01A4C` | 50 | 42 | 17% |
 | `$19DA0` | 66 | 53 | 25% |
-| `$13F50` | 32 | 18 | 15% |
+| `$13F50` | 32 | 13 (a stride table; see below) | 15% |
 | `$27674` | 16 | 16 | 20% |
 
 So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
@@ -845,8 +845,44 @@ and 101 relocations are not enough to model a long-period key like
 `.text`'s, so `.data` stays masked. That includes the mode table at
 `.data+$3D8` and the reporter level at `.data+$284`.
 
-Still unresolved: four entries of the 6-way sub-switch tables (`.lit $0464`,
-`$0468`, `$047C`, `$0480`) match no clean case entry. Two groups are not case-block tables and are
+**ColorMap's switch tables as known plaintext.** The `$06BAC` group, left
+out of the fit as "not a case-block table", is ColorMap's four switches. Three
+of them, on `depth − 1` (16 entries each), enter an unrolled chain that
+doubles the pixel through a long: `x |= x << 1; x |= x << 2; … << 16`, 16
+bytes per step. Depth d enters at the step for d, and every other entry is
+the default:
+
+| table | chain | entries for depth 1, 2, 4, 8, 16 | default |
+|---|---|---|---|
+| `.lit $0128` | `$0710C` (`lr4`/`lr3`) | `$0710C` … `$0714C` | `$0735C` |
+| `.lit $0168` | `$071EC` | `$071EC` … `$0722C` | `$0735C` |
+| `.lit $01B8` | `$0754C` (`gr96`/`lr7`) | `$0754C` … `$0758C` | `$0759C`, the store after the chain |
+
+The fourth switch (`.lit $01A8`, on `mode & 3`) sends srcXor to `$0735C`.
+That makes 49 more pins. Under the unpinned key the default `$7B0` had
+decoded as `$BB0`, `$DB0`, `$FB0` and `$CB0`, which is the same bits 8-11
+trouble.
+
+With them, the refit gives:
+* **DrawMultiObject's table: 29 of 29.** The four sub-switch entries,
+  unpinned, now decode to case blocks: `.lit $0464` → `$0CD58`, `$0468` →
+  `$0CDB0` (or `$0BDB0`), `$047C` → `$0CF10`, `$0480` → `$0CF68`.
+* **The other tables:** `$01A4C` 41 → 42, `$2D7B4` 81 → 82, and the
+  dispatcher table stays 61 of 61.
+* **The stride tables become cleaner.**
+  * `$13F50` shows six +8 steps in a row (`$95C`, `$964`, … `$984`), then
+    `$ABC` continuing a −8 run, and `$578`, `$570`, `$568`.
+  * `$25350`'s new `$3FC`, `$408` is its usual +12 step.
+  * Over all tables, neighbouring words differing by ±8, ±12 or ±16 go
+    from 122 to 136 pairs.
+
+  The case-block "matches" those two tables lose (`$13F50` 18 → 13,
+  `$25350` 23 → 19) were chance hits in what are stride tables.
+
+Still unresolved: no `.lit` table entry is known to decode wrongly now; the
+weakest are those in tables that are neither case-block nor stride tables.
+(Earlier: four entries of the 6-way sub-switch tables (`.lit $0464`,
+`$0468`, `$047C`, `$0480`) matched no clean case entry.) Two groups are not case-block tables and are
 left out of the fit:
 
 * base `$06BAC`: one repeated value ending in `$B0`, which follows no jump;
@@ -1879,8 +1915,6 @@ has to be the source.
 
 ##### Open points
 
-* **Four sub-switch entries** (`.lit $0464`, `$0468`, `$047C`, `$0480`)
-  match no clean case entry.
 * **The per-device state refresh** is read only in outline: the mode table
   at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
   masked, and ColorMap's alpha-channel part is not checked.
