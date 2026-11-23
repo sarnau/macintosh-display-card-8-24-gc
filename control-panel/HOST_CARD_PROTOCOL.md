@@ -609,13 +609,53 @@ Points that fit the host side (`QUICKDRAW_PATCHES.md`):
 * `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute, one long)
   and `$33` go to one-long handlers.
 
-Open point: the host's operation-specific commands land in the default
-here, unless they take another path. These are `$10`, `$18`, `$20`
-StdLine, `$21` StdText, `$23` StdArc, `$24` StdRect, `$2A`, `$2E`, `$2F`,
-`$31`, `$32` and `$35`-`$37`. The likely reading is that they are taken
-before the switch. `$31F7C`, entered after "a mask test on the command",
-forwards `(cmd, ...)` to system call `$??D2`, so the switch would never see
-them. That needs the mask test's constant, which is still masked.
+**What happens before the switch (decoded).** The prologue of
+`sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
+16-23 from the full samples on both sides of a word where they agree. It
+checks out: every compare writes the register its conditional jump tests,
+the wait loop jumps back to its own start, and the exits land on the common
+epilogue. Annotated (`rec` = packet `+$44`, see below):
+
+    $31E0C  call sub_31e20 with lr2 = -1, in an endless loop  (the main loop)
+    $31E3C  wait until packet+$14 != 0;  packet+$1C = 1
+    $31E64  rec = [.bss+4];  lr8 = cmd = [rec+4];  seq = [rec+8]
+            if seq != [.bss+8] and cmd != 1:
+                print(.lit $0D88, [.data+$F08], cmd)   "M..et..in..Se..en.. e..or..d .. %.. f..c ..%d"
+                packet[0] |= 3; reply 0; return          (sequence error)
+    $31EEC  [.data+$F08] = cmd  (last command);  [.bss+8] += 1
+    $31F0C  n = first argument:  -1 -> accept;  <= 0 -> reject;
+            else accept if cmd is among the next n arguments
+            rejected: reply 0 ("not handled"), return
+    $31F7C  call system-call stub $38F64 (service $??D2)
+            if (cmd & $FF00) != $8000: goto switch ($32850)
+            else reply = sub_37B58(cmd, [rec+$0C], [rec+$10])
+
+* **The packet layout matches the host exactly.** The host (`gc24.s`
+  `$5F54`-`$5F78`) writes the selector to `+$48`, a running sequence number
+  to `+$4C`, the argument count to `+$50`, and `$FFFFFFFF` to `+$14`. So the
+  card's `rec` is packet `+$44`, and the switch index is the host's
+  selector itself (`$0C`-`$38`). The host rewrites some selectors only to
+  `$24` StdRect: a rounded rectangle with zero radius, or a rectangular
+  region.
+* **`sub_31e20(n, cmd1, …, cmdn)` is varargs.** The frame is 10 registers,
+  so the incoming arguments start at `lr12`, and `storem lr12, gr125`
+  spills them to the memory stack. The main loop passes `-1` (every command).
+  A second caller, at `$33404`, passes `(6, $26, $38, $30, $0C, $2A, $2C)`.
+  So while some operation is in progress, only those six commands are
+  serviced, and the caller then checks the result for `$17` and `$38`.
+* **The constants:** `const gr96, $FF00` / `and gr97, lr8, gr96` /
+  `const gr96, $8000` / `cpneq`. Commands `$80xx` go to `sub_37B58`, and
+  everything else goes to the switch.
+
+**So the drawing selectors reach the default.** `$20` StdLine, `$21`
+StdText, `$23` StdArc, `$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`,
+`$32` and `$35`-`$37` decode to low byte `$70`. Inside `sub_31e20`
+(`$31E20`-`$328C8`), the only block starting at an offset `$x70` is the
+default `$32818`. The low byte comes from the strings and is exact. So in
+this switch they print "Unknown Function". If Antelope accelerates them at
+all, it does so before the switch. The only call there is system call
+`$??D2`, made for every accepted command, without arguments, and before the
+`$8000` test. Its service in the runtime (`Hand`) is the next thing to name.
 
 The constraint for a future solution is clear: every relocated `.lit` word
 is a code offset inside its own module (module ranges come from the symbol
