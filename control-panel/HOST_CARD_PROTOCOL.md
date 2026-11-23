@@ -1681,8 +1681,8 @@ host") and the compare chain.
 | **6** text | StdText (`$21`) | `(n + $13) & ~3`: `+2` count n, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text | `$0E018`, then DrawText `$11AD8` |
 | **7** poly | StdPoly (`$31`) | `(polySize + 7) & ~3`: frame, the Polygon | `$0C398` |
 | **8** region | StdRgn (`$18`) | `(rgnSize + 7) & ~3`: frame, the Region | `$0D6E8` |
-| `$64`, `$66` foreground colour | ForeColor, RGBForeColor, PmForeColor (`$36`) | 12 / 16: `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917E` gives an index | `$0B230`, `$0B458` |
-| `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54` | `$0B584` for `$6D`, `$0B340` for `$6B` (the twin of `$64`, storing to the background global) |
+| `$64`, `$66` foreground colour | ForeColor, RGBForeColor, PmForeColor (`$36`) | `$64`, 12: `+2` the RGB colour (port `+$24`; for an old port `sub_917E(fgColor)`), `+8` `fgColor` (`+$50`). `$66`, 16, when the port's colour came from the Palette Manager (bit 2 of `$CE(a4)`): the same plus `+$C` grafVars `pmFgIndex` | `$0B230`, `$0B458` |
+| `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54`; `$6D` adds `pmBkIndex` (bit 4 of `$CE(a4)`) | `$0B584` for `$6D`, `$0B340` for `$6B` (the twin of `$64`, storing to the background global) |
 | `$67` font | StdText, when the font changed | 32: `+2` the 26-byte `FMOutput` (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle` | `$0DE00` |
 | `$68` MoveTo | the pen location changed (`sub_8DA4`) | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` | `$0BD7C` |
 | `$69` mode | the transfer mode changed (`sub_8E38`) | 4: `+2` the mode | `$0B214`: the mode into `lr24` |
@@ -1701,6 +1701,10 @@ The card handles 24 opcodes (`$65` is the only gap in `$64`-`$75`). The
 numbering does not follow PICT,
 but the split into drawing records (1-8) and state records (`$64`-`$75`)
 is the one a QuickDraw picture makes.
+
+`dmo_decode.py DUMP` prints a stream from a raw dump of the buffer (for
+example from an emulator's memory at `$AC(a4)`); `--selftest` builds one
+record of every kind from this table and decodes it back.
 
 After a StdText record the host advances its own pen by the measured width:
 the integer part to `pnLoc.h`, the fraction to `pnLocHFrac`. It writes both
