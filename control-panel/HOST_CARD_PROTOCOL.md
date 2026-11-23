@@ -2040,6 +2040,25 @@ in "The cursor".
        2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5, 13, 14, 17,
        18, 19, 20; INIT 13, 14, 20, 21, 99.
 
+       **The System 6 Antelope is masked differently.** Unpacked with
+       `acef_unpack.py` it is also "32-Bit Antelope" (`.text` `$42AD8`,
+       `.lit` `$1494`, `.data` `$1830`; 1,838 symbols, 998 addresses).
+       * Its words share almost nothing with the System 7 file at the same
+         index (1 equal word in 62,134), and the System 7 low key decodes
+         only 2 of 80 System 6 entries that could be `sub gr1, gr1, N`
+         (System 7 on itself: 291 of 307).
+       * Its **opcode byte is masked too**. At function entries, `opcode
+         XOR $25` takes a few values that hold over long stretches: `$00`
+         for most entries in words 933-3675, `$26`, `$30` or `$60`
+         elsewhere. So the System 6 key has a slowly changing top byte,
+         where System 7's top byte is always 0. It looks like the same
+         family of generator with a wider output, but it is a separate key
+         and would need its own fit.
+       * Its `.lit` strings are not plain either. Its `.data` matches the
+         System 7 `.data` in 22% of bytes at the same offset, but that comes
+         from the mostly zero top bytes. The low 24 bits differ randomly,
+         which gives no handle on the `.data` key.
+
        A neighbouring stub `$2001A48` returns `[$4C006804]`
        (`PublicOu+$04`), a candidate for `$D1`.
 
