@@ -1184,16 +1184,72 @@ globals into the packet:
 | `+$10` | `+$1DC` | the card's drawing rectangle (8 bytes) |
 | `+$1C` | `+$130` | a second rectangle (8 bytes) |
 | `+$28`, `+$2C` | `+$1EC`, `+$1F0` | |
-| `+$30`, `+$34` | `+$5F0`, `+$5F4` | |
+| `+$30` | `+$5F0` | card → host: "I removed the cursor" (the host clears `CrsrVis`) |
+| `+$34` | `+$5F4` | card → host: "redraw the cursor" (the host sets `CrsrNew`) |
+
+The driver also gives the card card-side pointers (through `$1CF6`, which
+maps host memory for the card) to the host's cursor state:
+
+| packet | host memory | size |
+|---|---|---|
+| `+$5F8` | `CrsrRect` (`$83C`) | 8 |
+| `+$5FC` | `CrsrVis` (`$8CC`) | 1 |
+| `+$600` | `CrsrDevice` (`$89C`) | 4 |
+| `+$1E4` | `CrsrPtr^` (`$D62`), the colour cursor save area | `$50` = `CCSAVEREC` |
+| `+$1E8` | the save area's `CCSAVE` handle's data, the bits under the cursor | `$400` |
+
+(Names and the record layout are from `SysEqu.a` and `ColorEqu.a`.)
 
 **Host side** (for example `GA_LowMem0800`, `$42B8`, `JHideCursor`):
 1. save `*[+$08]`;
 2. wait until `*[+$0C]` (card busy) is 0;
 3. write the vector number to `*[+$08]`;
 4. if the card has become busy meanwhile, restore and retry;
-5. if `*[+$30]` is set, clear `CrsrBusy` (`$8CC`) and the flag;
+5. if `*[+$30]` is set, clear `CrsrVis` (`$8CC`) and the flag;
 6. run the original cursor routine, call `sub_C034`, and restore
    `*[+$08]`.
+
+`sub_C034` is `_HWPriv` with selector 3, **FlushDataCache**. It runs after
+every cursor routine, so the card sees the screen and the cursor
+variables as the 68K left them (a 68040 copyback cache would otherwise
+hold them back). The cursor task patch (`GACursorTask`, `$801C`, on
+`JCrsrTask` `$8EE`) does the same and more:
+* it skips the cursor task entirely while the card is busy;
+* it clears `CrsrVis` on `+$5F0`;
+* if the cursor is not obscured (`CrsrObscure` `$8D2` = 0) and `+$5F4` is
+  set, it sets `CrsrNew` (`$8CE`) = 1 and clears the flag, so the task
+  draws the cursor again;
+* it runs the original task, then FlushDataCache.
+
+**Deferred cursor calls during CopyBits.** Engine global `+$18` is a nesting
+count. `GA_CopyBits` (`$483C`) raises it around the original CopyBits (on
+the path that does not go to the card directly) and, at the outermost level,
+clears the accumulators below. While it is non-zero, the cursor patches
+record instead of acting:
+
+| call | while `+$18` ≠ 0 |
+|---|---|
+| ShieldCursor (`$808`, `$44C4`) | unions the rectangle into `*[+$1C]` (packet `+$130`), `+$40` += 1 |
+| ShowCursor (`$804`, `$420C`) | cancels a pending shield (`+$40` −= 1); with none pending, `+$44` += 1 (kept ≤ 1) |
+| HideCursor (`$800`, `$42B8`) | `+$44` −= 1 |
+| InitCursor (`$814`) | clears both counts |
+
+CopyBits ends up in StretchBits, which `GA_TrapAB27` sends to the card
+(`$15`):
+* **If the card does it** (reply 1), the patch just returns. The recorded
+  calls are dropped, because the card handles the cursor through the lock
+  (below).
+* **If not**, before running the 68K StretchBits the patch replays them
+  (`$33BC`-`$3484`):
+  * the real ShieldCursor on the union rectangle, if a shield is pending
+    and the rectangle is not empty (under the lock, with FlushDataCache);
+  * the real ShowCursor while `+$44` < 0;
+  * then it puts the rectangle back and clears `+$18`, so the calls that
+    follow, inside CopyBits, run normally.
+
+Replaying net hides as ShowCursor calls looks inverted. Since ShowCursor
+stops at level 0, the extra calls may simply be harmless. The code is as
+read, but the intent is not settled.
 
 `EngineDispatch` and `sub_6442` also wait for `*[+$08]` to be 0 before they
 touch the packet (`$5F04`, `$646C`). `JHideCursor`/`JShowCursor` only count
@@ -1206,18 +1262,33 @@ blitter):
 3. copy the drawing rectangle (`extern#1772+$78`-`$7E`, set by `$1553C`) to
    `+$1DC`;
 4. compare it with the cursor's position;
-5. set a flag at `+$?F0` (high byte masked: `$1F0` or `$5F0`) and release
-   `+$1D8`.
+5. if the rectangles meet and `CrsrVis` is set, remove the cursor itself:
+   it reads `CCSTATEREGS` from the save area (`+$1E4` → `+$3E` ROWCNT,
+   `+$40` LONGCNT, `+$44` DSTBUMP, `+$48` DSTLEFT) and copies the saved bits
+   (`+$1E8`, or `+$1EC` when that is set) back to the screen row by row
+   (`$38218`). That is `UnblitCursor` from `CCrsrCore.a`, moved to the
+   card. The 68K version ends with `CLR.B CrsrVis`, which the card leaves to
+   the host: it sets `+$5F0` instead;
+6. release `+$1D8`.
 
 `$32EF8` does the same and also merges a second rectangle into
-`extern#1772+$78`. That fits shielding a source and a destination, as
+`extern#1772+$78`. At its end (`$33148`) it sets `+$5F4` = 1 and clears the
+rectangle at `+$1DC`, so the host's next cursor task draws the cursor again. That fits shielding a source and a destination, as
 CopyBits does, but it is not checked.
 
 So `$32C10`/`$32EF8` are the card's **ShieldCursor**: the 68k code draws the
 cursor, and this lock keeps the card from drawing over it while it does.
-That is the lock half, and it is read from both sides. What the card does
-when the rectangles overlap is less clear, because the comparison and the
-`+$?F0` flag are partly masked.
+The full cycle is:
+1. the card takes the lock;
+2. it removes the cursor if its drawing would overlap it;
+3. it draws;
+4. it raises `+$5F0` ("cursor gone": the host clears `CrsrVis`) and
+   `+$5F4` ("redraw": the host sets `CrsrNew`);
+5. the host's cursor task puts the cursor back.
+
+The high bytes of the flag offsets are masked (`$??F0`, `$??F4`), so `$5F0`
+and `$5F4` come from matching them with the host side. The overlap test
+itself is not decoded.
 
 #### DrawMultiObject
 
