@@ -20,7 +20,7 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 | `CODE` -4048 | 548 B | 68k | cdev main-segment stub |
 | **`ACEF` 100** | **322 K** | **Am29000** | the main **"QuickDraw GC" accelerator firmware** |
 | `ACEF` 1 | 18 K | Am29000 | smaller Am29000 image (bootstrap/secondary) |
-| `mntr` `card` `gc70` `Gama` `PupS` | small | data | monitor/card tables, gamma, popup config |
+| `mntr` `card` `gc70` `Gama` `PupS` | small | data | monitor/card tables, gamma; `PupS` is the accelerator's on/off flag and the config words sent with Control 17/18 (`HOST_CARD_PROTOCOL.md` section 9) |
 | `cicn` `icl8` `ICN#` `STR#` `DITL` … | — | data | icons, strings, dialog items |
 
 The `ACEF` blobs carry a plaintext "© Copyright Apple Computer, 1990" header
@@ -320,9 +320,13 @@ boot-time **`INIT`**s. Remaining, on request:
 
 * **Am29000 side** — see [`firmware/`](firmware/) and
   [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md): the kernel (`Boot`, `Hand`) is
-  unmasked and disassembled and the host/card protocol is cross-checked; the
-  accelerator (`ACEF 100`) is still masked, so its code and the firmware side of
-  the 106 `gc24` command codes are open.
+  unmasked and disassembled and the host/card protocol is cross-checked. The
+  accelerator (`ACEF 100`) is partly unmasked (the low 15-19 bits of each code
+  word, `.lit` bits 0-11). That is enough to name its dispatcher, the command
+  cases, DrawMultiObject and its drawers, the fills and copies and the C
+  library (`firmware/disasm/text.partial.asm`). Still open: key bits 19-23,
+  the `.data` key and the System 6 package's own key (see the "Still open"
+  list in `HOST_CARD_PROTOCOL.md`).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
   be: an embedded credit block right after the function (previously

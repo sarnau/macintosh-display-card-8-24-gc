@@ -35,6 +35,7 @@ before drawing over it and asks the host to redraw it afterwards.
 |---|---|
 | the three channels, what is accelerated, named functions, open questions | "Overview" (next) |
 | power-up, loading the firmware, the boot mailbox and video commands | sections 1-5 |
+| the frame-buffer layout (linear or interleaved) and who sets it | section 5 |
 | the command dispatcher, its case blocks and the packet layout | "Antelope: the command dispatcher" and its `####` sub-sections, including "The dispatcher prologue and packet layout" and "The case blocks" |
 | the module API, the card's requests, `CallBack`, `MapVirtual` | "Host: the module/task API", "Host: the card's requests", "Card: `CallBack`…", "Card: `MapVirtual`…" |
 | CopyBits/StretchBits | "StretchBits (command `$15`)" |
@@ -42,6 +43,8 @@ before drawing over it and asks the host to redraw it afterwards.
 | the drawing stream, text and fonts, the host-object cache | "DrawMultiObject: the batched drawing stream" |
 | the encryption ("mask") of Antelope and how much of it is solved | section 6 and the "Antelope mask: …" sections, including the `.lit` key and its pins |
 | the kernel's services | section 8 |
+| the `PupS` resource, Control calls 17-19, the feature flags | section 9 |
+| the System 6 package and its differently masked Antelope | section 10 |
 
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
 Antelope is masked:
@@ -117,7 +120,7 @@ dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
-(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` and `$00348` (`storem` bursts); the own-memory test `$13F54`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
+(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` (block write), `$17264` (two values) and `$00348` (`storem` bursts), with the burst helpers `$00294` and `$00248`; the slot burst self-test `$37000`; the own-memory test `$13F54`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -132,8 +135,12 @@ prints these names in `text.partial.asm`.
 **Still open:**
 - DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the exact register roles in DrawText's glyph loop;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
-- kernel service `$D2`'s exact role;
-- `.text` key bits 19-23, and so the masked fields of most instructions.
+- kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
+- the block-write details: the colour-register and status addresses (`$??C00000`, `$??00007C`) are estimated, and why `$7C` gates the two-colour fill is not known;
+- `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
+- the Control 18 word (`PupS +$C`, stored at unit `+$002`): its use is not traced (section 9);
+- `.text` key bits 19-23, and so the masked fields of most instructions;
+- the System 6 Antelope has its own key, not fitted (section 10).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -2003,61 +2010,10 @@ in "The cursor".
        flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
        unit's config word `+$128` has bit `$40`. The config word comes from
        Control call 17 (cs50 is the same plus `$100`, "mailbox allowed").
-       Both 68k clients send cs17, in the System 7 and the System 6
-       packages alike:
-       * the control panel (`cdev.s` `$0E02`) passes bytes 8-11 of `PupS`
-         resource 0, which the driver stores at `+$128` (`csParam+2`);
-       * `gc24` resource 32 (`$052E`) also reads `PupS` (`$0388`), may flip
-         bits `$90` of the word, and sends cs17.
-
-       All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
-       (System 6: last long `$3C0`). The record is four longs:
-
-       | offset | default | used by |
-       |---|---|---|
-       | `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
-       | `+$4` | `$D2` (210) | not read by either path seen |
-       | `+$8` | `$60` | the config word, sent with cs17 |
-       | `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002` (purpose not traced) |
-
-       `gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
-       each followed by a check that maps a failure to errors
-       `$D8DB`-`$D8DF`. Before its cs17 it would XOR the config with `$90`
-       if a local flag (`d5`) were set, but `d5` is cleared at entry and
-       never set, so this is dead code. So the config word is `$60` by default:
-       bits `$20` and `$40` are set, and `SetFeatureFlags` turns them into
-       feature flags `$1` and `$200`. No client sends cs50, so `$100` stays
-       clear and the "mailbox not enabled" bit `$800` stays set: the card's
-       debug messages are not delivered. If `$BB` is the flags stub, the
-       host-memory `storem` path is **on by default**. That `$BB` is the
-       flags stub is not confirmed. (An earlier version of this paragraph
-       said that no client sends cs17. That came from scanning only some of
-       the control panel's `_Control` calls.)
-
-       The System 6 package ("8•24 GC SW 1.1") has the same resource set,
-       with its own `ACEF` 100 (357,228 bytes against 323 KB), `ACEF` 1,
-       driver and INIT. Its 68k clients send the same csCodes: control panel
-       2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5, 13, 14, 17,
-       18, 19, 20; INIT 13, 14, 20, 21, 99.
-
-       **The System 6 Antelope is masked differently.** Unpacked with
-       `acef_unpack.py` it is also "32-Bit Antelope" (`.text` `$42AD8`,
-       `.lit` `$1494`, `.data` `$1830`; 1,838 symbols, 998 addresses).
-       * Its words share almost nothing with the System 7 file at the same
-         index (1 equal word in 62,134), and the System 7 low key decodes
-         only 2 of 80 System 6 entries that could be `sub gr1, gr1, N`
-         (System 7 on itself: 291 of 307).
-       * Its **opcode byte is masked too**. At function entries, `opcode
-         XOR $25` takes a few values that hold over long stretches: `$00`
-         for most entries in words 933-3675, `$26`, `$30` or `$60`
-         elsewhere. So the System 6 key has a slowly changing top byte,
-         where System 7's top byte is always 0. It looks like the same
-         family of generator with a wider output, but it is a separate key
-         and would need its own fit.
-       * Its `.lit` strings are not plain either. Its `.data` matches the
-         System 7 `.data` in 22% of bytes at the same offset, but that comes
-         from the mostly zero top bytes. The low 24 bits differ randomly,
-         which gives no handle on the `.data` key.
+       Whether the host sets `$200` is described in section 9: it does,
+       by default. If `$BB` is the flags stub, the host-memory `storem`
+       path is **on by default**. That `$BB` is the flags stub is not
+       confirmed.
 
        A neighbouring stub `$2001A48` returns `[$4C006804]`
        (`PublicOu+$04`), a candidate for `$D1`.
@@ -2783,3 +2739,67 @@ So the command table cannot be read yet, but the two data points that matter for
 a future solution are now fixed: the generator is shared across Antelope's
 sections, and about 700 further words carry known constraints (bits 0-1, and
 bits 18-22 zero when the target is below `$3CAD8`).
+
+## 9. Configuration: `PupS` and Control calls 17-19
+
+The control panel and `gc24` resource 32 configure the driver from the
+`PupS` resource. The config word becomes the feature flags in
+`PublicIn+$18` (`gr64` on the card), which Antelope may read through
+kernel service `$BB` (see `$37D68` in "The case blocks").
+
+The unit's config word `+$128` comes from Control call 17 (cs50 is the
+same plus `$100`, "mailbox allowed"). Both 68k clients send cs17, in the
+System 7 and the System 6 packages alike:
+* the control panel (`cdev.s` `$0E02`) passes bytes 8-11 of `PupS`
+  resource 0, which the driver stores at `+$128` (`csParam+2`);
+* `gc24` resource 32 (`$052E`) also reads `PupS` (`$0388`), may flip
+  bits `$90` of the word, and sends cs17.
+
+All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
+(System 6: last long `$3C0`). The record is four longs:
+
+| offset | default | used by |
+|---|---|---|
+| `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
+| `+$4` | `$D2` (210) | not read by either path seen |
+| `+$8` | `$60` | the config word, sent with cs17 |
+| `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002` (purpose not traced) |
+
+`gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
+each followed by a check that maps a failure to errors
+`$D8DB`-`$D8DF`. Before its cs17 it would XOR the config with `$90`
+if a local flag (`d5`) were set, but `d5` is cleared at entry and
+never set, so this is dead code. So the config word is `$60` by default:
+bits `$20` and `$40` are set, and `SetFeatureFlags` turns them into
+feature flags `$1` and `$200`. No client sends cs50, so `$100` stays
+clear and the "mailbox not enabled" bit `$800` stays set: the card's
+debug messages are not delivered. (An earlier version of this paragraph
+said that no client sends cs17. That came from scanning only some of
+the control panel's `_Control` calls.)
+
+## 10. The System 6 package ("8•24 GC SW 1.1")
+
+The System 6 package has the same resource set as the System 7 one,
+with its own `ACEF` 100 (357,228 bytes against 323 KB), `ACEF` 1,
+driver and INIT. Its 68k clients send the same csCodes: control panel
+2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5, 13, 14, 17,
+18, 19, 20; INIT 13, 14, 20, 21, 99.
+
+**The System 6 Antelope is masked differently.** Unpacked with
+`acef_unpack.py` it is also "32-Bit Antelope" (`.text` `$42AD8`,
+`.lit` `$1494`, `.data` `$1830`; 1,838 symbols, 998 addresses).
+* Its words share almost nothing with the System 7 file at the same
+  index (1 equal word in 62,134), and the System 7 low key decodes
+  only 2 of 80 System 6 entries that could be `sub gr1, gr1, N`
+  (System 7 on itself: 291 of 307).
+* Its **opcode byte is masked too**. At function entries, `opcode
+  XOR $25` takes a few values that hold over long stretches: `$00`
+  for most entries in words 933-3675, `$26`, `$30` or `$60`
+  elsewhere. So the System 6 key has a slowly changing top byte,
+  where System 7's top byte is always 0. It looks like the same
+  family of generator with a wider output, but it is a separate key
+  and would need its own fit.
+* Its `.lit` strings are not plain either. Its `.data` matches the
+  System 7 `.data` in 22% of bytes at the same offset, but that comes
+  from the mostly zero top bytes. The low 24 bits differ randomly,
+  which gives no handle on the `.data` key.

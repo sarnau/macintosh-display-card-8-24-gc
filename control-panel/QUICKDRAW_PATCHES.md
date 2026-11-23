@@ -177,7 +177,8 @@ are the cursor jump vectors from `Interfaces/AIncludes/Private.a`
   `ActivatePalette`, `InitGDevice`, ...) and port setup (`InitGraf`, `OpenPort`,
   `InitCPort`, `SetOrigin`, `ClipRect`, ...), so the card sees the drawing state
   as well as the drawing calls.
-* Operation-specific card commands identified so far: `$20` StdLine, `$21`
+* `EngineDispatch` selectors identified so far (the drawing ones become
+  DrawMultiObject stream records, not card commands): `$20` StdLine, `$21`
   StdText, `$23` StdArc, `$24` StdRect, `$2E` StdRRect, `$2F` StdOval, `$31`
   StdPoly, `$18` StdRgn, `$10` the region operations, `$32` clip / rectangle ops,
   `$35`/`$36`/`$37` pen, foreground and background colour state, `$2A` pen and

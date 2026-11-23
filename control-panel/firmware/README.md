@@ -14,7 +14,7 @@ and the DRVR) and what could be recovered from it.
 | `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
 | `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
 | `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only; `.lit` has its own key, whose bits 0-7 `../antelope_lit_key.py` recovers from the `.lit` strings): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 19-23 (most of RC, high immediate byte) still masked (the key is 24 bits) except at the 3,755 relocated `const`/`consth` words, whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
+| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only; `.lit` has its own key, whose bits 0-11 `../antelope_lit_key.py` recovers from the `.lit` strings and host-confirmed pins): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 19-23 (most of RC, high immediate byte) still masked (the key is 24 bits) except at the 3,755 relocated `const`/`consth` words and the 133 relocated direct `call`s (R_IREL), whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
 Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
@@ -82,8 +82,9 @@ RC byte is plain at the start of a section.
 * **`Antelope`** is masked the same way (`.text`, `.lit`, `.data`, the `Code`
   stub), with its own tables. Its 3,726 known-plaintext key values (spill/fill
   asserts `asgeu 64`/`asleu 65`, the NOP `aseq 64,gr1,gr1` = 2,064 words,
-  `jmpi lr0`) show a mixed-radix structure (a base-4 digit of weight 64 rows) that
-  is **not solved**; see `ACEF_100_Antelope/mask_samples.tsv` and
+  `jmpi lr0`) show a mixed-radix structure (a base-4 digit of weight 64 rows).
+  Its low bits are now modelled (bits 0-14 everywhere, more in places; see the
+  table above), bits 19-23 are **not solved**; see `ACEF_100_Antelope/mask_samples.tsv` and
   `../HOST_CARD_PROTOCOL.md` section 6. Everything earlier that treated
   Antelope's `.text` as plain code (`disasm/text.asm`, prologue/`gr0` statistics,
   the "function naming" analysis) used masked bytes and is unreliable beyond the
@@ -184,7 +185,10 @@ delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
   meaningful. The 768 function entry addresses (from the symbol table) are real.
 * `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
   known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
-  plain; RC, the high immediate byte and so all branch targets print as `?`.
+  plain; RC, the high immediate byte and branch targets print as `?` or as
+  estimates from neighbouring key samples (`../antelope_estimate_words.py`).
+  Direct calls with an R_IREL relocation print their exact target, and about
+  80 identified functions print with their names.
   Run with `ACEF_100.bin` as argument, it comments every relocated
   `const`/`consth` pair with its target (`-> .text $15808 (sub_15808)`), so
   `calli` targets and global data addresses are exact.
@@ -329,7 +333,9 @@ info) — none is present in the shipped control-panel software.
 
 ## What is open
 
-* The mask generator for `Antelope` (all of the accelerator code).
+* `Antelope`'s key bits 19-23 (most RC fields and high immediates), its
+  `.data` key, and the System 6 Antelope's separate key.
 * `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
-* In `Hand`: the services behind vector 66 and which feature each host-flag bit
-  switches.
+* In `Hand`: most services behind vector 66 (`$D5`, the slot burst mask, is
+  settled; `$BB`, `$D1`, `$D4` have candidates) and which feature each
+  host-flag bit switches.
