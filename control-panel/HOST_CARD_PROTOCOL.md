@@ -692,7 +692,7 @@ read. The functions:
 | `$15DF8` | "Cache still busy, cacheType = %d, cache = %lx" | |
 | `$161F8` | "PRInit: Unable to allocate mega buff" | initialisation |
 | `$16A04` | "PRAlloc: numBytes is not multiple of FOUR", "PRAlloc: Unable to allocate frame buffer size = 0x%x" | frame-buffer allocator |
-| `$22A8C` | "ScaleClut/IndexToGray: unsupported depth = %d", "ScaleClut: unknown scaleNum = %d" | |
+| `$22A8C` | "ScaleC?t/s IndexTo???: unsupported … = %d", "ScaleC?t: unknown scale… = %d" (reading uncertain) | |
 | `$31E20` | the sequence-error message, "Unknown Function: 0x%x" | the command dispatcher |
 | `$33680` | "malloc: allocated … bytes outside of the heap bounds …" | |
 | `$33EBC` | "CallBack … during interrupt …" | |
