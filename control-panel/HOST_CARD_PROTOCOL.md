@@ -1738,9 +1738,41 @@ entry in LRU order (`$15B3C(8, entry)`).
 * then the transfer: StretchBits `$2D7B8` (twice), scaleBlt `$22A8C` and
   RgnBlt `$19DA4`, as `DrawText.a` hands its buffer to StretchBits.
 
-The glyphs come from the strike copied into the cache, the metrics from the
-width table, and the style (bold, italic, underline, shadow) from the
-`FMOutput` in the `$67` record. The glyph loop itself is not decoded.
+**Read in `$11AD8` (estimated words, `antelope_estimate_words.py
+0x11AD8 0x13770`):**
+
+* **The style comes from `FMOutput`.** One pointer (`lr60`) is read at
+  exactly the `FMOutput` offsets:
+
+  | offset | field |
+  |---|---|
+  | `+6` | `boldPixels` (byte) |
+  | `+7` | `italicPixels` (byte) |
+  | `+$A` | `ulThick` (byte) |
+  | `+$B` | `shadowPixels` (byte, twice) |
+  | `+$C` | `extra` (signed byte) |
+  | `+$11` | `curStyle` |
+  | `+$12`/`+$14` | `numer` |
+  | `+$16` | `denom` |
+
+  So bold, italic, underline and shadow are applied on the card, from the
+  `$67` record the host sent.
+* **The buffer is built as in `DrawText.a`.**
+  * The left edge is rounded down to 32 pixels (`andn …, $1F`).
+  * The width is converted to longs (`srl 5`), plus 2.
+  * One buffer is allocated from PRAlloc `$16A04`, or two when a flag
+    (`lr58`) is set, presumably for the shadow/outline mask as in
+    `DrawText.a`.
+  * Each buffer is cleared, with a leading zero long.
+  * The destination row is `baseAddr + (v − bounds.top) × rowBytes`, from a
+    bitmap record whose `rowBytes` is a long (`lr73`: `+0` base, `+4`
+    rowBytes, `+8`/`+$A` bounds top/left).
+* **The transfer modes are tested against `$32`** (the hilite srcXor that
+  the host's verb table produces), as `DrawText.a` treats hilite specially.
+
+The glyph loop itself, which reads the strike's `locTable` and bit image, is
+not decoded. The strike copied into the cache is the only font data on the
+card, so it must be the source.
 
 So the card's "font is not in cache" and "width table is not in the cache"
 messages are about this upload: DrawMultiObject looks up the `$67` record's
