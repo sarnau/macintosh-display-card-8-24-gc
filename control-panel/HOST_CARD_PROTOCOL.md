@@ -724,19 +724,91 @@ sub_379A0)` (the `$274` there is `$379A0` relative to the module base).
 So code that the host uploads and starts with `$8001` gets a service
 callback into Antelope, including the entry table with `DrawMultiObject`.
 
-**The host side of `$80xx`.** `gc24.s`:
+**The host side of `$80xx`: a module/task API (`gc24.s` `$1404`-`$239A`).**
+`sub_1404(selector, params, &handle)` is a public entry point: gc24 exports it
+as dispatch entry #105 (`$FFFFFFFD`, `GA_ControlFFFFFFFD` at `$6C70`, reached
+through engine globals `+$14+$1A4`). Nothing else in this repo calls that
+entry, so it is an API for other code (the selectors and their arguments
+follow). Its state is a `$7A`-byte handle (`*&handle`, created on first use):
 
-* `$1720` sends `$8004` with `$11111111`, `$22222222` and `$33333333`, an
-  echo test whose expected reply is the sum.
-* `sub_1E7E` and `sub_1FD6` send `$8001`. `sub_1E7E` first checks that the
-  request's tag word is `$54xxxxxx` and copies the argument longs.
-* `sub_21BC` and `sub_220C` send `$8002` and `$8003`.
+| offset | field |
+|---|---|
+| `+$00` | module table, `$1C`-byte records, `+$5E` of them (grows by 16) |
+| `+$04` | task table, `$20`-byte records, `+$5A` of them (grows by 32) |
+| `+$08` | module counter |
+| `+$0C` / `+$0D` | request posted / reply ready (bytes) |
+| `+$0E` | command (`$8001`-`$8004`) |
+| `+$12` | reply |
+| `+$16`, `+$1A`, `+$1E` | arguments; `+$56` = their count |
+| `+$66` | a device handle (`sub_225C(slot)`); its `+$6C` points back here |
+| `+$6A` | the last result |
+| `+$76` | a `$5C`-byte message buffer in card memory (from `$8002`) |
 
-These routines sit in one switch just before `ACEFLoad` (`L1510`: `$152E`
-calls `sub_1E7E`, `$1540` calls `sub_1FD6`), and `$1C38` builds a tag
-`$54000000 | id`. It looks like a host API for uploading code to the card
-and calling it. Which host code ends up calling `DrawMultiObject` this
-way, if any, is the next question.
+The selectors (`sel - 1` first, then `$3DC` for 999):
+
+| sel | routine | does |
+|---|---|---|
+| -1 | | return the last result |
+| 0 | `sub_1604` | open: allocate the tables; send `$8004(0x11111111, 0x22222222, 0x33333333)` and require the reply `$66666666` (else -4); allocate the card message buffer with `$8002($5C)` (else -5) |
+| 1 | `sub_1A2E`, params `{acef, size}` | load a module: `$8002(size)` allocates card memory, `ACEFLoad(acef, addr, size)` relocates and copies it there; returns module id `$53000000 \| n`. The module record keeps the card address (`+$08`) and the entry point (`+$0C`) |
+| 2 | `sub_1B3C`, params `{module id}` | unload: kill the module's tasks, `$8003(addr)` frees its memory |
+| 3 | `sub_1C94`, params `{module id}` | create a task of the module; returns task id `$54000000 \| n` |
+| 4 | `sub_1D70`, params `{task id}` | kill a task: send it message `$FFFE`, free its handler list |
+| 5 | `sub_1E12`, params `{task, sel, proc, refcon}` | register a host callback `proc` for selector `sel` of `task` (`sub_1810`, a linked list per task) |
+| 6 | `sub_1E7E`, params `{msg}` | send a message and wait for the reply |
+| 7 | `sub_1FD6`, params `{msg}` | send a message without waiting (sets bit 7 of `msg+8`) |
+| 8 | `sub_2130`, params `{task id}` | wait for the task's reply and return it |
+| 9 / 10 | | return 1 / 0 |
+| 11 | `sub_22DA` | idle: pump the mailbox and the card's requests |
+| 999 | `sub_18BE` | a request from the card (below) |
+
+**Sending a message.** A message is `{+$04 task id, +$09 length in bytes,
++$0A message type, +$0C data}`. `sub_1E7E` waits until the task is idle (state 0 or
+2), copies the message into the card buffer `+$76` (with `SwapMMUMode` to
+32-bit), and posts `$8001(buffer, task.+$08, module entry point)`. The task
+is then in state 3 (running) until the card answers. So **`$8001` is "run
+this module's entry point on this message"**, and its card side is
+`p[2](p[0], p[1], sub_379A0)`: `entry(message, task data, services)`. The
+uploaded code gets Antelope's service switch, and with it the entry table
+that holds `DrawMultiObject`. Task creation (`sub_1BEE`) sends message
+`$FFFF` and kill sends `$FFFE`, so these are the module's own init and exit
+messages.
+
+**How the mailbox reaches the card.** The `$80xx` commands do not use a
+separate channel. `sub_22DA` (the idle routine, which every wait loop calls)
+takes a posted request and runs `EngineDispatch(+$0E, &+$16, +$56)`, the same
+path as the drawing commands. It stores the reply in `+$12` and sets
+`+$0D`. It then checks the card's status word: if bit 2 is set, it clears it
+and calls `sub_6442`, the handler for requests from the card.
+
+**Requests from the card (`sub_6442`).** The card writes a code into a
+mailbox at its base address `+$24` (`+$04` of it). The handler reads it, sets it to
+-1, and switches on codes 3-8, 12-18, 20-22, 100 and 999. Code 999 forwards
+the card's request to `sub_1404(999, …)`, which reads `{task id, selector,
+count, argv}` and runs `sub_18BE`:
+
+| selector | does |
+|---|---|
+| `$8002` | the task's reply: store `argv[0]` in the task (`+$18`), state 2 (done); with no task, it is the reply to a mailbox command (`+$12`, `+$0D`) |
+| `$8003` | state 1 |
+| `$8004` / `$8005` | get / set a module field (`+$10`) |
+| `$8006` / `$8007` | get / set a task field (`+$08`) |
+| `$8010` | `_Debugger` |
+| `$8000`, `$8001`, `$8008`-`$800F` | nothing, or -1 |
+| > 0 | call the host callback registered for this selector: `proc(count, argv, refcon)` (Pascal order) |
+
+`sub_6442` is also called from six wait loops inside `EngineDispatch`
+(`$60B0`, `$612E`, `$62E8`, `$6362`, `$6EC8`, `$71A2`), so the card can make
+a request while the host waits on any command. On the card, the code that
+makes these requests is probably the "CallBack" module (`$33EBC`, entry
+table `+$44`), whose message mentions an interrupt, but that is not checked.
+
+So the card runs host-loaded modules as tasks. A task gets messages through
+`$8001`, answers with request `$8002`, and can call back to host routines
+registered for it. This is a general extension mechanism. The ordinary
+QuickDraw patches do not use it: they send selectors `$0C`-`$38` straight
+through `EngineDispatch`. The other card requests (codes 3-22) are a
+separate, unread set.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
