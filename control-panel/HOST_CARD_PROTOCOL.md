@@ -1158,7 +1158,7 @@ and works out the destination pixmap. After the fallback, it calls
 gets reply 0, and is drawn by the 68k QuickDraw. That is a working design:
 the screen is in card memory, which the host can write over NuBus.
 
-**So the open question closes, with one condition.** The card accelerates:
+**So the open question closes** (the condition below is checked in the next paragraph). The card accelerates:
 - StretchBits (command `$15`, and through it CopyBits);
 - the cache commands;
 - the `$80xx` module interface;
@@ -1176,6 +1176,39 @@ That fits the gc24 being more general than this firmware. Its patches are
 written for a card that might accelerate every selector, and the reply
 protocol (0 = do it yourself) lets one gc24 work with firmware that handles
 fewer.
+
+**The condition checked without bits 8-11.** The low byte `$70` of the
+Std* entries is exact. All case blocks lie below module offset `$1000`, so
+the only possible targets are the sixteen words at module offset `$x70`.
+None of them except the default can start a case:
+
+| offset | word | the word before | can it start a case? |
+|---|---|---|---|
+| `$070` | `$31E18` | a `jmp` (this is its delay slot) | no: outside the dispatcher (the main loop) |
+| `$170` | `$31F18` | `cpeq` on the `load` just before | no |
+| `$270` | `$32018` | `const lr3` after `const lr2` (argument set-up) | no |
+| `$370` | `$32118` | `calli` right after its `const`/`consth` | no |
+| `$470` | `$32218` | `jmp` after a `store` | no |
+| `$570` | `$32318` | `jmpf` on the `cpneq` just before | no |
+| `$670` | `$32418` | `load` through the address just computed | no |
+| `$770` | `$32518` | `calli` right after its `const`/`consth` | no |
+| `$870` | `$32618` | `load` after its address `const` | no |
+| `$970` | `$32718` | the `consth` half of a `const`/`consth` pair | no |
+| **`$A70`** | **`$32818`** | **`jmp` + delay slot** | **yes: the default** |
+| `$B70`-`$F70` | `$32918`-`$32D18` | | no: past the end of `sub_31e20` (`$328C8`) |
+
+Every alternative is the middle of an instruction sequence: it uses a
+register or a condition that the word before it sets. So whatever bits 8-11
+are, the selectors whose entry has low byte `$70` (`$18`, `$20`-`$25`, `$27`, `$28`, `$2A`, `$2E`,
+`$2F`, `$31`, `$32`, `$34`-`$37`, `$39`-`$3B`) go to the default. The
+conclusion no longer depends on the fit, only on the exact low byte and on
+the block layout.
+
+One oddity remains. `$2A` (sent by `GA_TrapAB9A`, trap `$AB9A`) is in the
+accept list of the nested wait (`$33404`: `$26`, `$38`, `$30`, `$0C`, `$2A`,
+`$2C`), although its case is the default. An unhandled command gets reply 0
+whether it is accepted or rejected, so this changes nothing visible. It is
+probably left over from a version that handled `$2A`.
 
 **The `$80xx` commands (`sub_37B58`, decoded).** The function's arguments
 start at `lr8` (frame of 6 registers): `lr8` = command, `lr9` = `[rec+$0C]`
