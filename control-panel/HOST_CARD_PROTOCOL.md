@@ -1500,6 +1500,50 @@ code sends `$2D`. So the multi-object drawing engine is not used by the
 standard QuickDraw patches. It serves code that sends `$2D` itself, or a
 host-loaded module through the entry table.
 
+**DrawMultiObject's prologue and loop head (`$0AD18`-`$0AF90`).**
+
+*Initial state.* Before the first record the prologue:
+* runs a per-device set-up loop over 44-byte device records (`lr111`, `lr76`
+  up to `lr105`);
+* calls `$169A0`;
+* clears the interpreter state.
+
+Cleared to 0:
+* both region pointers (`lr54`, `lr19`), so the RSect/TrimRect clipping
+  in the `$6C` case runs only once the stream has supplied both regions;
+* `lr20`, which the `$0B7D4` case compares a word against;
+* `lr27`, the "pattern changed" flag that the pattern opcodes set to 1;
+* `lr28`, the chunk status (below);
+* `lr50`, `lr70`-`lr72` (`lr72` is set to 1 by the `$0B214` record),
+  `lr75` and `lr32`-`lr34`.
+
+The pen (`lr25`, `lr36`) and the three pattern slots are **not** set. A
+stream has to start with MoveTo (`$68`) and its patterns, as a picture
+does.
+
+*The stream buffer.* The stream starts at `lr102` and ends at `lr102 +
+[lr53]`, a byte count in memory. The loop head (`$0AEC8`) calls `$33304`
+with the record pointer before every record. `$33304` adds 1 to packet
+`+$1C4` (the card heartbeat the host watches) and stores the pointer in
+packet `+$1C8`, so the host can see how far the card has got.
+
+*At the end of the bytes* (`lr38 ≥ lr37`):
+* **If the last status was `$C9`**, it leaves (`$0DF28`).
+* **Otherwise it waits in `sub_33374`**, the nested wait loop. That loop
+  services only `$0C` CachePixPat, `$26`, `$2A`, `$2C`, `$30` and `$38`
+  meanwhile, and returns `$C8` or `$C9` after `$26`/`$30`.
+  * The wait is timed: service `$11` (stub `$38FE8`) is called before and
+    after it.
+  * The difference goes to `$3328C`, which counts the waits (`.bss+$10`),
+    adds up their time (`.bss+$0C`) and keeps a maximum in packet
+    `+$1CC`/`+$1D0`.
+  * The prologue's call `$33238(-1)` resets these statistics.
+* After the wait it re-reads `[lr53]` and sets `lr37 = lr102 + [lr53]`,
+  without resetting `lr38`. So the host appears to append records to the
+  same buffer and publish the new length. `$C8` would then mean "more
+  records" and `$C9` "that was the last batch", but this reading rests on
+  estimated words.
+
 #### The dispatcher prologue and packet layout
 
 **What happens before the switch (decoded).** The prologue of
