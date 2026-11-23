@@ -84,7 +84,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject's opcodes are named from the host writer; still open are the fields of `$67`, `$69` and `$75`, and why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
+- DrawMultiObject's opcodes are named from the host writer; still open are the two longs at `+4`/`+8` of the text record and the font id in `$67`, and why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -1598,7 +1598,7 @@ meaning of reply 2.
 | `$2F` (StdOval) | **3** | 12: verb, rect |
 | `$2E` (StdRRect) | **4** | 16: verb, rect, `+$C` ovalWidth, `+$E` ovalHeight |
 | `$24` (StdRect) | **5** | 12: verb, rect |
-| `$21` (StdText) | `$67`, then **6** | `$67`: 32 bytes of font state (`+$1C` from `$106(a4)`). 6: `+2` count, `+4`/`+8`/`+$0C` three longs (numer, denom and the text's pointer, by the order of StdText's arguments, not checked), `+$10` the text |
+| `$21` (StdText) | `$67` if the font changed, then **6** | `$67`: 32 bytes, `+2` the 26-byte `FMOutput` record, `+$1C` a long from `$106(a4)` (a font id set by `sub_88E6`). 6: `+2` count, `+4` and `+8` two longs from `sub_88E6`, `+$0C` the text's width (Fixed, from `StdTxMeas`), `+$10` the text |
 | `$31` (StdPoly) | **7** | verb, the Polygon (`BlockMove`, `(polySize + 7) & ~3`) |
 | `$18` (StdRgn) | **8** | verb, the Region |
 | `$10` (visRgn changed; also sent from the port check at `$51A4`) | `$6C` | the Region at `+2`, `(rgnSize + 5) & ~3` |
@@ -1606,13 +1606,50 @@ meaning of reply 2.
 | `$35` (PenSize, SetPenState, PenNormal) | `$6E` | 8: `+4` pnSize |
 | `$36` (ForeColor, RGBForeColor, PmForeColor) | `$66` or `$64` | `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917e` gives an index |
 | `$37` (BackColor, PmBackColor) | `$6D` or `$6B` | the same from `+$2A`/`+$54` |
-| (pen location changed) | `$68` | 8: `+2` `pnLocHFrac`, `+4` `pnLoc` |
-| (two colours changed, `sub_8DF2`) | `$70` | 16: `+4` and `+$0A` two RGB colours |
+| (pen location changed, `sub_8DA4`) | `$68` | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` |
+| (OpColor or HiliteColor changed, `sub_8DF2`) | `$70` | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` |
 | (a pattern slot changed, `sub_8F04` result 1-4) | `$71` / `$72` / `$74` / `$72` | `$71`: `+2` slot, `+4` 8-byte pattern; `$72`: `+2` slot, `+4` a long (a PixPat); `$74`: `+4` slot, `+6` RGB colour |
-| (select a pattern slot) | `$73` | 4: `+2` slot |
-| (QuickDraw global at `-$CA+$22` changed) | `$75` | 8: `+4` the long |
-| (flags) | `$69` | 4: `+2` flags |
+| (pattern slot changed, from `sub_8E38`) | `$73` | 4: `+2` slot: 1 pen, 2 background, 3 fill |
+| (`patAlign` changed; the QuickDraw global at −168) | `$75` | 8: `+4` `patAlign` |
+| (transfer mode changed, from `sub_8E38`) | `$69` | 4: `+2` the mode |
 | (stream header) | `$6F` | 4: `+2` flags, rewritten before each `$38` |
+
+**How a drawing call is prepared (`$4B7E` onwards).** Before any record is
+written, EngineDispatch reserves room: `$90` bytes plus the size of any
+changed clip or visible region (each `(rgnSize + 5) & ~3`) plus the call's
+own data. If that does not fit, it flushes (reason `$10` or `$12`). Then,
+per command:
+* **StdLine** checks only the pen.
+* **StdText** also calls `sub_88E6`. That measures the text with
+  `_StdTxMeas`, scales it (`FixScale`) and compares the font output with
+  the cached `FMOutput` (`EqualFontOutput`). A change means a `$67` record,
+  and possibly a `$38` flush first. A failure flushes with reason 5 and
+  leaves the call to the 68K.
+* **StdRRect** with a zero oval width or height is sent as StdRect (`$24`).
+* **StdPoly** and **StdRgn** reserve their record size.
+
+The mode and pattern come from `sub_8E38(verb, &mode, &frame, &slot)`,
+which is QuickDraw's own verb table:
+
+| verb | mode | pattern slot |
+|---|---|---|
+| frame, paint | `pnMode \| 8` | 1, the pen pattern |
+| erase | patCopy (8) | 2, the background pattern |
+| invert | patXor (`$A`), with `black` (QuickDraw global −16) | 3 |
+| fill | patCopy | 3, the fill pattern |
+| text (5) | `txMode & ~8` | unchanged |
+
+If `HiliteMode` bit 7 is clear (a hilite is pending), patXor becomes `$3A`
+and srcXor becomes `$32` (the hilite modes), and the bit is set again, as
+QuickDraw does. `frame` is −1 for the frame verb and 0 otherwise. It is the
+word at `+2` of the shape records, so the card's "verb" word (`lr82`) is a
+"frame" flag. The mode is compared with the cached one (`$CC(a4)`): a change
+emits `$69`. The slot goes into `$73` and into `$F2(a4)`.
+
+**After a StdText record** the host advances its own pen by the measured
+width: integer part to `pnLoc.h`, fraction to `pnLocHFrac`. It writes both
+into the port, so the 68K's idea of the pen stays right although the 68K
+drew nothing.
 
 **What this settles on the card side:**
 * **Opcode 1 is the line**, the `$0BDB0` case (end point at `+4`; the pen
