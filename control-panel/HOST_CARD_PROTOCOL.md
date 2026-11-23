@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope has its own key, not fitted (section 10).
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), but it is not disassembled, and its `.lit`/`.data` keys are open.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -2948,14 +2948,48 @@ driver and INIT. Its 68k clients send the same csCodes: control panel
   index (1 equal word in 62,134), and the System 7 low key decodes
   only 2 of 80 System 6 entries that could be `sub gr1, gr1, N`
   (System 7 on itself: 291 of 307).
-* Its **opcode byte is masked too**. At function entries, `opcode
-  XOR $25` takes a few values that hold over long stretches: `$00`
-  for most entries in words 933-3675, `$26`, `$30` or `$60`
-  elsewhere. So the System 6 key has a slowly changing top byte,
-  where System 7's top byte is always 0. It looks like the same
-  family of generator with a wider output, but it is a separate key
-  and would need its own fit.
+* Its **opcode byte is masked too**. (An earlier version of this section
+  read the top-byte field off assumed function prologues and got values
+  `$26`, `$30`, `$60`; that assumption was wrong, see below.)
 * Its `.lit` strings are not plain either. Its `.data` matches the
   System 7 `.data` in 22% of bytes at the same offset, but that comes
   from the mostly zero top bytes. The low 24 bits differ randomly,
   which gives no handle on the `.data` key.
+
+### The System 6 key (`antelope6_key.py`)
+
+The relocations give the key directly, because in System 6 the opcode is
+masked too:
+* a relocated `const` is `$03 | addend<15:8> | RA | addend<7:0>`, and its
+  `consth` is `$02 | 00 | RA | 00`. With the `R_IHCONST` addend, each gives
+  key bits 0-7 and 16-31 (3,850 words, pairs matched by symbol and
+  proximity);
+* a direct call with an `R_IREL` relocation is `call lr0` with
+  displacement 0, `$A8008000`: all 32 bits (133 words).
+
+From these samples:
+
+| key bits | structure | coverage of the 68,278 `.text` words |
+|---|---|---|
+| 24-31 | **two values**: `$00` up to word 20,557, `$0F` from about 20,558 on. The switch point is fixed to within 4 words by counting invalid opcodes; the other value would make 27% of the opcodes invalid | all |
+| 16-23 | a step function of the word index, like System 7's bits 16-23: neighbouring samples that agree were right in 3,738 of 3,741 leave-one-out tests | where the neighbours agree |
+| 0-7 | period 24 (9 of the 3,983 samples disagree and are dropped: bad pairings) | all |
+| 8-15 | bit `b` has period 24 for `b` ≤ 9 and `24 * 2^(b-9)` above, with **no drift term** (zero conflicts at every level; bit 15: 294 repeats). Sampled from 1,086 frame idioms (`asgeu`, `asleu`, `jmpi lr0`), which can be found once the opcode is plain | bits 0-12 all, 13: 96%, 14: 78%, 15: 52% |
+
+So the System 6 key is the same kind of generator as System 7's with a
+simpler low part (pure tables, no step per block) and a wider output (an
+opcode field). With the opcode plain, System 6's instruction mix matches
+System 7's line by line: `add` 18.0% against 18.6%, `load` 8.1/8.9,
+`const` 7.9/8.4, `jmpt` 7.8/8.3, and 0.86% invalid opcodes against 0.98%.
+
+Independent check: the word before each `asgeu` frame check, where its low
+16 bits are known, decodes as `sub gr1, gr1, N` in 110 of 119 cases. Every
+N is a multiple of 8, with the frame sizes System 7 uses (16, 24, 48, 40,
+32, 64, …).
+
+`antelope6_key.py SYS6_ACEF_100.bin OUTDIR` unpacks the file and writes
+`text.partial.bin` with a `.known` sidecar. The full 24 low bits are known
+for 20,858 words, bits 0-15 for 14,377 more, bits 0-12 for the rest. Not
+done: more idiom samples for bits 13-15 (System 7's register-pattern
+samples), the `.lit` and `.data` keys, and a disassembly.
+

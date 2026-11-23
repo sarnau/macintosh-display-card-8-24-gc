@@ -335,8 +335,9 @@ info) — none is present in the shipped control-panel software.
 ## What is open
 
 * A closed form for `Antelope`'s key (bits 16-23 are only estimated, and
-  1,277 words stay undecoded), its `.data` key, and the System 6 Antelope's
-  separate key.
+  1,277 words stay undecoded), its `.data` key, and the rest of the System 6
+  Antelope's separate key (`../antelope6_key.py` recovers the opcode byte,
+  bits 0-12 and most of bits 13-23).
 * `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
 * In `Hand`: most services behind vector 66 (`$D5`, the slot burst mask, is
   settled; `$BB`, `$D1`, `$D4` have candidates) and which feature each

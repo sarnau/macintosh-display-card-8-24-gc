@@ -325,7 +325,8 @@ boot-time **`INIT`**s. Remaining, on request:
   word exactly, bits 16-23 estimated for 98% of the words, `.lit` bits 0-11. That is enough to name its dispatcher, the command
   cases, DrawMultiObject and its drawers, the fills and copies and the C
   library (`firmware/disasm/text.partial.asm`). Still open: a closed form for the key,
-  the `.data` key and the System 6 package's own key (see the "Still open"
+  the `.data` key, and a disassembly of the System 6 Antelope, whose
+  separate key is now largely recovered (`antelope6_key.py`) (see the "Still open"
   list in `HOST_CARD_PROTOCOL.md`).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
