@@ -70,7 +70,8 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
-`$19270` (from DrawMultiObject's polygon opcode); ITabMatch `$06650`; BitsToPixMap
+`$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
+(from its region opcode); ITabMatch `$06650`; BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -1036,7 +1037,8 @@ QuickDraw does after a drawing call, and skips the original. On the card,
 - calls `MapVirtual` three times;
 - uses the GDevice cache (`$14F64`, `$14D78` `MakeITable`, `$14BD4`) and
   the copy helper `$16C48` (codes 8 and 18);
-- calls `$01494`/`$01654` repeatedly and `$3B600` twice.
+- calls `$01494` RSect and `$01654` TrimRect repeatedly (named from
+  DrawMultiObject's region opcode, below) and `$3B600` twice.
 
 So **command `$15` is the card's bit transfer between host pixel maps**: the
 CopyBits path for memory the card cannot address directly. The card maps the
@@ -1266,8 +1268,9 @@ jump targets in full:
 * For opcode 6 (its jump is not estimated), only one of the possible targets
   follows a `jmp`: `$0E018`.
 * `$6F` → `$0B228` is `jmp $0B450` with `lr38 += 4` in the delay slot,
-  and `$72` → `$0E22C` is the dispatch itself: both skip operands and read
-  the next opcode.
+  so `$6F` skips its record. `$72`'s entry resolves to `$0E22C`, the
+  start of the compare chain, which is probably wrong (see the compare
+  chain below).
 
 A trace from each case through the estimated words, following both branches
 and stopping at the dispatch, gives the first drawing routine each one
@@ -1337,7 +1340,7 @@ payload, padded to a multiple of 4:
 | opcode | case | size | fields (offsets from the record start) |
 |---|---|---|---|
 | 5 | `$0C754` | 12 | `+2` verb (`lr82`), `+4` Rect |
-| 6 | `$0E018` | `(n + $13) & ~3` | `+2` n, a byte count; `+4` and `+8` longs; `+$10` the n text bytes. `$11AD8` gets the count, a pointer to the bytes, and both longs |
+| 6 | `$0E018` | `(n + $13) & ~3` | `+2` n, a byte count; `+4` a long, stored to a global; `+8` and `+$0C` longs; `+$10` the n text bytes. `$11AD8` gets the count, a pointer to the bytes, and the longs at `+8` and `+$0C`. (The compare chain's delay slot at `$0E23C` sets the operand pointer to `lr38+$0C`, not `+4`.) |
 | 7 | `$0C398` | `(polySize + 7) & ~3` | `+2` verb, `+4` Polygon |
 | 8 | `$0D6E8` | `(rgnSize + 7) & ~3` | `+4` Region (`rgnSize` first) |
 | line | `$0BDB0` | 8 | `+4` v, `+6` h of the end point. It draws through DrawLine (`$08618` at `$0C284`), with ShieldCursor `$32C10`/`$32EF8` around it, then sets the pen (`lr25`, `lr36`) to the end point (`$0C388`): **LineTo** |
@@ -1348,7 +1351,7 @@ payload, padded to a multiple of 4:
 | `$74` | `$0B788` | 12 | `+4` slot 1-3; `+6` an RGBColor; kind 2 (the "RGB Pattern" of the cache message) |
 | `$75` | `$0B7B8` | 8 | `+4` a long, stored to a global |
 | `$70` | `$0BB7C` | 16 | `+4` long and `+8` half, stored to a global; `+$0A` an RGBColor, passed to a call |
-| `$6C` | `$0BBC4` | `(len + 5) & ~3` | a block at `+2` whose first half `len` counts its own bytes, as `rgnSize` and `polySize` do: an inline region, probably. `$6C` keeps a pointer to it in `lr54`; another opcode sharing the code (not identified) keeps it in `lr19` |
+| `$6C` | `$0BBC4` | `(rgnSize + 5) & ~3` | a Region at `+2`. `$6C` keeps a pointer to it in `lr54`; another opcode sharing the code (not identified) keeps its region in `lr19`. These are the clip and visible regions (below) |
 | `$64` | `$0B230` | 12 | `+2` onwards handed to a call with a global address: an RGBColor at `+4`, probably |
 | `$66`, `$6D` | `$0B458`, `$0B584` | 16 | colour records; `$66` reads `+8` and `+$0C` |
 | `$67` | `$0DE00` | 32 | compares the long at `+$1C` with a cached value before calling out (a font or width table selection, perhaps; the "not in cache" messages are about fonts and width tables) |
@@ -1357,6 +1360,52 @@ payload, padded to a multiple of 4:
 So the three pattern slots each come in three kinds: an old 8-byte pattern
 (`$71`), a long (`$0B72C`), or an RGB colour (`$74`). These fit pen, fill and
 background patterns, though the order of the slots is not known.
+
+**The region opcodes, and RSect / TrimRect.** Once both region pointers are
+set, the `$6C` case (`$0BBFC` onwards) loops over the devices (`lr76` up to
+`lr105`) and runs the clipping set-up that `DrawArc.a` and `DrawLine.a`
+begin with:
+
+```
+68K DrawArc.a                                  card, $0BC28-$0BD20
+RSect(dstRect, bounds, clipRgn^^.rgnBBox,      $01494(minRect, 3, device bounds,
+      visRgn^^.rgnBBox; n = 4) -> minRect             lr19+2, lr54+2)
+if region is not rectangular:                  for lr54, then lr19:
+   TrimRect(rgn, minRect, trim = true)            store it in a per-device slot
+                                                  if rgnSize != 10: $01654(rgn, minRect, 1)
+quit if the intersection is empty              an empty result clears lr11
+```
+
+`rgnSize = 10` is a rectangular region (size word plus bounding box). `+2`
+in a Region is `rgnBBox`. That names two helpers that every drawing routine
+calls:
+
+* **`$01494` is RSect**, intersecting n rectangles: here 3, without the
+  68K's separate destination rectangle. It is called by DrawArc, DrawLine,
+  QuickPolys, the text routine and StretchBits (four times);
+* **`$01654` is TrimRect**, called twice by each drawer (once per region).
+
+It also confirms that the two pointers are QuickDraw's clip and visible
+regions. Which of `lr54` and `lr19` is which is not decided.
+
+**The compare chain, read from the known low bits.** The words at `$0E21C`
+to `$0E250` are not estimated, but their low 16 bits are known:
+
+```
+$0E22C  cpgt  ?, lr81, 6      $0E238  jmpt  -> $0E018 (fits the known low bits)
+$0E230  jmpt  -> $0E26C       $0E23C  add   ?, lr38, $0C   (delay slot)
+$0E234  cpeq  ?, lr81, 6      $0E240  sub   ?, lr81, 1;  cpgtu ?, 4  -> table .lit $0484
+```
+
+So opcode 6 does go to `$0E018`. Its operand pointer is `lr38+$0C`, not
+`+4`.
+
+`$0E22C` is the start of this chain, and the table entry for `$72` resolves
+to it. Jumping there with `lr81 = $72` would fall through every compare to
+"unknown opCode". So that resolution is probably wrong too. The candidate
+`$0B22C` (the delay slot of `$6F`'s `jmp`, which adds 4 to `lr38` and runs
+on into the `$64` case) would make `$72` a `$64` with 4 extra bytes in
+front. That fits the code, but nothing confirms it.
 
 **Two open points in the table dispatch.**
 * The `.lit` value for `$73` gives `$0C1D4`, which lies inside the line
