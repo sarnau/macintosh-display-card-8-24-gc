@@ -651,7 +651,7 @@ With the handlers from the case-block table above:
 | `$12` | `$326E8` | system call `$??CD` |
 | `$13` | `$32740` | system call `$??CC` |
 | `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
-| `$15` | `$32148` | -> `$2D7B8`: bit transfer between host pixel maps (host: `GA_TrapAB27`), via `MapVirtual` |
+| `$15` | `$32148` | -> `$2D7B8`: **StretchBits** (host: `GA_TrapAB27`), host memory via `MapVirtual` |
 | `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
 | `$17`, `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (`$2C` is the host's DisposPixPat, which settles the earlier `$320C8` alternative) |
 | `$19` | `$32570` | one long -> `$14168` **FlushOffscreen** |
@@ -937,11 +937,9 @@ entry-table functions:
 | `$2D` | `$32188` | `$13770` (entry `+$04`) | no `gc24` code sends `$2D` |
 | `$11` | `$3210C` | `$15D84`, then `$16BA0` | the control record `$FFFFFFFE` (start-up) |
 
-`GA_TrapAB27` patches trap `$AB27`, which is not in the System 7.1 headers.
-It takes a CopyBits-sized argument list (four longs, a word, a long that must
-be 0, a word, six more longs). It runs only if:
-- the device's flags have bits `$27` set and bits `$600` clear;
-- that long argument is 0.
+`GA_TrapAB27` patches trap `$AB27`, which is `StretchBits` (below). It runs
+only if the device's flags have bits `$27` set and bits `$600` clear, and
+the `pat` argument is NIL.
 
 `sub_8262` then builds a parameter block in card memory (packet `+$58`), and
 the patch sends `$15` with a pointer to it. A reply of 1 means the card did
@@ -956,6 +954,49 @@ QuickDraw does after a drawing call, and skips the original. On the card,
 So **command `$15` is the card's bit transfer between host pixel maps**: the
 CopyBits path for memory the card cannot address directly. The card maps the
 host pages and moves the pixels itself.
+
+**Trap `$AB27` is `StretchBits`, and command `$15` carries its parameter
+block.** The argument list of `GA_TrapAB27` is exactly the one in the System
+7.1 source (`QuickDraw/Stretch.a`):
+
+```
+StretchBits(srcBits, maskBits, dstBits: BitMap; srcRect, maskRect, dstRect: Rect;
+            mode: INTEGER; pat: Pattern; rgnA, rgnB, rgnC: RgnHandle)
+```
+
+`pat` must be NIL for the card to take the call. `sub_8262` fills a
+`$10A`-byte block in card memory (packet `+$58`, so it sits in the packet
+after the command header), and `$15` passes its address:
+
+| offset | contents |
+|---|---|
+| `+$000` | mode (word). `srcXor` becomes `$32` (hilite) when `HiliteMode` bit 7 is clear |
+| `+$002` | dstBits: the whole PixMap (`$32` bytes), or the 14-byte BitMap |
+| `+$036` | srcBits, the same way |
+| `+$06A` | maskBits, the same way (`baseAddr` 0 when there is no mask) |
+| `+$09C`, `+$0A0`, `+$0A4` | for dst, src, mask: 0 if `pmReserved` bit 0 is set; the handle if `pmVersion` = 2 (its `baseAddr` is dereferenced into the copy); `sub_822E(baseAddr)` if `pmVersion` = 1 |
+| `+$0A8`, `+$0B0`, `+$0B8` | dstRect, srcRect, maskRect |
+| `+$0C0`, `+$0C4`, `+$0C8` | rgnA, rgnB, rgnC: the region pointers (master pointers, so host addresses) |
+| `+$104`, `+$106`, `+$108` | their `rgnSize` words |
+| `+$0CC` | a flag (the trap's last word shifted down, ORed with low memory `$256`) |
+| `+$0D0` | `TheGDevice` (`$CC8`) |
+| `+$0D4` | low memory `$8A0` |
+| `+$0E0`, `+$0E4` | the port's foreground and background colour indices. They are recomputed with `Color2Index` when the GDevice has search procs |
+| `+$0E8`, `+$0EE` | `rgbFgColor`, `rgbBkColor` (an old port's colours come from `sub_917E`; `+$0F6` is then its `colrBit`) |
+| `+$0F4` | the port is a colour port |
+| `+$0F8`, `+$0FE` | for arithmetic modes (mode bit 5) at depths above 1: `OpColor` and `HiliteColor` (`HiliteRGB` for an old port) |
+
+A PixMap's `rowBytes` bit 14 marks a port's pixmap handle, which is
+dereferenced first. The destination depth comes from `TheGDevice` when
+`dstBits.baseAddr` is the screen (`ScrnBase`, `$824`), else from the PixMap.
+
+So the card gets StretchBits with everything QuickDraw would read from the
+port and the device, but the pixel data and the regions stay in host memory.
+The block carries host addresses: `baseAddr`, the region master pointers and
+the handles. That is what `MapVirtual` is for. `$2D7B8` is then the card's
+StretchBits: the strings of its neighbour `$22A8C` (entry `+$14`), "ScaleC…
+IndexTo…: unsupported dstDepth" and "unknown scaleNum", match Stretch.a's
+`ScaleBlt` and `Scale…toIndexed` families.
 
 **What happens before the switch (decoded).** The prologue of
 `sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits

@@ -27,7 +27,7 @@ confirmed table.
 | 3 | $1040 | $A890 | _StdLine | `$3682` | $0D **$20** $26 **$38** |
 | 4 | $10F4 | $A8BD | _StdArc | `$3DDC` | $0D **$23** $26 **$38** |
 | 5 | $1008 | $A882 | _StdText | `$3A9C` | $0D **$21** $26 **$38** |
-| 6 | $1A9C | $AB27 | (not in Traps.h) | `$32BC` | $0D **$15** **$38** |
+| 6 | $1A9C | $AB27 | StretchBits (internal; signature matches `QuickDraw/Stretch.a`, see HOST_CARD_PROTOCOL.md) | `$32BC` | $0D **$15** **$38** |
 | 7 | $800 | - | - | `$42B8` | - |
 | 8 | $804 | - | - | `$420C` | - |
 | 9 | $808 | - | - | `$44C4` | - |
