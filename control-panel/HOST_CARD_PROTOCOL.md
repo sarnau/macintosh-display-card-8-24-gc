@@ -69,8 +69,8 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 **Named card functions** (the evidence is in the sections below): the
 dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
-(likely); text `$11AD8` (likely); DrawLine/DrawArc/QuickPolys `$075DC`,
-`$08618`, `$19270` (order unknown); ITabMatch `$06650`; BitsToPixMap
+(likely); text `$11AD8` (likely); QuickPolys `$19270` (likely), DrawLine/DrawArc
+`$075DC`/`$08618` (order unknown); ITabMatch `$06650`; BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -82,7 +82,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 **Still open:**
 - DrawMultiObject's opcode → case mapping (the high bits of its table
   targets);
-- which of `$075DC`/`$08618`/`$19270` is lines, arcs and polygons;
+- which of `$075DC`/`$08618` is lines and which arcs (`$19270` is likely polygons);
 - what the card's ShieldCursor (`$32C10`/`$32EF8`) does when the cursor overlaps;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -1115,7 +1115,7 @@ anchors:
 | `+$14` | `$22A8C` | **scaleBlt** | strings; `GetSeek` + a family of depth loops |
 | `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits and the shape drawers; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
 | `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; four mode loops `$1B33C`-`$1BDE8` |
-| `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: **DrawLine, DrawArc, QuickPolys** in some order | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
+| `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: **DrawLine, DrawArc, QuickPolys**; `$19270` is likely QuickPolys (profile below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
 | `+$24` | `$11AD8` | **text** (likely) | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw), RgnBlt, BitBlt; uses `extern#1772+$60`-`$6C` |
 | `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
@@ -1125,6 +1125,41 @@ anchors:
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
 | `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers (`$00348` is called by nearly every blitter) | |
+
+**The three shape drawers (profile, not settled).** The partial disassembly
+gives each one's instruction mix, data references and callees:
+
+| | `$075DC` (`+$1C`) | `$08618` (`+$20`) | `$19270` (`+$28`) |
+|---|---|---|---|
+| words | 770 | 643 | 717 |
+| stores | 19 | 16 | **57** |
+| shifts (`sra`/`srl`/`sll`) | **36**/7/21 | 12/6/14 | 13/6/17 |
+| 32×32 multiply `$00CC4` | **yes (2 refs)** | no | no |
+| calls BitBlt / RgnBlt | no | yes | yes |
+| own switch | none | 6-way on `lr35` (`.lit $0228`) | none |
+| ShieldCursor | once each | `$32C10` twice | once each |
+
+The shared helpers are runtime and support code:
+- `$00CC4` is a 32×32 multiply (31 `mul` steps);
+- `$3BA38` is a divide (31 `div` steps, `divl`, `divrem`);
+- `$3B814`/`$3B950` are small millicode helpers (called with `calli gr122`);
+- `$1114C` and `$11A34` pick a scanline loop from a table of 18 and 7
+  targets, like QuickDraw's mode-case tables;
+- `$0E398` is a short arithmetic helper, and `$17500` an allocator.
+
+Readings:
+- `$19270`, with three times the stores, fits **QuickPolys**, which builds
+  and sorts an edge list.
+- `$075DC` is the only one that multiplies, and the most shift-heavy.
+  It is arcs or lines: in the 68k sources both `DrawArc.a` (`SlopeFromAngle`,
+  `_FixMul`) and `DrawLine.a` (`FixMul`, `MULS`) multiply, and
+  `QuickPolys.a` divides (`FixRatio`).
+- `$08618` is then the other of the two. Its 6-way switch matches the
+  6-way sub-switches in DrawMultiObject (`lr94`), so both probably select
+  by the same kind of value.
+
+So only QuickPolys = `$19270` is a likely name. Which of `$075DC`/`$08618`
+draws lines needs their DrawMultiObject opcodes, which are not mapped yet.
 
 Two more names come from the strings: `$06650` "ITabMatch: Inverse Table is
 not up to date", and `$06BEC` "BitsToPixMap: bounds …" (called from
