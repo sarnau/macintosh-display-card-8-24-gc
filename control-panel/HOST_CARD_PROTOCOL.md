@@ -42,7 +42,7 @@ sequence numbers on both sides.
 | `$15` | `StretchBits` (trap `$AB27`; CopyBits ends here) | `$2D7B8` StretchBits, with `scaleBlt`, BitBlt and RgnBlt. Reaches host pixel maps through `MapVirtual` |
 | `$03`/`$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
 | `$26`, `$38`, `$0D`, … | begin / synchronise around drawing | state and bookkeeping |
-| `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "The host side of DrawMultiObject") |
+| `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "DrawMultiObject: the batched drawing stream") |
 | `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
 
 **The Std\* drawing calls are batched, not sent.** `StdLine` (`$20`),
@@ -708,7 +708,7 @@ So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
 holds across all of `.lit`.
 
 **Three known plaintexts from the host.** The stream writer in `gc24`'s
-`EngineDispatch` (see "The host side of DrawMultiObject") gives the true
+`EngineDispatch` (see "DrawMultiObject: the batched drawing stream") gives the true
 targets of three DrawMultiObject table entries that the fit had decoded
 wrongly:
 
@@ -1364,229 +1364,36 @@ and `$5F4` come from matching them with the host side. The argument order of
 `$38218` (destination first) is inferred from the two calls being mirror
 images. What `+$1EC` is used for later is not found.
 
-#### DrawMultiObject
+#### DrawMultiObject: the batched drawing stream
 
-**DrawMultiObject's opcodes (partial).** `$0AD18` runs a loop over an opcode
-stream. The opcode is in `lr81`, the operands are read through `lr38`
-(`[lr38+2]`, `+4`, `+6`, …: halfword fields), and the dispatch sits at the
-loop's end (`$0E22C`-`$0E2EC`):
+**In short.** The QuickDraw bottlenecks (StdLine, StdText, StdArc, StdRect,
+StdRRect, StdOval, StdPoly, StdRgn) are not sent to the card one by one.
+`EngineDispatch` in `gc24` turns each call into records of a stream in card
+memory:
+* first records for whatever port state changed (pen, colours, patterns,
+  mode, regions, font);
+* then one record for the drawing itself.
 
-| opcodes | dispatch |
-|---|---|
-| 1-5 | table `.lit $0484` (`opcode - 1`, 5 entries) |
-| 6, 7, 8, `$64`, `$66`, `$67`, `$68` | compare chain |
-| `$6A`-`$75` | table `.lit $0498` (`opcode - $6A`, 12 entries) |
-| anything else | "DrawMultiObject: unknown opCode %d" (`.lit $0430`) |
+The card plays the stream back in **DrawMultiObject** (`$0AD18`), started
+with command `$2D` and fed with `$38`. Fonts reach the card by a separate
+upload (`$30`) into a cache of host objects.
 
-That is 24 opcodes; `$65` and `$69` are not used. The values do not follow
-the PICT opcode numbering.
+The 68K side below is read from `gc24.s`, which is plain code. The card side
+rests on estimated words (`antelope_estimate_words.py`, "=" in its output)
+and on the `.lit` key with host-confirmed pins. Treat each card-side detail
+as a reading.
 
-The two 6-entry tables (`.lit $0454`, `$046C`) are not opcode tables. They
-are sub-switches on `lr94` (0-5), inside the drawing code at `$0CD30` and
-`$0CEE4`. Cases 0-2 call `$09430`, case 3 calls `$09578`, and cases 4-5 go
-elsewhere. Both switches come right after `$1553C` and `$32C10`, and
-DrawMultiObject's own messages are about pattern, "thickPat", RGB-pattern
-and font cache entries. So `lr94` is probably the fill kind (old pattern,
-pixel pattern, RGB pattern …), and `$09020`-`$09660` are the fill loops.
-That reading is not checked.
+##### The host side: EngineDispatch writes the stream
 
-**The opcode → block mapping from the table alone (superseded below).** The table words give
-only the low 12 bits of each target, and the module is `$3680` bytes long.
-For every entry, exactly one block start (a word after a jump) matches, but
-several of the picks are clearly wrong: `$0B8C4` (opcodes 2 and `$6A`) tests
-`lr6`, not the opcode, and `$0D9C4` (opcodes 3, 4) tests for opcode 2. The
-"word after a jump" test is too loose inside this function, where cases fall
-into shared code. Naming the opcodes needs the high bits from somewhere
-else, for example by estimating bits 16-23 of the case blocks'
-`jmp` words (`antelope_estimate_words.py`).
-
-**DrawMultiObject's opcodes, mapped through the estimated words.**
-`antelope_estimate_words.py` decodes 3,256 of DrawMultiObject's 3,488 words
-(491 samples, 2,765 estimates from neighbouring samples; 232 are left). That gives most
-jump targets in full:
-
-* The compare chain resolves directly: opcode 7 → `$0C398`, 8 → `$0D6E8`,
-  `$64` → `$0B230`, `$66` → `$0B458`, `$67` → `$0DE00`, `$68` → `$0BD7C`.
-  Anything unmatched goes to `$0E20C` (the "unknown opCode" message).
-* For the table entries, the candidate after a `jmp` and its delay slot is
-  taken, as before.
-* For opcode 6 (its jump is not estimated), only one of the possible targets
-  follows a `jmp`: `$0E018`.
-* `$6F` → `$0B228` is `jmp $0B450` with `lr38 += 4` in the delay slot,
-  so `$6F` skips its record. `$72`'s entry resolves to `$0E22C`, the
-  start of the compare chain, which is probably wrong (see the compare
-  chain below).
-
-A trace from each case through the estimated words gives the routines each
-one calls. The trace follows both branches, stops at the jump back to the
-loop (`$0B450`), and does not fall through after an unconditional jump's
-delay slot (an earlier version did, and its traces ran on into the next
-cases). Targets are the pinned `.lit` entries and the host's record names
-(see "The host side of DrawMultiObject"):
-
-| record | case | words traced (not estimated) | routines reached |
-|---|---|---|---|
-| 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
-| 2 arc | `$0B8C4` | 270 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`); the rest goes through a jump that is not estimated |
-| 3/4 oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
-| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68`, ShieldCursor pair, `$1701C`, BitBlt |
-| 6 text | `$0E018` | 98 (0) | none before its unestimated jump (DrawText `$11AD8` follows, at `$0E1B0`) |
-| 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
-| 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
-| `$64`, `$66`, `$6D` colours | `$0B230`, `$0B458`, `$0B584` | 69-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
-| `$67` font | `$0DE00` | 134 | `$15E8C`, the cache lookup with time stamp |
-| `$6A`/`$6C` regions | `$0BBC4` | 110 | RSect, TrimRect |
-| `$68`, `$6E`, `$6F`, `$70`, `$71`, `$72`, `$74`, `$75` | | 2-23 | none: they only store state |
-| `$73` slot | `$0C1D4` | 387 (8) | DrawLine and the ShieldCursor pair |
-
-Two rows do not fit their records:
-* `$73`'s entry (not pinned) lies inside the line case and reaches DrawLine,
-  so it is probably still decoded wrongly.
-* The arc case reaches only the pattern cache before an unestimated jump;
-  DrawArc is presumably after it.
-
-So the stream mixes drawing records (1-8) with state records (`$64`-`$75`):
-the same split as a QuickDraw picture, with its own numbering.
-
-**Opcode 7 is a polygon, and that settles lines vs arcs.** Its case
-(`$0C398`, estimated words, the operand pointer `gr96 = lr38 + 4` set in
-the jump's delay slot at `$0E274`) reads:
-
-```
-gr98 = half[lr38+4]                  polySize
-lr93 = (polySize - 10) / 4           number of points (size word + bbox + 4 bytes per point)
-lr82 = half[lr38+2]                  a flag/verb word
-lr92 = lr38 + $0E                    the first point (after polySize and polyBBox)
-lr38 += (polySize + 7) & ~3          skip the inline polygon, long-aligned
-if lr93 == 0: next opcode
-```
-
-So the stream carries a QuickDraw `Polygon` record inline. The case calls
-drawer B (`$08618`) first and then `$19270`. In QuickDraw, `FramePoly`
-draws the outline as lines between the points, and the filled verbs go
-through `QuickPolys`. So:
-
-* **`$08618` is DrawLine**, the line drawer, used here to frame the polygon,
-  and by opcode `$73` on its own (the line opcode);
-* **`$19270` is QuickPolys**, which fits its store-heavy profile;
-* **`$075DC` is DrawArc** by elimination (opcodes 3 and 4: arcs, and
-  probably ovals or round rects, which QuickDraw also draws through
-  DrawArc). It is also the one that multiplies (`SlopeFromAngle`, `FixMul`
-  in `DrawArc.a`).
-
-Opcodes 3/4's case (`$0D9C4`) is not estimated (no samples nearby), so its
-operands are not read.
-
-**The record format.** Each case ends by advancing `lr38`, usually in the
-delay slot of its `jmp $0B450` back to the loop. That gives every record's
-size, and the case's loads give the fields. The loop head reads the opcode as
-a signed half at `lr38+0` (`$0AF90`) and runs while `lr38 < lr37`, the end of
-the stream. The table dispatch's delay slot (`$0E268`) sets `gr96 = lr38+4`,
-the payload. So a record is a 2-byte opcode, a 2-byte word at `+2`, then the
-payload, padded to a multiple of 4:
-
-| opcode | case | size | fields (offsets from the record start) |
-|---|---|---|---|
-| 5 | `$0C754` | 12 | `+2` verb (`lr82`), `+4` Rect |
-| 6 | `$0E018` | `(n + $13) & ~3` | `+2` n, a byte count; `+4` a long, stored to a global; `+8` and `+$0C` longs; `+$10` the n text bytes. `$11AD8` gets the count, a pointer to the bytes, and the longs at `+8` and `+$0C`. (The compare chain's delay slot at `$0E23C` sets the operand pointer to `lr38+$0C`, not `+4`.) |
-| 7 | `$0C398` | `(polySize + 7) & ~3` | `+2` verb, `+4` Polygon |
-| 8 | `$0D6E8` | `(rgnSize + 7) & ~3` | `+4` Region (`rgnSize` first) |
-| line | `$0BDB0` | 8 | `+4` v, `+6` h of the end point. It draws through DrawLine (`$08618` at `$0C284`), with ShieldCursor `$32C10`/`$32EF8` around it, then sets the pen (`lr25`, `lr36`) to the end point (`$0C388`): **LineTo** |
-| `$68` | `$0BD7C` | 8 | `+2` a word (`lr103`), `+4` v, `+6` h into `lr25`/`lr36`, the pen position the line case draws from: **MoveTo**. Opcode 7 also sets them, from the first point, when its verb is non-zero |
-| `$6E` | `$0BD98` | 8 | `+4` v, `+6` h into `lr49`/`lr48`, a second point (pen size, perhaps) |
-| `$71` | `$0B6D8` | 12 | `+2` slot 1, 2 or 3; `+4` an 8-byte bit Pattern; the slot's kind is set to 0 |
-| (none found) | `$0B72C` | 8 | `+2` slot 1-3; `+4` a long (a PixPat, perhaps); kind 1 |
-| `$74` | `$0B788` | 12 | `+4` slot 1-3; `+6` an RGBColor; kind 2 (the "RGB Pattern" of the cache message) |
-| `$75` | `$0B7B8` | 8 | `+4` a long, stored to a global |
-| `$70` | `$0BB7C` | 16 | `+4` long and `+8` half, stored to a global; `+$0A` an RGBColor, passed to a call |
-| `$6C` | `$0BBC4` | `(rgnSize + 5) & ~3` | a Region at `+2`. `$6C` keeps a pointer to it in `lr54`; another opcode sharing the code (not identified) keeps its region in `lr19`. These are the clip and visible regions (below) |
-| `$64` | `$0B230` | 12 | `+2` onwards handed to a call with a global address: an RGBColor at `+4`, probably |
-| `$66`, `$6D` | `$0B458`, `$0B584` | 16 | colour records; `$66` reads `+8` and `+$0C` |
-| `$67` | `$0DE00` | 32 | compares the long at `+$1C` with a cached value before calling out (a font or width table selection, perhaps; the "not in cache" messages are about fonts and width tables) |
-| `$6F` | `$0B228` | 4 | nothing |
-
-So the three pattern slots each come in three kinds: an old 8-byte pattern
-(`$71`), a long (`$0B72C`), or an RGB colour (`$74`). These fit pen, fill and
-background patterns, though the order of the slots is not known.
-
-**The region opcodes, and RSect / TrimRect.** Once both region pointers are
-set, the `$6C` case (`$0BBFC` onwards) loops over the devices (`lr76` up to
-`lr105`) and runs the clipping set-up that `DrawArc.a` and `DrawLine.a`
-begin with:
-
-```
-68K DrawArc.a                                  card, $0BC28-$0BD20
-RSect(dstRect, bounds, clipRgn^^.rgnBBox,      $01494(minRect, 3, device bounds,
-      visRgn^^.rgnBBox; n = 4) -> minRect             lr19+2, lr54+2)
-if region is not rectangular:                  for lr54, then lr19:
-   TrimRect(rgn, minRect, trim = true)            store it in a per-device slot
-                                                  if rgnSize != 10: $01654(rgn, minRect, 1)
-quit if the intersection is empty              an empty result clears lr11
-```
-
-`rgnSize = 10` is a rectangular region (size word plus bounding box). `+2`
-in a Region is `rgnBBox`. That names two helpers that every drawing routine
-calls:
-
-* **`$01494` is RSect**, intersecting n rectangles: here 3, without the
-  68K's separate destination rectangle. It is called by DrawArc, DrawLine,
-  QuickPolys, the text routine and StretchBits (four times);
-* **`$01654` is TrimRect**, called twice by each drawer (once per region).
-
-It also confirms that the two pointers are QuickDraw's clip and visible
-regions. Which of `lr54` and `lr19` is which is not decided.
-
-**The compare chain, read from the known low bits.** The words at `$0E21C`
-to `$0E250` are not estimated, but their low 16 bits are known:
-
-```
-$0E22C  cpgt  ?, lr81, 6      $0E238  jmpt  -> $0E018 (fits the known low bits)
-$0E230  jmpt  -> $0E26C       $0E23C  add   ?, lr38, $0C   (delay slot)
-$0E234  cpeq  ?, lr81, 6      $0E240  sub   ?, lr81, 1;  cpgtu ?, 4  -> table .lit $0484
-```
-
-So opcode 6 does go to `$0E018`. Its operand pointer is `lr38+$0C`, not
-`+4`.
-
-`$0E22C` is the start of this chain, and the table entry for `$72` resolves
-to it. Jumping there with `lr81 = $72` would fall through every compare to
-"unknown opCode". So that resolution is probably wrong too. The candidate
-`$0B22C` (the delay slot of `$6F`'s `jmp`, which adds 4 to `lr38` and runs
-on into the `$64` case) would make `$72` a `$64` with 4 extra bytes in
-front. That fits the code, but nothing confirms it.
-
-**Two open points in the table dispatch.**
-* The `.lit` value for `$73` gives `$0C1D4`, which lies inside the line
-  case's body, not at its entry `$0BDB0`. The line case is entered at
-  `$0BDB0` cleanly (after a `jmp` and its delay slot), but none of the
-  table values gives that address.
-* The values for opcode 1 (`$xBB0`) and `$6B` (`$xB440`) give no clean
-  entry in any 4-KB page.
-
-So either the estimates near those targets are off, or these entries point
-into shared code. Which opcode is LineTo is therefore not certain: `$73` is
-the best candidate.
-
-This mapping rests on estimated words ("=" in the tool's output, not
-samples). The estimates have been right wherever they could be checked (the
-dispatcher), but each row here is a reading, not a proof.
-
-**Who reaches DrawMultiObject.** Inside Antelope only `$13770` calls it, and
-`$13770` is reached only by command `$2D` (and the entry table). `$2D` is
-sent by `EngineDispatch` itself (`gc24.s` `$4F38`) when it starts a new
-stream. See the next section.
-
-#### The host side of DrawMultiObject: EngineDispatch batches the Std\* calls
-
-**EngineDispatch is the stream writer.** For commands `$0C`-`$38` it jumps
-through its own table (`$4A52`). Most cases end in the generic send path
-(`L5E6C`), but the drawing commands go to `L4AAC`. That code:
+**Which commands are batched.** For commands `$0C`-`$38`, EngineDispatch
+jumps through its own table (`$4A52`). Most cases end in the generic send
+path (`L5E6C`), but the drawing commands go to `L4AAC`, which:
 1. checks the current port (from the A5 world). With none, it flushes and
-   returns 0;
+   returns 0, so the 68K draws;
 2. when `picSave`, `rgnSave` or `polySave` (port `+$5C`/`+$60`/`+$64`) is
    set, notes the reply 2 (below);
-3. emits state records for whatever changed since the last call (it
-   caches the port's state in its globals);
+3. emits state records for whatever changed since the last call (it caches
+   the port's state in its globals);
 4. emits one drawing record for the call.
 
 **The buffer:**
@@ -1600,276 +1407,341 @@ through its own table (`$4A52`). Most cases end in the generic send path
 | `$BC(a4)` | capacity |
 | `$C0(a4)` | bytes used |
 
-When a record would not fit (`$BC − size − $24 ≤ $C0`), it flushes with
-`sub_4822(reason)`, that is `EngineDispatch($26, reason)`. The reasons seen
-are 8, 9, `$12`, `$13`, `$14` and `$18`.
-
 **Starting a stream** (`$4EBC`, when the port differs from the cached one):
 1. reset the buffer;
-2. write a 4-byte `$6F` record at its start;
-3. set the length to 4 (at `+$50` of a block at packet `+$170`, whose
-   `+$4C` holds the card address);
-4. send `$2D` with that block. The card enters DrawMultiObject and runs
-   until the first wait.
+2. write a 4-byte `$6F` header record;
+3. set the length to 4 (at `+$50` of a block at packet `+$170`, whose `+$4C`
+   holds the card address);
+4. send `$2D` with that block. On the card, `$2D` is handled by `$13770`,
+   the only caller of DrawMultiObject. It runs until the first wait.
 
 **After each drawing call** (`$38`, `L5DE0`), if the buffer holds more than
 the header:
-1. rewrite the `$6F` header's word at `+2` with flags (`$F0(a4)`);
+1. rewrite the header's word at `+2` with flags (`$F0(a4)`);
 2. send `$38` with (card address, byte count).
 
 On the card, the nested wait inside DrawMultiObject services `$38`. Its case
 stores the count (`[p[0]+4]`) in the length word that DrawMultiObject
-re-reads, so the card carries on with the new records. `$26` (`L5D84`)
-first sends a final `$38` if needed and then ends the batch. The card's
-wait returns `$C8`/`$C9` after `$26`/`$30`.
+re-reads.
 
-**The reply.** EngineDispatch returns 1 ("done", the 68K skips the call).
-When the port is recording a picture, region or polygon, it returns 2. It
-also restores `HiliteMode`, `pnLoc` and `pnLocHFrac` first, so the 68K
-original runs with drawing suppressed and records the call. That is the
-meaning of reply 2.
+**Flushing and ending.**
+* When a record would not fit (`$BC − size − $24 ≤ $C0`), EngineDispatch
+  flushes with `sub_4822(reason)`, that is `EngineDispatch($26, reason)`.
+  The reasons seen are 5, 8, 9, `$10`, `$12`, `$13`, `$14`, `$15` and `$18`.
+* `$26` (`L5D84`) first sends a final `$38` if needed, then ends the batch.
 
-**Commands → records** (from the chain at `$555C` and the patch table in
-`QUICKDRAW_PATCHES.md`):
+**The reply.** EngineDispatch returns 1 ("done": the 68K skips the call).
+When the port is recording a picture, region or polygon, it returns 2
+instead. Before that it restores `HiliteMode`, `pnLoc` and `pnLocHFrac`, so
+the 68K original runs with drawing suppressed (`pnVis` = −1) and records the
+call. That is the meaning of reply 2.
 
-| command (patch) | record | layout written by the host |
-|---|---|---|
-| `$20` (StdLine) | **1** | 8: `+4` the new point (also stored as the port's `pnLoc`) |
-| `$23` (StdArc) | **2** | 16: `+2` verb, `+4` rect, `+$C` startAngle, `+$E` arcAngle |
-| `$2F` (StdOval) | **3** | 12: verb, rect |
-| `$2E` (StdRRect) | **4** | 16: verb, rect, `+$C` ovalWidth, `+$E` ovalHeight |
-| `$24` (StdRect) | **5** | 12: verb, rect |
-| `$21` (StdText) | `$67` if the font changed, then **6** | `$67`: 32 bytes, `+2` the 26-byte `FMOutput` record (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle`, the key of the card's width-table cache. 6: `+2` count, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text |
-| `$31` (StdPoly) | **7** | verb, the Polygon (`BlockMove`, `(polySize + 7) & ~3`) |
-| `$18` (StdRgn) | **8** | verb, the Region |
-| `$10` (visRgn changed; also sent from the port check at `$51A4`) | `$6C` | the Region at `+2`, `(rgnSize + 5) & ~3` |
-| `$32` (SetClip, ClipRect) | `$6A` | the clip Region at `+2`, same size rule |
-| `$35` (PenSize, SetPenState, PenNormal) | `$6E` | 8: `+4` pnSize |
-| `$36` (ForeColor, RGBForeColor, PmForeColor) | `$66` or `$64` | `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917e` gives an index |
-| `$37` (BackColor, PmBackColor) | `$6D` or `$6B` | the same from `+$2A`/`+$54` |
-| (pen location changed, `sub_8DA4`) | `$68` | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` |
-| (OpColor or HiliteColor changed, `sub_8DF2`) | `$70` | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` |
-| (a pattern slot changed, `sub_8F04` result 1-4) | `$71` / `$72` / `$74` / `$72` | `$71`: `+2` slot, `+4` 8-byte pattern; `$72`: `+2` slot, `+4` a long (a PixPat); `$74`: `+4` slot, `+6` RGB colour |
-| (pattern slot changed, from `sub_8E38`) | `$73` | 4: `+2` slot: 1 pen, 2 background, 3 fill |
-| (`patAlign` changed; the QuickDraw global at −168) | `$75` | 8: `+4` `patAlign` |
-| (transfer mode changed, from `sub_8E38`) | `$69` | 4: `+2` the mode |
-| (stream header) | `$6F` | 4: `+2` flags, rewritten before each `$38` |
+**Preparing a call (`$4B7E` onwards).**
+* **Room.** EngineDispatch reserves `$90` bytes plus the size of any changed
+  clip or visible region (each `(rgnSize + 5) & ~3`) plus the call's own
+  data. If that does not fit, it flushes (reason `$10` or `$12`).
+* **Per command:**
+  * StdLine checks only the pen (`sub_8DA4`).
+  * StdText runs the font work (`sub_88E6`, below).
+  * StdRRect with a zero oval width or height is sent as StdRect (`$24`).
+  * StdPoly and StdRgn reserve their record size.
+* **Mode and pattern** come from `sub_8E38(verb, &mode, &frame, &slot)`,
+  QuickDraw's own verb table:
 
-**How a drawing call is prepared (`$4B7E` onwards).** Before any record is
-written, EngineDispatch reserves room: `$90` bytes plus the size of any
-changed clip or visible region (each `(rgnSize + 5) & ~3`) plus the call's
-own data. If that does not fit, it flushes (reason `$10` or `$12`). Then,
-per command:
-* **StdLine** checks only the pen.
-* **StdText** also calls `sub_88E6`. That measures the text with
-  `_StdTxMeas`, scales it (`FixScale`) and compares the font output with
-  the cached `FMOutput` (`EqualFontOutput`). A change means a `$67` record,
-  and possibly a `$38` flush first. A failure flushes with reason 5 and
-  leaves the call to the 68K.
-* **StdRRect** with a zero oval width or height is sent as StdRect (`$24`).
-* **StdPoly** and **StdRgn** reserve their record size.
+  | verb | mode | pattern slot |
+  |---|---|---|
+  | frame, paint | `pnMode \| 8` | 1, the pen pattern |
+  | erase | patCopy (8) | 2, the background pattern |
+  | invert | patXor (`$A`), with `black` (QuickDraw global −16) | 3 |
+  | fill | patCopy | 3, the fill pattern |
+  | text (5) | `txMode & ~8` | unchanged |
 
-The mode and pattern come from `sub_8E38(verb, &mode, &frame, &slot)`,
-which is QuickDraw's own verb table:
+  If `HiliteMode` bit 7 is clear (a hilite is pending), patXor becomes `$3A`
+  and srcXor becomes `$32`, and the bit is set again, as QuickDraw does.
+  `frame` is −1 for the frame verb and 0 otherwise. It is the word at `+2`
+  of the shape records. A change of mode against the cached one
+  (`$CC(a4)`) emits `$69`, and the slot goes into `$73`.
 
-| verb | mode | pattern slot |
-|---|---|---|
-| frame, paint | `pnMode \| 8` | 1, the pen pattern |
-| erase | patCopy (8) | 2, the background pattern |
-| invert | patXor (`$A`), with `black` (QuickDraw global −16) | 3 |
-| fill | patCopy | 3, the fill pattern |
-| text (5) | `txMode & ~8` | unchanged |
+##### The records
 
-If `HiliteMode` bit 7 is clear (a hilite is pending), patXor becomes `$3A`
-and srcXor becomes `$32` (the hilite modes), and the bit is set again, as
-QuickDraw does. `frame` is −1 for the frame verb and 0 otherwise. It is the
-word at `+2` of the shape records, so the card's "verb" word (`lr82`) is a
-"frame" flag. The mode is compared with the cached one (`$CC(a4)`): a change
-emits `$69`. The slot goes into `$73` and into `$F2(a4)`.
+A record is a 2-byte opcode, a 2-byte word at `+2`, then the data, padded to
+a multiple of 4. The host writes these layouts (the chain at `$555C`, and
+the command names from the patch table in `QUICKDRAW_PATCHES.md`). The card
+cases are the pinned `.lit` entries (see "Three known plaintexts from the
+host") and the compare chain.
 
-**Text and fonts (`sub_88E6`).** For StdText the host does the font work
-itself and sends the card only what it lacks:
-1. **Measure.** `_StdTxMeas(count, text, numer, denom, info)`. The
-   QuickDraw global `fixTxWid` (−172) gives the Fixed width; `FixScale`
+| record | written for (command) | size: layout | card case |
+|---|---|---|---|
+| **1** line | StdLine (`$20`) | 8: `+4` the new point, which also becomes `pnLoc` | `$0BDB0`: draws from the pen with DrawLine, then moves the pen there |
+| **2** arc | StdArc (`$23`) | 16: `+2` frame, `+4` rect, `+$C` startAngle, `+$E` arcAngle | `$0B8C4` |
+| **3** oval | StdOval (`$2F`) | 12: frame, rect | `$0D9C4` (DrawArc) |
+| **4** round rect | StdRRect (`$2E`) | 16: frame, rect, `+$C` ovalWidth, `+$E` ovalHeight | `$0D9C4` (DrawArc) |
+| **5** rect | StdRect (`$24`) | 12: frame, rect | `$0C754` |
+| **6** text | StdText (`$21`) | `(n + $13) & ~3`: `+2` count n, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text | `$0E018`, then DrawText `$11AD8` |
+| **7** poly | StdPoly (`$31`) | `(polySize + 7) & ~3`: frame, the Polygon | `$0C398` |
+| **8** region | StdRgn (`$18`) | `(rgnSize + 7) & ~3`: frame, the Region | `$0D6E8` |
+| `$64`, `$66` foreground colour | ForeColor, RGBForeColor, PmForeColor (`$36`) | 12 / 16: `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917E` gives an index | `$0B230`, `$0B458` |
+| `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54` | `$0B584` for `$6D`; `$6B` unresolved |
+| `$67` font | StdText, when the font changed | 32: `+2` the 26-byte `FMOutput` (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle` | `$0DE00` |
+| `$68` MoveTo | the pen location changed (`sub_8DA4`) | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` | `$0BD7C` |
+| `$69` mode | the transfer mode changed (`sub_8E38`) | 4: `+2` the mode | compare chain (not found) |
+| `$6A` clip region | SetClip, ClipRect (`$32`) | `(rgnSize + 5) & ~3`: the Region at `+2` | `$0BBC4`, into `lr19` |
+| `$6C` visible region | visRgn changed (`$10`, also from the port check at `$51A4`) | the same | `$0BBC4`, into `lr54` |
+| `$6E` pen size | PenSize, SetPenState, PenNormal (`$35`) | 8: `+4` pnSize | `$0BD98` |
+| `$6F` header | start of the stream | 4: `+2` flags, rewritten before each `$38` | `$0B228`: skipped |
+| `$70` hilite/op colour | OpColor or HiliteColor changed (`sub_8DF2`) | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` | `$0BB7C` |
+| `$71` bit pattern | a pattern slot changed (`sub_8F04` result 1) | 12: `+2` slot, `+4` an 8-byte Pattern | `$0B6D8`: kind 0 |
+| `$72` pixel pattern | `sub_8F04` result 2 or 4 | 8: `+2` slot, `+4` a long (a PixPat) | `$0B72C`: kind 1 |
+| `$73` slot | the verb's pattern slot changed | 4: `+2` slot (1 pen, 2 background, 3 fill) | `$0C1D4` (probably wrong, see "Open points") |
+| `$74` RGB pattern | `sub_8F04` result 3 | 12: `+4` slot, `+6` an RGB colour | `$0B788`: kind 2, the "RGB Pattern" of the cache message |
+| `$75` patAlign | `patAlign` changed (QuickDraw global −168) | 8: `+4` `patAlign` | `$0B7B8`: stored to a global |
+
+The card handles 24 opcodes; `$65` and `$69` are not among them. The
+numbering does not follow PICT,
+but the split into drawing records (1-8) and state records (`$64`-`$75`)
+is the one a QuickDraw picture makes.
+
+After a StdText record the host advances its own pen by the measured width:
+the integer part to `pnLoc.h`, the fraction to `pnLocHFrac`. It writes both
+into the port, so the 68K's pen stays right although the 68K drew nothing.
+
+##### The card side: the interpreter
+
+**Prologue (`$0AD18`-`$0AEC4`).** It first runs a per-device set-up loop
+over 44-byte device records (`lr111`, `lr76` up to `lr105`), then calls
+`$169A0`. It clears:
+* both region pointers (`lr54`, `lr19`);
+* `lr20`;
+* `lr27`, the "pattern changed" flag that the pattern records set;
+* `lr28`, the chunk status;
+* `lr50`, `lr70`-`lr72`, `lr75` and `lr32`-`lr34`.
+
+The pen (`lr25`, `lr36`) and the pattern slots are **not** set, so a stream
+has to begin with MoveTo and its patterns. The host does that, because its
+cached state starts out empty.
+
+**Loop head (`$0AEC8`).**
+* **Before each record** it calls `$33304(record pointer)`. That adds 1 to
+  packet `+$1C4` (the heartbeat the host watches) and stores the pointer in
+  packet `+$1C8`, so the host can see how far the card has got.
+* **The stream** runs from `lr102` to `lr102 + [lr53]`. The opcode is read
+  as a signed half at `lr38+0` (`$0AF90`).
+* **At the end of the bytes**, if the last status was `$C9`, it leaves
+  (`$0DF28`). Otherwise it waits in `sub_33374`, the nested wait loop. That
+  loop services only `$0C` (CachePixPat), `$26`, `$2A`, `$2C`, `$30` (the
+  font upload) and `$38`, and returns `$C8` or `$C9` after `$26`/`$30`.
+  * The wait is timed: service `$11` (stub `$38FE8`) is called before and
+    after it.
+  * `$3328C` counts the waits (`.bss+$10`), adds up their time
+    (`.bss+$0C`) and keeps a maximum in packet `+$1CC`/`+$1D0`.
+  * The prologue's call `$33238(-1)` resets these statistics.
+* **After the wait** it re-reads `[lr53]` and sets the end to `lr102 +
+  [lr53]` without resetting `lr38`. It goes on with the records the host
+  appended. Most likely `$C8` means "more records" and `$C9` "last batch".
+
+**Dispatch (`$0E22C`-`$0E2EC`).** The opcode is in `lr81`:
+
+| opcodes | dispatch |
+|---|---|
+| 1-5 | table `.lit $0484` (`opcode − 1`); the delay slot (`$0E268`) sets the data pointer `gr96 = lr38 + 4` |
+| 6 | compare chain (`$0E22C`-`$0E23C`, read from the known low bits); its delay slot sets the pointer to `lr38 + $0C` |
+| 7, 8, `$64`, `$66`, `$67`, `$68` | compare chain: 7 → `$0C398`, 8 → `$0D6E8`, `$64` → `$0B230`, `$66` → `$0B458`, `$67` → `$0DE00`, `$68` → `$0BD7C` |
+| `$6A`-`$75` | table `.lit $0498` (`opcode − $6A`) |
+| anything else | `$0E20C`: "DrawMultiObject: unknown opCode %d" (`.lit $0430`) |
+
+Each case ends by advancing `lr38`, usually in the delay slot of its `jmp
+$0B450` back to the loop. The sizes found that way match the host's layouts
+for every case that has been read.
+
+The two 6-entry tables `.lit $0454` and `$046C` are not opcode tables. They
+are sub-switches on `lr94` (0-5) in the drawing code at `$0CD30` and
+`$0CEE4`, right after `$1553C` and `$32C10`:
+* cases 0-2 call `$09430`;
+* case 3 calls `$09578`;
+* cases 4-5 go elsewhere.
+
+`lr94` is probably the fill kind, and `$09020`-`$09660` the fill loops. That
+is not checked.
+
+**What each case calls.** A trace from each case through the estimated words
+follows both branches and stops at the jump back to the loop:
+
+| record | case | words traced (not estimated) | routines reached |
+|---|---|---|---|
+| 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
+| 2 arc | `$0B8C4` | 270 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`), then a jump that is not estimated |
+| 3/4 oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
+| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68`, ShieldCursor pair, `$1701C`, BitBlt |
+| 6 text | `$0E018` | 98 (0) | none before its unestimated jump; DrawText `$11AD8` follows at `$0E1B0` |
+| 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
+| 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
+| `$64`, `$66`, `$6D` | `$0B230`, `$0B458`, `$0B584` | 69-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
+| `$67` | `$0DE00` | 134 | `$15E8C`, the cache lookup with time stamp |
+| `$6A`/`$6C` | `$0BBC4` | 110 | RSect, TrimRect |
+| `$68`, `$6E`, `$6F`, `$70`-`$72`, `$74`, `$75` | | 2-23 | none: they only store state |
+| `$73` | `$0C1D4` | 387 (8) | DrawLine and the ShieldCursor pair |
+
+Every drawing case brackets its drawing with the cursor hand-off described
+in "The cursor".
+
+**The polygon case** (`$0C398`) reads the Polygon in place:
+
+```
+gr98 = half[lr38+4]                  polySize
+lr93 = (polySize - 10) / 4           number of points (size word + bbox + 4 bytes per point)
+lr82 = half[lr38+2]                  the frame flag
+lr92 = lr38 + $0E                    the first point (after polySize and polyBBox)
+lr38 += (polySize + 7) & ~3          skip the record
+if lr93 == 0: next record
+```
+
+It frames through DrawLine and fills through QuickPolys, as `FramePoly` and
+the filled verbs do in QuickDraw. That case named `$08618` DrawLine and
+`$19270` QuickPolys, and `$075DC` DrawArc by elimination (it is also the one
+that multiplies: `SlopeFromAngle` and `FixMul` in `DrawArc.a`).
+
+**The region case and the clipping set-up.** Once both region pointers are
+set, the `$6A`/`$6C` case (`$0BBFC` onwards) loops over the devices and runs
+the clipping that `DrawArc.a` and `DrawLine.a` begin with:
+
+```
+68K DrawArc.a                                  card, $0BC28-$0BD20
+RSect(dstRect, bounds, clipRgn^^.rgnBBox,      $01494(minRect, 3, device bounds,
+      visRgn^^.rgnBBox; n = 4) -> minRect             lr19+2, lr54+2)
+if region is not rectangular:                  for lr54, then lr19:
+   TrimRect(rgn, minRect, trim = true)            store it in a per-device slot
+                                                  if rgnSize != 10: $01654(rgn, minRect, 1)
+quit if the intersection is empty              an empty result clears lr11
+```
+
+`rgnSize = 10` is a rectangular region, and `+2` in a Region is `rgnBBox`.
+That names two helpers every drawing routine calls:
+* `$01494` is **RSect**: DrawArc, DrawLine, QuickPolys and DrawText call it
+  once each, StretchBits four times;
+* `$01654` is **TrimRect**: each drawer calls it twice, once per region.
+
+##### Text and fonts
+
+**On the host (`sub_88E6`).** For StdText the host does the font work and
+sends the card only what it lacks:
+1. **Measure.** It calls `_StdTxMeas(count, text, numer, denom, info)`. The
+   QuickDraw global `fixTxWid` (−172) gives the Fixed width, and `FixScale`
    scales it by `numer.h/denom.h` when they differ.
-2. **Bail out to the 68K** when the width table (`WidthTabHandle`, `$B2A`)
-   has `WidthIsSpline` set (`+$436`): TrueType is not accelerated.
-3. **Look for what is new**, as bits in a mask:
+2. **Leave TrueType to the 68K.** If the width table (`WidthTabHandle`,
+   `$B2A`) has `WidthIsSpline` set (`+$436`), it returns −1.
+3. **Find what is new**, as bits in a mask:
 
    | bit | meaning | arguments added |
    |---|---|---|
    | 0 | the width table is new | `WidthTabHandle` and its pointer |
    | 1 | the font strike (`WidTabFont`, `+$400`) is not yet on the card | handle, pointer, size (`sub_BFDE`) |
    | 2 | `FMOutput`'s strike differs from it and is not on the card | handle, pointer, size |
-   | 3 | a script font (`WidthAFID` ≥ `$4000`) and the text has bytes `$84`-`$9E` | the strike's handle and pointer (no size) |
+   | 3 | a script font (`WidthAFID` ≥ `$4000`) and the text has bytes `$84`-`$9E` | the strike's handle and pointer |
    | 4 | the same for the `FMOutput` strike | its handle and pointer |
 
    A width table is recognised by an id (`sub_7E8C`) that the host writes
-   into its `WidthHint` field (`+$432`, marked "unimplemented" in
-   `fontPrivate.a`, so free for this). A strike counts as uploaded once bit
-   `$800` of its first word is set.
-4. **Upload.** If the current stream uses the old font, it first flushes it
-   (`$38`). Then it sends `$30` with (mask, arguments). On the card that is
-   the bit-mask chain: bit 0 → `$14B64` (two longs, the width table), bits
-   1-4 → `$14A80` (a strike: three longs for bits 1/2, two for 3/4). On success the strikes get bit
-   `$800`. On failure the `WidthHint` is restored and the call goes to the
-   68K.
-5. **Remember** the width table (`$106(a4)` = the handle, `$1AC(a4)` = a copy
-   of its first `$434` bytes) and the `FMOutput` (`$192(a4)`), so that the
-   next StdText with the same font sends nothing new and no `$67`.
+   into its `WidthHint` field (`+$432`, which `fontPrivate.a` marks
+   "unimplemented"). A strike counts as uploaded once bit `$800` of its
+   first word is set.
+4. **Upload.** If the current stream still uses the old font, it flushes it
+   first (`$38`). Then it sends `$30` with (mask, arguments). On success the
+   strikes get bit `$800`. On failure the `WidthHint` is restored and the
+   call goes to the 68K (reason 5).
+5. **Remember** the width table (`$106(a4)` the handle, `$1AC(a4)` a copy of
+   its first `$434` bytes) and the `FMOutput` (`$192(a4)`). The next StdText
+   in the same font then sends nothing new and no `$67`.
 
-**The card side of the upload: a cache of host objects.** Both handlers
-use one cache, kept per kind and keyed by the host handle:
-
-* `extern#1745` is an array of 24-byte descriptors, one per kind. `+$08`
-  heads a linked list, `+$0C` gives the entry size, and `+$10` the data size
-  in longs.
-* Each entry is: `+$00` a timestamp, `+$04`/`+$08` prev/next, `+$0C` the host
-  handle (the key), `+$10` the data.
-* **`$15D28(kind, key)` finds** an entry by walking the list.
-  **`$15E8C`** does the same and stamps a hit with the clock (service `$11`,
-  stub `$38FE8`) for LRU replacement. **`$15EE4` creates** an entry:
-  1. `$15A7C` makes room, by evicting if needed;
-  2. `$15958` allocates the entry;
-  3. it stamps the entry, zeroes its data, puts the key at `+$0C` and links
-     it at the head;
-  4. `$15ACC` counts it.
-* **`$15FF4(kind, key)`** is find-or-create.
-
-The kinds seen so far:
-* 2: GDevice (the cursor code looks up `CrsrDevice` with
-  `$15D28(2, …)`);
-* 6: commands `$0D`/`$0F`;
-* 8: font strike;
-* `$0A`: width table.
-
-**`$14B64(handle, ptr)`, a width table.** Find-or-create kind `$0A`, then
-copy `$434` bytes from the host pointer into the entry with `$16C48`, the
-copy helper behind requests 8/18. It returns the entry's data.
-
-**`$14A80(handle, ptr, size)`, a strike.** Find-or-create kind 8. If the
-entry is new, or holds another handle, it copies `size` bytes in (`$16C48`,
-mode 3). If that fails it retries through `$14564` (presumably by freeing
-space). Then it clears the top bit of the entry's first word and puts the
-entry in LRU order (`$15B3C(8, entry)`).
-
-**The card draws the text itself.** DrawMultiObject's text case calls
-`$11AD8`, a 7 KB routine with the shape of QuickDraw's `DrawText.a`:
-* the clipping set-up: RSect `$01494`, TrimRect `$01654` twice;
-* the ShieldCursor pair `$32C10`/`$32EF8`;
-* a buffer from PRAlloc `$16A04`, which it builds the glyphs into;
-* then the transfer: StretchBits `$2D7B8` (twice), scaleBlt `$22A8C` and
-  RgnBlt `$19DA4`, as `DrawText.a` hands its buffer to StretchBits.
-
-**Read in `$11AD8` (estimated words, `antelope_estimate_words.py
-0x11AD8 0x13770`):**
-
-* **The style comes from `FMOutput`.** One pointer (`lr60`) is read at
-  exactly the `FMOutput` offsets:
-
-  | offset | field |
-  |---|---|
-  | `+6` | `boldPixels` (byte) |
-  | `+7` | `italicPixels` (byte) |
-  | `+$A` | `ulThick` (byte) |
-  | `+$B` | `shadowPixels` (byte, twice) |
-  | `+$C` | `extra` (signed byte) |
-  | `+$11` | `curStyle` |
-  | `+$12`/`+$14` | `numer` |
-  | `+$16` | `denom` |
-
-  So bold, italic, underline and shadow are applied on the card, from the
-  `$67` record the host sent.
-* **The buffer is built as in `DrawText.a`.**
-  * The left edge is rounded down to 32 pixels (`andn …, $1F`).
-  * The width is converted to longs (`srl 5`), plus 2.
-  * One buffer is allocated from PRAlloc `$16A04`, or two when a flag
-    (`lr58`) is set, presumably for the shadow/outline mask as in
-    `DrawText.a`.
-  * Each buffer is cleared, with a leading zero long.
-  * The destination row is `baseAddr + (v − bounds.top) × rowBytes`, from a
-    bitmap record whose `rowBytes` is a long (`lr73`: `+0` base, `+4`
-    rowBytes, `+8`/`+$A` bounds top/left).
-* **The transfer modes are tested against `$32`** (the hilite srcXor that
-  the host's verb table produces), as `DrawText.a` treats hilite specially.
-
-The glyph loop itself, which reads the strike's `locTable` and bit image, is
-not decoded. The strike copied into the cache is the only font data on the
-card, so it must be the source.
+**On the card: the upload handlers.** The `$30` case (`$322D4`) takes the
+mask's bits in turn:
+* bit 0 → **`$14B64(handle, ptr)`**: find-or-create a kind-`$0A` cache
+  entry, copy the width table's `$434` bytes into it with `$16C48` (the
+  copy helper behind requests 8/18), and return the entry's data;
+* bits 1-4 → **`$14A80(handle, ptr, size)`**:
+  * find-or-create a kind-8 entry;
+  * if the entry is new or holds another handle, copy the strike in
+    (`$16C48`, mode 3), retrying through `$14564` if that fails;
+  * clear the top bit of the entry's first word and put it in LRU order
+    (`$15B3C`).
 
 So the card's "font is not in cache" and "width table is not in the cache"
 messages are about this upload: DrawMultiObject looks up the `$67` record's
 `WidthTabHandle` and the `FMOutput` strike in what `$30` delivered.
 
-**After a StdText record** the host advances its own pen by the measured
-width: integer part to `pnLoc.h`, fraction to `pnLocHFrac`. It writes both
-into the port, so the 68K's idea of the pen stays right although the 68K
-drew nothing.
+**The cache of host objects.** One cache serves fonts, GDevices and more,
+organised per kind and keyed by the host handle:
+* `extern#1745` is an array of 24-byte descriptors, one per kind: `+$08`
+  heads a linked list, `+$0C` gives the entry size, and `+$10` the data
+  size in longs.
+* Each entry is: `+$00` a time stamp, `+$04`/`+$08` prev/next, `+$0C` the
+  host handle (the key), `+$10` the data.
+* **`$15D28(kind, key)` finds** an entry by walking the list.
+* **`$15E8C`** finds and stamps a hit with the clock (service `$11`) for
+  LRU replacement.
+* **`$15EE4` creates** an entry:
+  1. `$15A7C` makes room, evicting if needed;
+  2. `$15958` allocates the entry;
+  3. it stamps the entry, zeroes its data, sets the key and links it at the
+     head;
+  4. `$15ACC` counts it.
+* **`$15FF4(kind, key)`** is find-or-create.
 
-**What this settles on the card side:**
-* **Opcode 1 is the line**, the `$0BDB0` case (end point at `+4`; the pen
-  moves there). Its `.lit` entry had decoded wrongly; pinned now (see "Three known plaintexts from the host"). **`$73`
-  is not a line**: it selects a pattern slot, which fits the card's `$0C1D4`
-  code storing into one of three slots by `lr4`.
-* **2 = Arc, 3 = Oval, 4 = RoundRect, 5 = Rect.** QuickDraw draws ovals and
-  round rects through DrawArc, which fits 3/4 sharing `$0D9C4`. 2 is the
-  arc with angles, at `$0B8C4`.
-* **`$72` is the "long" pattern kind** (the `$0B72C` case); its `.lit` entry
-  is pinned the same way.
-* **`$6B`/`$6D` are background colours** and `$64`/`$66` foreground colours.
-  `$6B`'s `.lit` value `$xB440` lands in the `$64` code, which handles the
-  same layout.
-* **`$6C` is the visible region (`lr54`) and `$6A` the clip region
-  (`lr19`).**
-* **`$68` is MoveTo** with `pnLocHFrac` at `+2`. **`$6E` is the pen size.**
+The kinds seen so far:
 
-The record table above was read from the card alone. Where it differs
-from this section, this section is the reference.
+| kind | holds |
+|---|---|
+| 2 | GDevice (the cursor code looks up `CrsrDevice` with `$15D28(2, …)`) |
+| 6 | used by commands `$0D`/`$0F` |
+| 8 | font strike |
+| `$0A` | width table |
 
+**On the card: drawing the text.** `$11AD8`, called from the text case, is a
+7 KB routine with the shape of QuickDraw's `DrawText.a`:
+* the clipping set-up (RSect, TrimRect twice) and the ShieldCursor pair;
+* one buffer from PRAlloc `$16A04`, or two when a flag (`lr58`) is set,
+  presumably for a shadow mask. Each is cleared, with a leading zero long.
+  The left edge is rounded down to 32 pixels, and the width is counted in
+  longs plus 2;
+* the destination row is `baseAddr + (v − bounds.top) × rowBytes`, from a
+  bitmap record whose `rowBytes` is a long (`lr73`: `+0` base, `+4` rowBytes,
+  `+8`/`+$A` bounds top/left);
+* the transfer goes through StretchBits `$2D7B8` (twice), scaleBlt `$22A8C`
+  and RgnBlt `$19DA4`, as `DrawText.a` hands its buffer to StretchBits;
+* modes are tested against 2 and `$32` (srcXor and the hilite srcXor).
 
-**DrawMultiObject's prologue and loop head (`$0AD18`-`$0AF90`).**
+The style comes from the `FMOutput` of the `$67` record. One pointer
+(`lr60`) is read at exactly its field offsets:
 
-*Initial state.* Before the first record the prologue:
-* runs a per-device set-up loop over 44-byte device records (`lr111`, `lr76`
-  up to `lr105`);
-* calls `$169A0`;
-* clears the interpreter state.
+| offset | field |
+|---|---|
+| `+6` | `boldPixels` (byte) |
+| `+7` | `italicPixels` (byte) |
+| `+$A` | `ulThick` (byte) |
+| `+$B` | `shadowPixels` (byte, twice) |
+| `+$C` | `extra` (signed byte) |
+| `+$11` | `curStyle` |
+| `+$12`/`+$14` | `numer` |
+| `+$16` | `denom` |
 
-Cleared to 0:
-* both region pointers (`lr54`, `lr19`), so the RSect/TrimRect clipping
-  in the `$6C` case runs only once the stream has supplied both regions;
-* `lr20`, which the `$0B7D4` case compares a word against;
-* `lr27`, the "pattern changed" flag that the pattern opcodes set to 1;
-* `lr28`, the chunk status (below);
-* `lr50`, `lr70`-`lr72` (`lr72` is set to 1 by the `$0B214` record),
-  `lr75` and `lr32`-`lr34`.
+So bold, italic, underline, shadow and scaling are applied on the card. The
+glyph loop itself, which reads the strike's location table and bit image,
+is not decoded. The cached strike is the only font data on the card, so it
+has to be the source.
 
-The pen (`lr25`, `lr36`) and the three pattern slots are **not** set. A
-stream has to start with MoveTo (`$68`) and its patterns, as a picture
-does.
+##### Open points
 
-*The stream buffer.* The stream starts at `lr102` and ends at `lr102 +
-[lr53]`, a byte count in memory. The loop head (`$0AEC8`) calls `$33304`
-with the record pointer before every record. `$33304` adds 1 to packet
-`+$1C4` (the card heartbeat the host watches) and stores the pointer in
-packet `+$1C8`, so the host can see how far the card has got.
-
-*At the end of the bytes* (`lr38 ≥ lr37`):
-* **If the last status was `$C9`**, it leaves (`$0DF28`).
-* **Otherwise it waits in `sub_33374`**, the nested wait loop. That loop
-  services only `$0C` CachePixPat, `$26`, `$2A`, `$2C`, `$30` and `$38`
-  meanwhile, and returns `$C8` or `$C9` after `$26`/`$30`.
-  * The wait is timed: service `$11` (stub `$38FE8`) is called before and
-    after it.
-  * The difference goes to `$3328C`, which counts the waits (`.bss+$10`),
-    adds up their time (`.bss+$0C`) and keeps a maximum in packet
-    `+$1CC`/`+$1D0`.
-  * The prologue's call `$33238(-1)` resets these statistics.
-* After the wait it re-reads `[lr53]` and sets `lr37 = lr102 + [lr53]`,
-  without resetting `lr38`. So the host appears to append records to the
-  same buffer and publish the new length. `$C8` would then mean "more
-  records" and `$C9` "that was the last batch", but this reading rests on
-  estimated words.
+* **`$73`'s card case.** Its entry (not pinned) lies inside the line case
+  and reaches DrawLine, which does not fit a 4-byte "select slot" record.
+* **`$6B`.** Its entry (`$72C`) matches no clean case entry. It is the
+  background colour in the same layout as `$64`.
+* **`$69`.** The host writes it when the transfer mode changes, but the
+  card's dispatch has no case for it: it is in neither table nor the
+  compare chain, so it would reach "unknown opCode". Either the host never
+  emits it in practice, or the dispatch as read is incomplete.
+* **The arc case** reaches only the pattern cache before a jump that is not
+  estimated, so DrawArc's call for record 2 is not seen.
+* **Four sub-switch entries** (`.lit $0464`, `$0468`, `$047C`, `$0480`)
+  match no clean case entry.
+* **The glyph loop** in `$11AD8` is not decoded.
 
 #### The dispatcher prologue and packet layout
 
