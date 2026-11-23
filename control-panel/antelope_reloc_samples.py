@@ -47,7 +47,7 @@ def pairs(d, secs, W, key):
 
 def main(path):
     rows = [l for l in open(TSV).read().split('\n') if l]
-    head, rows = rows[0], [r for r in rows[1:] if r.split('\t')[2] != 'ihconst']
+    head, rows = rows[0], [r for r in rows[1:] if r.split('\t')[2] not in ('ihconst', 'irel')]
     open(TSV, 'w').write('\n'.join([head] + rows) + '\n')     # Key() without old rows
     d, K, sp, ns, secs = a.load(path)
     W = u.words(os.path.join(u.ANT, 'text.bin'))
@@ -77,10 +77,33 @@ def main(path):
     print('words whose key bit 15 comes from the paired word: %d' % b15)
     assert bad == 0
     rows += ['%d\t%06x\tihconst' % (k, v) for k, v in new.items()]
+    # R_IREL (type 24) direct calls: 'call RA, target' with displacement 0 in
+    # the file, so bits 0-7 and 16-23 are plaintext 0.  RA (bits 8-15) is
+    # lr0 except for 5 transfer calls through gr122; take it from the known
+    # low key bits (16 or more of them at every such word).
+    t = [s for s in secs if s['name'] == '.text'][0]
+    irel, ia = {}, 0
+    for va, si, ty in a.get_relocs(d, t):
+        if ty != 24:
+            continue
+        k = (va - t['vaddr']) // 4
+        v, n = key(k)
+        assert n >= 16 and W[k] >> 24 == 0xA8
+        ra = ((W[k] ^ v) >> 8) & 0xFF
+        kv = (W[k] ^ (0xA8000000 | ra << 8)) & 0xFFFFFF
+        if n > 16:
+            assert (kv ^ v) & ((1 << n) - 1) == 0
+            ia += 1
+        if k not in new:
+            irel[k] = kv
+    print('R_IREL call words: %d (%d checked against bits above 15), %d new' % (
+        len([1 for _ in irel]) + 0, ia, len(irel)))
+    rows = [r for r in rows if r.split('\t')[2] != 'irel']
+    rows += ['%d\t%06x\tirel' % (k, v) for k, v in irel.items()]
     # a 16-bit 'pattern16' row (4 fields) goes before a 24-bit row at the same k
     rows.sort(key=lambda r: (int(r.split('\t')[0]), -len(r.split('\t'))))
     open(TSV, 'w').write('\n'.join([head] + rows) + '\n')
-    print('added %d ihconst samples (24 bits) to %s' % (len(new), TSV))
+    print('added %d ihconst and %d irel samples (24 bits) to %s' % (len(new), len(irel), TSV))
 
 
 if __name__ == '__main__':

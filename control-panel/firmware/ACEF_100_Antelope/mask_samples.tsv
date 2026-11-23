@@ -12183,27 +12183,39 @@ k	key24	plaintext	bits
 57093	f731e8	asgeu64
 57094	f73006	add_lr1
 57095	003375	pattern16	16
+57095	f73375	irel
 57098	00cd6f	pattern16	16
+57098	f7cd6f	irel
 57099	f7cd0c	nop
 57103	f7cfec	nop
 57104	00cfef	pattern16	16
+57104	f7cfef	irel
 57178	f7eb26	sub_gr1
 57179	f7ebb5	asgeu64
 57180	f7ea20	add_lr1
 57181	00eac8	pattern16	16
+57181	f7eac8	irel
 57184	00e472	pattern16	16
+57184	f7e472	irel
 57185	f7e4ed	nop
 57189	f7e6e8	nop
+57190	f7e106	irel
 57202	00fe66	pattern16	16
 57203	00feb5	pattern16	16
 57208	00f8b2	pattern16	16
 57218	f7f7ef	nop
 57220	00f612	pattern16	16
 57224	f7f06f	nop
+57233	f78ced	irel
+57240	f789c0	irel
 57243	008b8c	pattern16	16
+57243	f78b8c	irel
 57247	00856c	pattern16	16
+57247	f7856c	irel
+57253	f78788	irel
 57258	f7806c	nop
 57259	00808c	pattern16	16
+57259	f7808c	irel
 57325	f7a248	nop
 57336	00bec0	pattern16	16
 57397	f65f08	nop
@@ -12211,9 +12223,13 @@ k	key24	plaintext	bits
 57399	f65eec	nop
 57404	005b6f	pattern16	16
 57414	00548c	pattern16	16
+57414	f6548c	irel
 57417	005148	pattern16	16
+57417	f65148	irel
 57419	0051b5	pattern16	16
+57419	f651b5	irel
 57421	005348	pattern16	16
+57421	f65348	irel
 57423	f6532c	add_gr1
 57424	f653f2	nop
 57425	f652ed	jmpi_lr0
@@ -12231,10 +12247,19 @@ k	key24	plaintext	bits
 57478	f67406	sub_gr1
 57479	f67775	asgeu64
 57480	f67640	add_lr1
+57481	f676a8	irel
+57484	f671d2	irel
 57485	f6702d	nop
 57489	f67208	nop
+57490	f60d66	irel
+57494	f60cef	irel
+57501	f608a8	irel
 57504	000b00	pattern16	16
+57504	f60b00	irel
+57508	f60512	irel
 57512	f6076f	nop
+57516	f601a0	irel
+57523	f602cc	irel
 57528	f61cc0	nop
 57530	f61e6f	nop
 57544	f61432	nop
@@ -12262,12 +12287,17 @@ k	key24	plaintext	bits
 57686	00d2ef	pattern16	16
 57688	00edb2	pattern16	16
 57693	00eea8	pattern16	16
+57693	f6eea8	irel
 57699	00eb4c	pattern16	16
 57702	00eb8c	pattern16	16
 57714	00e1ac	pattern16	16
+57714	f6e1ac	irel
 57717	00e368	pattern16	16
+57717	f6e368	irel
 57719	00e275	pattern16	16
+57719	f6e275	irel
 57721	00fd28	pattern16	16
+57721	f6fd28	irel
 57723	f6fc8c	add_gr1
 57724	f6ff52	nop
 57725	f6ff2d	jmpi_lr0
@@ -12310,17 +12340,27 @@ k	key24	plaintext	bits
 57909	f14168	asgeu64
 57910	f14186	add_lr1
 57911	004075	pattern16	16
+57911	f14075	irel
 57914	00426f	pattern16	16
+57914	f1426f	irel
 57915	f1428c	nop
 57919	f15c6c	nop
+57920	f15cef	irel
 57924	005ee0	pattern16	16
+57924	f15ee0	irel
 57931	005b8c	pattern16	16
+57931	f15b8c	irel
 57934	005ac6	pattern16	16
+57934	f15ac6	irel
 57938	0054ef	pattern16	16
+57938	f154ef	irel
 57945	0050c8	pattern16	16
+57945	f150c8	irel
 57952	006c72	pattern16	16
+57952	f16c72	irel
 57957	f16ee8	nop
 57958	006906	pattern16	16
+57958	f16906	irel
 57961	f16ba8	nop
 57975	f160ec	nop
 57981	f17da8	nop
@@ -12345,9 +12385,13 @@ k	key24	plaintext	bits
 58100	0024ef	pattern16	16
 58102	f12786	nop
 58127	003b75	pattern16	16
+58127	f13b75	irel
 58130	003aef	pattern16	16
+58130	f13aef	irel
 58132	003592	pattern16	16
+58132	f13592	irel
 58134	00370c	pattern16	16
+58134	f1370c	irel
 58136	f1366f	add_gr1
 58137	f136c8	nop
 58138	f13126	jmpi_lr0
@@ -12441,6 +12485,7 @@ k	key24	plaintext	bits
 58439	f05d75	asgeu64
 58440	f05c40	add_lr1
 58444	005fd2	pattern16	16
+58444	f05fd2	irel
 58446	f0594c	add_gr1
 58447	f059ec	nop
 58448	f059ef	jmpi_lr0
@@ -12449,9 +12494,11 @@ k	key24	plaintext	bits
 58452	f05a60	asgeu64
 58454	005aef	pattern16	16
 58460	00566f	pattern16	16
+58460	f0566f	irel
 58462	f05146	ihconst
 58463	f05175	ihconst
 58466	0050ef	pattern16	16
+58466	f050ef	irel
 58468	f05312	add_gr1
 58469	f0532d	nop
 58470	f0538c	jmpi_lr0
@@ -12460,8 +12507,10 @@ k	key24	plaintext	bits
 58474	f06ca6	asgeu64
 58475	f06cb5	add_lr1
 58487	006a75	pattern16	16
+58487	f06a75	irel
 58490	f0646f	ihconst
 58491	f0648c	ihconst
+58494	f067cc	irel
 58496	f066ef	add_gr1
 58498	f061e6	jmpi_lr0
 58499	f061b5	asleu65
@@ -12471,8 +12520,10 @@ k	key24	plaintext	bits
 58509	f07c28	ihconst
 58510	f07cc6	ihconst
 58513	007e68	pattern16	16
+58513	f07e68	irel
 58515	f079cc	ihconst
 58516	f07992	ihconst
+58519	f07bac	irel
 58521	f07ac8	add_gr1
 58522	f07526	nop
 58523	f075b5	jmpi_lr0
@@ -12488,9 +12539,11 @@ k	key24	plaintext	bits
 58540	f00cd2	ihconst
 58541	f00f2d	ihconst
 58544	000eef	pattern16	16
+58544	f00eef	irel
 58547	f008b5	ihconst
 58548	f00b60	ihconst
 58551	000aec	pattern16	16
+58551	f00aec	irel
 58553	f005ed	add_gr1
 58555	f0040c	jmpi_lr0
 58556	f0076f	asleu65
@@ -12499,10 +12552,12 @@ k	key24	plaintext	bits
 58561	f006e8	sub_gr1
 58562	f001ef	asgeu64
 58571	001db5	pattern16	16
+58571	f01db5	irel
 58573	f01f48	add_gr1
 58574	f01f6f	nop
 58575	f01f2c	jmpi_lr0
 58576	f01ff2	asleu65
+58577	f01eed	irel
 58584	f01bc0	add_gr1
 58585	f01a28	nop
 58586	f0156f	jmpi_lr0
@@ -12513,6 +12568,7 @@ k	key24	plaintext	bits
 58601	f013ed	ihconst
 58606	f02dc6	ihconst
 58607	f02c75	ihconst
+58626	f0262c	irel
 58631	f02375	add_gr1
 58632	f02240	nop
 58633	f022a8	jmpi_lr0
@@ -12525,12 +12581,15 @@ k	key24	plaintext	bits
 58647	f03bec	nop
 58648	f03bb2	jmpi_lr0
 58649	f03aed	asleu65
+58655	f03775	irel
 58660	003112	pattern16	16
+58660	f03112	irel
 58664	00336f	pattern16	16
 58666	f032a6	add_gr1
 58667	f032b5	nop
 58668	f0cda0	jmpi_lr0
 58669	f0cc48	asleu65
+58676	f0ceef	irel
 58685	f0c52d	ihconst
 58686	f0c5cc	ihconst
 58711	f0d9ac	add_gr1
@@ -12540,11 +12599,14 @@ k	key24	plaintext	bits
 58717	f0dac8	asgeu64
 58732	f0d2d2	ihconst
 58733	f0ed2d	ihconst
+58739	f0eeb5	irel
 58744	f0e8b2	nop
 58745	f0ebed	add_gr1
 58746	f0ebec	nop
 58747	f0ea0c	jmpi_lr0
 58748	f0e56f	asleu65
+58752	f0e400	irel
+58764	f0e2a0	irel
 58768	f0fdf2	add_gr1
 58769	f0fced	nop
 58770	f0fcac	jmpi_lr0
@@ -12554,9 +12616,13 @@ k	key24	plaintext	bits
 58781	f0fa2d	add_gr1
 58783	f0f56c	jmpi_lr0
 58784	f0f5ef	asleu65
+58789	f0f788	irel
+58805	f08f2d	irel
 58810	f08826	nop
 58818	00842c	pattern16	16
+58818	f0842c	irel
 58822	f08606	nop
+58835	f09fb5	irel
 58849	f095e8	add_gr1
 58850	f094ef	nop
 58851	f0974c	jmpi_lr0
@@ -12564,13 +12630,16 @@ k	key24	plaintext	bits
 58854	f0978c	sub_gr1
 58855	f0962c	asgeu64
 58856	f0916f	add_lr1
+58857	f09048	irel
 58864	f092f2	nop
+58865	f0aded	irel
 58867	f0accc	add_gr1
 58868	f0acef	nop
 58869	f0af68	jmpi_lr0
 58870	f0af86	asleu65
 58872	f0aec0	sub_gr1
 58873	f0a928	asgeu64
+58878	f0abcc	irel
 58884	f0a4e0	add_gr1
 58886	f0a7ef	jmpi_lr0
 58887	f0a66c	asleu65
@@ -12579,6 +12648,7 @@ k	key24	plaintext	bits
 58891	f0a18c	add_lr1
 58895	f0a375	ihconst
 58896	f0a380	ihconst
+58898	f0a2ef	irel
 58900	f0bd92	add_gr1
 58902	f0bf0c	jmpi_lr0
 58903	f0bfac	asleu65
@@ -12591,6 +12661,7 @@ k	key24	plaintext	bits
 58918	f0b706	ihconst
 58919	00b675	pattern16	16
 58920	00b140	pattern16	16
+58920	f0b140	irel
 58922	f0b06f	add_gr1
 58924	f0b0d2	jmpi_lr0
 58925	f0b32d	asleu65
@@ -12617,6 +12688,7 @@ k	key24	plaintext	bits
 58987	00568c	pattern16	16
 58988	00516f	pattern16	16
 58991	005075	pattern16	16
+58991	f35075	irel
 58995	f352cc	add_gr1
 58997	f36d2d	jmpi_lr0
 58998	f36c0c	asleu65
@@ -12624,8 +12696,10 @@ k	key24	plaintext	bits
 59001	f36fc8	asgeu64
 59002	f36e26	add_lr1
 59013	0065e8	pattern16	16
+59023	f363ec	irel
 59027	007db5	pattern16	16
 59030	007cef	pattern16	16
+59036	f3786f	irel
 59041	f37be8	nop
 59053	007048	pattern16	16
 59055	f3702c	add_gr1
@@ -12645,18 +12719,23 @@ k	key24	plaintext	bits
 59135	f32875	nop
 59138	f32bef	nop
 59146	0027a6	pattern16	16
+59148	f326a0	irel
 59171	f338b5	ihconst
 59172	f33be0	ihconst
 59181	003728	pattern16	16
 59185	003168	pattern16	16
 59188	003092	pattern16	16
+59206	f3ca06	irel
 59210	00c76f	pattern16	16
 59212	00c7d2	pattern16	16
 59220	f3c260	nop
 59228	00de6f	pattern16	16
 59234	f3d8ef	nop
 59244	00d7a0	pattern16	16
+59257	f3ed28	irel
+59271	f3ea6c	irel
 59302	00fb06	pattern16	16
+59306	f3f46f	irel
 59324	f38f6f	nop
 59328	008e00	pattern16	16
 59333	00882d	pattern16	16
@@ -12664,11 +12743,14 @@ k	key24	plaintext	bits
 59339	0085b5	pattern16	16
 59341	008748	pattern16	16
 59347	0081cc	pattern16	16
+59365	f39988	irel
+59371	f39a8c	irel
 59375	009475	pattern16	16
 59377	009768	pattern16	16
 59409	f3a608	nop
 59443	f3b6cc	nop
 59449	00b328	pattern16	16
+59465	f248ed	irel
 59479	f241ac	nop
 59487	005dac	pattern16	16
 59522	006fef	pattern16	16
@@ -12714,7 +12796,9 @@ k	key24	plaintext	bits
 59785	00eea8	pattern16	16
 59791	00ebec	pattern16	16
 59796	00e460	pattern16	16
+59798	f2e4ef	irel
 59812	00fd12	pattern16	16
+59812	f2fd12	irel
 59815	00fc2c	pattern16	16
 59819	f2feb5	add_gr1
 59821	f2f848	jmpi_lr0
@@ -12771,12 +12855,15 @@ k	key24	plaintext	bits
 59987	004bb5	pattern16	16
 59989	004a08	pattern16	16
 59991	0045ec	pattern16	16
+59999	8d4175	irel
 60001	8d41e8	ihconst
 60002	8d40ef	ihconst
 60015	8d5e2c	nop
+60016	8d5ef2	irel
 60017	8d59ed	nop
 60027	8d548c	nop
 60028	005752	pattern16	16
+60030	8d57cc	irel
 60035	8d51b5	nop
 60041	0052ed	pattern16	16
 60053	8d682d	add_gr1
@@ -12874,7 +12961,9 @@ k	key24	plaintext	bits
 60207	8d3c2c	nop
 60209	8d3fed	ihconst
 60210	8d3fac	ihconst
+60214	8d3986	irel
 60220	003552	pattern16	16
+60220	8d3552	irel
 60222	8d35cc	add_gr1
 60223	8d346c	nop
 60224	8d34ef	jmpi_lr0
@@ -12895,11 +12984,13 @@ k	key24	plaintext	bits
 60244	00cf92	pattern16	16
 60245	00ce2d	pattern16	16
 60246	00c90c	pattern16	16
+60246	8dc90c	irel
 60248	8dc86f	add_gr1
 60249	8dc8c8	nop
 60250	8dcb26	jmpi_lr0
 60251	8dcbb5	asleu65
 60253	00cac8	pattern16	16
+60253	8dcac8	irel
 60255	8dc5ac	add_gr1
 60256	8dc472	nop
 60257	8dc4ed	jmpi_lr0
@@ -12992,6 +13083,7 @@ k	key24	plaintext	bits
 60426	8d916c	asgeu64
 60433	009268	pattern16	16
 60437	00ac2d	pattern16	16
+60437	8dac2d	irel
 60438	8daf0c	nop
 60446	8dab6f	add_gr1
 60447	8dabac	nop
@@ -13003,6 +13095,7 @@ k	key24	plaintext	bits
 60460	00a0d2	pattern16	16
 60467	00bcb5	pattern16	16
 60469	00bf08	pattern16	16
+60469	8dbf08	irel
 60473	00b9ed	pattern16	16
 60475	8db80c	add_gr1
 60476	8dbb6f	nop
@@ -13018,6 +13111,7 @@ k	key24	plaintext	bits
 60504	8c4fc0	jmpi_lr0
 60507	8c498c	sub_gr1
 60508	8c4852	asgeu64
+60516	8c45e0	irel
 60522	8c466c	add_gr1
 60524	8c416f	jmpi_lr0
 60525	8c4128	asleu65
@@ -13045,6 +13139,7 @@ k	key24	plaintext	bits
 60581	8c652d	sub_gr1
 60582	8c658c	asgeu64
 60583	8c642c	add_lr1
+60585	8c6648	irel
 60587	8c66b5	add_gr1
 60589	8c6048	jmpi_lr0
 60590	8c606f	asleu65
@@ -13053,6 +13148,7 @@ k	key24	plaintext	bits
 60593	8c63ed	asgeu64
 60594	8c63ac	add_lr1
 60595	0062cc	pattern16	16
+60595	8c62cc	irel
 60597	8c7d68	add_gr1
 60598	8c7d86	nop
 60599	8c7c75	jmpi_lr0
@@ -13064,10 +13160,12 @@ k	key24	plaintext	bits
 60608	8c78ef	sub_gr1
 60609	8c7888	asgeu64
 60610	8c7be6	add_lr1
+60617	8c74ed	irel
 60622	0076c6	pattern16	16
 60627	0073cc	pattern16	16
 60629	00722d	pattern16	16
 60633	000cc8	pattern16	16
+60633	8c0cc8	irel
 60639	8c09ac	add_gr1
 60640	8c0872	nop
 60641	8c08ed	jmpi_lr0
@@ -13077,6 +13175,7 @@ k	key24	plaintext	bits
 60645	8c0ae8	asgeu64
 60646	8c0506	add_lr1
 60654	00004c	pattern16	16
+60654	8c004c	irel
 60659	0002b5	pattern16	16
 60666	8c1fec	add_gr1
 60667	8c1e0c	nop
@@ -13163,6 +13262,7 @@ k	key24	plaintext	bits
 61115	8f60b5	asgeu64
 61116	8f6320	add_lr1
 61118	00626f	pattern16	16
+61118	8f626f	irel
 61121	007ded	pattern16	16
 61123	8f7f4c	add_gr1
 61124	007fef	pattern16	16
@@ -13176,22 +13276,27 @@ k	key24	plaintext	bits
 61145	0070ed	pattern16	16
 61153	8f0de8	nop
 61154	000cef	pattern16	16
+61154	8f0cef	irel
 61158	000f8c	pattern16	16
 61160	8f096f	add_gr1
 61161	8f0848	nop
 61162	8f08a6	jmpi_lr0
 61163	8f08b5	asleu65
 61169	0005ed	pattern16	16
+61169	8f05ed	irel
 61176	0006c0	pattern16	16
 61204	001592	pattern16	16
+61204	8f1592	irel
 61210	8f1126	add_gr1
 61211	8f11b5	nop
 61212	8f1020	jmpi_lr0
 61213	8f10c8	asleu65
 61215	0013ac	pattern16	16
+61215	8f13ac	irel
 61220	002cef	pattern16	16
 61224	002940	pattern16	16
 61225	8f29a8	nop
+61226	8f286f	irel
 61229	002b2d	pattern16	16
 61231	8f2aec	add_gr1
 61232	8f2aef	nop
@@ -13206,6 +13311,7 @@ k	key24	plaintext	bits
 61268	0035ef	pattern16	16
 61271	003775	pattern16	16
 61277	00302d	pattern16	16
+61281	8f3388	irel
 61284	00cde0	pattern16	16
 61285	8fcd88	nop
 61286	8fccef	add_gr1
@@ -13213,6 +13319,8 @@ k	key24	plaintext	bits
 61288	8fcf32	jmpi_lr0
 61289	8fcfed	asleu65
 61290	00ce6c	pattern16	16
+61290	8fce6c	irel
+61296	8fc880	irel
 61308	8fc120	add_gr1
 61309	8fc1c8	nop
 61310	8fc06f	jmpi_lr0
@@ -13224,17 +13332,22 @@ k	key24	plaintext	bits
 61324	8fd9d2	jmpi_lr0
 61325	8fd82d	asleu65
 61335	00d7ec	pattern16	16
+61335	8fd7ec	irel
 61342	00d346	pattern16	16
 61346	00d2ef	pattern16	16
+61346	8fd2ef	irel
 61351	8fec2c	nop
 61370	8fe66f	nop
 61372	00e152	pattern16	16
 61375	00e06c	pattern16	16
 61378	8fe3e6	nop
+61383	8ffc6c	irel
 61392	8ff980	nop
 61394	8ff8ef	nop
 61400	00f46f	pattern16	16
+61400	8ff46f	irel
 61404	8ff620	nop
+61409	8ff0ed	irel
 61419	008e0c	pattern16	16
 61427	008ab5	pattern16	16
 61431	0084ec	pattern16	16
@@ -13253,18 +13366,22 @@ k	key24	plaintext	bits
 61475	8f90b5	ihconst
 61479	00ad6c	pattern16	16
 61481	00aded	pattern16	16
+61481	8faded	irel
 61491	00a8cc	pattern16	16
 61503	00a6ac	pattern16	16
+61503	8fa6ac	irel
 61506	8fa02c	ihconst
 61508	8fa3ef	ihconst
 61510	00a206	pattern16	16
 61516	8fbfd2	ihconst
 61519	8fb9ec	ihconst
 61524	00ba60	pattern16	16
+61524	8fba60	irel
 61527	00b5ec	pattern16	16
 61529	00b4ed	pattern16	16
 61532	00b66f	pattern16	16
 61536	00b100	pattern16	16
+61536	8fb100	irel
 61539	8fb34c	ihconst
 61541	8fb32d	ihconst
 61543	00b22c	pattern16	16
@@ -13282,23 +13399,30 @@ k	key24	plaintext	bits
 61578	005d6c	pattern16	16
 61588	005992	pattern16	16
 61590	005b0c	pattern16	16
+61590	8e5b0c	irel
 61591	8e5bac	nop
 61595	8e55b5	nop
 61596	005420	pattern16	16
+61596	8e5420	irel
 61601	8e56ed	nop
 61602	00512c	pattern16	16
+61602	8e512c	irel
+61604	8e50ef	irel
 61611	8e6c0c	ihconst
 61612	8e6cd2	ihconst
 61613	006f2d	pattern16	16
 61615	8e6eec	ihconst
 61616	8e6eef	ihconst
+61619	8e68b5	irel
 61623	8e6aec	ihconst
 61624	8e6ab2	ihconst
 61625	0065ed	pattern16	16
 61628	00676f	pattern16	16
 61630	006646	pattern16	16
+61630	8e6646	irel
 61631	8e6675	nop
 61632	006600	pattern16	16
+61632	8e6600	irel
 61636	8e6012	add_gr1
 61637	8e602d	nop
 61638	8e608c	jmpi_lr0
@@ -13313,6 +13437,7 @@ k	key24	plaintext	bits
 61650	8e7eac	add_lr1
 61654	007886	pattern16	16
 61663	00776c	pattern16	16
+61663	8e776c	irel
 61668	8e71e0	add_gr1
 61670	8e70ef	jmpi_lr0
 61671	8e736c	asleu65
@@ -13328,13 +13453,16 @@ k	key24	plaintext	bits
 61701	8e01e8	ihconst
 61702	8e0006	ihconst
 61705	0002a8	pattern16	16
+61705	8e02a8	irel
 61716	001860	pattern16	16
 61717	001808	pattern16	16
+61717	8e1808	irel
 61722	001aec	pattern16	16
 61732	001112	pattern16	16
 61733	00112d	pattern16	16
 61736	00136f	pattern16	16
 61737	8e1248	nop
+61739	8e12b5	irel
 61744	002cf2	pattern16	16
 61747	002ecc	pattern16	16
 61748	002eef	pattern16	16
@@ -13349,9 +13477,11 @@ k	key24	plaintext	bits
 61818	00cbec	pattern16	16
 61824	8ec400	ihconst
 61825	8ec4e8	ihconst
+61845	8ede68	irel
 61852	00da52	pattern16	16
 61859	00d4b5	pattern16	16
 61862	00d6ef	pattern16	16
+61862	8ed6ef	irel
 61879	00eeac	pattern16	16
 61880	8ee96f	nop
 61892	8ee7ef	add_gr1
@@ -13402,10 +13532,12 @@ k	key24	plaintext	bits
 62084	8945ef	sub_gr1
 62085	8945e8	asgeu64
 62086	894406	add_lr1
+62090	89416f	irel
 62094	89434c	ihconst
 62095	8943ec	ihconst
 62097	004208	pattern16	16
 62098	005d66	pattern16	16
+62098	895d66	irel
 62101	005c08	pattern16	16
 62103	005fec	pattern16	16
 62105	005eed	pattern16	16
@@ -13414,6 +13546,7 @@ k	key24	plaintext	bits
 62117	89552d	jmpi_lr0
 62118	89558c	asleu65
 62120	00576f	pattern16	16
+62125	895048	irel
 62129	8953ed	ihconst
 62130	8953ac	ihconst
 62133	006d68	pattern16	16

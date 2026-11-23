@@ -58248,16 +58248,16 @@ sub_37c10:
   37c10:  25010140  sub      gr1, gr1, $40
   37c14:  5e40017e  asgeu    trap64, gr1, gr126
   37c18:  15810188  add      lr1, gr1, $88
-  37c1c:  a8??8000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
+  37c1c:  a8008000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
   37c20:  03??8400  const    lr4, $??00   ; [delay slot]
   37c24:  81??6000  sll      ?, gr96, $00
-  37c28:  a8??8000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
+  37c28:  a8008000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
   37c2c:  70400101  nop         ; [delay slot]
   37c30:  83??601c  srl      ?, gr96, $1c
   37c34:  61??6000  cpeq     ?, gr96, $00
   37c38:  ac??8406  jmpt     lr4, ? (disp lo $06)
   37c3c:  70400101  nop         ; [delay slot]
-  37c40:  a8??8000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
+  37c40:  a8008000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
   37c44:  03??8900  const    lr9, $??00   ; [delay slot]
   37c48:  90??6089  and      ?, gr96, lr9
   37c4c:  61??8900  cpeq     ?, lr9, $00
@@ -58336,16 +58336,16 @@ sub_37d68:
   37d68:  25010140  sub      gr1, gr1, $40
   37d6c:  5e40017e  asgeu    trap64, gr1, gr126
   37d70:  15810188  add      lr1, gr1, $88
-  37d74:  a8??8000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
+  37d74:  a8008000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
   37d78:  03??8400  const    lr4, $??00   ; [delay slot]
   37d7c:  81??6000  sll      ?, gr96, $00
-  37d80:  a8??8000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
+  37d80:  a8008000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
   37d84:  70400101  nop         ; [delay slot]
   37d88:  83??601c  srl      ?, gr96, $1c
   37d8c:  61??6000  cpeq     ?, gr96, $00
   37d90:  ac??8406  jmpt     lr4, ? (disp lo $06)
   37d94:  70400101  nop         ; [delay slot]
-  37d98:  a8??8000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
+  37d98:  a8008000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
   37d9c:  03??8900  const    lr9, $??00   ; [delay slot]
   37da0:  90??6089  and      ?, gr96, lr9
   37da4:  61??8900  cpeq     ?, lr9, $00
@@ -58392,33 +58392,33 @@ sub_37df0:
   37e38:  60??8984  cpeq     ?, lr9, lr4
   37e3c:  ac??84e4  jmpt     lr4, ? (disp lo $e4)
   37e40:  81??6000  sll      ?, gr96, $00   ; [delay slot]
-  37e44:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  37e44:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   37e48:  03??8201  const    lr2, $??01   ; [delay slot]
   37e4c:  81??6000  sll      ?, gr96, $00
   37e50:  c6??0300  mfsr     ?, CFG
   37e54:  81??6000  sll      ?, gr96, $00
   37e58:  9d??6020  andn     ?, gr96, $20
   37e5c:  ce??0360  mtsr     CFG, gr96
-  37e60:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  37e60:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   37e64:  03??8200  const    lr2, $??00   ; [delay slot]
   37e68:  81??6000  sll      ?, gr96, $00
-  37e6c:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  37e6c:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   37e70:  03??8201  const    lr2, $??01   ; [delay slot]
   37e74:  81??6000  sll      ?, gr96, $00
   37e78:  03??8f00  const    lr15, $??00
-  37e7c:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  37e7c:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   37e80:  03??8200  const    lr2, $??00   ; [delay slot]
   37e84:  81??6000  sll      ?, gr96, $00
   37e88:  61??8e00  cpeq     ?, lr14, $00
   37e8c:  ac??090d  jmpt     ?r9, ? (disp lo $0d)
   37e90:  81??9402  sll      ?, lr20, $02   ; [delay slot]
-  37e94:  a8??8000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
+  37e94:  a8008000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
   37e98:  81??9200  sll      ?, lr18, $00   ; [delay slot]
   37e9c:  83??8302  srl      ?, lr3, $02
   37ea0:  60??8394  cpeq     ?, lr3, lr20
   37ea4:  ac??8306  jmpt     lr3, ? (disp lo $06)
   37ea8:  70400101  nop         ; [delay slot]
-  37eac:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  37eac:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   37eb0:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
   37eb4:  a0??00b3  jmp      ? (disp lo $b3)
   37eb8:  81??8600  sll      ?, lr6, $00   ; [delay slot]
@@ -58581,14 +58581,14 @@ sub_38114:
   38114:  03??6000  const    gr96, $??00
 
 sub_38118:
-  38118:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38118:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   3811c:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
   38120:  ce??038a  mtsr     CFG, lr10
-  38124:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  38124:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   38128:  81??8b00  sll      ?, lr11, $00   ; [delay slot]
-  3812c:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  3812c:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   38130:  81??8c00  sll      ?, lr12, $00   ; [delay slot]
-  38134:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  38134:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   38138:  81??8d00  sll      ?, lr13, $00   ; [delay slot]
   3813c:  15010140  add      gr1, gr1, $40
   38140:  70400101  nop      
@@ -58660,34 +58660,34 @@ sub_38218:
   38218:  25010140  sub      gr1, gr1, $40
   3821c:  5e40017e  asgeu    trap64, gr1, gr126
   38220:  15810188  add      lr1, gr1, $88
-  38224:  a8??8000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
+  38224:  a8008000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
   38228:  03??8400  const    lr4, $??00   ; [delay slot]
   3822c:  81??6000  sll      ?, gr96, $00
-  38230:  a8??8000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
+  38230:  a8008000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
   38234:  70400101  nop         ; [delay slot]
   38238:  83??601c  srl      ?, gr96, $1c
   3823c:  61??6000  cpeq     ?, gr96, $00
   38240:  ac??8406  jmpt     lr4, ? (disp lo $06)
   38244:  70400101  nop         ; [delay slot]
-  38248:  a8??8000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
+  38248:  a8008000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
   3824c:  03??8900  const    lr9, $??00   ; [delay slot]
   38250:  90??6089  and      ?, gr96, lr9
   38254:  61??8900  cpeq     ?, lr9, $00
-  38258:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  38258:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   3825c:  03??8201  const    lr2, $??01   ; [delay slot]
   38260:  81??6000  sll      ?, gr96, $00
   38264:  c6??0300  mfsr     ?, CFG
   38268:  81??6000  sll      ?, gr96, $00
   3826c:  9d??6020  andn     ?, gr96, $20
   38270:  ce??0360  mtsr     CFG, gr96
-  38274:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  38274:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   38278:  03??8200  const    lr2, $??00   ; [delay slot]
   3827c:  81??6000  sll      ?, gr96, $00
-  38280:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  38280:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   38284:  03??8201  const    lr2, $??01   ; [delay slot]
   38288:  81??6000  sll      ?, gr96, $00
   3828c:  03??8f00  const    lr15, $??00
-  38290:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38290:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   38294:  03??8200  const    lr2, $??00   ; [delay slot]
   38298:  81??6000  sll      ?, gr96, $00
   3829c:  ac??8412  jmpt     lr4, ? (disp lo $12)
@@ -58695,14 +58695,14 @@ sub_38218:
   382a4:  61??8e00  cpeq     ?, lr14, $00
   382a8:  ac??8913  jmpt     lr9, ? (disp lo $13)
   382ac:  81??9402  sll      ?, lr20, $02   ; [delay slot]
-  382b0:  a8??8000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
+  382b0:  a8008000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
   382b4:  81??9200  sll      ?, lr18, $00   ; [delay slot]
   382b8:  83??8302  srl      ?, lr3, $02
   382bc:  60??8394  cpeq     ?, lr3, lr20
   382c0:  a4??8309  jmpf     lr3, ? (disp lo $09)
   382c4:  81??6000  sll      ?, gr96, $00   ; [delay slot]
   382c8:  81??9402  sll      ?, lr20, $02
-  382cc:  a8??8000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
+  382cc:  a8008000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
   382d0:  81??1300  sll      ?, ?r19, $00   ; [delay slot]
   382d4:  83??8302  srl      ?, lr3, $02
   382d8:  60??8394  cpeq     ?, lr3, lr20
@@ -58876,7 +58876,7 @@ sub_383d8:
   38570:  91??940f  and      ?, lr20, $0f   ; [delay slot]
 
 sub_38574:
-  38574:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38574:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   38578:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
 
 sub_3857c:
@@ -58905,14 +58905,14 @@ sub_385c4:
   385c4:  03??6000  const    gr96, $??00
 
 sub_385c8:
-  385c8:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  385c8:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   385cc:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
   385d0:  ce??038a  mtsr     CFG, lr10
-  385d4:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  385d4:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   385d8:  81??8b00  sll      ?, lr11, $00   ; [delay slot]
-  385dc:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  385dc:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   385e0:  81??8c00  sll      ?, lr12, $00   ; [delay slot]
-  385e4:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  385e4:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   385e8:  81??8d00  sll      ?, lr13, $00   ; [delay slot]
   385ec:  15010140  add      gr1, gr1, $40
   385f0:  70400101  nop      
@@ -59124,54 +59124,54 @@ sub_388d0:
   388d0:  25010140  sub      gr1, gr1, $40
   388d4:  5e40017e  asgeu    trap64, gr1, gr126
   388d8:  15810188  add      lr1, gr1, $88
-  388dc:  a8??8000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
+  388dc:  a8008000  call     lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)
   388e0:  03??8400  const    lr4, $??00   ; [delay slot]
   388e4:  81??6000  sll      ?, gr96, $00
-  388e8:  a8??8000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
+  388e8:  a8008000  call     lr0, $390f4   ; R_IREL call -> .text $390f4 (service $??d1)
   388ec:  70400101  nop         ; [delay slot]
   388f0:  83??601c  srl      ?, gr96, $1c
   388f4:  61??6000  cpeq     ?, gr96, $00
   388f8:  ac??8406  jmpt     lr4, ? (disp lo $06)
   388fc:  70400101  nop         ; [delay slot]
-  38900:  a8??8000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
+  38900:  a8008000  call     lr0, $38f44   ; R_IREL call -> .text $38f44 (service $??bb)
   38904:  03??0900  const    ?r9, $??00   ; [delay slot]
   38908:  90??6089  and      ?, gr96, lr9
   3890c:  61??8900  cpeq     ?, lr9, $00
-  38910:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  38910:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   38914:  03??8201  const    lr2, $??01   ; [delay slot]
   38918:  81??6000  sll      ?, gr96, $00
   3891c:  c6??0300  mfsr     ?, CFG
   38920:  81??6000  sll      ?, gr96, $00
   38924:  9d??6020  andn     ?, gr96, $20
   38928:  ce??0360  mtsr     CFG, gr96
-  3892c:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  3892c:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   38930:  03??8200  const    lr2, $??00   ; [delay slot]
   38934:  81??6000  sll      ?, gr96, $00
-  38938:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  38938:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   3893c:  03??8201  const    lr2, $??01   ; [delay slot]
   38940:  81??6000  sll      ?, gr96, $00
   38944:  03??8f00  const    lr15, $??00
-  38948:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38948:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   3894c:  03??0200  const    ?r2, $??00   ; [delay slot]
   38950:  81??6000  sll      ?, gr96, $00
   38954:  ac??8411  jmpt     lr4, ? (disp lo $11)
   38958:  61??8e00  cpeq     ?, lr14, $00   ; [delay slot]
   3895c:  ac??8915  jmpt     lr9, ? (disp lo $15)
   38960:  81??9402  sll      ?, lr20, $02   ; [delay slot]
-  38964:  a8??8000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
+  38964:  a8008000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
   38968:  81??9200  sll      ?, lr18, $00   ; [delay slot]
   3896c:  83??8302  srl      ?, lr3, $02
   38970:  60??8394  cpeq     ?, lr3, lr20
   38974:  a4??8309  jmpf     lr3, ? (disp lo $09)
   38978:  81??6000  sll      ?, gr96, $00   ; [delay slot]
   3897c:  81??9402  sll      ?, lr20, $02
-  38980:  a8??8000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
+  38980:  a8008000  call     lr0, $39064   ; R_IREL call -> .text $39064 (service $??d4)
   38984:  81??9300  sll      ?, lr19, $00   ; [delay slot]
   38988:  83??8302  srl      ?, lr3, $02
   3898c:  60??8394  cpeq     ?, lr3, lr20
   38990:  ac??8306  jmpt     lr3, ? (disp lo $06)
   38994:  70400101  nop         ; [delay slot]
-  38998:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38998:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   3899c:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
   389a0:  a0??0091  jmp      ? (disp lo $91)
   389a4:  70400101  nop         ; [delay slot]
@@ -59350,14 +59350,14 @@ sub_38c38:
   38c38:  03??6000  const    gr96, $??00
 
 sub_38c3c:
-  38c3c:  a8??8000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
+  38c3c:  a8008000  call     lr0, $390b4   ; R_IREL call -> .text $390b4 (service $??d3)
   38c40:  81??8e00  sll      ?, lr14, $00   ; [delay slot]
   38c44:  ce??038a  mtsr     CFG, lr10
-  38c48:  a8??8000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
+  38c48:  a8008000  call     lr0, $39084   ; R_IREL call -> .text $39084 (service $??b9)
   38c4c:  81??8b00  sll      ?, lr11, $00   ; [delay slot]
-  38c50:  a8??8000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
+  38c50:  a8008000  call     lr0, $39094   ; R_IREL call -> .text $39094 (service $??b8)
   38c54:  81??8c00  sll      ?, lr12, $00   ; [delay slot]
-  38c58:  a8??8000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
+  38c58:  a8008000  call     lr0, $390a4   ; R_IREL call -> .text $390a4 (service $??bf)
   38c5c:  81??8d00  sll      ?, lr13, $00   ; [delay slot]
   38c60:  15010140  add      gr1, gr1, $40
   38c64:  70400101  nop      
@@ -59739,7 +59739,7 @@ sub_39118:
   39124:  15??8900  add      ?, lr9, $00
   39128:  03??8301  const    lr3, $??01
   3912c:  15??8a00  add      ?, lr10, $00
-  39130:  a8??8000  call     lr0, $39798   ; R_IREL call -> .text $39798 (sub_39798)
+  39130:  a8008000  call     lr0, $39798   ; R_IREL call -> .text $39798 (sub_39798)
   39134:  15??8800  add      ?, lr8, $00   ; [delay slot]
   39138:  15010118  add      gr1, gr1, $18
   3913c:  70400101  nop      
@@ -59757,13 +59757,13 @@ sub_3914c:
   39164:  15??012c  add      ?, gr1, $2c   ; [delay slot]
   39168:  15??8800  add      ?, lr8, $00
   3916c:  03??8300  const    lr3, $??00
-  39170:  a8??8000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
+  39170:  a8008000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
   39174:  03??8402  const    lr4, $??02   ; [delay slot]
   39178:  03008204  const    lr2, $0004   ; lo of .text+$39114
   3917c:  02008200  consth   lr2, $0000   ; -> .text $39118 (sub_39118)
   39180:  15??8800  add      ?, lr8, $00
   39184:  15??8900  add      ?, lr9, $00
-  39188:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  39188:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   3918c:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   39190:  15010118  add      gr1, gr1, $18
   39194:  70400101  nop      
@@ -59786,14 +59786,14 @@ sub_391a4:
   391d0:  a4??6005  jmpf     gr96, ? (disp lo $05)
   391d4:  15??8600  add      ?, lr6, $00   ; [delay slot]
   391d8:  03??8300  const    lr3, $??00
-  391dc:  a8??8000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
+  391dc:  a8008000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
   391e0:  03??8402  const    lr4, $??02   ; [delay slot]
   391e4:  15??7d08  add      ?, gr125, $08
   391e8:  03008204  const    lr2, $0004   ; lo of .text+$39114
   391ec:  02008200  consth   lr2, $0000   ; -> .text $39118 (sub_39118)
   391f0:  15??7d04  add      ?, gr125, $04
   391f4:  16??8460  load     ?, ?, lr4, gr96
-  391f8:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  391f8:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   391fc:  15??8600  add      ?, lr6, $00   ; [delay slot]
   39200:  15010120  add      gr1, gr1, $20
   39204:  15??7d40  add      ?, gr125, $40
@@ -59814,13 +59814,13 @@ sub_39214:
   39238:  02008500  consth   lr5, $0000   ; -> .data+$1594
   3923c:  15??8500  add      ?, lr5, $00
   39240:  03??8300  const    lr3, $??00
-  39244:  a8??8000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
+  39244:  a8008000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
   39248:  03??8402  const    lr4, $??02   ; [delay slot]
   3924c:  03008204  const    lr2, $0004   ; lo of .text+$39114
   39250:  02008200  consth   lr2, $0000   ; -> .text $39118 (sub_39118)
   39254:  15??8500  add      ?, lr5, $00
   39258:  15??8800  add      ?, lr8, $00
-  3925c:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  3925c:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   39260:  15??8900  add      ?, lr9, $00   ; [delay slot]
   39264:  15010118  add      gr1, gr1, $18
   39268:  70400101  nop      
@@ -59847,14 +59847,14 @@ sub_39284:
   392b4:  02008600  consth   lr6, $0000   ; -> .data+$1594
   392b8:  15??8600  add      ?, lr6, $00
   392bc:  03??8300  const    lr3, $??00
-  392c0:  a8??8000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
+  392c0:  a8008000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
   392c4:  03??8402  const    lr4, $??02   ; [delay slot]
   392c8:  15??7d04  add      ?, gr125, $04
   392cc:  03008204  const    lr2, $0004   ; lo of .text+$39114
   392d0:  02008200  consth   lr2, $0000   ; -> .text $39118 (sub_39118)
   392d4:  15??7d00  add      ?, gr125, $00
   392d8:  16??8460  load     ?, ?, lr4, gr96
-  392dc:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  392dc:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   392e0:  15??8600  add      ?, lr6, $00   ; [delay slot]
   392e4:  15010120  add      gr1, gr1, $20
   392e8:  15??7d40  add      ?, gr125, $40
@@ -59878,13 +59878,13 @@ sub_39304:
   39320:  15??8c12  add      ?, lr12, $12
   39324:  16??8286  load     ?, ?, lr2, lr6
   39328:  15??8d00  add      ?, lr13, $00
-  3932c:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3932c:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   39330:  15??8e00  add      ?, lr14, $00   ; [delay slot]
   39334:  15010128  add      gr1, gr1, $28
   39338:  70400101  nop      
   3933c:  c0000080  jmpi     lr0
   39340:  5641817f  asleu    trap65, lr1, gr127   ; [delay slot]
-  39344:  a8??8000  call     lr0, $39570   ; R_IREL call -> .text $39570 (sub_39570)
+  39344:  a8008000  call     lr0, $39570   ; R_IREL call -> .text $39570 (sub_39570)
   39348:  15??8c00  add      ?, lr12, $00   ; [delay slot]
   3934c:  01??85ff  constn   lr5, $??ff
   39350:  62??6085  cpneq    ?, gr96, lr5
@@ -59933,7 +59933,7 @@ sub_39304:
   393fc:  a0??003a  jmp      ? (disp lo $3a)
   39400:  81??6314  sll      ?, gr99, $14   ; [delay slot]
   39404:  15??8c00  add      ?, lr12, $00
-  39408:  a8??8000  call     lr0, $3bae8   ; R_IREL call -> .text $3bae8 (sub_3bae8)
+  39408:  a8008000  call     lr0, $3bae8   ; R_IREL call -> .text $3bae8 (sub_3bae8)
   3940c:  03??8300  const    lr3, $??00   ; [delay slot]
   39410:  62??6085  cpneq    ?, gr96, lr5
   39414:  ac??6015  jmpt     gr96, ? (disp lo $15)
@@ -59962,12 +59962,12 @@ sub_39304:
   39470:  15??8c12  add      ?, lr12, $12   ; [delay slot]
   39474:  16??8286  load     ?, ?, lr2, lr6
   39478:  03??8300  const    lr3, $??00
-  3947c:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3947c:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   39480:  15??8e00  add      ?, lr14, $00   ; [delay slot]
   39484:  14??608d  add      ?, gr96, lr13
   39488:  16??8286  load     ?, ?, lr2, lr6
   3948c:  15??8d00  add      ?, lr13, $00
-  39490:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  39490:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   39494:  03??8400  const    lr4, $??00   ; [delay slot]
   39498:  15??6000  add      ?, gr96, $00
   3949c:  62??8885  cpneq    ?, lr8, lr5
@@ -59983,7 +59983,7 @@ sub_39304:
   394c4:  1e??6087  store    ?, ?, gr96, lr7
   394c8:  15??8c00  add      ?, lr12, $00
   394cc:  15??8d00  add      ?, lr13, $00
-  394d0:  a8??8000  call     lr0, $3b2f4   ; R_IREL call -> .text $3b2f4 (sub_3b2f4)
+  394d0:  a8008000  call     lr0, $3b2f4   ; R_IREL call -> .text $3b2f4 (sub_3b2f4)
   394d4:  15??8800  add      ?, lr8, $00   ; [delay slot]
   394d8:  15??6000  add      ?, gr96, $00
   394dc:  16??6387  load     ?, ?, gr99, lr7
@@ -60050,7 +60050,7 @@ sub_39570:
   395c0:  81??6213  sll      ?, gr98, $13
   395c4:  a4??6012  jmpf     gr96, ? (disp lo $12)
   395c8:  15??8800  add      ?, lr8, $00   ; [delay slot]
-  395cc:  a8??8000  call     lr0, $3b2e8   ; R_IREL call -> .text $3b2e8 (sub_3b2e8)
+  395cc:  a8008000  call     lr0, $3b2e8   ; R_IREL call -> .text $3b2e8 (sub_3b2e8)
   395d0:  15??8400  add      ?, lr4, $00   ; [delay slot]
   395d4:  01??61ff  constn   gr97, $??ff
   395d8:  60??6061  cpeq     ?, gr96, gr97
@@ -60063,7 +60063,7 @@ sub_39570:
   395f4:  15??8812  add      ?, lr8, $12
   395f8:  16??8260  load     ?, ?, lr2, gr96
   395fc:  03??8300  const    lr3, $??00
-  39600:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  39600:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   39604:  03??8401  const    lr4, $??01   ; [delay slot]
   39608:  15??6000  add      ?, gr96, $00
   3960c:  15??8804  add      ?, lr8, $04
@@ -60075,7 +60075,7 @@ sub_39570:
   39624:  14??6084  add      ?, gr96, lr4   ; [delay slot]
   39628:  16??8260  load     ?, ?, lr2, gr96
   3962c:  03??8300  const    lr3, $??00
-  39630:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  39630:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   39634:  03??8401  const    lr4, $??01   ; [delay slot]
   39638:  15??6000  add      ?, gr96, $00
   3963c:  15??8400  add      ?, lr4, $00
@@ -60104,7 +60104,7 @@ sub_39654:
   39688:  a4??6005  jmpf     gr96, ? (disp lo $05)
   3968c:  15??8e00  add      ?, lr14, $00   ; [delay slot]
   39690:  03??8300  const    lr3, $??00
-  39694:  a8??8000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
+  39694:  a8008000  call     lr0, $39304   ; R_IREL call -> .text $39304 (sub_39304)
   39698:  03??8402  const    lr4, $??02   ; [delay slot]
   3969c:  45??8d00  cple     ?, lr13, $00
   396a0:  ac??6039  jmpt     gr96, ? (disp lo $39)
@@ -60120,7 +60120,7 @@ sub_39654:
   396c8:  15??8e12  add      ?, lr14, $12
   396cc:  16??8260  load     ?, ?, lr2, gr96
   396d0:  15??8c00  add      ?, lr12, $00
-  396d4:  a8??8000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
+  396d4:  a8008000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
   396d8:  15??8d00  add      ?, lr13, $00   ; [delay slot]
   396dc:  15??6000  add      ?, gr96, $00
   396e0:  60??8785  cpeq     ?, lr7, lr5
@@ -60133,7 +60133,7 @@ sub_39654:
   396fc:  a0??0021  jmp      ? (disp lo $21)
   39700:  1e??6086  store    ?, ?, gr96, lr6   ; [delay slot]
   39704:  16??8288  load     ?, ?, lr2, lr8
-  39708:  a8??8000  call     lr0, $3be04   ; R_IREL call -> .text $3be04 (sub_3be04)
+  39708:  a8008000  call     lr0, $3be04   ; R_IREL call -> .text $3be04 (sub_3be04)
   3970c:  15??8e00  add      ?, lr14, $00   ; [delay slot]
   39710:  62??6085  cpneq    ?, gr96, lr5
   39714:  a4??601b  jmpf     gr96, ? (disp lo $1b)
@@ -60150,7 +60150,7 @@ sub_39654:
   39740:  15??6100  add      ?, gr97, $00
   39744:  16??8285  load     ?, ?, lr2, lr5
   39748:  15??8800  add      ?, lr8, $00
-  3974c:  a8??8000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3974c:  a8008000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
   39750:  15??8700  add      ?, lr7, $00   ; [delay slot]
   39754:  14??8788  add      ?, lr7, lr8
   39758:  16??6085  load     ?, ?, gr96, lr5
@@ -60174,7 +60174,7 @@ sub_39798:
   39798:  25010118  sub      gr1, gr1, $18
   3979c:  5e40017e  asgeu    trap64, gr1, gr126
   397a0:  15810130  add      lr1, gr1, $30
-  397a4:  a8??7a00  call     gr122, $3b814   ; R_IREL call -> .text $3b814 (sub_3b814)
+  397a4:  a8007a00  call     gr122, $3b814   ; R_IREL call -> .text $3b814 (sub_3b814)
   397a8:  9e??8a89  setip    lr10, lr9   ; [delay slot]
   397ac:  15??8800  add      ?, lr8, $00
   397b0:  a8??80a9  call     lr0, ? (disp lo $a9)
@@ -60182,7 +60182,7 @@ sub_39798:
   397b8:  45??6000  cple     ?, gr96, $00
   397bc:  ac??6104  jmpt     gr97, ? (disp lo $04)
   397c0:  70400101  nop         ; [delay slot]
-  397c4:  a8??7a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  397c4:  a8007a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
   397c8:  9e??6089  setip    gr96, lr9   ; [delay slot]
   397cc:  15010118  add      gr1, gr1, $18
   397d0:  70400101  nop      
@@ -60199,7 +60199,7 @@ sub_397e0:
   397ec:  15??012c  add      ?, gr1, $2c
   397f0:  15??8500  add      ?, lr5, $00
   397f4:  15??8900  add      ?, lr9, $00
-  397f8:  a8??8000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  397f8:  a8008000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
   397fc:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   39800:  14??858a  add      ?, lr5, lr10
   39804:  03??6000  const    gr96, $??00
@@ -60221,7 +60221,7 @@ sub_39824:
   3983c:  03008204  const    lr2, $0004   ; lo of .text+$397dc
   39840:  02008200  consth   lr2, $0000   ; -> .text $397e0 (sub_397e0)
   39844:  15??8900  add      ?, lr9, $00
-  39848:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  39848:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   3984c:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   39850:  15010118  add      gr1, gr1, $18
   39854:  15??7d08  add      ?, gr125, $08
@@ -60245,7 +60245,7 @@ sub_39864:
   39894:  03008204  const    lr2, $0004   ; lo of .text+$397dc
   39898:  02008200  consth   lr2, $0000   ; -> .text $397e0 (sub_397e0)
   3989c:  15??7d0c  add      ?, gr125, $0c
-  398a0:  a8??8000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
+  398a0:  a8008000  call     lr0, $399e0   ; R_IREL call -> .text $399e0 (sub_399e0)
   398a4:  16??8460  load     ?, ?, lr4, gr96   ; [delay slot]
   398a8:  15010118  add      gr1, gr1, $18
   398ac:  15??7d48  add      ?, gr125, $48
@@ -60322,7 +60322,7 @@ sub_39970:
   399b0:  a0??0005  jmp      ? (disp lo $05)
   399b4:  1e??6189  store    ?, ?, gr97, lr9   ; [delay slot]
   399b8:  15??8500  add      ?, lr5, $00
-  399bc:  a8??8000  call     lr0, $3a7a0   ; R_IREL call -> .text $3a7a0 (sub_3a7a0)
+  399bc:  a8008000  call     lr0, $3a7a0   ; R_IREL call -> .text $3a7a0 (sub_3a7a0)
   399c0:  03??8400  const    lr4, $??00   ; [delay slot]
   399c4:  16??8285  load     ?, ?, lr2, lr5
   399c8:  1e??8288  store    ?, ?, lr2, lr8
@@ -60356,7 +60356,7 @@ sub_399e0:
   39a30:  15??a600  add      ?, lr38, $00
   39a34:  03??8300  const    lr3, $??00
   39a38:  03??84ff  const    lr4, $??ff
-  39a3c:  a8??8000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
+  39a3c:  a8008000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
   39a40:  02??84ff  consth   lr4, $??ff   ; [delay slot]
   39a44:  15??6000  add      ?, gr96, $00
   39a48:  61??8700  cpeq     ?, lr7, $00
@@ -60369,7 +60369,7 @@ sub_399e0:
   39a64:  16??a688  load     ?, ?, lr38, lr8
   39a68:  15??a600  add      ?, lr38, $00
   39a6c:  03??8325  const    lr3, $??25
-  39a70:  a8??8000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
+  39a70:  a8008000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
   39a74:  15??9a00  add      ?, lr26, $00   ; [delay slot]
   39a78:  15??6000  add      ?, gr96, $00
   39a7c:  63??8600  cpneq    ?, lr6, $00
@@ -60481,7 +60481,7 @@ sub_399e0:
   39c24:  61??8f68  cpeq     ?, lr15, $68
   39c28:  ac??6008  jmpt     gr96, ? (disp lo $08)
   39c2c:  03??8300  const    lr3, $??00   ; [delay slot]
-  39c30:  a8??8000  call     lr0, $3ac24   ; R_IREL call -> .text $3ac24 (sub_3ac24)
+  39c30:  a8008000  call     lr0, $3ac24   ; R_IREL call -> .text $3ac24 (sub_3ac24)
   39c34:  15??8f00  add      ?, lr15, $00   ; [delay slot]
   39c38:  63??606c  cpneq    ?, gr96, $6c
   39c3c:  ac??6008  jmpt     gr96, ? (disp lo $08)
@@ -60539,7 +60539,7 @@ sub_399e0:
   39d0c:  16??8660  load     ?, ?, lr6, gr96
   39d10:  03??84ff  const    lr4, $??ff
   39d14:  15??8600  add      ?, lr6, $00
-  39d18:  a8??8000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
+  39d18:  a8008000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
   39d1c:  02??84ff  consth   lr4, $??ff   ; [delay slot]
   39d20:  15??6000  add      ?, gr96, $00
   39d24:  61??8700  cpeq     ?, lr7, $00
@@ -60590,7 +60590,7 @@ sub_399e0:
   39dd8:  1e??8597  store    ?, ?, lr5, lr23
   39ddc:  15??9500  add      ?, lr21, $00
   39de0:  15??9800  add      ?, lr24, $00
-  39de4:  a8??8000  call     lr0, $3a6c0   ; R_IREL call -> .text $3a6c0 (sub_3a6c0)
+  39de4:  a8008000  call     lr0, $3a6c0   ; R_IREL call -> .text $3a6c0 (sub_3a6c0)
   39de8:  15??9600  add      ?, lr22, $00   ; [delay slot]
   39dec:  15??6000  add      ?, gr96, $00
   39df0:  a0??0032  jmp      ? (disp lo $32)
@@ -60604,7 +60604,7 @@ sub_399e0:
   39e10:  15??7d04  add      ?, gr125, $04
   39e14:  15??9500  add      ?, lr21, $00
   39e18:  15??9800  add      ?, lr24, $00
-  39e1c:  a8??8000  call     lr0, $3a768   ; R_IREL call -> .text $3a768 (sub_3a768)
+  39e1c:  a8008000  call     lr0, $3a768   ; R_IREL call -> .text $3a768 (sub_3a768)
   39e20:  15??9600  add      ?, lr22, $00   ; [delay slot]
   39e24:  a0??00ce  jmp      ? (disp lo $ce)
   39e28:  15??6000  add      ?, gr96, $00   ; [delay slot]
@@ -60639,7 +60639,7 @@ sub_399e0:
   39e9c:  15??9500  add      ?, lr21, $00
   39ea0:  15??1a00  add      ?, ?r26, $00
   39ea4:  15??9800  add      ?, lr24, $00
-  39ea8:  a8??8000  call     lr0, $3a5a4   ; R_IREL call -> .text $3a5a4 (sub_3a5a4)
+  39ea8:  a8008000  call     lr0, $3a5a4   ; R_IREL call -> .text $3a5a4 (sub_3a5a4)
   39eac:  15??9600  add      ?, lr22, $00   ; [delay slot]
   39eb0:  15??6000  add      ?, gr96, $00
   39eb4:  03??a178  const    lr33, $??78
@@ -60698,13 +60698,13 @@ sub_399e0:
   39f88:  15??9b00  add      ?, lr27, $00
   39f8c:  15??9900  add      ?, lr25, $00
   39f90:  15??1500  add      ?, ?r21, $00
-  39f94:  a8??8000  call     lr0, $3c340   ; R_IREL call -> .text $3c340 (sub_3c340)
+  39f94:  a8008000  call     lr0, $3c340   ; R_IREL call -> .text $3c340 (sub_3c340)
   39f98:  15??9700  add      ?, lr23, $00   ; [delay slot]
   39f9c:  15??6000  add      ?, gr96, $00
   39fa0:  15??8600  add      ?, lr6, $00
   39fa4:  03??8300  const    lr3, $??00
   39fa8:  03??84ff  const    lr4, $??ff
-  39fac:  a8??8000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
+  39fac:  a8008000  call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500)
   39fb0:  02??84ff  consth   lr4, $??ff   ; [delay slot]
   39fb4:  15??6000  add      ?, gr96, $00
   39fb8:  61??8700  cpeq     ?, lr7, $00
@@ -60798,7 +60798,7 @@ sub_399e0:
   3a118:  1e??8395  store    ?, ?, lr3, lr21   ; [delay slot]
   3a11c:  35??8300  subr     ?, lr3, $00
   3a120:  1e??8395  store    ?, ?, lr3, lr21
-  3a124:  a8??8000  call     lr0, $3a6f8   ; R_IREL call -> .text $3a6f8 (sub_3a6f8)
+  3a124:  a8008000  call     lr0, $3a6f8   ; R_IREL call -> .text $3a6f8 (sub_3a6f8)
   3a128:  15??8500  add      ?, lr5, $00   ; [delay slot]
   3a12c:  16??6385  load     ?, ?, gr99, lr5
   3a130:  15??6000  add      ?, gr96, $00
@@ -61135,7 +61135,7 @@ sub_3a5a4:
   3a64c:  90??648a  and      ?, gr100, lr10   ; [delay slot]
   3a650:  a0??0004  jmp      ? (disp lo $04)
   3a654:  82??8a63  srl      ?, lr10, gr99   ; [delay slot]
-  3a658:  a8??7a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  3a658:  a8007a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
   3a65c:  9e??8a89  setip    lr10, lr9   ; [delay slot]
   3a660:  45??7409  cple     ?, gr116, $09
   3a664:  ac??6004  jmpt     gr96, ? (disp lo $04)
@@ -61149,7 +61149,7 @@ sub_3a5a4:
   3a684:  ac??60f1  jmpt     gr96, ? (disp lo $f1)
   3a688:  15??8501  add      ?, lr5, $01   ; [delay slot]
   3a68c:  15??8501  add      ?, lr5, $01
-  3a690:  a8??8000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3a690:  a8008000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
   3a694:  15??8800  add      ?, lr8, $00   ; [delay slot]
   3a698:  61??8b00  cpeq     ?, lr11, $00
   3a69c:  ac??6004  jmpt     gr96, ? (disp lo $04)
@@ -61350,7 +61350,7 @@ sub_3a90c:
   3a970:  82??8487  srl      ?, lr4, lr7   ; [delay slot]
   3a974:  03??8700  const    lr7, $??00
   3a978:  01??84ff  constn   lr4, $??ff
-  3a97c:  a8??7a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  3a97c:  a8007a00  call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
   3a980:  9e??848d  setip    lr4, lr13   ; [delay slot]
   3a984:  03008301  const    lr3, $0001   ; lo of .lit+$1020
   3a988:  02008300  consth   lr3, $0000   ; -> .lit+$1021
@@ -61367,7 +61367,7 @@ sub_3a90c:
   3a9b4:  81??611e  sll      ?, gr97, $1e   ; [delay slot]
   3a9b8:  a4??6005  jmpf     gr96, ? (disp lo $05)
   3a9bc:  70400101  nop         ; [delay slot]
-  3a9c0:  a8??8000  call     lr0, $3abf8   ; R_IREL call -> .text $3abf8 (sub_3abf8)
+  3a9c0:  a8008000  call     lr0, $3abf8   ; R_IREL call -> .text $3abf8 (sub_3abf8)
   3a9c4:  70400101  nop         ; [delay slot]
   3a9c8:  15??6000  add      ?, gr96, $00
   3a9cc:  25??8237  sub      ?, lr2, $37
@@ -61381,7 +61381,7 @@ sub_3a90c:
   3a9ec:  70400101  nop         ; [delay slot]
   3a9f0:  a0??0009  jmp      ? (disp lo $09)
   3a9f4:  80??8987  sll      ?, lr9, lr7   ; [delay slot]
-  3a9f8:  a8??7a00  call     gr122, $3b814   ; R_IREL call -> .text $3b814 (sub_3b814)
+  3a9f8:  a8007a00  call     gr122, $3b814   ; R_IREL call -> .text $3b814 (sub_3b814)
   3a9fc:  9e??898d  setip    lr9, lr13   ; [delay slot]
   3aa00:  24??8482  sub      ?, lr4, lr2
   3aa04:  4e??6089  cpgeu    ?, gr96, lr9
@@ -61607,13 +61607,13 @@ sub_3ac88:
   3accc:  81??8402  sll      ?, lr4, $02
   3acd0:  14??6084  add      ?, gr96, lr4
   3acd4:  81??6002  sll      ?, gr96, $02
-  3acd8:  a8??8000  call     lr0, $3c1d4   ; R_IREL call -> .text $3c1d4 (sub_3c1d4)
+  3acd8:  a8008000  call     lr0, $3c1d4   ; R_IREL call -> .text $3c1d4 (sub_3c1d4)
   3acdc:  14??8360  add      ?, lr3, gr96   ; [delay slot]
   3ace0:  15??8401  add      ?, lr4, $01
   3ace4:  41??8419  cplt     ?, lr4, $19
   3ace8:  ac??60fa  jmpt     gr96, ? (disp lo $fa)
   3acec:  81??8402  sll      ?, lr4, $02   ; [delay slot]
-  3acf0:  a8??8000  call     lr0, $3b428   ; R_IREL call -> .text $3b428 (service $??01)
+  3acf0:  a8008000  call     lr0, $3b428   ; R_IREL call -> .text $3b428 (service $??01)
   3acf4:  15??8800  add      ?, lr8, $00   ; [delay slot]
   3acf8:  15010118  add      gr1, gr1, $18
   3acfc:  70400101  nop      
@@ -61643,14 +61643,14 @@ sub_3ad0c:
   3ad4c:  61??6000  cpeq     ?, gr96, $00
   3ad50:  ac??6008  jmpt     gr96, ? (disp lo $08)
   3ad54:  15??0118  add      ?, gr1, $18   ; [delay slot]
-  3ad58:  a8??8000  call     lr0, $3b428   ; R_IREL call -> .text $3b428 (service $??01)
+  3ad58:  a8008000  call     lr0, $3b428   ; R_IREL call -> .text $3b428 (service $??01)
   3ad5c:  03??8201  const    lr2, $??01   ; [delay slot]
   3ad60:  15010110  add      gr1, gr1, $10
   3ad64:  70400101  nop      
   3ad68:  c0000080  jmpi     lr0
   3ad6c:  5641817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3ad70:  1e??6261  store    ?, ?, gr98, gr97
-  3ad74:  a8??8000  call     lr0, $3ac88   ; R_IREL call -> .text $3ac88 (sub_3ac88)
+  3ad74:  a8008000  call     lr0, $3ac88   ; R_IREL call -> .text $3ac88 (sub_3ac88)
   3ad78:  03??8201  const    lr2, $??01   ; [delay slot]
   3ad7c:  15010110  add      gr1, gr1, $10
   3ad80:  70400101  nop      
@@ -61850,7 +61850,7 @@ sub_3b024:
   3b048:  81??611c  sll      ?, gr97, $1c
   3b04c:  a4??6005  jmpf     gr96, ? (disp lo $05)
   3b050:  03??6000  const    gr96, $??00   ; [delay slot]
-  3b054:  a8??8000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
+  3b054:  a8008000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
   3b058:  70400101  nop         ; [delay slot]
   3b05c:  03??6000  const    gr96, $??00
   3b060:  1e??6084  store    ?, ?, gr96, lr4
@@ -61884,7 +61884,7 @@ sub_3b094:
   3b0c8:  63??8900  cpneq    ?, lr9, $00
   3b0cc:  ac??600d  jmpt     gr96, ? (disp lo $0d)
   3b0d0:  9d??618c  andn     ?, gr97, $8c   ; [delay slot]
-  3b0d4:  a8??8000  call     lr0, $37658   ; R_IREL call -> .text $37658 (sub_37658)
+  3b0d4:  a8008000  call     lr0, $37658   ; R_IREL call -> .text $37658 (sub_37658)
   3b0d8:  15??8b00  add      ?, lr11, $00   ; [delay slot]
   3b0dc:  15??6000  add      ?, gr96, $00
   3b0e0:  63??8900  cpneq    ?, lr9, $00
@@ -61937,7 +61937,7 @@ sub_3b16c:
   3b184:  92??8a60  or       ?, lr10, gr96
   3b188:  15??8900  add      ?, lr9, $00
   3b18c:  15??8a00  add      ?, lr10, $00
-  3b190:  a8??8000  call     lr0, $3b470   ; R_IREL call -> .text $3b470 (service $??11)
+  3b190:  a8008000  call     lr0, $3b470   ; R_IREL call -> .text $3b470 (service $??11)
   3b194:  03??84b6  const    lr4, $??b6   ; [delay slot]
   3b198:  01??61ff  constn   gr97, $??ff
   3b19c:  62??6061  cpneq    ?, gr96, gr97
@@ -62008,7 +62008,7 @@ sub_3b294:
   3b298:  5e40017e  asgeu    trap64, gr1, gr126
   3b29c:  1581011c  add      lr1, gr1, $1c
   3b2a0:  15??8612  add      ?, lr6, $12
-  3b2a4:  a8??8000  call     lr0, $3b404   ; R_IREL call -> .text $3b404 (service $??12)
+  3b2a4:  a8008000  call     lr0, $3b404   ; R_IREL call -> .text $3b404 (service $??12)
   3b2a8:  16??8260  load     ?, ?, lr2, gr96   ; [delay slot]
   3b2ac:  15010110  add      gr1, gr1, $10
   3b2b0:  03??6000  const    gr96, $??00
@@ -62020,7 +62020,7 @@ sub_3b2c0:
   3b2c0:  25010110  sub      gr1, gr1, $10
   3b2c4:  5e40017e  asgeu    trap64, gr1, gr126
   3b2c8:  15810124  add      lr1, gr1, $24
-  3b2cc:  a8??8000  call     lr0, $3b4b8   ; R_IREL call -> .text $3b4b8 (service $??21)
+  3b2cc:  a8008000  call     lr0, $3b4b8   ; R_IREL call -> .text $3b4b8 (service $??21)
   3b2d0:  15??8600  add      ?, lr6, $00   ; [delay slot]
   3b2d4:  15010110  add      gr1, gr1, $10
   3b2d8:  70400101  nop      
@@ -62048,7 +62048,7 @@ sub_3b300:
   3b318:  16??8260  load     ?, ?, lr2, gr96
   3b31c:  15??8a08  add      ?, lr10, $08
   3b320:  16??8385  load     ?, ?, lr3, lr5
-  3b324:  a8??8000  call     lr0, $3b494   ; R_IREL call -> .text $3b494 (service $??13)
+  3b324:  a8008000  call     lr0, $3b494   ; R_IREL call -> .text $3b494 (service $??13)
   3b328:  15??8600  add      ?, lr6, $00   ; [delay slot]
   3b32c:  15??6000  add      ?, gr96, $00
   3b330:  1e??878a  store    ?, ?, lr7, lr10
@@ -62064,7 +62064,7 @@ sub_3b300:
   3b358:  24??8687  sub      ?, lr6, lr7   ; [delay slot]
   3b35c:  16??8385  load     ?, ?, lr3, lr5
   3b360:  14??8387  add      ?, lr3, lr7
-  3b364:  a8??8000  call     lr0, $3b748   ; R_IREL call -> .text $3b748 (sub_3b748)
+  3b364:  a8008000  call     lr0, $3b748   ; R_IREL call -> .text $3b748 (sub_3b748)
   3b368:  03??8300  const    lr3, $??00   ; [delay slot]
   3b36c:  16??8385  load     ?, ?, lr3, lr5
   3b370:  15??8a04  add      ?, lr10, $04
@@ -62087,7 +62087,7 @@ sub_3b390:
   3b3ac:  16??8260  load     ?, ?, lr2, gr96
   3b3b0:  15??8808  add      ?, lr8, $08
   3b3b4:  16??8385  load     ?, ?, lr3, lr5
-  3b3b8:  a8??8000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
+  3b3b8:  a8008000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
   3b3bc:  15??8900  add      ?, lr9, $00   ; [delay slot]
   3b3c0:  15??8810  add      ?, lr8, $10
   3b3c4:  16??6162  load     ?, ?, gr97, gr98
@@ -62659,7 +62659,7 @@ sub_3bae8:
   3baec:  5e40017e  asgeu    trap64, gr1, gr126
   3baf0:  15810150  add      lr1, gr1, $50
   3baf4:  15??9200  add      ?, lr18, $00
-  3baf8:  a8??8000  call     lr0, $3b154   ; R_IREL call -> .text $3b154 (sub_3b154)
+  3baf8:  a8008000  call     lr0, $3b154   ; R_IREL call -> .text $3b154 (sub_3b154)
   3bafc:  15??9300  add      ?, lr19, $00   ; [delay slot]
   3bb00:  61??6000  cpeq     ?, gr96, $00
   3bb04:  ac??6006  jmpt     gr96, ? (disp lo $06)
@@ -62695,7 +62695,7 @@ sub_3bae8:
   3bb7c:  81??6417  sll      ?, gr100, $17   ; [delay slot]
   3bb80:  a4??6010  jmpf     gr96, ? (disp lo $10)
   3bb84:  70400101  nop         ; [delay slot]
-  3bb88:  a8??8000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
+  3bb88:  a8008000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
   3bb8c:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bb90:  01??8eff  constn   lr14, $??ff
   3bb94:  62??608e  cpneq    ?, gr96, lr14
@@ -62710,7 +62710,7 @@ sub_3bae8:
   3bbb8:  a0??000b  jmp      ? (disp lo $0b)
   3bbbc:  16??8b92  load     ?, ?, lr11, lr18   ; [delay slot]
   3bbc0:  03??8300  const    lr3, $??00
-  3bbc4:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3bbc4:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3bbc8:  03??8401  const    lr4, $??01   ; [delay slot]
   3bbcc:  16??8288  load     ?, ?, lr2, lr8
   3bbd0:  81??8202  sll      ?, lr2, $02
@@ -62745,7 +62745,7 @@ sub_3bae8:
   3bc44:  81??8202  sll      ?, lr2, $02
   3bc48:  14??8663  add      ?, lr6, gr99
   3bc4c:  16??8361  load     ?, ?, lr3, gr97
-  3bc50:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3bc50:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3bc54:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bc58:  01??8eff  constn   lr14, $??ff
   3bc5c:  62??608e  cpneq    ?, gr96, lr14
@@ -62756,7 +62756,7 @@ sub_3bae8:
   3bc70:  c0000080  jmpi     lr0
   3bc74:  5641817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3bc78:  16??8288  load     ?, ?, lr2, lr8
-  3bc7c:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3bc7c:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3bc80:  03??8400  const    lr4, $??00   ; [delay slot]
   3bc84:  16??8288  load     ?, ?, lr2, lr8
   3bc88:  81??8202  sll      ?, lr2, $02
@@ -62767,7 +62767,7 @@ sub_3bae8:
   3bc9c:  61??9300  cpeq     ?, lr19, $00
   3bca0:  ac??600c  jmpt     gr96, ? (disp lo $0c)
   3bca4:  70400101  nop         ; [delay slot]
-  3bca8:  a8??8000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
+  3bca8:  a8008000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
   3bcac:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bcb0:  62??608e  cpneq    ?, gr96, lr14
   3bcb4:  ac??6006  jmpt     gr96, ? (disp lo $06)
@@ -62822,7 +62822,7 @@ sub_3bae8:
   3bd78:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bd7c:  03??8300  const    lr3, $??00
   3bd80:  01??84ff  constn   lr4, $??ff
-  3bd84:  a8??8000  call     lr0, $3b094   ; R_IREL call -> .text $3b094 (sub_3b094)
+  3bd84:  a8008000  call     lr0, $3b094   ; R_IREL call -> .text $3b094 (sub_3b094)
   3bd88:  01??85ff  constn   lr5, $??ff   ; [delay slot]
   3bd8c:  61??6000  cpeq     ?, gr96, $00
   3bd90:  ac??6006  jmpt     gr96, ? (disp lo $06)
@@ -62831,13 +62831,13 @@ sub_3bae8:
   3bd9c:  01??60ff  constn   gr96, $??ff
   3bda0:  c0000080  jmpi     lr0
   3bda4:  5641817f  asleu    trap65, lr1, gr127   ; [delay slot]
-  3bda8:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3bda8:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3bdac:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bdb0:  16??648d  load     ?, ?, gr100, lr13
   3bdb4:  81??6413  sll      ?, gr100, $13
   3bdb8:  a4??6006  jmpf     gr96, ? (disp lo $06)
   3bdbc:  9d??6433  andn     ?, gr100, $33   ; [delay slot]
-  3bdc0:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3bdc0:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3bdc4:  15??9200  add      ?, lr18, $00   ; [delay slot]
   3bdc8:  16??648d  load     ?, ?, gr100, lr13
   3bdcc:  9d??6433  andn     ?, gr100, $33
@@ -62880,7 +62880,7 @@ sub_3be04:
   3be50:  1e??8e83  store    ?, ?, lr14, lr3
   3be54:  15??8f12  add      ?, lr15, $12
   3be58:  16??8260  load     ?, ?, lr2, gr96
-  3be5c:  a8??8000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
+  3be5c:  a8008000  call     lr0, $3b4dc   ; R_IREL call -> .text $3b4dc (service $??14)
   3be60:  03??8401  const    lr4, $??01   ; [delay slot]
   3be64:  15??6000  add      ?, gr96, $00
   3be68:  01??89ff  constn   lr9, $??ff
@@ -62891,7 +62891,7 @@ sub_3be04:
   3be7c:  81??611e  sll      ?, gr97, $1e
   3be80:  ac??6065  jmpt     gr96, ? (disp lo $65)
   3be84:  15??8f00  add      ?, lr15, $00   ; [delay slot]
-  3be88:  a8??8000  call     lr0, $3bae8   ; R_IREL call -> .text $3bae8 (sub_3bae8)
+  3be88:  a8008000  call     lr0, $3bae8   ; R_IREL call -> .text $3bae8 (sub_3bae8)
   3be8c:  03??8302  const    lr3, $??02   ; [delay slot]
   3be90:  01??89ff  constn   lr9, $??ff
   3be94:  62??6089  cpneq    ?, gr96, lr9
@@ -62928,7 +62928,7 @@ sub_3be04:
   3bf10:  16??618a  load     ?, ?, gr97, lr10
   3bf14:  93??6102  or       ?, gr97, $02
   3bf18:  1e??608a  store    ?, ?, gr96, lr10
-  3bf1c:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3bf1c:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3bf20:  15??8f00  add      ?, lr15, $00   ; [delay slot]
   3bf24:  15??6000  add      ?, gr96, $00
   3bf28:  61??8800  cpeq     ?, lr8, $00
@@ -62945,7 +62945,7 @@ sub_3be04:
   3bf54:  81??611e  sll      ?, gr97, $1e   ; [delay slot]
   3bf58:  a4??6009  jmpf     gr96, ? (disp lo $09)
   3bf5c:  81??6117  sll      ?, gr97, $17   ; [delay slot]
-  3bf60:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3bf60:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3bf64:  15??8f00  add      ?, lr15, $00   ; [delay slot]
   3bf68:  62??6089  cpneq    ?, gr96, lr9
   3bf6c:  a4??6033  jmpf     gr96, ? (disp lo $33)
@@ -62954,7 +62954,7 @@ sub_3be04:
   3bf78:  81??6117  sll      ?, gr97, $17
   3bf7c:  a4??600c  jmpf     gr96, ? (disp lo $0c)
   3bf80:  9d??6130  andn     ?, gr97, $30   ; [delay slot]
-  3bf84:  a8??8000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
+  3bf84:  a8008000  call     lr0, $3ca10   ; R_IREL call -> .text $3ca10 (sub_3ca10)
   3bf88:  15??8f00  add      ?, lr15, $00   ; [delay slot]
   3bf8c:  15??6000  add      ?, gr96, $00
   3bf90:  62??8b89  cpneq    ?, lr11, lr9
@@ -63030,7 +63030,7 @@ sub_3c044:
   3c098:  60??6283  cpeq     ?, gr98, lr3
   3c09c:  ac??600b  jmpt     gr96, ? (disp lo $0b)
   3c0a0:  24??6283  sub      ?, gr98, lr3   ; [delay slot]
-  3c0a4:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3c0a4:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3c0a8:  03??8400  const    lr4, $??00   ; [delay slot]
   3c0ac:  16??8287  load     ?, ?, lr2, lr7
   3c0b0:  81??8202  sll      ?, lr2, $02
@@ -63052,7 +63052,7 @@ sub_3c044:
   3c0f0:  15??8c12  add      ?, lr12, $12
   3c0f4:  16??8287  load     ?, ?, lr2, lr7
   3c0f8:  03??8300  const    lr3, $??00
-  3c0fc:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3c0fc:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3c100:  03??8401  const    lr4, $??01   ; [delay slot]
   3c104:  16??0287  load     ?, ?, ?r2, lr7
   3c108:  03008500  const    lr5, $0000   ; lo of extern#1707
@@ -63073,7 +63073,7 @@ sub_3c044:
   3c144:  1e??6063  store    ?, ?, gr96, gr99
   3c148:  24??6083  sub      ?, gr96, lr3
   3c14c:  15??8c00  add      ?, lr12, $00
-  3c150:  a8??8000  call     lr0, $3b390   ; R_IREL call -> .text $3b390 (sub_3b390)
+  3c150:  a8008000  call     lr0, $3b390   ; R_IREL call -> .text $3b390 (sub_3b390)
   3c154:  15??6200  add      ?, gr98, $00   ; [delay slot]
   3c158:  15??6000  add      ?, gr96, $00
   3c15c:  01??60ff  constn   gr96, $??ff
@@ -63085,7 +63085,7 @@ sub_3c044:
   3c174:  93??6120  or       ?, gr97, $20   ; [delay slot]
   3c178:  16??8287  load     ?, ?, lr2, lr7
   3c17c:  03??8300  const    lr3, $??00
-  3c180:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3c180:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3c184:  03??8401  const    lr4, $??01   ; [delay slot]
   3c188:  16??8287  load     ?, ?, lr2, lr7
   3c18c:  03008500  const    lr5, $0000   ; lo of extern#1707
@@ -63143,21 +63143,21 @@ sub_3c1d4:
   3c24c:  61??8200  cpeq     ?, lr2, $00
   3c250:  ac??6006  jmpt     gr96, ? (disp lo $06)
   3c254:  81??631e  sll      ?, gr99, $1e   ; [delay slot]
-  3c258:  a8??8000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
+  3c258:  a8008000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
   3c25c:  70400101  nop         ; [delay slot]
   3c260:  16??6385  load     ?, ?, gr99, lr5
   3c264:  81??631e  sll      ?, gr99, $1e
   3c268:  a4??600a  jmpf     gr96, ? (disp lo $0a)
   3c26c:  70400101  nop         ; [delay slot]
-  3c270:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3c270:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3c274:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   3c278:  16??6385  load     ?, ?, gr99, lr5
   3c27c:  81??6313  sll      ?, gr99, $13
   3c280:  a4??6004  jmpf     gr96, ? (disp lo $04)
   3c284:  70400101  nop         ; [delay slot]
-  3c288:  a8??8000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
+  3c288:  a8008000  call     lr0, $3c044   ; R_IREL call -> .text $3c044 (sub_3c044)
   3c28c:  15??8a00  add      ?, lr10, $00   ; [delay slot]
-  3c290:  a8??8000  call     lr0, $3b024   ; R_IREL call -> .text $3b024 (sub_3b024)
+  3c290:  a8008000  call     lr0, $3b024   ; R_IREL call -> .text $3b024 (sub_3b024)
   3c294:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   3c298:  03??8400  const    lr4, $??00
   3c29c:  1e??8485  store    ?, ?, lr4, lr5
@@ -63172,7 +63172,7 @@ sub_3c1d4:
   3c2c0:  02006000  consth   gr96, $0000   ; -> extern#1639+$0000
   3c2c4:  14??6062  add      ?, gr96, gr98
   3c2c8:  1e??8460  store    ?, ?, lr4, gr96
-  3c2cc:  a8??8000  call     lr0, $3b294   ; R_IREL call -> .text $3b294 (sub_3b294)
+  3c2cc:  a8008000  call     lr0, $3b294   ; R_IREL call -> .text $3b294 (sub_3b294)
   3c2d0:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   3c2d4:  15??6000  add      ?, gr96, $00
   3c2d8:  81??8602  sll      ?, lr6, $02
@@ -63183,9 +63183,9 @@ sub_3c1d4:
   3c2ec:  61??8200  cpeq     ?, lr2, $00
   3c2f0:  ac??6008  jmpt     gr96, ? (disp lo $08)
   3c2f4:  15??8500  add      ?, lr5, $00   ; [delay slot]
-  3c2f8:  a8??8000  call     lr0, $3c9ec   ; R_IREL call -> .text $3c9ec (service $??16)
+  3c2f8:  a8008000  call     lr0, $3c9ec   ; R_IREL call -> .text $3c9ec (service $??16)
   3c2fc:  70400101  nop         ; [delay slot]
-  3c300:  a8??8000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
+  3c300:  a8008000  call     lr0, $376a0   ; R_IREL call -> .text $376a0 (sub_376a0)
   3c304:  16??0283  load     ?, ?, ?r2, lr3   ; [delay slot]
   3c308:  1e??8483  store    ?, ?, lr4, lr3
   3c30c:  15??8500  add      ?, lr5, $00
@@ -63220,7 +63220,7 @@ sub_3c340:
   3c370:  15??9600  add      ?, lr22, $00
   3c374:  15??9700  add      ?, lr23, $00
   3c378:  15??9800  add      ?, lr24, $00
-  3c37c:  a8??8000  call     lr0, $3c7ac   ; R_IREL call -> .text $3c7ac (sub_3c7ac)
+  3c37c:  a8008000  call     lr0, $3c7ac   ; R_IREL call -> .text $3c7ac (sub_3c7ac)
   3c380:  15??9900  add      ?, lr25, $00   ; [delay slot]
   3c384:  61??6000  cpeq     ?, ?r96, $00
   3c388:  ac??6106  jmpt     gr97, ? (disp lo $06)
@@ -63262,7 +63262,7 @@ sub_3c340:
   3c418:  02006000  consth   gr96, $0000   ; -> .bss+$0039
   3c41c:  a0??00bc  jmp      ? (disp lo $bc)
   3c420:  1e??8c60  store    ?, ?, lr12, gr96   ; [delay slot]
-  3c424:  a8??8000  call     lr0, $3c874   ; R_IREL call -> .text $3c874 (sub_3c874)
+  3c424:  a8008000  call     lr0, $3c874   ; R_IREL call -> .text $3c874 (sub_3c874)
   3c428:  15??9000  add      ?, lr16, $00   ; [delay slot]
   3c42c:  15??6000  add      ?, gr96, $00
   3c430:  a4??8e12  jmpf     lr14, ? (disp lo $12)
@@ -63274,7 +63274,7 @@ sub_3c340:
   3c448:  14??608e  add      ?, gr96, lr14
   3c44c:  15??604d  add      ?, gr96, $4d
   3c450:  87??6008  sra      ?, gr96, $08
-  3c454:  a8??8000  call     lr0, $3c74c   ; R_IREL call -> .text $3c74c (sub_3c74c)
+  3c454:  a8008000  call     lr0, $3c74c   ; R_IREL call -> .text $3c74c (sub_3c74c)
   3c458:  35??8e00  subr     ?, lr14, $00   ; [delay slot]
   3c45c:  15??6000  add      ?, gr96, $00
   3c460:  15??6100  add      ?, gr97, $00
@@ -63296,7 +63296,7 @@ sub_3c340:
   3c4a0:  ac??6003  jmpt     gr96, ? (disp lo $03)
   3c4a4:  70400101  nop         ; [delay slot]
   3c4a8:  03??8e34  const    lr14, $??34
-  3c4ac:  a8??8000  call     lr0, $3c74c   ; R_IREL call -> .text $3c74c (sub_3c74c)
+  3c4ac:  a8008000  call     lr0, $3c74c   ; R_IREL call -> .text $3c74c (sub_3c74c)
   3c4b0:  15??8e00  add      ?, lr14, $00   ; [delay slot]
   3c4b4:  15??6000  add      ?, gr96, $00
   3c4b8:  15??6100  add      ?, gr97, $00
@@ -63402,7 +63402,7 @@ sub_3c340:
   3c648:  15??8800  add      ?, lr8, $00
   3c64c:  03??830a  const    lr3, $??0a
   3c650:  15??8700  add      ?, lr7, $00
-  3c654:  a8??8000  call     lr0, $3a5a4   ; R_IREL call -> .text $3a5a4 (sub_3a5a4)
+  3c654:  a8008000  call     lr0, $3a5a4   ; R_IREL call -> .text $3a5a4 (sub_3a5a4)
   3c658:  03??8600  const    lr6, $??00   ; [delay slot]
   3c65c:  61??8f00  cpeq     ?, lr15, $00
   3c660:  ac??6038  jmpt     gr96, ? (disp lo $38)
@@ -63419,7 +63419,7 @@ sub_3c340:
   3c68c:  ac??60fb  jmpt     gr96, ? (disp lo $fb)
   3c690:  15??8f01  add      ?, lr15, $01   ; [delay slot]
   3c694:  15??8d00  add      ?, lr13, $00
-  3c698:  a8??8000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3c698:  a8008000  call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
   3c69c:  15??8800  add      ?, lr8, $00   ; [delay slot]
   3c6a0:  16??8487  load     ?, ?, lr4, lr7
   3c6a4:  14??848f  add      ?, lr4, lr15
@@ -63669,7 +63669,7 @@ sub_3ca10:
   3ca1c:  15??8a12  add      ?, lr10, $12
   3ca20:  16??8285  load     ?, ?, lr2, lr5
   3ca24:  03??8300  const    lr3, $??00
-  3ca28:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3ca28:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3ca2c:  03??8401  const    lr4, $??01   ; [delay slot]
   3ca30:  16??6185  load     ?, ?, gr97, lr5
   3ca34:  81??6102  sll      ?, gr97, $02
@@ -63677,7 +63677,7 @@ sub_3ca10:
   3ca3c:  02006100  consth   gr97, $0000   ; -> extern#1707+$0000
   3ca40:  14??6162  add      ?, gr97, gr98
   3ca44:  1e??6061  store    ?, ?, gr96, gr97
-  3ca48:  a8??8000  call     lr0, $3b300   ; R_IREL call -> .text $3b300 (sub_3b300)
+  3ca48:  a8008000  call     lr0, $3b300   ; R_IREL call -> .text $3b300 (sub_3b300)
   3ca4c:  15??8a00  add      ?, lr10, $00   ; [delay slot]
   3ca50:  15??6000  add      ?, gr96, $00
   3ca54:  01??60ff  constn   gr96, $??ff
@@ -63704,7 +63704,7 @@ sub_3ca10:
   3caa8:  93??6001  or       ?, gr96, $01
   3caac:  1e??6061  store    ?, ?, gr96, gr97
   3cab0:  16??8285  load     ?, ?, lr2, lr5
-  3cab4:  a8??8000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
+  3cab4:  a8008000  call     lr0, $3b44c   ; R_IREL call -> .text $3b44c (service $??15)
   3cab8:  03??8401  const    lr4, $??01   ; [delay slot]
   3cabc:  16??6185  load     ?, ?, gr97, lr5
   3cac0:  81??6102  sll      ?, gr97, $02

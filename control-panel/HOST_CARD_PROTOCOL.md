@@ -216,8 +216,24 @@ clears `+$00`, and if command bit 0 is set writes 0 to `+$04` and spins until
 the host writes a non-zero value back -- i.e. the card pauses while the host
 retimes the clock (**verified**). It computes the frame-buffer size with a
 32-step multiply, then acts on the page configuration (`+$1C`): 1 and 2
-trigger the bulk word copies ($2000DBC.. / $2000E8C..), other values skip them
-(**reading**: what the copies do to the frame buffer is not worked out).
+trigger the bulk word copies ($2000DBC.. / $2000E8C..), other values skip them.
+The copies convert the 2 MB window between a 4-way word-interleaved and a
+linear layout (1: interleaved to linear, 2: the reverse; see `$1701C` under
+"the rectangle case").
+
+**Who sends which configuration** (`JMFBSetDepth`, `$5DA8`). `savePageCfg`
+(`$2C(a3)`) is cleared on every depth change, and set only when GFlags
+bit 11 is set and the depth really changes:
+* to 1 when the new depth is 24 bpp (the driver's code for 32-bit pixels;
+  it also sets GFlags bit 9);
+* to 2 when the old depth was 24 bpp (and clears bit 9).
+
+Bit 11 is `Interlaced` in Apple's JMFB equates, but this driver sets it for
+every monitor sense code except 1, 2, 3 and 6 (`$53CC`). So on those
+monitors the frame buffer is interleaved at 1-8 bpp and linear at 24 bpp.
+On the others no conversion is ever requested. When `savePageCfg` is
+non-zero, the driver also waits an extra delay after the card acknowledges
+(`$5F78`).
 
 ## What this corrects
 
@@ -1850,8 +1866,9 @@ in "The cursor".
        of its values when the bit is set. For `$1701C` this means:
        interleaved memory gets the `storem` burst, and linear memory gets
        the two-pointer loop. Why linear memory avoids `storem` is not
-       shown. Which depths use which layout is a host-side setting (the
-       page configuration word at VidComm `+$1C`) and is not traced here;
+       shown. The host sends the page configuration (section 5): linear
+       means 24 bpp on monitors whose GFlags bit 11 is set. So in practice
+       `$1701C` avoids `storem` only in 24-bit mode on those monitors;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
@@ -2389,8 +2406,44 @@ known targets although their displacement's high byte is masked:
 `antelope_partial_dasm.py` now prints these targets
 (`call lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)`).
 The displacement's masked high byte is plaintext 0 in all 133 words, so
-they are also 133 more key samples for bits 16-23, which
-`antelope_reloc_samples.py` does not yet use.
+they are also full key samples. `antelope_reloc_samples.py` now adds them
+to `mask_samples.tsv` as `irel` rows. 128 calls are `call lr0`, and 5 are
+transfer calls through `gr122` (RA read from the known low key bits). The
+32 words whose key was already known above bit 15 all agree. The gain is
+modest: 406 words gain key bits (words with 19 known bits: 11,801 to
+12,043; 18: 7,667 to 7,770; 17: 13,062 to 13,123).
+
+**The C library (`$39118`-`$3C340`).** The R_IREL targets make it
+readable. It is a Unix-style C library on AMD's HIF system calls:
+
+| address | function | evidence |
+|---|---|---|
+| `$3B404` `$3B428` `$3B44C` `$3B470` `$3B494` `$3B4B8` `$3B4DC` | HIF stubs: close (`$12`), exit (`$01`), lseek (`$15`), open (`$11`), read (`$13`), `$21` (tmpnam in the HIF list), write (`$14`) | `const gr121, N` / `asneq 69` / `jmpti gr121, lr0`; on failure store `gr121` to errno and return -1 |
+| `extern#1769` | `errno` | every stub stores to it |
+| `.data+$1580` | `_iob` (20-byte `FILE`s; `stdout` at `+$14`) | |
+| `$39284` | `printf` | spills its varargs; if bit 15 of a flag halfword of `stdout` is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0(x, stdout, fmt, ap)`, where `x` is a relocated address not read here |
+| `$39214` | `vprintf` | the same without the spill |
+| `$399E0` | `_doprnt` (the formatting core) | calls memset, the `_ctype_` table, and the number converters `$3A5A4`-`$3AC24` |
+| `$39304` | `fseek` | calls lseek; `(fp, 0, 2)` is `SEEK_END` |
+| `$3B500` | `memset` | returns if `n` = 0; replicates the byte to a word |
+| `.lit+$1021` | `_ctype_` (+1 for EOF) | |
+| `$3AA9C`-`$3ABB4` | isupper, islower, isalpha, isdigit, isxdigit, isspace, ispunct, isalnum, isgraph, isprint, iscntrl | `_ctype_[c]` masked with 1, 2, 3, 4, `$44`, 8, `$10`, 7, `$17`, `$97`, `$20`: the V7/BSD bits `_U _L _N _S _P _C _X _B` (the masks are bits 0-7, plain) |
+| `$3ABD0` `$3ABE0` `$3ABEC` `$3ABF8` `$3AC24` | isascii (c ≤ `$7F`), `_toupper`, `_tolower`, toupper, tolower | `c - $20` / `c + $20`, the last two only if `_L` / `_U` |
+| `$3AC88` | `exit` | walks a handler table (`.data+$1560`-`$1580`), calls `$3C1D4` (presumably the stdio cleanup), then HIF exit |
+| `$3B16C` `$3B294` `$3B300` `$3B390` | wrappers around open, close, read, write | each calls one stub |
+
+The kernel side agrees with the HIF numbering. Hand's vector-69 handler
+answers `$103` with `$400` (getpsize: the page size), `$104` with the
+`InpArgs` block (getargs), `$111`/`$112` with the clock and cycle count,
+and `$101` grows the heap (sysalloc). Other numbers are passed to the host
+through the mailbox reporter `$2002650`. So a level-1 report (`$00140` ->
+`printf`) becomes a HIF write and reaches the host as a mailbox message.
+Level 2 goes to `$00F84`, which formats with `$39864` into a buffer at
+`.data+$288`-`$298` (allocated through `$33680`) and then prints with
+`printf`.
+
+These are names by role: the library's own names and version are not in
+the file.
 
 **First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
 `.lit` words whose target range is under 8 KB (175 in small modules, plus
