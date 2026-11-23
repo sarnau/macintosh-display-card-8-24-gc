@@ -190,9 +190,16 @@ LEVELS = [(8, 96), (9, 192), (10, 384), (11, 768)]
 # shares the $6C case at $0BBC4) and $72 (the "long" pattern record, the
 # $0B72C case); the record layouts come from gc24's EngineDispatch, which
 # writes them.  Without these, their key bits 8-11 classes fit wrongly.
-PINS = {0x484 // 4: (0x0AD14, 0x0BDB0),
-        0x498 // 4: (0x0AD14, 0x0BBC4),
-        0x4B8 // 4: (0x0AD14, 0x0B72C)}
+#
+# Every entry whose record layout the host confirms is pinned, not only the
+# three that the unpinned fit got wrong: pinning only those moved shared
+# key classes and broke opcodes 3 and $6E instead.
+_DMO = {0x01: 0x0BDB0, 0x03: 0x0D9C4, 0x04: 0x0D9C4, 0x05: 0x0C754, 0x6A: 0x0BBC4,
+        0x6C: 0x0BBC4, 0x6D: 0x0B584, 0x6E: 0x0BD98, 0x6F: 0x0B228,
+        0x70: 0x0BB7C, 0x71: 0x0B6D8, 0x72: 0x0B72C, 0x74: 0x0B788,
+        0x75: 0x0B7B8}
+PINS = {(0x484 + 4 * (op - 1) if op < 0x6A else 0x498 + 4 * (op - 0x6A)) // 4:
+        (0x0AD14, t) for op, t in _DMO.items()}
 
 
 def mid12(k, low8, fixed):
