@@ -244,8 +244,24 @@ gives 480 lines (NTSC), anything else gives 576 lines with underscan
 (PAL). The sResource ID's bit 3 picks a second pair of tables (convolved
 or overscan variants). So the layout conversion happens only on NTSC and
 PAL output: there the frame buffer is interleaved at 1-8 bpp and linear at
-24 bpp. On the Apple monitors no conversion is ever requested, and which
-layout they use is not shown. When `savePageCfg` is
+24 bpp. On the Apple monitors no conversion is ever requested.
+
+**The layout bit is the host's.** The clock routine (`$601A`, after
+`WaitForVBlank`) writes bit 31 of MFB register `+$80` (`$04000080` from the
+host, `$44000080` on the card) with `bfins`. The value is 1, except when
+GFlags has `Interlaced` set and `BigScreen` clear, in which case it is 0.
+`BigScreen` is set exactly when a TV mode enters 24 bpp. So:
+
+| output | 1-8 bpp | 24 bpp |
+|---|---|---|
+| Apple monitors (IDs 1, 2, 3, 6) | linear (bit 1) | linear (bit 1) |
+| NTSC / PAL | 4-way interleaved (bit 0) | linear (bit 1) |
+
+The same routine writes `+$7C` from the per-depth timing table, so `+$7C`
+is not simply the complement of `+$80`, although the two page conversions
+wait for them in opposite states. The card's waits after a conversion are
+for this host write: the host programs the registers after the card has
+acknowledged the command. When `savePageCfg` is
 non-zero, the driver also waits an extra delay after the card acknowledges
 (`$5F78`).
 
@@ -986,6 +1002,14 @@ read. The functions:
 | `$31E20` | the sequence-error message, "Unknown Function: 0x%x" | the command dispatcher |
 | `$33680` | "malloc: allocated … bytes outside of the heap bounds …" | |
 | `$33EBC` | "CallBack … during interrupt …" | |
+
+This exhausts the strings. Every `.lit` string run belongs to one of
+these functions or to MapVirtual/CallBack, apart from two that name nothing
+readable: `$01468` (a short "Bogus…" message) and `$31DAC` (a partly
+readable "P?Mo?t: …" message). The run at `.lit $1020` is not text: it is
+the C library's `_ctype_` table, whose entries for tab to CR read `$28`
+(`_C|_S`) and for the other control characters `$20` (`_C`), as V7/BSD
+ctype has them.
 
 So the card keeps caches of the host's pixel patterns, colour tables,
 GDevices and offscreens. The one-long commands keep those caches in step:
@@ -1881,9 +1905,10 @@ in "The cursor".
        interleaved memory gets the `storem` burst, and linear memory gets
        the two-pointer loop. Why linear memory avoids `storem` is not
        shown. The host sends the page configuration (section 5): linear
-       means 24 bpp on NTSC or PAL output. So `$1701C` avoids `storem` in
-       24-bit TV modes, and its behaviour on the Apple monitors depends on
-       a layout that is not shown;
+       means every depth on the Apple monitors and 24 bpp on TV output
+       (section 5). So `$1701C` uses the two-pointer loop almost
+       everywhere, and the `storem` burst `$00348` only for 1-8 bpp
+       NTSC/PAL frame buffers;
      * **`$00348(dst, value, count)`**, a burst fill. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
@@ -1922,9 +1947,19 @@ in "The cursor".
        with NuBus block transfers set up by `$B8`/`$B9`/`$BF`. What
        `$D1`, `$BB`, `$B8`, `$B9`, `$BF` and `$D4` do in the kernel is not
        shown, because the service table's pointers are approximate.
-       The same service sequence appears in `$37C10`, `$38218`, `$385C8`,
-       `$388D0` and `$38C3C`, so these look like one family of
-       `storem` fill and copy routines;
+       The same service sequence appears in three more entry points (the
+       others with services are shared restore tails: `$38574`, `$385C8`,
+       `$38C3C`). Together they are one family:
+
+       | entry | role | callers |
+       |---|---|---|
+       | `$37C10` | pattern fill: a 1-, 2-, 4-, 8- or 16-long pattern (`lr19` = period) loaded into `gr96`-`gr111`, then `$37D68`'s body (`$37DF0`) | `$04110`, `$0E804` (3), `$1C8A8` |
+       | `$37D68` | fill with one long | the row fills `$09020`/`$09270`, DrawMultiObject, `$11460`-`$11918` (text), `$03838`, `$03A28`, `$0E4CC`, `$1C298` |
+       | `$38218` | forward copy (`dst`, `src`, `count`): `loadm`/`storem` 64 bytes at a time; calls `$D4` for both pointers | ShieldCursor `$32C10` and `$32EF8` (saving and restoring the pixels under the cursor), `$02DE0`, `$16C48` (2), `$1B61C`, `$37000` (4) |
+       | `$388D0` | backward copy: the same with both pointers counting down, for overlapping moves | through the jump table at `.lit $0FFC` (base `$3772C`) |
+
+       All four rewrite a `$4.......` card address to the slot form and
+       take the kernel-service path only for memory off the card;
    * release the cursor (`$32EF8`).
 4. **General path** (`$0CA64`-`$0D050`):
    * RSect (`$01494`), then TrimRect (`$01654`) for each region;
