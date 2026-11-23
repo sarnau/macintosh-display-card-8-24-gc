@@ -42,15 +42,18 @@ sequence numbers on both sides.
 | `$15` | `StretchBits` (trap `$AB27`; CopyBits ends here) | `$2D7B8` StretchBits, with `scaleBlt`, BitBlt and RgnBlt. Reaches host pixel maps through `MapVirtual` |
 | `$03`/`$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
 | `$26`, `$38`, `$0D`, … | begin / synchronise around drawing | state and bookkeeping |
-| `$2D` | (no gc24 sender) | `$13770` → `DrawMultiObject`, a 24-opcode drawing engine |
+| `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "The host side of DrawMultiObject") |
 | `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
 
-**What it does not accelerate.** `StdLine` (`$20`), `StdText` (`$21`),
-`StdArc` (`$23`), `StdRect` (`$24`) and the other selectors with low byte
-`$70` in the command table go to "Unknown Function" and get reply 0. The 68k
-QuickDraw draws them into the card's frame buffer over NuBus. This is
-checked independently of the uncertain key bits ("The condition checked
-without bits 8-11").
+**The Std\* drawing calls are batched, not sent.** `StdLine` (`$20`),
+`StdText` (`$21`), `StdArc` (`$23`), `StdRect` (`$24`) and the other drawing
+selectors would go to "Unknown Function" if they reached the card's
+dispatcher. They do not reach it: `EngineDispatch` turns them into records
+of a DrawMultiObject stream (opcodes 1-8 plus state records), which it
+appends to a buffer in card memory and hands over with `$2D`, `$38` and `$26`.
+(An earlier version of this document concluded that they were not
+accelerated at all. That was wrong.) When the stream cannot be used, for
+example with no current port, `EngineDispatch` returns 0 and the 68K draws.
 
 **What the card asks the host for (request codes):** Memory Manager calls
 (3-6), resources (7), block copies to and from handles (8, 18, 21),
@@ -81,7 +84,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- the exact meaning of DrawMultiObject's opcodes (mapped by class, from estimated words);
+- DrawMultiObject's opcodes are named from the host writer; still open are the fields of `$67`, `$69` and `$75`, and why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -1528,10 +1531,109 @@ samples). The estimates have been right wherever they could be checked (the
 dispatcher), but each row here is a reading, not a proof.
 
 **Who reaches DrawMultiObject.** Inside Antelope only `$13770` calls it, and
-`$13770` is reached only by command `$2D` (and the entry table). No `gc24`
-code sends `$2D`. So the multi-object drawing engine is not used by the
-standard QuickDraw patches. It serves code that sends `$2D` itself, or a
-host-loaded module through the entry table.
+`$13770` is reached only by command `$2D` (and the entry table). `$2D` is
+sent by `EngineDispatch` itself (`gc24.s` `$4F38`) when it starts a new
+stream. See the next section.
+
+#### The host side of DrawMultiObject: EngineDispatch batches the Std\* calls
+
+**EngineDispatch is the stream writer.** For commands `$0C`-`$38` it jumps
+through its own table (`$4A52`). Most cases end in the generic send path
+(`L5E6C`), but the drawing commands go to `L4AAC`. That code:
+1. checks the current port (from the A5 world). With none, it flushes and
+   returns 0;
+2. when `picSave`, `rgnSave` or `polySave` (port `+$5C`/`+$60`/`+$64`) is
+   set, notes the reply 2 (below);
+3. emits state records for whatever changed since the last call (it
+   caches the port's state in its globals);
+4. emits one drawing record for the call.
+
+**The buffer:**
+
+| global | role |
+|---|---|
+| `$AC(a4)` | buffer start (host address) |
+| `$C4(a4)` | buffer start (card address) |
+| `$B0(a4)` | write pointer |
+| `$B4(a4)` | the last record, so a repeated `$6A`/`$6C` replaces it instead of adding one |
+| `$BC(a4)` | capacity |
+| `$C0(a4)` | bytes used |
+
+When a record would not fit (`$BC − size − $24 ≤ $C0`), it flushes with
+`sub_4822(reason)`, that is `EngineDispatch($26, reason)`. The reasons seen
+are 8, 9, `$12`, `$13`, `$14` and `$18`.
+
+**Starting a stream** (`$4EBC`, when the port differs from the cached one):
+1. reset the buffer;
+2. write a 4-byte `$6F` record at its start;
+3. set the length to 4 (at `+$50` of a block at packet `+$170`, whose
+   `+$4C` holds the card address);
+4. send `$2D` with that block. The card enters DrawMultiObject and runs
+   until the first wait.
+
+**After each drawing call** (`$38`, `L5DE0`), if the buffer holds more than
+the header:
+1. rewrite the `$6F` header's word at `+2` with flags (`$F0(a4)`);
+2. send `$38` with (card address, byte count).
+
+On the card, the nested wait inside DrawMultiObject services `$38`. Its case
+stores the count (`[p[0]+4]`) in the length word that DrawMultiObject
+re-reads, so the card carries on with the new records. `$26` (`L5D84`)
+first sends a final `$38` if needed and then ends the batch. The card's
+wait returns `$C8`/`$C9` after `$26`/`$30`.
+
+**The reply.** EngineDispatch returns 1 ("done", the 68K skips the call).
+When the port is recording a picture, region or polygon, it returns 2. It
+also restores `HiliteMode`, `pnLoc` and `pnLocHFrac` first, so the 68K
+original runs with drawing suppressed and records the call. That is the
+meaning of reply 2.
+
+**Commands → records** (from the chain at `$555C` and the patch table in
+`QUICKDRAW_PATCHES.md`):
+
+| command (patch) | record | layout written by the host |
+|---|---|---|
+| `$20` (StdLine) | **1** | 8: `+4` the new point (also stored as the port's `pnLoc`) |
+| `$23` (StdArc) | **2** | 16: `+2` verb, `+4` rect, `+$C` startAngle, `+$E` arcAngle |
+| `$2F` (StdOval) | **3** | 12: verb, rect |
+| `$2E` (StdRRect) | **4** | 16: verb, rect, `+$C` ovalWidth, `+$E` ovalHeight |
+| `$24` (StdRect) | **5** | 12: verb, rect |
+| `$21` (StdText) | `$67`, then **6** | `$67`: 32 bytes of font state (`+$1C` from `$106(a4)`). 6: `+2` count, `+4`/`+8`/`+$0C` three longs (numer, denom and the text's pointer, by the order of StdText's arguments, not checked), `+$10` the text |
+| `$31` (StdPoly) | **7** | verb, the Polygon (`BlockMove`, `(polySize + 7) & ~3`) |
+| `$18` (StdRgn) | **8** | verb, the Region |
+| `$10` (visRgn changed; also sent from the port check at `$51A4`) | `$6C` | the Region at `+2`, `(rgnSize + 5) & ~3` |
+| `$32` (SetClip, ClipRect) | `$6A` | the clip Region at `+2`, same size rule |
+| `$35` (PenSize, SetPenState, PenNormal) | `$6E` | 8: `+4` pnSize |
+| `$36` (ForeColor, RGBForeColor, PmForeColor) | `$66` or `$64` | `+4` the RGB colour (port `+$24`), `+8` the index (`+$50`); `$64` when `sub_917e` gives an index |
+| `$37` (BackColor, PmBackColor) | `$6D` or `$6B` | the same from `+$2A`/`+$54` |
+| (pen location changed) | `$68` | 8: `+2` `pnLocHFrac`, `+4` `pnLoc` |
+| (two colours changed, `sub_8DF2`) | `$70` | 16: `+4` and `+$0A` two RGB colours |
+| (a pattern slot changed, `sub_8F04` result 1-4) | `$71` / `$72` / `$74` / `$72` | `$71`: `+2` slot, `+4` 8-byte pattern; `$72`: `+2` slot, `+4` a long (a PixPat); `$74`: `+4` slot, `+6` RGB colour |
+| (select a pattern slot) | `$73` | 4: `+2` slot |
+| (QuickDraw global at `-$CA+$22` changed) | `$75` | 8: `+4` the long |
+| (flags) | `$69` | 4: `+2` flags |
+| (stream header) | `$6F` | 4: `+2` flags, rewritten before each `$38` |
+
+**What this settles on the card side:**
+* **Opcode 1 is the line**, the `$0BDB0` case (end point at `+4`; the pen
+  moves there). Its `.lit` value decoded to `$xBB0` (the case needs `$xDB0`), so that entry's decoding is wrong. **`$73`
+  is not a line**: it selects a pattern slot, which fits the card's `$0C1D4`
+  code storing into one of three slots by `lr4`.
+* **2 = Arc, 3 = Oval, 4 = RoundRect, 5 = Rect.** QuickDraw draws ovals and
+  round rects through DrawArc, which fits 3/4 sharing `$0D9C4`. 2 is the
+  arc with angles, at `$0B8C4`.
+* **`$72` is the "long" pattern kind** (the `$0B72C` case); its `.lit` value
+  `$518` was decoded wrongly as well (the case needs `$A18`).
+* **`$6B`/`$6D` are background colours** and `$64`/`$66` foreground colours.
+  `$6B`'s `.lit` value `$xB440` lands in the `$64` code, which handles the
+  same layout.
+* **`$6C` is the visible region (`lr54`) and `$6A` the clip region
+  (`lr19`).**
+* **`$68` is MoveTo** with `pnLocHFrac` at `+2`. **`$6E` is the pen size.**
+
+The "first drawing call" table and the record table above were read from
+the card alone. Where they differ from this, this section is the reference.
+
 
 **DrawMultiObject's prologue and loop head (`$0AD18`-`$0AF90`).**
 
@@ -1618,6 +1720,11 @@ epilogue. Annotated (`rec` = packet `+$44`, see below):
   everything else goes to the switch.
 
 #### The Std* selectors are not handled on the card
+
+(These selectors never arrive here in practice: `EngineDispatch` turns them
+into DrawMultiObject records instead of sending them. See "The host side of
+DrawMultiObject". What follows is what the card's dispatcher would do with
+them.)
 
 **So the drawing selectors reach the default.** `$20` StdLine, `$21`
 StdText, `$23` StdArc, `$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`,
