@@ -84,7 +84,7 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 `$372D0`-`$3772C`.
 
 **Still open:**
-- DrawMultiObject's opcodes are named from the host writer; still open is why two `.lit` table values (opcodes 1 and `$72`) decode to the wrong targets;
+- DrawMultiObject's opcodes are named from the host writer; three of its `.lit` entries are pinned from the host (opcodes 1, `$6A`, `$72`), and the rest of `.lit` agrees;
 - the card's cursor overlap test (`$32C10`/`$32EF8`), read only in outline;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -695,17 +695,35 @@ above chance in bits 0-11:
 | `$174FC` | 6 | 6 | 6% |
 | `$372D0` | 4 | 4 | 2% |
 | `$31DA8` (dispatcher) | 61 | 61 | 4% |
-| `$2D7B4` | 86 | 78 | 15% |
+| `$2D7B4` | 86 | 80 | 15% |
 | `$3772C` | 23 | 21 | 19% |
 | `$25350` | 27 | 22 | 12% |
-| `$0AD14` | 29 | 23 | 11% |
-| `$01A4C` | 50 | 40 | 17% |
+| `$0AD14` | 29 | 24 (3 of them pinned, below) | 11% |
+| `$01A4C` | 50 | 41 | 17% |
 | `$19DA0` | 66 | 53 | 25% |
-| `$13F50` | 32 | 21 | 15% |
-| `$27674` | 16 | 13 | 20% |
+| `$13F50` | 32 | 20 | 15% |
+| `$27674` | 16 | 15 | 20% |
 
 So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
-holds across all of `.lit`. Two groups are not case-block tables and are
+holds across all of `.lit`.
+
+**Three known plaintexts from the host.** The stream writer in `gc24`'s
+`EngineDispatch` (see "The host side of DrawMultiObject") gives the true
+targets of three DrawMultiObject table entries that the fit had decoded
+wrongly:
+
+| entry | opcode | fit alone | true target | error |
+|---|---|---|---|---|
+| `.lit $0484` | 1 (line) | `$69C` | `$09C` → `$0BDB0` | bits 9-10 |
+| `.lit $0498` | `$6A` (clip region) | `$BB0` → `$0B8C4` | `$EB0` → `$0BBC4`, the `$6C` case | bits 8, 10 |
+| `.lit $04B8` | `$72` (long pattern) | `$518` → `$0E22C` | `$A18` → `$0B72C` | bits 8-11 |
+
+`antelope_lit_key.py` now takes them as constraints (`PINS`). The refit
+changes 23 key-class bits. The dispatcher table keeps 61 of 61, and the
+other tables improve slightly: `$2D7B4` from 78 to 80, `$27674` from 13 to
+15, `$01A4C` from 40 to 41, and `$13F50` from 21 to 20. So the pins agree
+with the rest of `.lit`. They show that bits 8-11 are weakest where a
+class holds few constraints, which is the case for these words. Two groups are not case-block tables and are
 left out of the fit:
 
 * base `$06BAC`: one repeated value ending in `$B0`, which follows no jump;
@@ -1688,14 +1706,14 @@ drew nothing.
 
 **What this settles on the card side:**
 * **Opcode 1 is the line**, the `$0BDB0` case (end point at `+4`; the pen
-  moves there). Its `.lit` value decoded to `$xBB0` (the case needs `$xDB0`), so that entry's decoding is wrong. **`$73`
+  moves there). Its `.lit` entry had decoded wrongly; pinned now (see "Three known plaintexts from the host"). **`$73`
   is not a line**: it selects a pattern slot, which fits the card's `$0C1D4`
   code storing into one of three slots by `lr4`.
 * **2 = Arc, 3 = Oval, 4 = RoundRect, 5 = Rect.** QuickDraw draws ovals and
   round rects through DrawArc, which fits 3/4 sharing `$0D9C4`. 2 is the
   arc with angles, at `$0B8C4`.
-* **`$72` is the "long" pattern kind** (the `$0B72C` case); its `.lit` value
-  `$518` was decoded wrongly as well (the case needs `$A18`).
+* **`$72` is the "long" pattern kind** (the `$0B72C` case); its `.lit` entry
+  is pinned the same way.
 * **`$6B`/`$6D` are background colours** and `$64`/`$66` foreground colours.
   `$6B`'s `.lit` value `$xB440` lands in the `$64` code, which handles the
   same layout.

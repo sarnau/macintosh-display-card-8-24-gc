@@ -118,6 +118,11 @@ def main(acef=None):
         fit8 = sum(((W[k] ^ low8(k)) & 0xFF) in lows for k in ks)
         use[b] = fit8 >= 0.8 * len(ks)
     cons = {k: cand[b] for b, ks in groups.items() if use[b] for k in ks}
+    if acef:
+        # known plaintexts: DrawMultiObject's jump-table entries whose
+        # targets the host's stream writer (gc24 EngineDispatch) settles
+        for k, (b, t) in PINS.items():
+            cons[k] = [t - b]
     fixed, check = fit_mid(W, key, sw, low8, cons)
     for bit, (a, d) in check.items():
         print('bit %d: table and strings both decided %d classes, disagree in %d' % (bit, a + d, d))
@@ -179,6 +184,15 @@ def lit_tables(acef):
     return dict(groups), cand
 
 LEVELS = [(8, 96), (9, 192), (10, 384), (11, 768)]
+
+# .lit word index -> (relocation base, true target).  DrawMultiObject's
+# opcode 1 (the line, read by the $0BDB0 case), $6A (the clip region, which
+# shares the $6C case at $0BBC4) and $72 (the "long" pattern record, the
+# $0B72C case); the record layouts come from gc24's EngineDispatch, which
+# writes them.  Without these, their key bits 8-11 classes fit wrongly.
+PINS = {0x484 // 4: (0x0AD14, 0x0BDB0),
+        0x498 // 4: (0x0AD14, 0x0BBC4),
+        0x4B8 // 4: (0x0AD14, 0x0B72C)}
 
 
 def mid12(k, low8, fixed):
