@@ -69,8 +69,8 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 **Named card functions** (the evidence is in the sections below): the
 dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
-(likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); QuickPolys `$19270` (likely), DrawLine/DrawArc
-`$075DC`/`$08618` (order unknown); ITabMatch `$06650`; BitsToPixMap
+(likely); text `$11AD8` (DrawMultiObject's text opcode reaches it); DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
+`$19270` (from DrawMultiObject's polygon opcode); ITabMatch `$06650`; BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
 FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
@@ -81,7 +81,6 @@ FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
 
 **Still open:**
 - the exact meaning of DrawMultiObject's opcodes (mapped by class, from estimated words);
-- which of `$075DC`/`$08618` is lines and which arcs (`$19270` is likely polygons);
 - what the card's ShieldCursor (`$32C10`/`$32EF8`) does when the cursor overlaps;
 - kernel service `$D2`'s exact role;
 - `.text` key bits 19-23, and so the masked fields of most instructions.
@@ -1114,7 +1113,7 @@ anchors:
 | `+$14` | `$22A8C` | **scaleBlt** | strings; `GetSeek` + a family of depth loops |
 | `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits and the shape drawers; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
 | `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; four mode loops `$1B33C`-`$1BDE8` |
-| `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: **DrawLine, DrawArc, QuickPolys**; `$19270` is likely QuickPolys (profile below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
+| `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: `$075DC` **DrawArc**, `$08618` **DrawLine**, `$19270` **QuickPolys** (settled by DrawMultiObject's polygon opcode, below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
 | `+$24` | `$11AD8` | **text** (likely) | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw), RgnBlt, BitBlt; uses `extern#1772+$60`-`$6C` |
 | `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
@@ -1276,12 +1275,12 @@ reaches:
 
 | opcodes | first drawing call | reading |
 |---|---|---|
-| 3, 4 | `$075DC` (drawer A) | a shape |
+| 3, 4 | `$075DC` (drawer A) | **arc** (and probably oval / round rect) |
 | 5 | BitBlt / RgnBlt, then the fill loops `$09020`/`$09270` | rectangle or region fill |
 | **6** | **`$11AD8` (text)** | **text**; this is the only path to the text call at `$0E1B0` |
-| 7 | `$08618` (drawer B), then `$19270` (polygons) | a shape |
+| 7 | `$08618` (drawer B), then `$19270` (polygons) | **polygon** (inline `Polygon` record) |
 | 8 | RgnBlt | region |
-| `$73` | `$08618` (drawer B) | a shape |
+| `$73` | `$08618` (drawer B) | **line** |
 | 2, `$6A`, `$71`, `$74`, `$75` | none; they reach the pattern-cache routines `$1610C`, `$15E8C`, `$15154`, `$15FF4`, `$1518C` | set a pattern |
 | `$64`, `$66`, `$6D`, `$6F` | none; they reach request 13 (`$0688C`, colour → index through the search procs) | set an RGB colour |
 | `$68`, `$6C`, `$6E` | none; they reach `Entry2Index` | set a palette-entry colour |
@@ -1292,8 +1291,36 @@ reaches:
 So the stream mixes drawing opcodes (3-8, `$73`) with state opcodes
 (pattern, colour). That is the same split as a QuickDraw picture, though
 with its own numbering. Its text opcode confirms `$11AD8` as the text
-routine. Lines versus arcs stays open: drawer A is reached from two
-opcodes (3, 4) and drawer B from two (7, `$73`), which does not decide it.
+routine. Opcode 7's operands then settle lines versus arcs (next paragraph).
+
+**Opcode 7 is a polygon, and that settles lines vs arcs.** Its case
+(`$0C398`, estimated words, the operand pointer `gr96 = lr38 + 4` set in
+the jump's delay slot at `$0E274`) reads:
+
+```
+gr98 = half[lr38+4]                  polySize
+lr93 = (polySize - 10) / 4           number of points (size word + bbox + 4 bytes per point)
+lr82 = half[lr38+2]                  a flag/verb word
+lr92 = lr38 + $0E                    the first point (after polySize and polyBBox)
+lr38 += (polySize + 7) & ~3          skip the inline polygon, long-aligned
+if lr93 == 0: next opcode
+```
+
+So the stream carries a QuickDraw `Polygon` record inline. The case calls
+drawer B (`$08618`) first and then `$19270`. In QuickDraw, `FramePoly`
+draws the outline as lines between the points, and the filled verbs go
+through `QuickPolys`. So:
+
+* **`$08618` is DrawLine**, the line drawer, used here to frame the polygon,
+  and by opcode `$73` on its own (the line opcode);
+* **`$19270` is QuickPolys**, which fits its store-heavy profile;
+* **`$075DC` is DrawArc** by elimination (opcodes 3 and 4: arcs, and
+  probably ovals or round rects, which QuickDraw also draws through
+  DrawArc). It is also the one that multiplies (`SlopeFromAngle`, `FixMul`
+  in `DrawArc.a`).
+
+Opcodes 3/4's case (`$0D9C4`) is not estimated (no samples nearby), so its
+operands are not read.
 
 This mapping rests on estimated words ("=" in the tool's output, not
 samples). The estimates have been right wherever they could be checked (the
