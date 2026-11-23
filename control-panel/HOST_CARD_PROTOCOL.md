@@ -759,6 +759,26 @@ key fits this table's real structure better. Its match count in the table
 above (18 of 32) means little: it is a stride table, not a case-block one. Bits 8-11 are weakest where a class
 holds few constraints, which is the case for these words.
 
+**`.data` has a key of its own, and it does not fall to the same method.**
+`.data` (1,596 words) holds strings from `$0F20` on: 305 words have a
+printable top byte. The tests:
+* **Another section's key.** Decoding them with `.lit`'s low key byte, at
+  any offset up to two `.lit` lengths, gives no text (mean letter
+  log-probability −5.8, against −6.1 for raw bytes). Neither does the
+  `.text` key: no offset up to 400,000 words agrees with even 80% of the
+  string words on bit 7, which is the raw bit for ASCII.
+* **A fresh fit.** Fitting a fresh low byte per class `k mod P` gives no
+  English for P = 12, 24, 48 or 96. The longer periods only overfit.
+* **Periodicity alone.** For ASCII, raw bit 7 of the fourth character is
+  key bit 7. In `.lit` that bit repeats every 48 words with no conflicts,
+  and the second character's bit 23 nearly so. In `.data` no period below
+  400 is consistent for either bit.
+
+So `.data`'s key is not periodic at the scale of `.lit`'s. 305 string words
+and 101 relocations are not enough to model a long-period key like
+`.text`'s, so `.data` stays masked. That includes the mode table at
+`.data+$3D8` and the reporter level at `.data+$284`.
+
 Still unresolved: four entries of the 6-way sub-switch tables (`.lit $0464`,
 `$0468`, `$047C`, `$0480`) match no clean case entry. Two groups are not case-block tables and are
 left out of the fit:
