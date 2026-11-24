@@ -135,7 +135,7 @@ C library `$39118`-`$3C340` (see "The C library"). `antelope_partial_dasm.py`
 prints these names in `text.partial.asm`.
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and the strike conversion on font upload (`$14564`);
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and why a repeated font upload refreshes only glyphs `$84`-`$9E`;
 - kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
 - why the status bit at `$4400007C` gates the two-colour block fill;
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
@@ -2199,10 +2199,15 @@ mask's bits in turn:
   copy helper behind requests 8/18), and return the entry's data;
 * bits 1-4 → **`$14A80(handle, ptr, size)`**:
   * find-or-create a kind-8 entry;
-  * if the entry is new or holds another handle, copy the strike in
-    (`$16C48`, mode 3), retrying through `$14564` if that fails;
-  * clear the top bit of the entry's first word and put it in LRU order
-    (`$15B3C`).
+  * if the entry is new or holds another handle, copy the whole `FontRec`
+    in (`$16C48`, mode 3; the card pointer goes to entry `+$10`);
+  * convert it with **`$14564(entry, new, hostFont)`** (below): in full
+    after a fresh copy, only glyphs `$84`-`$9E` when the same handle comes
+    again;
+  * on success store the handle as the key (`+$0C`) and return the entry;
+    if the copy or the conversion fails, clear the top bit of the entry's
+    first word and release it (`$15B3C(8, entry)` unlinks it and calls
+    the kind's destructor from its descriptor, `+$14`).
 
 So the card's "font is not in cache" and "width table is not in the cache"
 messages are about this upload: DrawMultiObject looks up the `$67` record's
@@ -2277,9 +2282,9 @@ inputs come from three pointers in the drawing globals:
 
 | `lr41` offset | register | use in the loop |
 |---|---|---|
-| `+$18` | `lr50` | a long per glyph (read into `gr109`): presumably its bit offset in the strike image, the converted `locTable` |
-| `+$1C` | `lr9` | a halfword per glyph that must be > 0 (else the glyph is skipped): presumably its image width; left + width gives the right edge |
-| `+$20`, `+$24` | `lr7`, `lr40` | set-up only (`1 << lr7` is formed) |
+| `+$18` | `lr50` | a long per glyph (read into `gr109`): the byte offset of its cell in the glyph buffer (`+$14`) |
+| `+$1C` | `lr9` | a halfword per glyph that must be > 0 (else the glyph is skipped): its image width in pixels, from `locTable`; left + width gives the right edge |
+| `+$20`, `+$24` | `lr7`, `lr40` | log2 of the font's pixel depth, and `fontType & $0200` (set-up only; `1 << lr7` is formed) |
 | `+$28` | `lr49` | `firstChar` |
 | `+$2C` | `lr5 = lastChar - firstChar` | |
 | `+$44` | `lr44` | the offset/width table (`owTable`, a halfword per glyph, `$FFFF` = missing) |
@@ -2312,17 +2317,69 @@ applies in `DrawText.a`.
 An earlier reading of this loop, made from estimated words, had the width
 table indexed by `c` and `lr48` as the location table. The full decode
 shows the width table indexed by the character code (as QuickDraw's is),
-`lr48` as the optional height table, and the space fast path. What is still
-inferred are the roles of the `+$18`/`+$1C` tables, from their use. The
-strike conversion that builds them on upload (`$14A80` → `$14564`) is not
-read.
+`lr48` as the optional height table, and the space fast path. The roles of
+the `+$18`/`+$1C` tables, first inferred from their use, are confirmed by
+the conversion that builds them.
+
+**The strike conversion** (`$14564(entry, new, hostFont)`, read from fully
+decoded words). It turns the uploaded `FontRec` (card copy at entry `+$10`)
+into a per-glyph cache, so DrawText never extracts bits from the strike:
+
+| entry offset | set to |
+|---|---|
+| `+$14` | glyph buffer: one cell per glyph with an image |
+| `+$18` | cell offsets: a long per glyph (`n+1` of them, the last the end) |
+| `+$1C` | image widths: a halfword per glyph, `locTable[i+1] - locTable[i]` |
+| `+$20` | `(fontType >> 2) & 7`, log2 of the pixel depth |
+| `+$24` | `fontType & $0200` (the font has colours other than black) |
+| `+$28`/`+$2C` | `firstChar`/`lastChar` |
+| `+$30` | `kernMax` |
+| `+$34` | `fRectHeight` |
+| `+$38`/`+$3C` | `ascent`/`descent` |
+| `+$40` | cell row bytes: `((widMax << depth) + 31) >> 5` longs, times 4 |
+| `+$44` | `owTable` (in the card copy): `+$10 + 2 * owTLoc`, with `nDescent` as the high word of `owTLoc` when it is > 0 |
+| `+$48` | height table, if `fontType` bit 0: after `owTable`, and after the glyph-width table too if bit 1; else 0 |
+
+with `n = lastChar - firstChar + 2` glyphs (the missing glyph included),
+strike row bytes `rowWords << (depth + 1)` and `locTable` after the bit
+image (`bitImage + fRectHeight * rowBytes`).
+
+```
+if new:                                       free the old buffers (`$376A0`), then
+    buf  = alloc(fRectHeight * cellRow * n)   `$15958`, may evict cache entries
+    offs = alloc(4 * (n+1));  wids = alloc(2 * (n+1))
+    first = 0                                 any failure returns 0
+else:                                         the same font handle again
+    if lastChar < $9E or firstChar > $84: return 1
+    first = $84 - firstChar;  n = $9E - firstChar + 1
+    re-fetch those glyphs' columns of the bit image from the host
+        (`$16C48` mode 2, one call per row)
+    skip the cells of the glyphs before `first`
+for i in first .. n-1:
+    offs[i] = cell - buf
+    if owTable[i] == $FFFF: next              missing glyph: no cell
+    x = locTable[i];  w = locTable[i+1] - x;  wids[i] = w
+    if w <= 0: next
+    for each of the fRectHeight rows:         left-align the glyph:
+        copy the longs holding bits x<<depth .. (x+w)<<depth,
+        shifted left by (x<<depth) & 31 (a funnel shift of two longs;
+        a glyph within one long takes a single shift)
+        into the cell row; cell += cellRow
+offs[n] = cell - buf;  return 1
+```
+
+The bits right of the glyph come along unmasked (they belong to the next
+glyph in the strike), so the clipping to `width` happens in DrawText. Why a
+repeated upload refreshes exactly `$84`-`$9E` (Mac Roman `Ñ` to `û`) is not
+known; the only caller takes that path when the cache entry already holds
+the handle and its `FontRec` copy.
 
 ##### Open points
 
 * **The per-device state refresh** is read only in outline: the mode table
   at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
   masked, and ColorMap's alpha-channel part is not checked.
-* **The strike conversion** on upload (`$14564`, called by `$14A80`), which builds the per-glyph tables DrawText reads (`lr41 +$18`/`+$1C`).
+* **Why a repeated font upload re-converts only glyphs `$84`-`$9E`** (`$14564`, the `new = 0` path).
 
 #### The dispatcher prologue and packet layout
 
