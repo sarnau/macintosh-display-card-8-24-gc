@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants; and the dispatcher fits System 7 for 53 of 60 commands, the other seven explained. The codec's switch targets come from fitting key bits 11-15 (`antelope6_switches.py`): settled for the encoder's 18 switches and the `'rle '` pair, open for the decoder's four. Open: the decoder's switch targets, the `.data` key, the codec routines step by step.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants; and the dispatcher fits System 7 for 53 of 60 commands, the other seven explained. The codec's switch targets come from fitting key bits 11-15 (`antelope6_switches.py`): settled for the encoder's 18 switches and the `'rle '` pair, and for three of the decoder's four. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the first decoder table, the `.data` key, the codec routines step by step.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -999,7 +999,7 @@ With the handlers from the case-block table above:
 | `$01` | `$31FE8` | reset: sequence counter to 0, request 100 to the host (settled by `CallBack`, below) |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
 | `$03` | `$327F8` | reply `$??00`, the twin of `$00`'s block (an earlier fit gave `$324F8`; System 6 decodes `$03` and `$33` to different blocks, `$03` to the twin, see section 10) |
-| `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen** |
+| `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen**; the host sends it from LockPixels when the pixels were purged, DisposeGWorld and DisposeScreenBuffer (`QUICKDRAW_PATCHES.md`, `_QDExtensions` selectors) |
 | `$04` | `$32040` | |
 | `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat** |
 | `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
@@ -3231,10 +3231,10 @@ back is a jump) in the `jmpi`'s function.
 | `.lit` | switch at | cases | targets |
 |---|---|---|---|
 | `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | `$3339C`, `$333A4`, `$333AC`, `$333C8`, `$333D4`: all before the `jmpi`, so the switch sits at the bottom of a loop |
-| `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`) | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$34EF0` (right after the `jmpi`), `$34F2C`, `$34F58`, `$34F8C`, `$34FC0`, `$34FDC`, `$35010`, `$35044`, `$35070`; the other eight at `$350AC` |
+| `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`), on a pixel count `n` | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$34EF0` (right after the `jmpi`), `$34F2C`, `$34F58`, `$34F8C`, `$34FC0`, `$34FDC`, `$35010`, `$35044`, `$35070`; the other eight at `$350AC` |
 | `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | case `i` at `jmpi + 8 + $3C·i`, in all 16 |
-| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | only partly placed (below): case 0 right after the `jmpi`; 6 and 7 share a target; 1, 2, 3 and 5 share one that is not found |
-| `$12C8` | `$3ACD8` (`$3A964`, the `'rle '` decoder) | 16 (`cpgtu $0F`) | four targets `T0`-`T3` = `$3ABC8`, `$3AC14`, `$3AC60`, `$3B250`; case `4a+b` goes to `T[(b - a + 3) mod 4]` |
+| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | in each: case 0 right after the `jmpi`, case 4 and the shared cases 6/7 further on (`$39220`/`$39244`, `$39630`/`$39660`, `$39B00`/`$39B30`); cases 1, 2, 3 and 5 go to `$39CAC`, the decoder's exit, in the last three tables. The first table (`$38D74`, `$38E20`, `$38E44`, `$38E4C`) is less certain |
+| `$12C8` | `$3ACD8` (`$3A964`, the `'rle '` path) | 16 (`cpgtu $0F`), index `(a << 2) \| (lr5 & 3)` | four targets `T0`-`T3` = `$3ABC8`, `$3AC14`, `$3AC60`, `$3B250`; case `4a+b` goes to `T[(b - a + 3) mod 4]`: a 4×4 ordered dither |
 | `$1308` | `$3AF28` (the same) | 16 | the same rotation over `$3AE18`, `$3AE64`, `$3AEB0`, `$3B264` |
 | `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$3BEC4` (right after the `jmpi`), `$3C500`, `$3C52C`, `$3BF60`, `$3BF94`, `$3BFB0`, `$3BFE4`, `$3C018`, `$3C044`; the rest at `$3C080` |
 
@@ -3244,14 +3244,35 @@ How far this can be trusted:
   case is 15 words. Where the open key bits allow two places, one of them is
   this one. There is one switch per pixel of the 4×4 block, each writing one
   of the four 2-bit colour indices, unrolled.
-* **The two 17-way switches agree with each other.** Both have case 0 right
-  after the `jmpi`, the same nine cases of their own, and one shared default
-  for the other eight. The set (0, 1, 2, 4, 8, 12, 14, 15, 16) is its own
-  mirror image (`x` ↔ `16 - x`), so the index is not simply a depth. What it
-  selects is still open.
-* **The `'rle '` rotation** fits four copy loops chosen by two 2-bit
-  values, for example the source's and the destination's byte alignment
-  (`4a+b` → loop `(b - a + 3) mod 4`). This reading is a guess.
+* **The two 17-way switches split a 4×4 block's pixels into two groups and
+  average each.** Before `$34EE8`, a loop tests the sign of a difference
+  per pixel (`sub`, then `cpgt …, 0`; presumably the pixel against a
+  threshold). One branch adds the pixel's fields to one set of sums
+  and increments `lr80`, the other adds them to a second set. The switch
+  index is `lr80`, the number `n` of the 16 pixels in the first group, so
+  the second group has `16 - n`. The own cases are exactly the `n` where
+  `n` or `16 - n` is a power of two (or 0): there the average is a shift
+  (`sra` by 4, 3, 2 or 1, plain immediates), and the other group's sums go
+  through a divide helper (`calli` to `$41950`). The shared default divides
+  both. The averages are packed as 5-5-5 colours (`sra 3`, `sll 10`,
+  `sll 5`): the two colours of an `'rpza'` four-colour block. `$3BEBC` (in
+  `$3B27C`) is a second copy with the same cases.
+* **The `'rle '` rotation is an ordered dither.** The four targets add a
+  constant to each of three 8-bit channels, saturating at `$FF`: `T0`
+  (`$3ABC8`) adds 4 (`cpge $FC`), `T1` (`$3AC14`) adds 2 (`cpge $FE`), `T2`
+  (`$3AC60`) adds 6 (`cpge $FA`), and `T3` (`$3B250`, where the others join)
+  adds nothing. The immediates are plain. The index is `(a << 2) | (lr5 &
+  3)`, so `a` and `b` are presumably a pixel's row and column modulo 4. The
+  matrix is
+
+      row 0:  0 4 2 6
+      row 1:  6 0 4 2
+      row 2:  2 6 0 4
+      row 3:  4 2 6 0
+
+  a 4×4 pattern of 0-6 added before the channels are cut to 5 bits. So
+  `$3A964` converts 24-bit pixels to 16 bits with dithering. The second
+  table (`$3AF28`) is the same with its own four loops.
 * **Bits 11-15 are not constant inside a table.** In `$1104` cases 0-6 need
   `$1A` and cases 7-16 need `$1B`. In `$12C8` cases 0-2 need `$1D`, not
   `$12`, and in `$1348` cases 0-5 need `$13`, not `$10`. So the script lists
@@ -3259,11 +3280,17 @@ How far this can be trusted:
   For the entries in the table above, the value chosen is the one that
   continues the table's pattern (a neighbouring value, or the `'rle '`
   rotation where two places remain).
-* **The decoder's tables do not fit.** Of their 32 entries, 14 are placed.
-  For 12 entries no value of bits 11-15 gives a block start, although bits
-  0-10 are all "known". So either bits 9-10 are wrong there (they come from
-  one or two table samples per class), or these cases do not start after
-  a jump (fall-through). Their targets remain open.
+* **The decoder's shared cases start at a jump target, not after a jump.**
+  In the last three tables, cases 1, 2, 3 and 5 decode, with bits 0-10
+  known and the table's `h`, to `$39CAC`. That block follows no jump, but
+  two direct jumps (`$393B4`, `$39B44`, all bits known) land on it. It
+  calls `$2F5BC` (System 7's `$33A9C`, the release half of MapVirtual) and
+  returns. So these four index values end the decode. The script accepts a
+  target that a known jump lands on only as a fallback: used for every
+  entry, that test admits wrong targets, and two four-way tables stop
+  fitting. Cases 1-3 of `$1268` (bit 10 open) fit `$39CAC` with the other
+  value of bit 10. In `$1288`, cases 5-7 need `h = $1D`, and cases 0-4 need
+  `$1C`. The first table, `$1248`, places only cases 0, 4, 6 and 7 cleanly.
 
 **The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
 passes (codec type, parameter block, selector, instance) to `$9510`.

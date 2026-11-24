@@ -252,6 +252,33 @@ synchronise / "state changed" command issued through the small wrapper
 no direct call either do nothing on the card (they run the original routine
 only) or reach it through a shared helper.
 
+The scan runs from one `GA_` label to the next, so code between them that
+belongs to another patch is counted with the one before it. This happened
+once: `$33:1 $0F:1` were listed under `GA_HiliteColor`, but they come from
+`Lb940` and `Lb9b4` after it. Those are `GA_QDExtensions`' handlers for
+selectors 1 (LockPixels) and 2 (UnlockPixels), reached by its `jmp` table at
+`$8164`. The `_QDExtensions` selectors (in `d0`) and their commands:
+
+| selector | routine | `gc24` | commands |
+|---|---|---|---|
+| 0 | NewGWorld | `Lb9fc` | - |
+| 1 | LockPixels | `Lb940` | `$33` with the PixMap handle if its pixels were purged, then false; else the original |
+| 2 | UnlockPixels | `Lb9b4` | `$0F` |
+| 3 | UpdateGWorld | `Lba64` | `$19` |
+| 4 | DisposeGWorld | `Lbb14` | `$33` |
+| 8 | PixPatChanged | `sub_bcc8` | `$2A` (2 longs) |
+| 9 | PortChanged | `Lbd46` | `$26` |
+| `$0A` | GDeviceChanged | `Lbd76` | `$29` |
+| `$0E` | SetPixelsState | `Lbb88` | `$19` |
+| `$0F` | GetPixBaseAddr | `Lbe58` | through `sub_bd94` |
+| `$11` | DisposeScreenBuffer | `Lbe74` | `$33` |
+| `$13` | QDDone | `Lbecc` | - |
+
+`sub_bd94`, called by GetPixel (`$B27A`), GetCPixel (`$B388`) and
+GetPixBaseAddr (`$BE64`), calls the original GetPixBaseAddr (`_QDExtensions` `$4000F`). If that
+returns NIL (the pixels were purged), it sends `$33` with the PixMap
+handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
+
 | # | routine | direct calls |
 |--:|---|---|
 | 0 | `GA_Translate24To32` | - |
@@ -316,11 +343,11 @@ only) or reach it through a shared helper.
 | 59 | `GA_BackPixPat` | $2A:2 |
 | 60 | `GA_SetPortPix` | $26:0 |
 | 61 | `GA_OpColor` | $26:0 |
-| 62 | `GA_HiliteColor` | $26:0 $33:1 $0F:1 |
+| 62 | `GA_HiliteColor` | $26:0 |
 | 63 | `GA_SetEmptyRgn` | $10:1 $32:1 |
 | 64 | `GA_PenPat` | $2A:2 |
 | 65 | `GA_BackPat` | $2A:2 |
-| 66 | `GA_QDExtensions` | - |
+| 66 | `GA_QDExtensions` | none itself; its selector routines do (below) |
 | 67 | `GA_GetForeColor` | $36:1 |
 | 68 | `GA_GetBackColor` | $37:1 |
 | 69 | `GA_LowMem0814` | - |
@@ -376,14 +403,16 @@ only) or reach it through a shared helper.
 | `$1A` | `SetEntries`, `SaveEntries`, `RestoreEntries`, `GetSubTable` | 1 | colour-table / palette entries |
 | `$1B` | `MakeITable` | 1 | inverse colour table |
 | `$2B` | `DisposGDevice` | 1 | graphics device released |
-| `$33`, `$0F` | `HiliteColor` | 1 | highlight colour state |
+| `$33` | `_QDExtensions` LockPixels (pixels purged), DisposeGWorld, DisposeScreenBuffer; GetPixel/GetCPixel through a helper | 1 | **DisposeOffscreen**: the card drops its copy of the offscreen (the card's `$14034`, "DisposeOffscreen: NULL offscreen Handle") |
+| `$0F` | `_QDExtensions` UnlockPixels | 1 | the card's `$15D28` with mode 6 |
+| `$19` | `_QDExtensions` UpdateGWorld, SetPixelsState | 1 | **FlushOffscreen** (the card's `$14168`) |
 | `$26` | `ColorBit`, `CopyPixMap`, `SetPortPix`, `OpColor`, `ActivatePalette`, `SetPalette`, `Palette2CTab`, `InitGDevice`, `CharExtra`, ... | 0 | synchronise / flush before software handles the call |
 | `$00`, `$02`, `$11`, `$26:14` | the three control records (`$FFFFFFFF`, `$FFFFFFFE`) | 0-1 | engine start-up / shut-down and mode handshakes (not QuickDraw traps) |
 
 Every command above is a *state-mirroring* call except the shape and text
 commands in the previous table. `$10`, `$32`, `$35`, `$36` and `$37` become
 stream records (see the note at the top). The others (`$29`, `$1A`, `$1B`,
-`$2B`, `$2C`, `$33`/`$0F`) are sent as commands, and keep the card's caches
+`$2B`, `$2C`, `$33`, `$0F`, `$19`) are sent as commands, and keep the card's caches
 of host objects (GDevices, colour tables, pixel patterns) up to date.
 
 
