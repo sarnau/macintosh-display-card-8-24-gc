@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), but it is not disassembled, and its `.lit`/`.data` keys are open.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Open: its `.lit`/`.data` keys, and what its 10,928-word block at `$331C4`-`$3DC84` and its larger dispatcher (934 words against 682) add.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3074,4 +3074,80 @@ N is a multiple of 8, with the frame sizes System 7 uses (16, 24, 48, 40,
 for 20,858 words, bits 0-15 for 14,377 more, bits 0-12 for the rest. Not
 done: more idiom samples for bits 13-15 (System 7's register-pattern
 samples), the `.lit` and `.data` keys, and a disassembly.
+
+### System 6 against System 7, function by function (`antelope6_compare.py`)
+
+Neither symbol table names its functions, but in both versions the opcode
+byte of every word is now plain. So every function (from one `.text`
+symbol to the next) has a known opcode sequence in both. The tool aligns
+the two function lists in order (a pair matches with a difflib ratio
+of at least 0.6 over the opcode bytes) and then pairs the leftovers in any
+order (moved code):
+
+| | functions | words |
+|---|---|---|
+| System 7 / System 6 | 768 / 769 | 62,134 / 68,278 |
+| same opcode sequence | 645 | |
+| changed (ratio ≥ 0.6) | 51 | |
+| moved | 7 | |
+| only in System 7 | 65 | 5,909 |
+| only in System 6 | 66 | 11,647 |
+
+In the functions with the same opcodes, 8,810 words are known in full in
+both. Of these, 8,749 are bit-identical, 23 are pc-relative jumps or calls
+whose targets moved, and 38 differ otherwise (33 of them `const`). So
+those 645 functions are the same code, relinked.
+
+**Every named function has a System 6 counterpart.** 60 of the 83 names in
+`antelope_partial_dasm.py` match with the same opcodes. Among them are
+Report, the burst fills and copies, RSect, TrimRect, ITabMatch, the whole
+cache (`CacheFind` … `CacheRelease`, `UploadFontStrike`,
+`UploadWidthTable`), PRAlloc, FillLongs, GetSeek, CallBack, TestSlotBurst,
+the storem fills and the C library. 23 have changed; by size and ratio the
+largest changes are:
+
+| function | System 7 | System 6 | words 7 → 6 | ratio |
+|---|---|---|---|---|
+| CommandDispatcher | `$31E20` | `$2D614` | 682 → 934 | 0.77 |
+| StretchBits | `$2D7B8` | `$28C14` | 2,612 → 2,798 | 0.64 |
+| DrawMultiObject | `$0AD18` | `$0AF74` | 3,487 → 3,726 | 0.88 |
+| PRInit | `$161F8` | `$15B5C` | 479 → 332 | 0.78 |
+| MapVirtual | `$3373C` | `$2F2D4` | 216 → 186 | 0.64 |
+| UnmapAll | `$33A9C` | `$2F5BC` | 69 → 67 | 0.78 |
+| CopyHostMemory | `$16C48` | `$16360` | 197 → 198 | 0.86 |
+
+The rest (BitBlt, BitsToPixMap, ColorMap, DrawArc, DrawLine, DrawText,
+FlushOffscreen, ConvertFontStrike, CacheGDevice, CachePixPat, QuickPolys,
+RgnBlt, scaleBlt, ShieldCursor, ShowCursorAfterDraw, CopyLongsStorem) have
+a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
+
+**Only in System 7** (by their callers in the System 7 decode):
+* `$1E508`-`$200E0`, nine helpers of about 200 words, all called only by
+  RgnBlt;
+* `$0F730`-`$10140`, eight helpers called only by the switch function at
+  `$1114C`;
+* `$37730`-`$37B58`, a branch of the command dispatcher (`$37B58`, called
+  from `$31E20`) that calls UnmapAll, CallBack and five 5-word functions at
+  `$13FCC`-`$14020`;
+* `$140CC`, a dispatcher case that calls CacheRelease;
+* `$18278` (389 words, called by `$17C60` and StretchBits) and a run of
+  StretchBits helpers at `$27944`-`$2CFD4`.
+
+**Only in System 6:**
+* a block of 43 functions, 10,928 words, between HeapFree and the storem
+  functions (`$331C4`-`$3DC84`). It is led by `$33218` (4,259 words: mostly
+  `add`/`sub`/shifts, 315 `aseq`, few loads), `$374A4` (2,579), `$3B27C`
+  (1,274, called by `$33218`) and `$3CA64` (1,001 words with six inline
+  divisions, 186 `div` steps);
+* 25 functions of 11 words at `$01378`-`$01798`, each with one call to
+  `$00E88` (System 7 `$00F78`, just before ReportToLog). Six of them match
+  System 7's 11-16-word functions at `$3779C`-`$3814C` (the "moved" pairs);
+* extra `.lit` strings at the start: every fourth character reads
+  `Bs`, `Re`, …, then two parallel series, `St`+`vg`/`dn`/`de`/`un`/`rpn`/…
+  and `P`+`vga`/`dnb`/`dea`/`unb`/`rpna`/…. That looks like a table of names.
+
+There are no floating-point instructions in either version, so the large
+System 6 block is not a floating-point trap emulator. Its role is open. Few
+System 6 calls decode far enough to give a target (full 24 bits for 31% of
+the words), so its callers are not known yet.
 
