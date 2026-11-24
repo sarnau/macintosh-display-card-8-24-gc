@@ -14,6 +14,8 @@
    function, printed as plateaus).
 4. The dispatcher table (base $2D59C, 60 entries): each command's System 6
    case blocks under bits 0-10, and the block System 7's handler maps to.
+   Bit 11 is not sampled, so "same" means the mapped block fits bits 0-10
+   (it need not follow a jump: the epilogue after the jmpi does not).
 5. Address loads (const/consth with a .text symbol; an index whose symbol
    has section -3 names the next symbol) into the System 6-only block
    $331C4-$3DC84 and into the stubs $01378-$017C4, from outside them,
@@ -182,10 +184,13 @@ def main(acef7, acef6, d6):
     st = collections.Counter()
     for i, k6 in enumerate(g6[DISP6]):
         v, mk = low(k6)
-        c = [x for x in blocks if ((W6[k6] ^ (x - DISP6)) & mk & 0x7FF) == v & 0x7FF and x - DISP6 < 0x1000]
+        fits = lambda x: ((W6[k6] ^ (x - DISP6)) & mk & 0x7FF) == v & 0x7FF
+        c = [x for x in blocks if fits(x) and x - DISP6 < 0x1000]
         t7 = DISP7 + r7[k7s[i]][2]
         p = M.get(t7)
-        tag = 'same' if p in c else 'differs' if c else 'open'
+        # bit 11 is not sampled here: a mapped target that fits bits 0-10 is
+        # kept even if it is no block start (the epilogue after the jmpi)
+        tag = 'open' if not mk & 0x7FF else 'same' if p is not None and fits(p) else 'differs' if c else 'open'
         st[tag] += 1
         print('  $%02X  %-24s | $%05X -> %s  %s' % (i, ' '.join('$%05X' % x for x in c[:3]) or '-', t7, '$%05X' % p if p else '-', tag))
     print('  ' + ', '.join('%s %d' % kv for kv in sorted(st.items())))

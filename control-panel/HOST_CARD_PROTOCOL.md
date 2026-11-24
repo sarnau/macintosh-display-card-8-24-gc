@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. Open: the `.lit` tables entry by entry, the `.data` key, the codec routines step by step, and what the System 6-only host pair `$00`/`$02` (reply kept at globals `+$174`) does on the card.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, and the dispatcher now fits System 7 for 50 of 60 commands, the rest explained or unsampled. Open: the `.lit` tables' upper bits, the `.data` key, the codec routines step by step, and the reply path of the host's sender `$6224`.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3205,6 +3205,40 @@ commands `$39`-`$3B` fall to the default.
 * For other types, `$39` calls `$3A964` and `$3A254` is the encoder path of
   `$3A`.
 
+**The decoder's layout.** `$374A4` (2,579 words) checks the `$E1` header
+and then splits on a local holding the destination depth (`cpneq` with
+`$20`, `$10` and `$08`) into one copy of the block loop per depth, each
+with its `and $E0`/`$80`/`$A0`/`$C0`/`$E0` tests. The 8-bit copy adds `and
+1/2/3` and `cplt 4` steps. This happens twice: `$375DC`-`$38BB0` uses
+compare chains, and `$38BB0`-`$39CF0` uses four 8-way jump tables on the
+top bits of a word (`srl $1C`, `cpgtu 7`; `.lit $1248`, `$1268`, `$1288`,
+`$12A8`). Helpers `$3DA5C` (7 calls, after the one-colour test) and
+`$3DAAC` (8 calls) are next to the block's end. Note that the host's
+`$9BBA` sends `$39` only for a 16-bit PixMap, so the 8- and 32-bit copies
+are not used through it.
+
+**The codec's switch tables.** All 167 entries of the `.lit` group with base
+`$331C0` are the codec's, in 25 switches. Their low 9 bits decode with the
+string key (only bits 0-7 from `.lit $1218` to `$12F8`), which is enough to see which
+cases share a target:
+
+| `.lit` | switch at | cases | targets |
+|---|---|---|---|
+| `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | all different |
+| `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`) | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 have their own targets; the other eight share one |
+| `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | in each switch the four targets step by `$3C` (15 words) |
+| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | cases 1, 2, 3 and 5 share the default; 6 and 7 share one |
+| `$12C8`, `$1308` | `$3ACD8`, `$3AF28` (`$3A964`, the `'rle '` decoder) | 2 of 16 (`cpgtu $0F`) | four targets in a repeating pattern |
+| `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: 0, 1, 2, 4, 8, 12, 14, 15, 16 own, the rest shared |
+
+The 16 four-way switches fit the four-colour block. There is one switch per
+pixel of the 4×4 block, and each case writes one of the four 2-bit colour
+indices, unrolled. The two 17-way switches have the same case pattern, both
+on the encoder side, so they probably switch on the same parameter (depth
+1/2/4/8/16 is among the cases, but 12, 14 and 15 are too). The targets'
+upper bits (11 and up) are not known here, because no System 7 table gives
+samples so late in `.lit` (the last plateau sample is at `.lit $10E4`).
+
 **The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
 passes (codec type, parameter block, selector, instance) to `$9510`.
 `$9510` accepts only `'rpza'` and `'rle '` (otherwise `-8939`) and switches
@@ -3276,8 +3310,9 @@ supplied, each name also fits the gap to the next stub's string exactly:
 | `$108`-`$18C` | `$01690`-`$017C4` | `PatAverageSlab16`, `PatAddPinSlab16`, `PatAddOverSlab16`, `PatSubPinSlab16`, `PatTransparentSlab16`, `PatMaxSlab16`, `PatSubOverSlab16`, `PatMinSlab16` |
 
 The `.lit` tables of System 6 follow (base `$01DA8` at `.lit $01A0` is
-System 7's `$01A4C` at `.lit $0008`). The added one is the 167-entry switch
-of `$33218` (base `$331C0`, `.lit $10F0`-`$1388`).
+System 7's `$01A4C` at `.lit $0008`). The added group, base `$331C0`, `.lit
+$10F0`-`$1388`, 167 entries, is not one switch but all of the codec's (see
+"The codec's switch tables" above).
 
 **The tables from System 7's targets (`antelope6_tables.py`).** The
 function map gives a System 7 → System 6 address map for 54,077 words: word
@@ -3294,18 +3329,58 @@ periodic (192/384/768; at 768 no conflict), bits 17-19 are a plateau
 function, and bits 11-16 are a step function with some noise.
 
 **The dispatcher table** (base `$2D59C`, 60 entries, commands `$00`-`$3B`)
-decodes from bits 0-10 (offsets below `$1000`). For 47 commands the System
-6 case block is the one that System 7's handler maps to. Five are open
-(bits unsampled), and eight differ:
+decodes from bits 0-10 (offsets below `$1000`). Bit 11 is not sampled
+there, so each entry fixes its block only modulo `$800`. A System 7
+handler's mapped block "fits" if it agrees with the sampled bits. For 50
+commands it fits. Five are open (`$03`, `$04`, `$06`, `$10`, `$16`: bits
+unsampled), and five do not fit the map, all explained:
 * `$39`-`$3B` have their own cases in System 6 (the codec above);
-* `$00`, `$02`, `$05`, `$07` and `$19` decode to other blocks than the
-  mapped ones. These lie in the changed part of the dispatcher (ratio 0.77),
-  where the address map is least reliable, so they are not settled. The
-  host shows `$00` and `$02` are really in use in System 6. Its `$85AA`
-  sends `$00` (no arguments), then `$02` with one long, under a 500-tick
-  timeout, and stores the reply at globals `+$174`. Then it sends `$00`
-  again. System 7's `gc24` sends neither. System 6's host also sends `$19`
-  (twice, one long by address, as System 7's FlushOffscreen).
+* `$00` decodes to `$2DF20`, which loads `[.bss+0]` and stores `lr3 = 0`
+  (all 24 bits known) at `+$1C`: the reply-0 block, as System 7's
+  `$327D8`/`$327F8`. The map pairs System 7's `$3279C` (command `$16`) with
+  `$2DF20` for three words, and that pairing is wrong;
+* `$19` decodes to `$2DCF0` (or `$2E0F0`, `$800` higher, the `$3A` case).
+  `$2DCF0` is a one-long block that calls `$13ACC`, System 7's
+  FlushOffscreen `$14168` mapped. System 7 has the two-long `$3C` block
+  (`$32528`) before its FlushOffscreen block; System 6 has no `$3C`, so
+  the map runs one block off there.
+
+`$02`, `$05` and `$07` (and in System 7 `$06`) go to `$2E460`, the code
+right after the switch's `jmpi` (System 7's `$3287C`). These commands have
+no case, and the card stores no reply. An earlier version of the script
+only accepted blocks that follow a jump, which excluded `$2E460` and made
+these three look different.
 
 System 7's table has one more entry (61, up to `$3C`).
+
+**The System 6-only probe: `$00`, then `$02`.** System 6's host does send
+`$02`, although no Antelope of either version handles it:
+* `gc24` ID -4048 begins with a table of 44-byte entries, each a long ID,
+  a stub, and at `+$28` a `bra.w` to the routine. The driver (`DRVR`
+  -4048, `$10B0`) walks it. A positive ID is a trap to patch. A negative
+  ID `-n` stores the entry's `+$28` in the driver globals at
+  `$A78 + 4n`. ID -1 is `$85AA` (slot `$A7C`), -2 is `$8638` (`$A80`),
+  and -3 is `$8580` (`$A84`, the codec entry above).
+* `$85AA(unit, value)` sends `$00`. If `value` is not 0, it sets the
+  unit's timeout word (`+2`) to 500, sends `$02` with `value` as its one
+  long, stores the reply at unit `+$174` and puts the timeout back. Then it
+  sends `$00` again. It returns `+$174`.
+* The driver calls it from Status csCode 10 with the long that Control
+  csCode 4 stored at its globals `+$12C`, and returns the result. If the
+  result is not 1, it sets bit `$100` in the unit's flags (`+8`). Control
+  13, 17 and 50 call `$85AA(unit, 0)` after re-initialising the card.
+* The control panel's `$0C08` sends Control 4 with `$FFFFFFFF`, then
+  Status 10. Its caller (`$128E`) accepts the answer 1. Otherwise it
+  restarts the accelerator (`$0A5C`: Control 99, Status 5, Control 14,
+  Control 2) and asks again. A non-zero answer then gives error `$D8EA`
+  (reported through Control 20).
+
+In both Antelopes `$00` writes reply 0 and `$02` writes nothing, so if the
+host's sender reads the reply word the card left, the probe answers 0. The
+reply path in `$6224` was not followed. With 0 the control panel accepts
+the second try, and the driver sets flag `$100`. `$8638` (slot `$A80`)
+calls `$6224` with (`$26`, 0, `$0E`), then sends `$11` and `$00`, clears bit 0
+of unit `+$1F`, and returns whether the `$26` call returned 0. The driver
+calls it first in Status 10, and in Control 14, 17 and 50 before it
+re-initialises.
 
