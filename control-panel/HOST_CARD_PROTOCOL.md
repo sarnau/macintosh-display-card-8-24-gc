@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. Open: the `.lit` tables entry by entry, the `.data` key, the codec's two routines in detail, and dispatcher commands `$00`/`$02`/`$05`/`$07`/`$19`.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. Open: the `.lit` tables entry by entry, the `.data` key, the codec routines step by step, and what the System 6-only host pair `$00`/`$02` (reply kept at globals `+$174`) does on the card.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3189,11 +3189,47 @@ the case calls the block, otherwise it takes the alternative path. System 6's
 host driver (`gc24` ID -4048) holds the component name "8·24GC Road Pizza"
 and five comparisons with `'rpza'`, three of them next to one with `'rle '`
 (Animation). So SW 1.1 shipped a QuickTime image codec component that
-ran Apple Video on the Am29000. `$374A4` and `$33218` (its 167-case switch
-at `.lit $10F0`, base `$331C0`) are the two `'rpza'` routines, presumably
-compress and decompress. The calls of `$3A964`/`$3A254` for other types
-fit `'rle '`. System 7's card dropped the codec, and its commands `$39`-`$3B`
-fall to the default.
+ran Apple Video on the Am29000. System 7's card dropped the codec, and its
+commands `$39`-`$3B` fall to the default.
+
+**Which routine does what.** The immediates (bits 0-7, plain in every System
+6 word) tell the two `'rpza'` routines apart:
+* `$374A4` is the **decoder**. It masks with `$E0` and compares with `$80`,
+  `$A0`, `$C0`, `$E0` (the four opcode classes of an `'rpza'` block
+  stream: skip, one colour, four colours, sixteen colours) and once with
+  `$E1` (the chunk header byte). It is entered by command `$39`.
+* `$33218` is the **encoder**. It ORs `$80`, `$A0` and `$C0` into opcode
+  bytes, and it is the larger one: 4,259 words of colour arithmetic (`and
+  $1F` with shifts by 5 and 10, the fields of a 16-bit pixel), with
+  `$3CA64`'s divisions. It is entered by commands `$3A` and `$3B`.
+* For other types, `$39` calls `$3A964` and `$3A254` is the encoder path of
+  `$3A`.
+
+**The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
+passes (codec type, parameter block, selector, instance) to `$9510`.
+`$9510` accepts only `'rpza'` and `'rle '` (otherwise `-8939`) and switches
+on selector `$10`-`$19`:
+
+| selector | routine | does |
+|---|---|---|
+| `$10`, `$11` | `$9BBA` | sends `$39` (12 longs): decompress |
+| `$12`, `$13`, `$14` | `$9752` | sends `$3A` (11 longs), or `$3B` (16 longs) with an extra 32-bit PixMap: compress |
+| `$15` | | returns 0 |
+| `$16` | `$A0B4` | codec info: name "8·24GC Road Pizza", vendor `'appl'`, version 4, flags `$43001`/`$4009` |
+| `$17` | `$A124` | returns -1 |
+| `$18`, `$19` | `$A110`, `$A19A` | |
+
+Both senders lock the PixMaps (`_QDExtensions` LockPixels, GetPixBaseAddr,
+GetPixelsState) and pass base addresses, row bytes (`& $3FFF`), bounds
+and depth to the card, then wait for the reply.
+* `$9BBA` requires a 16-bit PixMap for `'rpza'` (else `-8956`). It returns
+  a byte count and a time estimate (`× 50 / (width × height)`) through
+  two output pointers.
+* `$9752` takes a PixMap of depth 8, 16 or 32 for `'rpza'`, and only 32 for
+  `'rle '`. At depth 8 it uses the PixMap's colour table.
+
+The direction comes from the card's opcode tests. The host side does not
+name it.
 
 Of System 6's 618 direct calls, none goes into the block from outside, so
 the dispatcher's address loads (and `calli`) are its only entries. Inside
@@ -3264,7 +3300,12 @@ decodes from bits 0-10 (offsets below `$1000`). For 47 commands the System
 * `$39`-`$3B` have their own cases in System 6 (the codec above);
 * `$00`, `$02`, `$05`, `$07` and `$19` decode to other blocks than the
   mapped ones. These lie in the changed part of the dispatcher (ratio 0.77),
-  where the address map is least reliable, so they are not settled.
+  where the address map is least reliable, so they are not settled. The
+  host shows `$00` and `$02` are really in use in System 6. Its `$85AA`
+  sends `$00` (no arguments), then `$02` with one long, under a 500-tick
+  timeout, and stores the reply at globals `+$174`. Then it sends `$00`
+  again. System 7's `gc24` sends neither. System 6's host also sends `$19`
+  (twice, one long by address, as System 7's FlushOffscreen).
 
 System 7's table has one more entry (61, up to `$3C`).
 
