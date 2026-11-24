@@ -8,7 +8,10 @@
    (antelope_lit_high.py) are paired with System 6's by relocation base
    (System 7's base mapped) and entry index.  The mapped target gives the
    System 6 plaintext, so W6 ^ plaintext is a full key sample.  Checked
-   against the string-derived key bits 0-8 (antelope6_lit.py) and printed.
+   against the string-derived key bits 0-8 (antelope6_lit.py): a sample is
+   dropped if it disagrees in any known bit, also when bit 8's class has
+   no string sample (then bits 0-7 decide).  lit_key() returns the key
+   for other scripts (antelope6_switches.py).
 3. Key bits 8-19 from the samples that agree: the conflicts per period
    (bits 9 and 10 repeat every 384 and 768 words; bits 11-19 are a step
    function, printed as plateaus).
@@ -97,10 +100,16 @@ def text_pointers(acef):
     return out
 
 
-def main(acef7, acef6, d6):
+def lit_key(acef7, acef6, d6, out=None):
+    """System 6 .lit key bits 0-10 from strings and checked table samples.
+
+    Returns (M, U6, W6, g6, r7, Smp, low): the address map, System 6 .text,
+    System 6 .lit words, its tables, System 7's resolved entries, the table
+    samples (24 key bits each) and low(k) -> (key bits 0-10, mask).
+    With out (a file), the per-table statistics and bit periods are printed."""
+    say = (lambda *a: print(*a, file=out)) if out else (lambda *a: None)
     M, U6 = address_map(d6)
-    inv = {v: k for k, v in M.items()}
-    print('address map: %d System 7 words placed in System 6' % len(M))
+    say('address map: %d System 7 words placed in System 6' % len(M))
     with contextlib.redirect_stdout(io.StringIO()):
         rows, W7, m11 = H.entries(acef7)
         r7, _ = H.resolve(rows, W7, m11)
@@ -111,21 +120,21 @@ def main(acef7, acef6, d6):
     T = {b: L6.periodic(X, b, P)[0] for b, P in L6.PER.items()}
 
     def low9(k):
-        v = 0
+        """String-derived key bits 0-8 at k and their mask (bit 8 may be open)."""
+        v = mk = 0
         for b, P in L6.PER.items():
             r = T[b].get(k % P)
-            if r is None:
-                return None
-            v |= r << b
-        return v
+            if r is not None:
+                v |= r << b; mk |= 1 << b
+        return v, mk
     g7, g6 = lit_groups(acef7), lit_groups(acef6)
-    print('\n.lit tables, System 7 -> System 6 (entries paired by index; target mapped; check: key bits 0-8):')
+    say('\n.lit tables, System 7 -> System 6 (entries paired by index; target mapped; check: key bits 0-8):')
     Smp = {}
     for b7, ks7 in sorted(g7.items()):
         m = M.get(b7 + 4)
         b6 = next((b for b in g6 if m is not None and abs(b - (m - 4)) <= 8), None)
         if b6 is None:
-            print('  $%05X %3d  -> no System 6 table' % (b7, len(ks7)))
+            say('  $%05X %3d  -> no System 6 table' % (b7, len(ks7)))
             continue
         st = collections.Counter()
         for k7, k6 in zip(ks7, g6[b6]):
@@ -137,17 +146,16 @@ def main(acef7, acef6, d6):
             if t6 is None:
                 st['target not mapped'] += 1
                 continue
-            kk, l = W6[k6] ^ (t6 - b6), low9(k6)
-            if l is None:
-                st['bits 0-8 unsampled'] += 1
-            elif kk & 0x1FF == l:
-                st['agree'] += 1
-            else:
+            kk, (l, lm) = W6[k6] ^ (t6 - b6), low9(k6)
+            # a wrong pairing shows in the known bits; where bit 8's class
+            # has no string sample, bits 0-7 must still agree
+            if (kk ^ l) & lm:
                 st['differ'] += 1
                 continue
+            st['agree' if lm == 0x1FF else 'agree in bits 0-7'] += 1
             Smp[k6] = kk & 0xFFFFFF
-        print('  $%05X %3d  -> $%05X %3d  %s' % (b7, len(ks7), b6, len(g6[b6]), ', '.join('%s %d' % kv for kv in sorted(st.items()))))
-    print('\nkey bits 8-19 from %d table samples (conflicts/classes per period):' % len(Smp))
+        say('  $%05X %3d  -> $%05X %3d  %s' % (b7, len(ks7), b6, len(g6[b6]), ', '.join('%s %d' % kv for kv in sorted(st.items()))))
+    say('\nkey bits 8-19 from %d table samples (conflicts/classes per period):' % len(Smp))
     for bit in range(8, 20):
         row = []
         for P in (192, 384, 768, 1536):
@@ -155,13 +163,13 @@ def main(acef7, acef6, d6):
             for k, v in Smp.items():
                 c[k % P][(v >> bit) & 1] += 1
             row.append('%d: %d/%d' % (P, sum(min(s.values()) for s in c.values() if len(s) > 1), len(c)))
-        print('  bit %2d  %s' % (bit, '  '.join(row)))
+        say('  bit %2d  %s' % (bit, '  '.join(row)))
     plat, prev = [], None
     for k in sorted(Smp):
         h = (Smp[k] >> 11) & 0x1FF
         if h != prev:
             plat.append('$%04x:%03x' % (4 * k, h)); prev = h
-    print('  bits 11-19 plateaus (first .lit offset: value): ' + ' '.join(plat))
+    say('  bits 11-19 plateaus (first .lit offset: value): ' + ' '.join(plat))
     P_ = {b: dict(T.get(b, {})) for b in PER}
     for b, per in PER.items():
         c = collections.defaultdict(collections.Counter)
@@ -177,6 +185,12 @@ def main(acef7, acef6, d6):
             if r is not None:
                 v |= r << b; mk |= 1 << b
         return v, mk
+    return M, U6, W6, g6, r7, Smp, low
+
+
+def main(acef7, acef6, d6):
+    M, U6, W6, g6, r7, Smp, low = lit_key(acef7, acef6, d6, sys.stdout)
+    inv = {v: k for k, v in M.items()}
     nb = min(b for b in g6 if b > DISP6)
     blocks = [x for x in range(DISP6 + 8, nb, 4) if U6[x // 4 - 2] >> 24 in (0xA0, 0xA1, 0xC0, 0xC1)]
     k7s = list(range(0xDE0 // 4, 0xDE0 // 4 + 61))

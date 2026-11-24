@@ -91,7 +91,7 @@ sequence numbers on both sides.
 | command | host routine | card |
 |---|---|---|
 | `$15` | `StretchBits` (trap `$AB27`; CopyBits ends here) | `$2D7B8` StretchBits, with `scaleBlt`, BitBlt and RgnBlt. Reaches host pixel maps through `MapVirtual` |
-| `$03`/`$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
+| `$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
 | `$26`, `$38`, `$0D`, … | begin / synchronise around drawing | state and bookkeeping |
 | `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "DrawMultiObject: the batched drawing stream") |
 | `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, and the dispatcher now fits System 7 for 50 of 60 commands, the rest explained or unsampled. Open: the `.lit` tables' upper bits, the `.data` key, the codec routines step by step, and the reply path of the host's sender `$6224`.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants; and the dispatcher fits System 7 for 53 of 60 commands, the other seven explained. The codec's switch targets come from fitting key bits 11-15 (`antelope6_switches.py`): settled for the encoder's 18 switches and the `'rle '` pair, open for the decoder's four. Open: the decoder's switch targets, the `.data` key, the codec routines step by step.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -998,7 +998,8 @@ With the handlers from the case-block table above:
 | `$00` | `$327D8` | reply 0 ("not handled") |
 | `$01` | `$31FE8` | reset: sequence counter to 0, request 100 to the host (settled by `CallBack`, below) |
 | `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
-| `$03`, `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen** |
+| `$03` | `$327F8` | reply `$??00`, the twin of `$00`'s block (an earlier fit gave `$324F8`; System 6 decodes `$03` and `$33` to different blocks, `$03` to the twin, see section 10) |
+| `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen** |
 | `$04` | `$32040` | |
 | `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat** |
 | `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
@@ -1040,7 +1041,7 @@ read. The functions:
 | function | message (decoded, a few characters still wrong) | role |
 |---|---|---|
 | `$0AD18` | "DrawMultiObject/…: can't get a RGBPatCacheEntry for RGB Pattern", "… font is not in cache", "DrawMultiObject: unknown opCode %d" | **the drawing engine**: an opcode interpreter (its jump table is `.lit $0454`) |
-| `$14034` | "DisposeOffscreen: NULL offscreen Handle" | command `$03`/`$33` |
+| `$14034` | "DisposeOffscreen: NULL offscreen Handle" | command `$33` |
 | `$14168` | "FlushOffscreen: NULL offscreen Handle" | command `$19` |
 | `$141F8` | "FlushColorTable: NULL color table handle" | command `$1A` |
 | `$14F64` | "CacheGDevice: NULL GDevice" | |
@@ -3217,27 +3218,52 @@ top bits of a word (`srl $1C`, `cpgtu 7`; `.lit $1248`, `$1268`, `$1288`,
 `$9BBA` sends `$39` only for a 16-bit PixMap, so the 8- and 32-bit copies
 are not used through it.
 
-**The codec's switch tables.** All 167 entries of the `.lit` group with base
-`$331C0` are the codec's, in 25 switches. Their low 9 bits decode with the
-string key (only bits 0-7 from `.lit $1218` to `$12F8`), which is enough to see which
-cases share a target:
+**The codec's switch tables (`antelope6_switches.py`).** All 167 entries
+of the `.lit` group with base `$331C0` are the codec's, in 25 switches.
+Their low bits decode with the periodic key (bits 0-8 from the strings,
+bits 9-10 from the table samples where their class is sampled). Bits 16-23
+follow from the targets: all lie in the block, so the offset is below
+`$10000`. Bits 11-15 are not sampled this late in `.lit` (the last table
+sample is at `.lit $10EC`), so the script fits them per switch: it keeps
+the value that puts the most targets on a case-block start (the word two
+back is a jump) in the `jmpi`'s function.
 
 | `.lit` | switch at | cases | targets |
 |---|---|---|---|
-| `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | all different |
-| `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`) | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 have their own targets; the other eight share one |
-| `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | in each switch the four targets step by `$3C` (15 words) |
-| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | cases 1, 2, 3 and 5 share the default; 6 and 7 share one |
-| `$12C8`, `$1308` | `$3ACD8`, `$3AF28` (`$3A964`, the `'rle '` decoder) | 2 of 16 (`cpgtu $0F`) | four targets in a repeating pattern |
-| `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: 0, 1, 2, 4, 8, 12, 14, 15, 16 own, the rest shared |
+| `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | `$3339C`, `$333A4`, `$333AC`, `$333C8`, `$333D4`: all before the `jmpi`, so the switch sits at the bottom of a loop |
+| `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`) | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$34EF0` (right after the `jmpi`), `$34F2C`, `$34F58`, `$34F8C`, `$34FC0`, `$34FDC`, `$35010`, `$35044`, `$35070`; the other eight at `$350AC` |
+| `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | case `i` at `jmpi + 8 + $3C·i`, in all 16 |
+| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | only partly placed (below): case 0 right after the `jmpi`; 6 and 7 share a target; 1, 2, 3 and 5 share one that is not found |
+| `$12C8` | `$3ACD8` (`$3A964`, the `'rle '` decoder) | 16 (`cpgtu $0F`) | four targets `T0`-`T3` = `$3ABC8`, `$3AC14`, `$3AC60`, `$3B250`; case `4a+b` goes to `T[(b - a + 3) mod 4]` |
+| `$1308` | `$3AF28` (the same) | 16 | the same rotation over `$3AE18`, `$3AE64`, `$3AEB0`, `$3B264` |
+| `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$3BEC4` (right after the `jmpi`), `$3C500`, `$3C52C`, `$3BF60`, `$3BF94`, `$3BFB0`, `$3BFE4`, `$3C018`, `$3C044`; the rest at `$3C080` |
 
-The 16 four-way switches fit the four-colour block. There is one switch per
-pixel of the 4×4 block, and each case writes one of the four 2-bit colour
-indices, unrolled. The two 17-way switches have the same case pattern, both
-on the encoder side, so they probably switch on the same parameter (depth
-1/2/4/8/16 is among the cases, but 12, 14 and 15 are too). The targets'
-upper bits (11 and up) are not known here, because no System 7 table gives
-samples so late in `.lit` (the last plateau sample is at `.lit $10E4`).
+How far this can be trusted:
+* **The four-way switches are settled by their shape.** Case `i` lies at
+  `jmpi + 8 + $3C·i`, so case 0 starts right after the delay slot and each
+  case is 15 words. Where the open key bits allow two places, one of them is
+  this one. There is one switch per pixel of the 4×4 block, each writing one
+  of the four 2-bit colour indices, unrolled.
+* **The two 17-way switches agree with each other.** Both have case 0 right
+  after the `jmpi`, the same nine cases of their own, and one shared default
+  for the other eight. The set (0, 1, 2, 4, 8, 12, 14, 15, 16) is its own
+  mirror image (`x` ↔ `16 - x`), so the index is not simply a depth. What it
+  selects is still open.
+* **The `'rle '` rotation** fits four copy loops chosen by two 2-bit
+  values, for example the source's and the destination's byte alignment
+  (`4a+b` → loop `(b - a + 3) mod 4`). This reading is a guess.
+* **Bits 11-15 are not constant inside a table.** In `$1104` cases 0-6 need
+  `$1A` and cases 7-16 need `$1B`. In `$12C8` cases 0-2 need `$1D`, not
+  `$12`, and in `$1348` cases 0-5 need `$13`, not `$10`. So the script lists
+  every entry its table's value does not place, with each value that does.
+  For the entries in the table above, the value chosen is the one that
+  continues the table's pattern (a neighbouring value, or the `'rle '`
+  rotation where two places remain).
+* **The decoder's tables do not fit.** Of their 32 entries, 14 are placed.
+  For 12 entries no value of bits 11-15 gives a block start, although bits
+  0-10 are all "known". So either bits 9-10 are wrong there (they come from
+  one or two table samples per class), or these cases do not start after
+  a jump (fall-through). Their targets remain open.
 
 **The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
 passes (codec type, parameter block, selector, instance) to `$9510`.
@@ -3331,19 +3357,38 @@ function, and bits 11-16 are a step function with some noise.
 **The dispatcher table** (base `$2D59C`, 60 entries, commands `$00`-`$3B`)
 decodes from bits 0-10 (offsets below `$1000`). Bit 11 is not sampled
 there, so each entry fixes its block only modulo `$800`. A System 7
-handler's mapped block "fits" if it agrees with the sampled bits. For 50
-commands it fits. Five are open (`$03`, `$04`, `$06`, `$10`, `$16`: bits
-unsampled), and five do not fit the map, all explained:
+handler's mapped block "fits" if it agrees with the sampled bits. It fits
+for 53 commands. The other seven are all explained:
 * `$39`-`$3B` have their own cases in System 6 (the codec above);
-* `$00` decodes to `$2DF20`, which loads `[.bss+0]` and stores `lr3 = 0`
-  (all 24 bits known) at `+$1C`: the reply-0 block, as System 7's
-  `$327D8`/`$327F8`. The map pairs System 7's `$3279C` (command `$16`) with
-  `$2DF20` for three words, and that pairing is wrong;
+* `$00` decodes to `$2DF20` and `$03` to `$2DF40`, two blocks of eight
+  words that load `[.bss+0]` and store a reply at `+$1C`: `lr3 = 0` in
+  `$2DF20` (all 24 bits known), `$??00` in `$2DF40`. They are System 7's
+  `$327D8` and `$327F8` (`$00` and `$03` there too) word for word. The map
+  places those two blocks wrongly, at `$2E0D0` and `$2E410`, because the
+  codec's cases `$39`-`$3B` follow them in System 6 and the default follows
+  them in System 7. It also pairs System 7's `$3279C` (command `$16`) with
+  `$2DF20` for three words, and that pairing is wrong too;
+* `$16` decodes to `$2DC30` (FlushGDevice, the `$29` block) or `$2E430`
+  (the default, "Unknown Function"); bit 8 is open there. System 6 has no
+  block for System 7's `$3279C`: its `$13` block (`$2DEC4`, `$5C` bytes as
+  in System 7) runs straight into `$2DF20`. The System 6 host never sends
+  `$16`, so it is the default, as `$10` is;
 * `$19` decodes to `$2DCF0` (or `$2E0F0`, `$800` higher, the `$3A` case).
   `$2DCF0` is a one-long block that calls `$13ACC`, System 7's
   FlushOffscreen `$14168` mapped. System 7 has the two-long `$3C` block
   (`$32528`) before its FlushOffscreen block; System 6 has no `$3C`, so
   the map runs one block off there.
+
+**The bit-8 errors.** Before this, `$04`, `$06` and `$10` looked
+unsampled or different. Their key bit 8 (period 192) has no string sample,
+and the value came from one table sample each in the table at `$0AF70`.
+Those samples disagree with the string key in bits 0-7, so their pairing
+with System 7 is wrong. The script now rejects a table sample whose known
+string bits disagree, also when bit 8's class has no string sample (it used
+to skip the check then). That leaves 318 samples instead of 343. Bit 8 then
+has no conflict at period 192 (8 before), and bit 9 has 1 at period 384
+(8 before). With the corrected bit 8, `$04` is `$2D7FC`, and `$06` and
+`$10` are the epilogue `$2E460` and the default `$2E430`, as in System 7.
 
 `$02`, `$05` and `$07` (and in System 7 `$06`) go to `$2E460`, the code
 right after the switch's `jmpi` (System 7's `$3287C`). These commands have
@@ -3375,10 +3420,27 @@ System 7's table has one more entry (61, up to `$3C`).
   Control 2) and asks again. A non-zero answer then gives error `$D8EA`
   (reported through Control 20).
 
-In both Antelopes `$00` writes reply 0 and `$02` writes nothing, so if the
-host's sender reads the reply word the card left, the probe answers 0. The
-reply path in `$6224` was not followed. With 0 the control panel accepts
-the second try, and the driver sets flag `$100`. `$8638` (slot `$A80`)
+**The probe answers 1.** Both ends are now read:
+* For selectors below `$0C`, `$6224(cmd, args, n)` writes the packet
+  directly (`$77D4`-`$795E`): `+$18` = 0, `+$48` = `cmd`, `+$4C` = the
+  sequence number (`+$20` of the unit, incremented), `+$50` = `n`, the
+  arguments from `+$58` on, and `+$14` = -1. It waits until bit 0 or 1 of
+  the status long (`[unit+$10]`) is set. Then it returns packet `+$1C`
+  (`$7A60`). A timeout returns 0 and sets bit 1 of unit `+$1C`
+  (`$7A96`). The host never writes `+$1C` itself.
+* The System 6 dispatcher, like System 7's, stores 1 in packet `+$1C`
+  as soon as it takes a command (`$2D648`-`$2D650`: `const gr99, 1`,
+  `add gr98, gr98, $1C`, `store`; all 24 bits known, the same words as
+  System 7 `$31E58`).
+* `$00` then overwrites the reply with 0. `$02` has no case and goes
+  straight to the epilogue `$2E460`, so its reply stays 1.
+
+So `$85AA` stores 1 at `+$174`, Status 10 returns 1, the driver leaves flag
+`$100` clear, and the control panel accepts the first answer. The probe
+only checks that the card's dispatcher is running: a card that hangs
+before the dispatcher never sets the status bits, and the timeout returns 0.
+The value sent with `$02` (`$FFFFFFFF` from the control panel) is not read.
+`$8638` (slot `$A80`)
 calls `$6224` with (`$26`, 0, `$0E`), then sends `$11` and `$00`, clears bit 0
 of unit `+$1F`, and returns whether the `$26` call returned 0. The driver
 calls it first in Status 10, and in Control 14, 17 and 50 before it
