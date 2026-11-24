@@ -2769,29 +2769,54 @@ vector patching shows it is the same family), but bits 2-12 follow a
 different table. Recovering it needs known plaintext inside `.lit`, for
 example a switch whose case labels are all identifiable in `.text`.
 
-### Antelope mask: `.lit` bits 12-23 (`antelope_lit_high.py`)
+### Antelope mask: `.lit` bits 11-23 (`antelope_lit_high.py`)
 
 * **Bits 18-23 of `.lit`'s key are 0.** Every relocated `.lit` word has raw
   bits 18-23 = 0, and its plaintext is a `.text` offset below `$40000`. All
   1,097 `.lit` words lie inside the key's first plateau, as the first 1,389
   words of `.text` do.
-* **Bits 12-17 step like `.text`'s high bits.** In the dispatcher table,
-  whose offsets are all below `$1000`, the raw bits are the key: `$3B` ×20,
-  `$24` ×34, `$25` ×7. Over the other tables, each entry's bits 0-11 select
-  the case-block candidates with the same low 12 bits. Each candidate
-  implies a key value, and the single-candidate entries step the same way
+* **Bits 11-17 step like `.text`'s high bits.** In the dispatcher table,
+  whose offsets are all below `$1000`, raw bits 12-17 are the key: `$3B` ×20,
+  `$24` ×34, `$25` ×7. Over the other tables, each entry's bits 0-10 select
+  the case-block candidates with the same low 11 bits, and each candidate
+  implies a key value. The entries with one implied value step the same way
   (`$0C`→`$0D`→`$0E`, `$3C`→`$3D`→`$3E`→`$3F`→`$38`, `$3B`→`$24`→`$25`→`$26`→`$27`).
-* `antelope_lit_high.py` takes for each entry the candidate whose implied
-  value is the mode of its neighbours. Of 535 table entries:
-  * 357 single-candidate entries agree with their neighbours;
-  * 41 entries with several candidates are resolved to one;
-  * 33 single-candidate entries are outliers against a clear mode;
-  * 51 entries are unclear, and 53 have no candidate.
+  Bit 11 is part of the step: within each plateau of bits 12-17 it is 1
+  first and then 0. `antelope_lit_key.py` models bit 11 as periodic (every
+  768 words), and that was the cause of most of the misfits.
+* **Bits 0-10 stay periodic** (bit *b* every 24, 48, 96, 192, 384 words for
+  *b* ≤ 6, 7, 8, 9, 10). That holds without a conflict at every resolved
+  entry. Some classes are pinned by no resolved entry, and there the fitted
+  value can be wrong.
 
-  The outliers and the missing candidates are concentrated in the three
-  tables whose bits 0-11 fit worst (bases `$01A4C`, `$13F50`, `$19DA0`; see
-  the table above). So they point at wrong low-bit fits or at case blocks
-  the "word after an unconditional jump" rule misses, not at the step model.
+`antelope_lit_high.py` resolves an entry in four ways, in this order:
+1. **agree:** one candidate, whose value is that of the nearest sample on one
+   side or the other;
+2. **resolved:** several candidates, exactly one with such a value;
+3. **joint:** the unpinned class bits are left free; an entry with exactly
+   one candidate under them pins them, repeated until nothing changes;
+4. **function:** several candidates left, exactly one in the function of
+   the nearest resolved entry.
+
+Of the 535 table entries, 350 agree, 88 are resolved, 12 are joint, 1 is
+resolved by function, and 84 stay open: 451 targets, against 398 with bit 11
+taken as periodic. Eight entries that "agreed" under the old rule now get
+another target. Each change is in bit 11, and in each the new target is the
+better one. For example, `.lit $0BB4`-`$0BC8` move from `$3002C`… to
+`$2F82C`, `$2F85C`, `$2F868`, which continue their table's run of blocks
+`$C` apart (`$2F7A0`, …, `$2F838`, `$2F844`, `$2F850`, …, `$2F874`). And
+`.lit $0008`/`$0010`/`$0FD4`-`$0FE0` move back into their switch function.
+
+Independent check (not used in the fit): 442 of the 451 targets lie in the
+same function as a neighbouring target. The 9 exceptions are isolated:
+`.lit $0098`/`$00A4`/`$00CC`, `$0770`/`$0774`/`$07DC` and `$1004`-`$100C`.
+They and the open entries are concentrated in the tail of base `$01A4C`
+(after `.lit $0094`), the `$13F50` stride table and parts of `$19DA0`. In
+those places no candidate fits at all, even under free bits. For about 30
+of the open entries every key bit is pinned, so their targets are fully
+determined. Either the words are not case-block offsets (most direct decodes
+of the `$01A4C` tail land outside its switch function), or the blocks are
+fall-through labels that the "word after an unconditional jump" rule misses.
 
 The command table itself needed none of this: bits 0-11 already pick each
 of its 61 blocks uniquely.
