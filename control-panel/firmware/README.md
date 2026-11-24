@@ -339,7 +339,8 @@ info) — none is present in the shipped control-panel software.
   Antelope's separate key (`../antelope6_key.py` recovers the opcode byte,
   bits 0-12 and most of bits 13-23; `../antelope6_compare.py` matches its
   functions to System 7's; `../antelope6_lit.py` gets its `.lit` key bits
-  0-8 from System 7's strings).
+  0-8 from System 7's strings, `../antelope6_tables.py` its jump tables and
+  dispatcher).
 * `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
 * In `Hand`: most services behind vector 66 (`$D5`, the slot burst mask, is
   settled; `$BB`, `$D1`, `$D4` have candidates) and which feature each

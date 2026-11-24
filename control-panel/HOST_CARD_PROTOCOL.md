@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is referenced from nowhere. Open: the `.lit` key above bit 8, the `.data` key, the block's purpose and the larger dispatcher (934 words against 682).
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. Open: the `.lit` tables entry by entry, the `.data` key, the codec's two routines in detail, and dispatcher commands `$00`/`$02`/`$05`/`$07`/`$19`.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3123,9 +3123,13 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
 
 **Only in System 7** (by their callers in the System 7 decode):
 * `$1E508`-`$200E0`, nine helpers of about 200 words, all called only by
-  RgnBlt;
-* `$0F730`-`$10140`, eight helpers called only by the switch function at
-  `$1114C`;
+  RgnBlt: by their number, the nine 16-bit arithmetic loops whose System 6
+  counterparts are stubs (`RBAverage16Half` … `RBMin16`, see below);
+* `$0F730`-`$10140`, eight helpers of the switch function at `$1114C`: the
+  pattern-slab loops for the eight 16-bit arithmetic modes. Where System 6's
+  `$10C3C` loads the addresses of the stubs `PatAverageSlab16` …
+  `PatMinSlab16`, System 7's `$1114C` loads `$0FF60`, `$0F978`, `$0F730`,
+  `$0FB08`, `$10140`, `$0FC98`, `$0F850`, `$0FDFC` (`antelope6_tables.py`);
 * `$37730`-`$37B58`, the module support: request 999 (`$37730`) and the
   `$80xx` service switch `sub_379A0`, called from the dispatcher through
   `$37B58` (see "The `$80xx` commands"). It calls UnmapAll, CallBack and
@@ -3134,11 +3138,15 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
   (`$8001`, "call code at a host-given address") are new in System 7;
 * `$140CC`, a dispatcher case that calls CacheRelease;
 * `$18278` (389 words, called by `$17C60` and StretchBits) and a run of
-  StretchBits helpers at `$27944`-`$2CFD4`.
+  StretchBits helpers at `$27944`-`$2CFD4`. They include the Stretch
+  16-bit arithmetic loops: where System 6's StretchBits loads the stubs
+  `StretchAverage16` …, System 7's loads `$27944`, `$27ACC`, `$27B48`,
+  `$27BBC` (the other four sites do not map).
 
 **Only in System 6:**
 * a block of 43 functions, 10,928 words, between HeapFree and the storem
-  functions (`$331C4`-`$3DC84`). It is led by `$33218` (4,259 words: mostly
+  functions (`$331C4`-`$3DC84`): **a QuickTime codec on the card** (see
+  below). It is led by `$33218` (4,259 words: mostly
   `add`/`sub`/shifts, 315 `aseq`, few loads), `$374A4` (2,579), `$3B27C`
   (1,274, called by `$33218`) and `$3CA64` (1,001 words with six inline
   divisions, 186 `div` steps);
@@ -3152,27 +3160,45 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
   `PatMinSlab16`. The order is that of `rArith16Tab` in the 7.1
   `RgnBlt.a` (Avg, AddPin, AddOver, SubPin, Transparent, Max, SubOver, Min;
   `rAvg16Half` is its case `$28`). So System 6's card had placeholders for
-  the 16-bit arithmetic modes. Six of the stubs match, by opcodes, System 7's
+  the 16-bit arithmetic modes. RgnBlt (`$193C8`), StretchBits (`$28C14`)
+  and the slab setup (`$10C3C`) load the stubs' addresses as their loop
+  pointers, and `$11524` loads `Bogus` where System 7 loads `$01468` (the
+  "Bogus…" message). Six of the stubs match, by opcodes, System 7's
   11-16-word functions at `$3779C`-`$3814C` (the "moved" pairs); those are
   module-support code, so the match is only the common frame idiom.
 
-**Nothing references the System 6-only block or the stubs.** Of System 6's
-618 direct calls, those before the block resolve all but one (the low
-byte is plain, bits 16-23 come from the neighbouring samples, and the target
-must be a function start). None of them lands in the block or on a stub, and
-the C library after the block calls only library functions. No relocated
-`const`/`consth` loads their addresses either: the 31 address loads that
-point into the block are all made from inside it (to `$3C668`, `$3C7C4`
-and `$3DA08`-`$3DB68`, small functions passed as callbacks). `.data` has
-no relocations into `.text` outside the C library. The block itself is
-built round `$33218`, a switch with 167 cases (`.lit $10F0`-`$1388`,
-base `$331C0`; many entries share the default `$350AC`). It calls
-`$3B27C`, and `$374A4` calls `$39CF0`. Its instruction mix (adds, shifts,
-compare-and-branch, `mul` calls; `$3CA64` with six divisions) is
-arithmetic, not drawing to memory. So the block and the stubs are dead
-code in this image. Either the linker kept a module whose callers were
-removed, or the host reached it by an absolute address, which System 6 has
-no command for.
+**The block is the card side of a QuickTime codec, commands `$39`-`$3B`.**
+(An earlier version of this section called the block and the stubs
+unreferenced. That was wrong: a relocation whose symbol has section -3 names
+the *next* symbol, and the first scan missed those.) The address loads into
+the block from outside it are all in the dispatcher `$2D614`, in the case
+blocks of three commands that System 7 sends to the default:
+
+| command | case block | loads | alternative path |
+|---|---|---|---|
+| `$39` | `$2DF60` | `$374A4` | `$2E024`: `$3A964` |
+| `$3A` | `$2E0F0` | `$33218` | `$2E1A0`: `$3A254` |
+| `$3B` | `$2E258` | `$33218` | `$2E340`: `$33218` |
+
+Each case reads its argument record (`rec = [.bss+4]`, `[rec+$10]`), loads
+eight fields of it (`+$04`-`+$2C`) and compares the first word with
+`$72707A61`. The `const` half reads `$xx61`, and its masked high byte `$9E`
+with the plateau key `$E4` gives `$7A`. So the word is `'rpza'`, the
+four-character code of Apple Video ("Road Pizza"). If the word matches,
+the case calls the block, otherwise it takes the alternative path. System 6's
+host driver (`gc24` ID -4048) holds the component name "8·24GC Road Pizza"
+and five comparisons with `'rpza'`, three of them next to one with `'rle '`
+(Animation). So SW 1.1 shipped a QuickTime image codec component that
+ran Apple Video on the Am29000. `$374A4` and `$33218` (its 167-case switch
+at `.lit $10F0`, base `$331C0`) are the two `'rpza'` routines, presumably
+compress and decompress. The calls of `$3A964`/`$3A254` for other types
+fit `'rle '`. System 7's card dropped the codec, and its commands `$39`-`$3B`
+fall to the default.
+
+Of System 6's 618 direct calls, none goes into the block from outside, so
+the dispatcher's address loads (and `calli`) are its only entries. Inside
+it, `$33218` calls `$3B27C`, `$374A4` calls `$39CF0`, and `$3C668`,
+`$3C7C4` and `$3DA08`-`$3DB68` are passed around as callbacks.
 
 There are no floating-point instructions in either version, so the block is
 not a floating-point trap emulator.
@@ -3196,7 +3222,9 @@ words lie in them. For such a pair the plaintexts are equal, so
 
 Bit 9 fits period 384 with 11 conflicts; bits 10-11 fit no period, but
 System 7's own bits 9-11 are weak in string words. Bits 12-19 of
-`key6 ^ key7` are a step function of the index, as in System 7. At the
+`key6 ^ key7` are a step function of the index, as in System 7. The jump
+tables give the rest (below): bit 9 repeats every 384 words and bit 10
+every 768, and bits 12-19 are a slowly falling step function. At the
 start of `.lit`, bits 16-19 of key6 are 0, so the second character there is
 plain. Bits 0-8 decode every fourth character.
 
@@ -3213,7 +3241,30 @@ supplied, each name also fits the gap to the next stub's string exactly:
 
 The `.lit` tables of System 6 follow (base `$01DA8` at `.lit $01A0` is
 System 7's `$01A4C` at `.lit $0008`). The added one is the 167-entry switch
-of `$33218` (base `$331C0`, `.lit $10F0`-`$1388`). Its entries match case
-blocks in bits 0-8, but with 479 blocks in the module that is no test.
-Bits 9 and up of these tables are not solved.
+of `$33218` (base `$331C0`, `.lit $10F0`-`$1388`).
+
+**The tables from System 7's targets (`antelope6_tables.py`).** The
+function map gives a System 7 → System 6 address map for 54,077 words: word
+by word in identical functions, and along the matching opcode runs in
+changed ones. System 7's tables are paired with System 6's by mapped
+relocation base and entry index. Fifteen pair up, and System 7's `$27674`
+and `$3772C` (module support) have none. For each System 7 entry with a
+resolved target, the mapped target minus the System 6 base is the System 6
+plaintext, so `W6 ^ plaintext` is a full key sample. Where the string key
+covers bits 0-8, 153 samples agree and 15 differ: 11 in StretchBits (86
+entries against 72, so the index pairing breaks), 3 in the dispatcher and 1
+in `$01DA8`. With the 343 samples that are not contradicted, bits 8-10 are
+periodic (192/384/768; at 768 no conflict), bits 17-19 are a plateau
+function, and bits 11-16 are a step function with some noise.
+
+**The dispatcher table** (base `$2D59C`, 60 entries, commands `$00`-`$3B`)
+decodes from bits 0-10 (offsets below `$1000`). For 47 commands the System
+6 case block is the one that System 7's handler maps to. Five are open
+(bits unsampled), and eight differ:
+* `$39`-`$3B` have their own cases in System 6 (the codec above);
+* `$00`, `$02`, `$05`, `$07` and `$19` decode to other blocks than the
+  mapped ones. These lie in the changed part of the dispatcher (ratio 0.77),
+  where the address map is least reliable, so they are not settled.
+
+System 7's table has one more entry (61, up to `$3C`).
 
