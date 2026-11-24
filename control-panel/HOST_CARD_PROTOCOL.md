@@ -141,7 +141,7 @@ prints these names in `text.partial.asm`.
 - `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Open: its `.lit`/`.data` keys, and what its 10,928-word block at `$331C4`-`$3DC84` and its larger dispatcher (934 words against 682) add.
+- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is referenced from nowhere. Open: the `.lit` key above bit 8, the `.data` key, the block's purpose and the larger dispatcher (934 words against 682).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3126,9 +3126,12 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
   RgnBlt;
 * `$0F730`-`$10140`, eight helpers called only by the switch function at
   `$1114C`;
-* `$37730`-`$37B58`, a branch of the command dispatcher (`$37B58`, called
-  from `$31E20`) that calls UnmapAll, CallBack and five 5-word functions at
-  `$13FCC`-`$14020`;
+* `$37730`-`$37B58`, the module support: request 999 (`$37730`) and the
+  `$80xx` service switch `sub_379A0`, called from the dispatcher through
+  `$37B58` (see "The `$80xx` commands"). It calls UnmapAll, CallBack and
+  five 5-word functions at `$13FCC`-`$14020`. System 6 has no word
+  `const …, $8000` in or near its dispatcher, so the host-loaded modules
+  (`$8001`, "call code at a host-given address") are new in System 7;
 * `$140CC`, a dispatcher case that calls CacheRelease;
 * `$18278` (389 words, called by `$17C60` and StretchBits) and a run of
   StretchBits helpers at `$27944`-`$2CFD4`.
@@ -3139,15 +3142,78 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
   `add`/`sub`/shifts, 315 `aseq`, few loads), `$374A4` (2,579), `$3B27C`
   (1,274, called by `$33218`) and `$3CA64` (1,001 words with six inline
   divisions, 186 `div` steps);
-* 25 functions of 11 words at `$01378`-`$01798`, each with one call to
-  `$00E88` (System 7 `$00F78`, just before ReportToLog). Six of them match
-  System 7's 11-16-word functions at `$3779C`-`$3814C` (the "moved" pairs);
-* extra `.lit` strings at the start: every fourth character reads
-  `Bs`, `Re`, …, then two parallel series, `St`+`vg`/`dn`/`de`/`un`/`rpn`/…
-  and `P`+`vga`/`dnb`/`dea`/`unb`/`rpna`/…. That looks like a table of names.
+* 26 functions of 11 words at `$01378`-`$017C4`, each of which only
+  passes a `.lit` string to `$00E88` and returns. `$00E88` is an empty
+  function (`jmpi lr0`, as System 7's `$00F78`). The strings are the stubs'
+  names (see the next subsection): `Bogus`, then QuickDraw's 16-bit
+  arithmetic-mode loops for RgnBlt, Stretch and the pattern slab:
+  `RBAverage16Half`, `RBAverage16`, `RBAddPin16`, … `RBMin16`;
+  `StretchAverage16` … `StretchMin16`; `PatAverageSlab16` …
+  `PatMinSlab16`. The order is that of `rArith16Tab` in the 7.1
+  `RgnBlt.a` (Avg, AddPin, AddOver, SubPin, Transparent, Max, SubOver, Min;
+  `rAvg16Half` is its case `$28`). So System 6's card had placeholders for
+  the 16-bit arithmetic modes. Six of the stubs match, by opcodes, System 7's
+  11-16-word functions at `$3779C`-`$3814C` (the "moved" pairs); those are
+  module-support code, so the match is only the common frame idiom.
 
-There are no floating-point instructions in either version, so the large
-System 6 block is not a floating-point trap emulator. Its role is open. Few
-System 6 calls decode far enough to give a target (full 24 bits for 31% of
-the words), so its callers are not known yet.
+**Nothing references the System 6-only block or the stubs.** Of System 6's
+618 direct calls, those before the block resolve all but one (the low
+byte is plain, bits 16-23 come from the neighbouring samples, and the target
+must be a function start). None of them lands in the block or on a stub, and
+the C library after the block calls only library functions. No relocated
+`const`/`consth` loads their addresses either: the 31 address loads that
+point into the block are all made from inside it (to `$3C668`, `$3C7C4`
+and `$3DA08`-`$3DB68`, small functions passed as callbacks). `.data` has
+no relocations into `.text` outside the C library. The block itself is
+built round `$33218`, a switch with 167 cases (`.lit $10F0`-`$1388`,
+base `$331C0`; many entries share the default `$350AC`). It calls
+`$3B27C`, and `$374A4` calls `$39CF0`. Its instruction mix (adds, shifts,
+compare-and-branch, `mul` calls; `$3CA64` with six divisions) is
+arithmetic, not drawing to memory. So the block and the stubs are dead
+code in this image. Either the linker kept a module whose callers were
+removed, or the host reached it by an absolute address, which System 6 has
+no command for.
+
+There are no floating-point instructions in either version, so the block is
+not a floating-point trap emulator.
+
+### System 6 `.lit`: the low key bits from System 7 (`antelope6_lit.py`)
+
+System 6's `.lit` has its own key (not System 6's `.text` key, and not
+System 7's `.lit` key at either index). Its top byte is plain, as in System
+7, and most strings are the same, so the two sections line up by their top
+bytes. There are five runs, at shifts of +77 to +220 words, and 394 string
+words lie in them. For such a pair the plaintexts are equal, so
+`key6 = W6 ^ W7 ^ key7` wherever System 7's key is known (bits 0-11 from
+`antelope_lit_key.py`). Without a single conflict:
+
+| key6 bits | period (words) | classes sampled |
+|---|---|---|
+| 0-4 | 24 | all |
+| 5-6 | 48 | all |
+| 7 | 96 | all |
+| 8 | 192 | 136 of 192 |
+
+Bit 9 fits period 384 with 11 conflicts; bits 10-11 fit no period, but
+System 7's own bits 9-11 are weak in string words. Bits 12-19 of
+`key6 ^ key7` are a step function of the index, as in System 7. At the
+start of `.lit`, bits 16-19 of key6 are 0, so the second character there is
+plain. Bits 0-8 decode every fourth character.
+
+The 26 name strings come before the first shared string
+(`.lit $0000`-`$019F`). With characters 1, 2 and 4 plain and the third
+supplied, each name also fits the gap to the next stub's string exactly:
+
+| `.lit` | stubs | names |
+|---|---|---|
+| `$000` | `$01378` | `Bogus` |
+| `$008`-`$06C` | `$013A4`-`$01504` | `RBAverage16Half`, `RBAverage16`, `RBAddPin16`, `RBAddOver16`, `RBSubPin16`, `RBTransparent16`, `RBMax16`, `RBSubOver16`, `RBMin16` |
+| `$074`-`$0F8` | `$01530`-`$01664` | `StretchAverage16`, `StretchAddPin16`, `StretchAddOver16`, `StretchSubPin16`, `StretchTransparent16`, `StretchMax16`, `StretchSubOver16`, `StretchMin16` |
+| `$108`-`$18C` | `$01690`-`$017C4` | `PatAverageSlab16`, `PatAddPinSlab16`, `PatAddOverSlab16`, `PatSubPinSlab16`, `PatTransparentSlab16`, `PatMaxSlab16`, `PatSubOverSlab16`, `PatMinSlab16` |
+
+The `.lit` tables of System 6 follow (base `$01DA8` at `.lit $01A0` is
+System 7's `$01A4C` at `.lit $0008`). The added one is the 167-entry switch
+of `$33218` (base `$331C0`, `.lit $10F0`-`$1388`). Its entries match case
+blocks in bits 0-8, but with 479 blocks in the module that is no test.
+Bits 9 and up of these tables are not solved.
 
