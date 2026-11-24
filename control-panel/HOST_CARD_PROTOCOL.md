@@ -645,7 +645,7 @@ is 61 cases, at `$32850`:
     load   ?, ?, gr96, gr122
     jmpi   gr96
 
-`$3C` is the largest command the host sends (`GA_PmBackColor`). The function
+`$3C` is the largest command the host sends (PMgrExit: `GA_PMGR` → `sub_B1BE`). The function
 is `sub_31e20` (`$31E20`-`$328C8`), in the module whose `.text` starts at
 `$31DA8` and whose `.lit` starts at `$0D60`. What it does, from the plain
 fields:
@@ -1020,7 +1020,7 @@ With the handlers from the case-block table above:
 | `$2D` | `$32188` | -> `$13770` (not sent by `gc24`) |
 | `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`): **font upload** from `sub_88E6` (width table, font strikes; see "Text and fonts") |
 | `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
-| `$3C` | `$32528` | two longs in a frame -> `$140CC` |
+| `$3C` | `$32528` | two longs in a frame -> `$140CC` (CacheRelease): the host's PMgrExit sends the quitting application's ProcessSerialNumber |
 | all others | `$32818` | default: prints "Unknown Function: 0x%x" |
 
 Points that fit the host side (`QUICKDRAW_PATCHES.md`):
@@ -2619,8 +2619,8 @@ one- or two-long block. That fits small state setters (pen, colours,
 patterns) better than drawing routines.
 
 On the host side (`QUICKDRAW_PATCHES.md`) the commands with one long are
-`$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37` `$3C`.
-Those with two longs are `$18` `$24` `$2A` `$2F` `$31`, and those with four
+`$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37`.
+Those with two longs are `$18` `$24` `$2A` `$2F` `$31` `$3C`, and those with four
 are `$21` `$23` `$2E`. So the block shapes fit the host's commands in
 number: many one-long handlers, a few two-long ones. But the shapes alone do
 not say which block is which command. That still needs the 61 table words.
@@ -3224,19 +3224,27 @@ Their low bits decode with the periodic key (bits 0-8 from the strings,
 bits 9-10 from the table samples where their class is sampled). Bits 16-23
 follow from the targets: all lie in the block, so the offset is below
 `$10000`. Bits 11-15 are not sampled this late in `.lit` (the last table
-sample is at `.lit $10EC`), so the script fits them per switch: it keeps
-the value that puts the most targets on a case-block start (the word two
-back is a jump) in the `jmpi`'s function.
+sample is at `.lit $10EC`). They follow the sampled plateaus of bits
+11-19, though. Within a group of eight values the low three bits run
+2 3 0 1 6 7 4 5 (complete for `$1D0`-`$1D7` at `.lit $0B08`-`$0CB8`),
+then the group drops by 8. The last plateau is `$1BA` at `.lit $10E4`, so
+the codec tables should step through `$1A $1B $18 $19 $1E $1F $1C $1D $12
+$13 $10 $11 $16 $17 $14 $15`. The script gives each entry one of these values,
+never one earlier than the previous entry's, and keeps the assignment that
+puts the most targets on a case-block start (the word two back is a jump)
+in the `jmpi`'s function. It places 154 of the 167 entries that way, 12 more
+on a target that a known jump lands on, and leaves one open. All 16
+four-way tables fit their shape.
 
 | `.lit` | switch at | cases | targets |
 |---|---|---|---|
 | `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | `$3339C`, `$333A4`, `$333AC`, `$333C8`, `$333D4`: all before the `jmpi`, so the switch sits at the bottom of a loop |
 | `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`), on a pixel count `n` | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$34EF0` (right after the `jmpi`), `$34F2C`, `$34F58`, `$34F8C`, `$34FC0`, `$34FDC`, `$35010`, `$35044`, `$35070`; the other eight at `$350AC` |
 | `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | case `i` at `jmpi + 8 + $3C·i`, in all 16 |
-| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | in each: case 0 right after the `jmpi`, case 4 and the shared cases 6/7 further on (`$39220`/`$39244`, `$39630`/`$39660`, `$39B00`/`$39B30`); cases 1, 2, 3 and 5 go to `$39CAC`, the decoder's exit, in the last three tables. The first table (`$38D74`, `$38E20`, `$38E44`, `$38E4C`) is less certain |
+| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | in each: case 0 right after the `jmpi`, case 4 and the shared cases 6/7 further on (`$39220`/`$39244`, `$39630`/`$39660`, `$39B00`/`$39B30`); cases 1, 2, 3 and 5 go to the switch's default, the same place as an index above 7. That is `$38E4C` in the first table (its `cpgtu`/`jmpt` at `$38D50`) and `$39CAC`, the decoder's exit, in the other three. The first table is `$38D74`, `$38E4C` ×2, case 3 open, `$38E20`, `$38E4C`, `$38E44` ×2 |
 | `$12C8` | `$3ACD8` (`$3A964`, the `'rle '` path) | 16 (`cpgtu $0F`), index `(a << 2) \| (lr5 & 3)` | four targets `T0`-`T3` = `$3ABC8`, `$3AC14`, `$3AC60`, `$3B250`; case `4a+b` goes to `T[(b - a + 3) mod 4]`: a 4×4 ordered dither |
 | `$1308` | `$3AF28` (the same) | 16 | the same rotation over `$3AE18`, `$3AE64`, `$3AEB0`, `$3B264` |
-| `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$3BEC4` (right after the `jmpi`), `$3C500`, `$3C52C`, `$3BF60`, `$3BF94`, `$3BFB0`, `$3BFE4`, `$3C018`, `$3C044`; the rest at `$3C080` |
+| `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$3BEC4` (right after the `jmpi`), `$3BF00`, `$3BF2C`, `$3BF60`, `$3BF94`, `$3BFB0`, `$3BFE4`, `$3C018`, `$3C044`; the rest at `$3C080` |
 
 How far this can be trusted:
 * **The four-way switches are settled by their shape.** Case `i` lies at
@@ -3262,8 +3270,11 @@ How far this can be trusted:
   (`$3ABC8`) adds 4 (`cpge $FC`), `T1` (`$3AC14`) adds 2 (`cpge $FE`), `T2`
   (`$3AC60`) adds 6 (`cpge $FA`), and `T3` (`$3B250`, where the others join)
   adds nothing. The immediates are plain. The index is `(a << 2) | (lr5 &
-  3)`, so `a` and `b` are presumably a pixel's row and column modulo 4. The
-  matrix is
+  3)`. `lr5` is the pixel's x: it gains each line's skip count and is
+  incremented in the delay slot of the per-pixel loop (`$3AD98`). So `b` is
+  the column mod 4, and `a` (not traced) presumably the row mod 4. The loop
+  reads a byte: with bit 7 set, `(b & $7F) + 1` pixels follow in one colour,
+  given as three bytes. The matrix is
 
       row 0:  0 4 2 6
       row 1:  6 0 4 2
@@ -3273,24 +3284,37 @@ How far this can be trusted:
   a 4×4 pattern of 0-6 added before the channels are cut to 5 bits. So
   `$3A964` converts 24-bit pixels to 16 bits with dithering. The second
   table (`$3AF28`) is the same with its own four loops.
-* **Bits 11-15 are not constant inside a table.** In `$1104` cases 0-6 need
-  `$1A` and cases 7-16 need `$1B`. In `$12C8` cases 0-2 need `$1D`, not
-  `$12`, and in `$1348` cases 0-5 need `$13`, not `$10`. So the script lists
-  every entry its table's value does not place, with each value that does.
-  For the entries in the table above, the value chosen is the one that
-  continues the table's pattern (a neighbouring value, or the `'rle '`
-  rotation where two places remain).
-* **The decoder's shared cases start at a jump target, not after a jump.**
+* **Bits 11-15 step inside tables, in the predicted order.** The assignment
+  changes value ten times: `$1A`→`$1B` between cases 6 and 7 of `$1104`,
+  `$18` and `$19` inside two four-way tables, `$1E` at `$11E8`, `$1F` at
+  case 3 of `$1218`, `$1C` at case 4 of `$1248`, `$1D` at case 5 of
+  `$1288`, `$12` at case 3 of `$12C8`, `$13` at case 4 of `$1308`, and `$10`
+  at case 6 of `$1348`. A per-table fit had to guess these. The order gives
+  them, and it moves `$1348`'s cases 1 and 2 to `$3BF00` and `$3BF2C`:
+  `jmpi + 8 + $3C` and `+ $2C` more, exactly as in `$1104`.
+* **The decoder's index is the top nibble of a stream word, minus 8.** Before
+  each `jmpi` the decoder loads `lr8` from `lr21` (then `lr21 += 4`),
+  computes `(lr8 >> 28) - 8`, and sends anything above 7 (unsigned) to the
+  default. So the word's top bit must be set, and only nibbles `$8`
+  (case 0), `$C` (case 4) and `$E`/`$F` (cases 6/7, shared) have their own
+  code. Case 0 of the 8-bit copy (`$39A7C`, all bits known) takes a count
+  from bits 16-25 (`srl $10`, `and $3FF`, plus 1) and stores one byte four
+  times per row for four rows: it fills 4×4 blocks with one colour. In
+  `'rpza'` itself, fill is `$A0` with a 5-bit count, so this second half of
+  `$374A4` presumably reads an intermediate list, not the raw stream.
+* **The decoder's default starts at a jump target, not after a jump.**
   In the last three tables, cases 1, 2, 3 and 5 decode, with bits 0-10
-  known and the table's `h`, to `$39CAC`. That block follows no jump, but
+  known and their `h`, to `$39CAC`. The 8-bit copy's out-of-range branch
+  (`$39564`) goes there too. That block follows no jump, but
   two direct jumps (`$393B4`, `$39B44`, all bits known) land on it. It
   calls `$2F5BC` (System 7's `$33A9C`, the release half of MapVirtual) and
   returns. So these four index values end the decode. The script accepts a
   target that a known jump lands on only as a fallback: used for every
   entry, that test admits wrong targets, and two four-way tables stop
-  fitting. Cases 1-3 of `$1268` (bit 10 open) fit `$39CAC` with the other
-  value of bit 10. In `$1288`, cases 5-7 need `h = $1D`, and cases 0-4 need
-  `$1C`. The first table, `$1248`, places only cases 0, 4, 6 and 7 cleanly.
+  fitting. In the first table, cases 1, 2 and 5 go to `$38E4C`, that
+  table's default. Case 3 decodes to `$3904C` or `$3784C` (`h = $1F` or
+  `$1C`), neither a case start. By the other three tables it should be the
+  default as well.
 
 **The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
 passes (codec type, parameter block, selector, instance) to `$9510`.

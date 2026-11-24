@@ -279,11 +279,31 @@ GetPixBaseAddr (`$BE64`), calls the original GetPixBaseAddr (`_QDExtensions` `$4
 returns NIL (the pixels were purged), it sends `$33` with the PixMap
 handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 
+The table below counts only each patch's own body, from its `GA_` label to the
+next routine (a `link` after a return). Routines in between are credited to
+whoever calls them. The earlier scan ran from label to label and also credited
+these, now corrected:
+
+| routine | commands | caller | was credited to |
+|---|---|---|---|
+| `L3868` (`rtd #$C`) | `$21` `$21` | no `bsr`/`jsr` in `gc24.s` | `GA_StdPoly` |
+| `sub_494E` | `$17` | the reset routine `sub_6F4E` | `GA_CopyBits` |
+| `sub_9A88` | `$2A` | `sub_8E38` (mode and pattern), from `EngineDispatch` | `GA_TrapAB11` |
+| `sub_B1BE` | `$26`, `$3C` | `GA_PMGR`, `_PaletteDispatch` selector 12 (PMgrExit) | `GA_PmBackColor` |
+| `sub_BCC8`, `Lbd46` | `$2A`, `$26` | `_QDExtensions` PixPatChanged, PortChanged | `GA_CharExtra` |
+| `Lb940` ... `Lbb88` | `$33` `$0F` `$19` | `_QDExtensions` selectors | `GA_HiliteColor` |
+
+`sub_B1BE` (PMgrExit) sends `$26`, then `$3C` with two longs: the 8-byte
+ProcessSerialNumber from `_OSDispatch $3F` (GetCurrentProcess). The card's
+`$3C` block passes them to `$140CC`, which calls CacheRelease. So when an
+application quits, the card releases what it cached for it. System 6 has no
+Process Manager, and its card has no `$3C`.
+
 | # | routine | direct calls |
 |--:|---|---|
 | 0 | `GA_Translate24To32` | - |
 | 1 | `GACursorTask` | - |
-| 2 | `GA_CopyBits` | $17:1 |
+| 2 | `GA_CopyBits` | - |
 | 3 | `GA_StdLine` | $20:1 |
 | 4 | `GA_StdArc` | $23:4 |
 | 5 | `GA_StdText` | $21:4 $21:4 |
@@ -300,11 +320,11 @@ handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 | 16 | `GA_ForeColor` | $36:1 |
 | 17 | `GA_RGBForeColor` | $36:1 |
 | 18 | `GA_PmForeColor` | $36:1 |
-| 19 | `GA_PmBackColor` | $37:1 $26:0 $3C:1 |
+| 19 | `GA_PmBackColor` | $37:1 |
 | 20 | `GA_StdRect` | $24:2 |
 | 21 | `GA_StdOval` | $2F:2 |
 | 22 | `GA_StdRRect` | $2E:4 |
-| 23 | `GA_StdPoly` | $31:2 $21:4 $21:4 |
+| 23 | `GA_StdPoly` | $31:2 |
 | 24 | `GA_StdRgn` | $18:2 |
 | 25 | `GA_AddSearch` | $26:0 $29:1 |
 | 26 | `GA_DelSearch` | $26:0 $29:1 |
@@ -313,7 +333,7 @@ handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 | 29 | `GA_DisposPixPat` | $2C:1 |
 | 30 | `GA_CopyPixPat` | $2A:2 |
 | 31 | `GA_MakeRGBPat` | $2A:2 |
-| 32 | `GA_TrapAB11` | $2A:2 $2A:2 |
+| 32 | `GA_TrapAB11` | $2A:2 |
 | 33 | `GA_SetPBits` | $26:0 |
 | 34 | `GA_PortSize` | $26:0 |
 | 35 | `GA_MovePortTo` | $26:0 |
@@ -369,7 +389,7 @@ handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 | 85 | `GA_RestoreEntries` | $1A:1 |
 | 86 | `GA_GetSubTable` | $1A:1 |
 | 87 | `GA_GETCTSEED` | - |
-| 88 | `GA_PMGR` | - |
+| 88 | `GA_PMGR` | $26:0 $3C:2 (selector 12, PMgrExit, through `sub_b1be`) |
 | 89 | `GA_ActivatePalette` | $26:0 |
 | 90 | `GA_SetPalette` | $26:0 |
 | 91 | `GA_Palette2CTab` | $26:0 |
@@ -382,7 +402,7 @@ handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 | 98 | `GA_CloseCPort` | - |
 | 99 | `GA_InitGDevice` | $26:0 $29:1 $29:1 |
 | 100 | `GA_BitMapRgn` | - |
-| 101 | `GA_CharExtra` | $26:0 $2A:2 $26:0 |
+| 101 | `GA_CharExtra` | $26:0 |
 | 102 | `GA_MoveHHi` | - |
 | 103 | `GA_ControlFFFFFFFF` | $00:0 $02:1 $00:0 |
 | 104 | `GA_ControlFFFFFFFE` | $26:14 $11:0 $00:0 |
@@ -397,7 +417,7 @@ handle; otherwise, for offscreen types 1 and 2, it sends `$0D` (two longs).
 | `$35` | `PenSize`, `SetPenState`, `PenNormal` | 1 | pen size: stream record `$6E` |
 | `$36` | `ForeColor`, `RGBForeColor`, `PmForeColor`, `GetForeColor` | 1 | foreground colour: stream record `$66` or `$64` |
 | `$37` | `BackColor`, `RGBBackColor`, `PmBackColor`, `GetBackColor` | 1 | background colour: stream record `$6D` or `$6B` |
-| `$2A` | `PenPat`, `BackPat`, `PenPixPat`, `BackPixPat`, `CopyPixPat`, `MakeRGBPat`, `SetPenState`, `CharExtra` | 2 | pattern / pixel-pattern (pointer plus a second long) |
+| `$2A` | `PenPat`, `BackPat`, `PenPixPat`, `BackPixPat`, `CopyPixPat`, `MakeRGBPat`, `SetPenState` | 2 | pattern / pixel-pattern (pointer plus a second long) |
 | `$2C` | `DisposPixPat` | 1 | pixel pattern disposed (release the card's copy) |
 | `$29` | `AddSearch`, `DelSearch`, `AddComp`, `DelComp`, `SetDeviceAttribute`, `SetEntries`, `InitGDevice` | 1 | search/complement procs and device attributes |
 | `$1A` | `SetEntries`, `SaveEntries`, `RestoreEntries`, `GetSubTable` | 1 | colour-table / palette entries |
@@ -443,13 +463,15 @@ only record ShieldCursor/ShowCursor/HideCursor), calls
 `sub_86d6`/`sub_879a` around the original (the same port-state save/restore as
 the shape handlers) when the destination device record has `+$5C` set, and
 calls the original `CopyBits` with all six stack arguments through
-`StoreCtxWord_AA6($11B0)`. The one accelerated query associated with it is
-`sub_494E`, which sends **command `$17`** with one long (a pointer to a record at
+`StoreCtxWord_AA6($11B0)`. `sub_494E`, which sits just after `GA_CopyBits` and was once
+credited to it, is not called by it: its only caller is the host's reset
+routine `sub_6F4E` (`$72CC`), after the `$00` and the `$12`-`$16` set-up of
+`sub_77A6`. It sends **command `$17`** with one long (a pointer to a record at
 `*(unit+$0C) + $604`) after a readiness check; reply `1` stores the record's
 second long in `globals+$182`. `CopyBits` reaches the card through its own call to
 StretchBits: the internal trap `$AB27` is patched (`GA_TrapAB27`) and sends
 command `$15` with a parameter block. If the card does the transfer, the
 recorded cursor calls are dropped; otherwise they are replayed and the 68K
 StretchBits runs (`HOST_CARD_PROTOCOL.md`, "StretchBits" and "Deferred
-cursor calls during CopyBits"). `$17` looks like a status/handshake query,
+cursor calls during CopyBits"). `$17` is part of that reset hand-shake,
 not a blit.
