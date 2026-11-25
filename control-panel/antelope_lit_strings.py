@@ -26,7 +26,20 @@ import antelope_lit_key as LK
 # fourth character of every word is plain, which the script checks): each
 # word they cover in full gives a full key sample.
 KNOWN = [(0x0548, b'DisposeOffscreen: NULL offscreen Handle\0'),
-         (0x00D0, b'ITabMatch: Inverse Table is not up-to-date\0')]
+         (0x00D0, b'ITabMatch: Inverse Table is not up-to-date\0'),
+         (0x0570, b'FlushOffscreen: NULL offscreen Handle\0'),
+         (0x0598, b'FlushColorTable: NULL color table Handle\0'),
+         (0x05C4, b'CacheGDevice: NULL GDevice\0'),
+         (0x05E0, b'CachePixPat: NULL PixPatHandle\0'),
+         (0x0600, b'FlushGDevice: NULL GDevice\0'),
+         (0x061C, b'FlushPixPat: NULL PixPatHandle\0'),
+         # the character before the NUL is masked ('\n' or '.'): left out
+         (0x0934, b'ScaleBlt: unknown scaleNum = %d'),
+         (0x09F8, b'GetSeek: invalid rectFlag for seekMask = %d'),
+         (0x0DC8, b'Unknown Function: 0x%X'),
+         (0x0F34, b'MapVirtual: bytes == 0'),
+         (0x0F4C, b'CallBack %X during inactive request'),
+         (0x0308, b"DrawMultiObject/opWhichPat: can't find PixPat in cache")]
 import unmask_antelope_low as u
 
 
@@ -75,9 +88,12 @@ def main(acef):
         samples[k] = (W[k] ^ (t - b)) & 0xFFFFFF
     used = 0
     for off, txt in KNOWN:
-        for i in range(len(txt) // 4):
+        pad = off % 4                         # a string may start mid-word
+        for i in range((pad + len(txt)) // 4):
+            if i == 0 and pad:
+                continue                          # the word it starts in is only partly known
             k = off // 4 + i
-            w = int.from_bytes(txt[4 * i:4 * i + 4], 'big')
+            w = int.from_bytes(txt[4 * i - pad:4 * i - pad + 4], 'big')
             if (W[k] ^ w) >> 24 == 0 and ((W[k] ^ m12(k)) ^ w) & 0xFF == 0:
                 samples.setdefault(k, (W[k] ^ w) & 0xFFFFFF)
                 used += 1

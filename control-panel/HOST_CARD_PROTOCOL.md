@@ -2956,6 +2956,27 @@ failed", "clocktest failed", "logic error", "timer error", "interleave
 failure", "long error", "adr error". So there is a CPU, timer and memory
 self-test on the card.
 
+**The self-test (file 26).** Named by the messages each function uses:
+
+| function | tests | messages |
+|---|---|---|
+| `$3404C` SelfTest(mask) | runs test i (0-9) when bit i of `mask` is set, through the switch at `.lit+$F78` | - |
+| `$34304` | CPU (calls `$34774` logic, `$34828` timer) | branch/add/sub/mul/div failed, loop failed, struct assign failed, function call failed, timertest/clocktest failed, logic error, timer error |
+| `$34B9C` | memory (calls `$34C34`, `$34DE4`, `$3563C`) | interleave failure; adr, long, short, byte, unaligned long error; Validation failure |
+| `$359B0` | the CLUT | read clut |
+| `$35BE8` | the MMU | mmu error, mapmem/unmapmem failed, get phys size, get phys adr, mmu phys access |
+| `$36644` | interrupts | error setting int 2, never got int 2, error clearing vector 2, locals got trashed, foreigns got trashed |
+
+`.data+$1380`/`$1384` (42 and 123456) are its test constants (`$36B08`,
+`$36F4C`). Nothing in Antelope calls `SelfTest`: no direct call and no
+relocated reference. So it is either unused in this build or reached from
+outside, for example by a host-loaded module.
+
+Other small tables in file 20 (`$D70` and `$DD0` map 3 bits to fields of
+4/6/6 and 6/6/4 bits; `$DF0`, `$E00`) are not exact enough to serve as known
+plaintext. `$E00`'s plain top bytes are `$FF` from entry 4 on, which rules out
+a byte expansion.
+
 ### `.lit` strings in full (`antelope_lit_strings.py`)
 
 The same idea reads the middle characters of `.lit`'s strings. Relocated
@@ -2964,9 +2985,11 @@ the full plaintext and so the full key (482 samples, all agreeing with
 `antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from one of
 the nearest samples, the one that reads best. Bits 8-11 are then refitted
 per class on whole words, never at the cost of a table match or a full
-sample. Two strings whose text is certain (`DisposeOffscreen: NULL offscreen
-Handle`, `ITabMatch: Inverse Table is not up-to-date`) add 20 full samples.
-Characters outside printable ASCII drop from 83 to 21. Single-bit errors remain in the
+sample. Fourteen strings whose text is certain add 113 full samples. Where
+the character before a string's NUL is masked (`\n` or `.`), only the part
+before it is used. Each string is located by its plain bytes, and the script
+checks the plain first and fourth characters of every word. Characters
+outside printable ASCII drop from 35 to 14. Single-bit errors remain in the
 middle characters. Read with those corrected (`?` = masked and not
 readable):
 
@@ -3001,7 +3024,9 @@ driver's unit record, and `BuildUnitRecords` sets its `+$0C` to
 `$F0000000 | slot<<24 | slot<<20` + `$8C00` (`DRVR.s` `$1FD0`-`$1FF0`). So the
 host's packet is at offset `$s08C00` of the slot space, presumably card SRAM
 `$4C008C00`, right after `InpArgs`. No host program writes a field at
-`+$418`, and the kernel never touches `$4C006818`. How the two meet is not settled: the
+`+$418`, the kernel never touches `$4C006818` and never builds `$8C00`, and
+neither host program writes into `InpArgs` (`$4C007800`, which only the
+kernel's getargs uses). How the two meet is not settled: the
 `PrivNZ` pointer for `$C0` (`$20017DC`, accurate only to about `$7C`) falls in
 the kernel's region-table lookup, and no stub there fits a call without
 arguments.

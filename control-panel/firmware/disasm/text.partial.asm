@@ -54310,7 +54310,7 @@ sub_3401c:
 file_26:   ; object file 26 (C-g): .text starts here; tag word of the next function
   34048:  00030000~  .word    $00030000
 
-sub_3404c:
+sub_3404c:   ; SelfTest
   3404c:  25010110   sub      gr1, gr1, $10
   34050:  5e40017e   asgeu    trap64, gr1, gr126
   34054:  1581011c   add      lr1, gr1, $1c
@@ -54337,11 +54337,11 @@ sub_3404c:
   340a8:  70400101   nop         ; [delay slot]
   340ac:  a0000025~  jmp      $34140
   340b0:  03006004~  const    gr96, $0004   ; [delay slot]   ; lo of .bss+$18
-  340b4:  a8008094~  call     lr0, $34304   ; -> (sub_34304)
+  340b4:  a8008094~  call     lr0, $34304   ; -> (sub_34304 TestCPU)
   340b8:  70400101   nop         ; [delay slot]
   340bc:  a0000020~  jmp      $3413c
   340c0:  70400101   nop         ; [delay slot]
-  340c4:  a80280b6~  call     lr0, $34b9c   ; -> (sub_34b9c)
+  340c4:  a80280b6~  call     lr0, $34b9c   ; -> (sub_34b9c TestMemory)
   340c8:  70400101   nop         ; [delay slot]
   340cc:  a000001c~  jmp      $3413c
   340d0:  70400101   nop         ; [delay slot]
@@ -54361,15 +54361,15 @@ sub_3404c:
   34108:  70400101   nop         ; [delay slot]
   3410c:  a000000c~  jmp      $3413c
   34110:  70400101   nop         ; [delay slot]
-  34114:  a8068027~  call     lr0, $359b0   ; -> (sub_359b0)
+  34114:  a8068027~  call     lr0, $359b0   ; -> (sub_359b0 TestCLUT)
   34118:  70400101   nop         ; [delay slot]
   3411c:  a0000008~  jmp      $3413c
   34120:  70400101   nop         ; [delay slot]
-  34124:  a80680b1~  call     lr0, $35be8   ; -> (sub_35be8)
+  34124:  a80680b1~  call     lr0, $35be8   ; -> (sub_35be8 TestMMU)
   34128:  70400101   nop         ; [delay slot]
   3412c:  a0000004~  jmp      $3413c
   34130:  70400101   nop         ; [delay slot]
-  34134:  a8098044~  call     lr0, $36644   ; -> (sub_36644)
+  34134:  a8098044~  call     lr0, $36644   ; -> (sub_36644 TestInterrupts)
   34138:  70400101   nop         ; [delay slot]
   3413c:  03006004   const    gr96, $0004   ; lo of .bss+$18
   34140:  02006000   consth   gr96, $0000   ; -> .bss+$001c
@@ -54500,7 +54500,7 @@ sub_342f0:
   342fc:  16006060~  load     0, 0, gr96, gr96   ; [delay slot]
   34300:  00020238~  .word    $00020238
 
-sub_34304:
+sub_34304:   ; TestCPU
   34304:  25010150   sub      gr1, gr1, $50
   34308:  5e40017e   asgeu    trap64, gr1, gr126
   3430c:  15810158   add      lr1, gr1, $58
@@ -54508,7 +54508,7 @@ sub_34304:
   34314:  247d7d7a~  sub      gr125, gr125, gr122
   34318:  03008500~  const    lr5, $0000
   3431c:  03008614~  const    lr6, $0014
-  34320:  a8018015~  call     lr0, $34774   ; -> (sub_34774)
+  34320:  a8018015~  call     lr0, $34774   ; -> (sub_34774 TestLogic)
   34324:  0300930c~  const    lr19, $000c   ; [delay slot]
   34328:  61606001~  cpeq     gr96, gr96, $01
   3432c:  ac006005~  jmpt     gr96, $34340
@@ -54746,7 +54746,7 @@ sub_34304:
   346cc:  02006000   consth   gr96, $0000   ; -> .bss+$001c
   346d0:  a0000023~  jmp      $3475c
   346d4:  16006060~  load     0, 0, gr96, gr96   ; [delay slot]
-  346d8:  a8008054~  call     lr0, $34828   ; -> (sub_34828)
+  346d8:  a8008054~  call     lr0, $34828   ; -> (sub_34828 TestTimer)
   346dc:  70400101   nop         ; [delay slot]
   346e0:  61606001~  cpeq     gr96, gr96, $01
   346e4:  ac00600c~  jmpt     gr96, $34714
@@ -54786,7 +54786,7 @@ sub_34304:
   3476c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   34770:  00020000~  .word    $00020000
 
-sub_34774:
+sub_34774:   ; TestLogic
   34774:  25010120   sub      gr1, gr1, $20
   34778:  5e40017e   asgeu    trap64, gr1, gr126
   3477c:  15810128   add      lr1, gr1, $28
@@ -54833,7 +54833,7 @@ sub_34774:
   34820:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   34824:  00020000~  .word    $00020000
 
-sub_34828:
+sub_34828:   ; TestTimer
   34828:  25010120   sub      gr1, gr1, $20
   3482c:  5e40017e   asgeu    trap64, gr1, gr126
   34830:  03006000   const    gr96, $0000   ; lo of .text+$38fe8
@@ -55072,7 +55072,7 @@ sub_34b80:
   34b94:  70400101   nop         ; [delay slot]
   34b98:  00020000~  .word    $00020000
 
-sub_34b9c:
+sub_34b9c:   ; TestMemory
   34b9c:  25010118   sub      gr1, gr1, $18
   34ba0:  5e40017e   asgeu    trap64, gr1, gr126
   34ba4:  15810120   add      lr1, gr1, $20
@@ -55084,13 +55084,13 @@ sub_34b9c:
   34bbc:  61608400~  cpeq     gr96, lr4, $00
   34bc0:  ac006008~  jmpt     gr96, $34be0
   34bc4:  15828400~  add      lr2, lr4, $00   ; [delay slot]
-  34bc8:  a8008087~  call     lr0, $34de4   ; -> (sub_34de4)
+  34bc8:  a8008087~  call     lr0, $34de4   ; -> (sub_34de4 TestMemoryAccess)
   34bcc:  03408300~  const    lr3, $4000   ; [delay slot]
   34bd0:  03006000   const    gr96, $0000   ; lo of .text+$376a0
   34bd4:  02006000   consth   gr96, $0000   ; -> .text $376a0 (sub_376a0 HeapFree)
   34bd8:  c8008060~  calli    lr0, gr96
   34bdc:  15828400~  add      lr2, lr4, $00   ; [delay slot]
-  34be0:  a8028097~  call     lr0, $3563c   ; -> (sub_3563c)
+  34be0:  a8028097~  call     lr0, $3563c   ; -> (sub_3563c TestValidate)
   34be4:  70400101   nop         ; [delay slot]
   34be8:  a8088087~  call     lr0, $36e04   ; -> (sub_36e04)
   34bec:  03048200~  const    lr2, $0400   ; [delay slot]
@@ -55098,11 +55098,11 @@ sub_34b9c:
   34bf4:  ac00600b~  jmpt     gr96, $34c20
   34bf8:  03fc8200~  const    lr2, $fc00   ; [delay slot]
   34bfc:  024c8200~  consth   lr2, $4c00
-  34c00:  a8008079~  call     lr0, $34de4   ; -> (sub_34de4)
+  34c00:  a8008079~  call     lr0, $34de4   ; -> (sub_34de4 TestMemoryAccess)
   34c04:  03048300~  const    lr3, $0400   ; [delay slot]
   34c08:  03fc8200~  const    lr2, $fc00
   34c0c:  024c8200~  consth   lr2, $4c00
-  34c10:  a8008009~  call     lr0, $34c34   ; -> (sub_34c34)
+  34c10:  a8008009~  call     lr0, $34c34   ; -> (sub_34c34 TestInterleave)
   34c14:  03048300~  const    lr3, $0400   ; [delay slot]
   34c18:  a8088099~  call     lr0, $36e7c   ; -> (sub_36e7c)
   34c1c:  70400101   nop         ; [delay slot]
@@ -55112,7 +55112,7 @@ sub_34b9c:
   34c2c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   34c30:  00040000~  .word    $00040000
 
-sub_34c34:
+sub_34c34:   ; TestInterleave
   34c34:  25010120   sub      gr1, gr1, $20
   34c38:  5e40017e   asgeu    trap64, gr1, gr126
   34c3c:  03006094~  const    gr96, $0094
@@ -55222,7 +55222,7 @@ sub_34c34:
   34ddc:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   34de0:  00040400~  .word    $00040400
 
-sub_34de4:
+sub_34de4:   ; TestMemoryAccess
   34de4:  25010120   sub      gr1, gr1, $20
   34de8:  5e40017e   asgeu    trap64, gr1, gr126
   34dec:  15810130   add      lr1, gr1, $30
@@ -55758,7 +55758,7 @@ sub_34de4:
   35634:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   35638:  00020600~  .word    $00020600
 
-sub_3563c:
+sub_3563c:   ; TestValidate
   3563c:  25010138   sub      gr1, gr1, $38
   35640:  5e40017e   asgeu    trap64, gr1, gr126
   35644:  15810140   add      lr1, gr1, $40
@@ -55981,7 +55981,7 @@ sub_3563c:
   359a8:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   359ac:  00020000~  .word    $00020000
 
-sub_359b0:
+sub_359b0:   ; TestCLUT
   359b0:  25010120   sub      gr1, gr1, $20
   359b4:  5e40017e   asgeu    trap64, gr1, gr126
   359b8:  a80480a6~  call     lr0, $36c50   ; -> (sub_36c50)
@@ -56125,7 +56125,7 @@ sub_359b0:
   35be0:  00004008~  .word    $00004008
   35be4:  00420000~  .word    $00420000
 
-sub_35be8:
+sub_35be8:   ; TestMMU
   35be8:  25010138   sub      gr1, gr1, $38
   35bec:  5e40017e   asgeu    trap64, gr1, gr126
   35bf0:  15810140   add      lr1, gr1, $40
@@ -56790,7 +56790,7 @@ sub_35be8:
   3663c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   36640:  00020008~  .word    $00020008
 
-sub_36644:
+sub_36644:   ; TestInterrupts
   36644:  25010130   sub      gr1, gr1, $30
   36648:  5e40017e   asgeu    trap64, gr1, gr126
   3664c:  15810138   add      lr1, gr1, $38
