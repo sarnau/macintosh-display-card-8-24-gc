@@ -13,7 +13,7 @@ exact disassemblies of it.
 |---|---|
 | ACEF container, encryption, relocations, symbol table | fully decoded (`../acef_unpack.py`, `../apply_reloc.py`) |
 | `Runtime` (`ACEF_1`: `Hand` kernel 2,885 words, `Boot` 512 words, data sections) | exact; `disasm/Hand.asm` (annotated), `disasm/Boot.asm`, `disasm/RuntimeData.asm` (service table, `PublicIn`/`PublicOu`, `Vec`) |
-| `Antelope` (`ACEF_100`, the 243 KB accelerator) | exact; `disasm/text.asm` (functions labelled and partly named), `lit.asm`, `data.asm`, `Code.asm` (`../antelope_dasm.py`) |
+| `Antelope` (`ACEF_100`, the 243 KB accelerator) | exact; `disasm/text.asm` (all 709 functions labelled and named), `lit.asm`, `data.asm`, `Code.asm` (`../antelope_dasm.py`) |
 | System 6 (`sw11/`) | exact, same layout; its `Runtime` is a different kernel build (2,781 words of `Hand`) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 

@@ -160,7 +160,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- DrawMultiObject: all 25 opcodes are named and their cases found; left open is which host script system rewrites the glyph images `$84`-`$9E` that the card re-reads ("Open points" there);
+- DrawMultiObject: all 25 opcodes are named and their cases found; left open is which host script system rewrites the glyph images `$84`-`$9E` that the card re-reads (probably KanjiTalk 6; "Open points" there);
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
 - some flag bits (1, 3, 10, 30, 31) are read only in outline (section 9).
@@ -429,7 +429,7 @@ Checks of the exact decode:
   following type-28 record);
 * calls to the kernel and HIF stubs show the service (`svc_CC` …).
 
-**Names from the QuickDraw source.** 663 of the 709 functions carry names
+**Names from the QuickDraw source.** All 709 functions carry names
 (`antelope_names.py`). Most of the new ones come from the mode tables, which
 follow the 68k source's table order case by case: BitBlt's loops (`.lit
 $0008`-`$0068`: `bArith32Tab`, the indexed arithmetic loops, `bMAIN8`-`11`,
@@ -467,8 +467,13 @@ have. Later passes named the rest from the same kind of evidence:
 Also: `$36D90` writes 256 RGB triples to the RAMDAC (`$46C00000` index,
 `$46C00004` data); `$36F4C` is a Park-Miller generator for the memory tests;
 the packet's `+$04` holds host flags read by `$32BB4` (`$80`), `$33500`
-(`$08`) and `$33520` (`$200`, 32-bit addressing). The 46 functions still
-unnamed are hardware polls, stubs and helpers of unclear packet fields.
+(`$08`) and `$33520` (`$200`, 32-bit addressing). `$136C4` is DrawText.a's `CalcCharExtra`,
+formula for formula, so `chExtra` is applied on the card. The last names are
+weak only for a few: `$000C4`/`$000F4` poll the undocumented registers
+`$444000C0` and `$44C00000` and have no callers (leftover diagnostics),
+`$33BB0` reads packet `+$3C`, and five C-library hooks are named by what
+they return. SelfTest's tests 0 and 3-6 are empty stubs; only 1, 2, 7, 8 and
+9 test anything.
 
 One example is `sub_00178`. It sets the funnel-shift count from an argument
 (`mtsr FC, lr5`), loads 16 words into `gr96..gr111` (`mtsrim CR,$0f` +
@@ -2179,7 +2184,21 @@ range). That part remains a reading.
     QuickDraw hands the card `$Fs` base addresses, which the video driver
     does on its `sRsrc32Bit` path (`$5E8C`-`$5EAA`). What the standard slot
     space decodes to is not read.
-* **The glyphs `$84`-`$9E`**: which host script system rewrites those glyph images in place (see "Text and fonts") is not known.
+* **Who rewrites glyphs `$84`-`$9E`.** `WidthAFID` (`+$41C`) is the width
+  table's actual font family ID (`ToolUtils.a`: `widthAFID EQU 1052`). The host's
+  signed `≥ $4000` test selects every non-Roman script family ($4000-$7FFF,
+  script = (ID−$4000)/$200+1, Script Manager `CommonMapping`), not only one script.
+  The 7.1 sources have no code that rewrites a strike's bit image. Their only 2-byte
+  text path is the later TrueType one. Of the Mac encodings, only MacJapanese leaves
+  `$84`-`$9E` without 1-byte characters (they are Shift-JIS lead bytes). In MacThai
+  they are positional tone/vowel forms, and in MacArabic/MacHebrew accented Latin
+  letters. All of those are fixed glyphs, picked by code substitution. The likely
+  reading is that KanjiTalk 6 draws 2-byte bitmap characters by copying their images
+  into 27 fixed-width scratch slots `$84`-`$9E` of the Japanese strike and drawing
+  the slot codes through StdText. The card's re-read of just those columns, with
+  the metrics kept, fits that. This is not confirmed: KanjiTalk's code and font
+  resources have not been examined.
+   (Test: dump a KanjiTalk 6 Osaka strike, or disassemble its text patch.)
 
 #### The dispatcher prologue and packet layout
 
@@ -2860,7 +2879,7 @@ device record `+$0C`, and `LoadFirmware` writes `image+$0C` = the card address
 `ACEFLoad` returned for the program. The device record `gc24` uses is the
 driver's unit record, and `BuildUnitRecords` sets its `+$0C` to
 `$F0000000 | slot<<24 | slot<<20` + `$8C00` (`DRVR.s` `$1FD0`-`$1FF0`). So the
-host's packet is at offset `$s08C00` of the slot space, card SRAM
+host's packet is at offset `$s08C00` of the slot space, card memory
 `$4C008C00` (`PublicOut+$18`), right after `InpArgs`. No host program writes a field at
 `+$418`, the kernel never touches `$4C006818` and never builds `$8C00`, and
 neither host program writes into `InpArgs` (`$4C007800`, which only the
@@ -3451,7 +3470,7 @@ What the tables show:
   a 4×4 pattern of 0-6 added before the channels are masked with
   `$F8F8F8`. `$3A964` is the `'rle '` decoder and writes **32-bit** pixels
   (`$3AD84`), so only the precision drops. The matrix applies only when the
-  absolute word `[$178]` is `$100`; with 1 the pixel is truncated, with 8
+  absolute word `[$178]` (the host's `KeyMap+4`) is `$100`, that is, only Tab is held; with 1 the pixel is truncated, with 8
   kept unchanged, and other values select a 2-level frame-alternating dither
   (`$3AD38`-`$3AD7C`). The card's `'rle '` stream is a private line format,
   not the documented Animation format. The second
@@ -3553,7 +3572,7 @@ clipping beyond the Rect.
 ##### The decoder `$374A4`
 
 **Setup.** `lr19` = `$7FFF`, or `$7BFE` if bit 0 of the word at absolute
-address `$178` is set (no relocation; not traced). The mask is used only by
+address `$178` is set (no relocation: the Mac's `KeyMap+4`, so Shift is down; see "The absolute addresses `$178` and `4`"). The mask is used only by
 the dithered 8-bit copies. After mapping, `$374A4` calls `$2E69C(1)`. That
 routine (outside the block) stores the reply word unless it is 1, waits until
 bit 2 of packet `+$18` is clear, stores 1 to `*[packet+$20]`, and sets packet
@@ -3743,7 +3762,7 @@ frame advance by `4 × rowBytes` per block row.
 
 **The end** (`$373C0`). `len = lr34 - out`, the total including the header.
 The code stores `$E1000000 | len` at `out` (`$E1` + 24-bit size), also stores
-`len` at absolute address 4 (no relocation; purpose unknown), calls UnmapAll
+`len` at absolute address 4 (no relocation: the host's low-memory `ResetPC`, presumably a debugging leftover; see below), calls UnmapAll
 (`$2F5BC`) and returns `len`. The case block puts it in packet `+$1C`. The
 output bytes go out through `$331C4` (byte), `$33200` (big-endian word) and
 `$331D0` (big-endian long, four byte stores), so the stream needs no
@@ -3786,7 +3805,7 @@ passes 0 in slot 6, and `$3B` with `'rle '` calls the `'rpza'` encoder
 `$33218` (`$2E3E4`). It returns the bytes written (no header).
 
 **The decoder `$3A964`** (`$39`) increments a frame counter (`.data+$12C8`),
-reads `[$178]` (absolute, as in `$374A4`) into `lr4`, maps, and calls
+reads `[$178]` (the host's `KeyMap+4`, as in `$374A4`) into `lr4`, maps, and calls
 `$2E69C(1)`. At depth 32 a line group is skipLines (`dst += s × rowBytes`),
 then `repeat + 1` lines, each decoded from the same data. Skips advance `dst`
 by 4 per pixel; one long is stored per pixel. Each colour is treated by `lr4`:
@@ -3807,6 +3826,76 @@ are halfwords: bit 15 set = `(w & $7FFF)+1` copies of the next long, otherwise
 `w+1` literal longs (two halfwords each). Skips also count in longs, but the
 loop bound is the width in pixels (`lr5 < lr21`). The `len` field is skipped,
 not used. Which stream feeds this path was not traced. It returns 1.
+
+##### The absolute addresses `$178` and `4`
+
+**They are host addresses, not card variables.** All three accesses are
+`const` with no `consth` and no relocation comment, so the address is truly
+`$00000178` or `$00000004`:
+
+| where | instruction | access |
+|---|---|---|
+| `$374AC`/`$374B0` (`$374A4`, `'rpza'` decoder) | `const gr97, $0178` / `load 0, 0, gr97, gr97` | reads a word, tests bit 0 (`sll $1F`) |
+| `$3A988`/`$3A98C` (`$3A964`, `'rle '` decoder) | `const gr97, $0178` / `load 0, 0, lr4, gr97` | reads a word into `lr4` |
+| `$373D4`/`$373D8` (`$33218`, `'rpza'` encoder end) | `const gr96, $0004` / `store 0, 0, lr89, gr96` | writes `len` |
+
+A scan of both builds' `text.asm` and both kernels (`Hand.asm`, `Boot.asm`)
+for an unrelocated `const` below `$400` used as a load/store address finds
+only these three. (The two `const gr96, $0000` hits at `$14F94`/`$15B04` are
+return values.) The System 7 Antelope has no such access. The kernels only
+use `$4Cxxxxxx`, `$44xxxxxx` and `$46xxxxxx`. Neither Antelope's loader nor
+the kernel puts anything at card address `$178` or `4`.
+
+**How the card reaches them.** A data TLB miss on an address that lies in no
+region of the table at `$4C00316C` is mapped one to one. System 6 `Hand`
+`$20005C4`-`$2000748` (System 7 `$2000714`): `gr68 = CHA & $FFFFFC00`, then
+`mttlb` and `iret`. The exception is flag bit 30, the debugger watch. Address
+0 is in a region only if a `MapVirtual` entry covers host page 0. Both reads
+come before the decoder's `MapVirtual` calls in any case. With translation off
+(`$D3(0)`) the address is physical anyway. Below `$4C000000`/`$Fs000000`, the
+card's data addresses are NuBus addresses: `CopyHostMemory` reads a host block
+with plain loads at its host address, masked with `$00FFFFFF` in 24-bit mode
+(section 8). So card address `$00000178` is the Mac's address `$178`, read
+over NuBus.
+
+**`$178` is `KeyMap+4`.** `SysEqu.a`: `KeyMap EQU $174` ("bitmap of the
+keyboard [2 longs]"), `KeypadMap EQU $17C`. The long at `$178` holds key codes
+32-63. Key `k` is bit `k & 7` of byte `$174 + (k >> 3)`, so in the big-endian
+long, key 56 is bit 0, 59 is bit 3, 48 is bit 8 and 55 is bit 15. The
+values the codec tests are exact `cpeq`s (`$3AB84` and `$3ADB4` for 1, `$3AD38`
+and `$3AF88` for 8, `$3AD44`-`$3AD48` and `$3AF98` for `$100`):
+
+| `[$178]` | key held | `'rle '` decoder `$3A964` | `'rpza'` decoder `$374A4` |
+|---|---|---|---|
+| `$00000001` | Shift (56) | truncate, `& $F8F8F8` | bit 0 set: `lr19` = `$7BFE` |
+| `$00000008` | Control (59) | colour unchanged | bit 0 clear: `$7FFF` |
+| `$00000100` | Tab (48) | 4×4 ordered dither | bit 0 clear: `$7FFF` |
+| other (0 = no key; Option `$4`, Caps Lock `$2`, Command `$8000`, combinations) | — | 2-level frame-alternating dither (the default) | `$7FFF`, or `$7BFE` if Shift is among the keys |
+
+So with no key down, `'rle '` uses the frame-alternating dither. Holding Tab,
+Shift or Control while a movie plays switches the mode, frame by frame,
+because `[$178]` is read at every call. That looks like a developer's switch
+for comparing the dither modes, left in the shipped code. `$7BFE` clears the
+low bits of red (bit 10) and blue (bit 0) of a 5-5-5 colour.
+
+**Address 4 is the 68k reset vector `ResetPC`** (`SysEqu.a`: `ResetPC EQU
+$04`). On the Mac II family the 68k reads it only at reset, from ROM, so the
+RAM long is free. Storing each encoded frame's size there reads like a debug
+aid, a place where MacsBug can read the last size (`DL 4`). No host code is
+known to read it.
+
+Uncertain:
+* That a NuBus master access to `$00000000`-`$00FFFFFF` reaches main RAM is
+  inferred from `CopyHostMemory`'s direct path, not from a hardware
+  document. With host VM, low memory is mapped one to one, so logical and
+  physical `$178` agree.
+* Whether the System 6 host code ever writes `$178` or reads `4` was not
+  checked (gc24 for System 6 is not disassembled). The key reading needs
+  nothing from the host beyond the Keyboard/ADB driver's normal `KeyMap`
+  updates.
+* The Tab/Shift/Control assignment depends on the standard bit order of
+  `KeyMap` (key `k` = bit `k & 7` of byte `k >> 3`, bit 0 = LSB, as
+  `GetKeys` and the ADB keyboard driver use it).
 
 ##### The helpers
 

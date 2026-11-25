@@ -29,6 +29,9 @@ disassembler** used to lift the coprocessor's own code.
 
 ## Where things stand
 
+A one-page summary of how the card works: [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md).
+
+
 * **Host side (68k): fully decoded** -- the declaration ROM, the control panel,
   the `gc24` engine, the `.GraphAccel` driver and both INITs.
 * **Card firmware: fully decrypted.** The firmware's encryption is a running
