@@ -3021,14 +3021,36 @@ Besides `InitPacket`, three functions in file 25 call `$C0`. They read
 `+$18 & $10000` (the feature flags that `LoadFirmware` writes to
 `image+$18`) and copy `+$10`/`+$14`. So `$C0` returns the comm header at
 `$4C006400` (`PublicIn`), and `InitPacket` reads `[$4C006818]` =
-`PublicOut+$18`. That word is initialised in the Runtime image. At a
-section's start the Runtime key has no bits above 14, so bits 15-31 are
-plain: the value is `$4C008xxx`. `PublicIn`'s keystream gives `$4C008C20`,
-which fits the host's packet at `$4C008C00` (below). The low bits are not
-proven, though. The same keystream gives `PublicOut+$0C` (the mailbox
-address the host reads back at `image+$40C`) as `$4C007368`, where
-`HifComm` (`$4C007000`) is expected. So for `PublicOut` that keystream can be
-off by more than the `$7C` seen in the service table. Earlier notes on how this was traced:
+`PublicOut+$18`. The kernel's handler is `Hand` `$2001408`:
+`const gr96,$6400` / `consth gr96,$4c00` / `iret` (**verified**).
+
+**`PublicOut`'s header, decoded (`runtime_publicout.py`).** `PublicOut`
+has its own keystream; `PublicIn`'s does not fit it (an earlier version
+of this section used it and got `$4C007368` for the mailbox). Most of the
+section is zero, so its raw words are its keystream, and that keystream
+repeats in bits 0-10 every 192 words up to a constant: `key(k) =
+key(k+192) + $100` holds for 122 of the 125 pairs of zero words (the three
+others hold small nonzero values). That gives bits 0-10 of the header
+words. Bits 15-31 are plain at a section's start, and bits 11-14 of the key
+are 0 there until its falling counter crosses zero (between `+$1C` and
+`+$20`, where they turn to `$F`). Read that way, the header is:
+
+| offset | value | meaning |
+|---|---|---|
+| `+$00` | `$32100456` | handshake / version word |
+| `+$04` | `$00700D01` | (bits 11-14 assumed 0) |
+| `+$08` | `$00000000` | |
+| `+$0C` | `$4C007000` | `HifComm`, the mailbox the host reads at `image+$40C` |
+| `+$10` | `$4C007800` | `InpArgs` |
+| `+$14` | `$4C007300` | `VidComm` |
+| `+$18` | `$4C008C00` | the packet, `InitPacket`'s pointer |
+| `+$1C` | `$00010000` | |
+
+With bits 11-14 = `$F` or `$E` instead, none of the four pointers is a
+known address. With 0, all four are, and `+$18` is exactly the host's
+packet at slot offset `$s08C00` (below). So **`PublicOut+$18` =
+`$4C008C00`**: the card and the host agree on the packet address. Earlier
+notes on how this was traced:
 
 `InitPacket` takes the packet pointer from
 `[$C0() + $418]`. On the host, `gc24` reads the packet address from its
@@ -3040,10 +3062,9 @@ host's packet is at offset `$s08C00` of the slot space, presumably card SRAM
 `$4C008C00`, right after `InpArgs`. No host program writes a field at
 `+$418`, the kernel never touches `$4C006818` and never builds `$8C00`, and
 neither host program writes into `InpArgs` (`$4C007800`, which only the
-kernel's getargs uses). That question is answered above. The approximate
-`PrivNZ` pointer for `$C0` (`$20017DC`, accurate only to about `$7C`) falls in
-the kernel's region-table lookup, and no stub there fits a call without
-arguments.
+kernel's getargs uses). That question is answered above. The
+`PublicIn`-unmasked `PrivNZ` pointer for `$C0` is `$20017DC`, `$3D4` away
+from the real handler `$2001408` (see the next section).
 
 ## 8. The kernel's service table (vector 66)
 
@@ -3065,8 +3086,20 @@ video driver's `SerialShiftOut`), writing three bytes from `lr3..lr5` to a port
 at `$460004C0`, region-table add (`$200147C`) and remove (`$2001604`), and
 register-dump helpers.
 
+**Correction: the `PublicIn` keystream does not fit `PrivNZ` either.** Two
+handlers are now known from their use: `$C0` (the comm header) is
+`$2001408`, and `$CF` (set interrupt handler `n`, `fn`) is `$2001950`. That
+stub checks `0 <= n <= 3`, stores `fn` at `$4C00617C + 4n` (the INTR handler
+words the interrupt entries call), and returns 0, else -1. The `PublicIn`
+decode gives `$20017DC` and `$200182C` for them, off by `$3D4` and `$124`.
+Like `PublicOut` (previous section), `PrivNZ` has its own keystream, and with
+only 33 words it cannot be fitted. So the decoded pointers below give
+roughly where the services lie, not which stub each one is. The
+"nearby stubs" table and the earlier `$D2`/`$D5`/`$C4` readings from it are
+unreliable.
+
 **Correction: Antelope does call the services.** The partial disassembly
-shows 35 stubs of the form `const gr121, N` / `asneq 69` / `jmpi lr0` at
+shows 35 stubs of the form `const gr121, N` / `asneq 66` (69 in the HIF stubs) / `jmpi lr0` at
 `$38F24`-`$39104`, `$3B404`-`$3B4DC` and `$3C9EC`. The low bytes of N are
 plain:
 
@@ -3118,9 +3151,10 @@ service; the stubs are at `$38F24`-`$39104`):
 |---|---|---|
 | `$CF` | `TestInterrupts` with `(1, $00000)`, `(2, $00020)`, `(n, 0)` | set interrupt handler `n` (0 clears) |
 | `$D0` | the two interrupt handlers `$00000`, `$00020` (file 1) tail-jump to it | return from an interrupt handler |
-| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual` (per run), the dispatcher | map a memory range |
-| `$CD` | `TestMMU` (mostly followed by "mmu error"), `MapVirtual` and `UnmapAll` (once per page each) | set or clear one page's MMU entry |
-| `$D3`, `$D4` | `TestMMU` ("get phys size", "mmu phys access"), `CopyHostMemory`, the cursor and copy routines; `MapVirtual` brackets its work with `$D3(1)`/`$D3(0)` | physical access mode / size |
+| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual` (per run), the dispatcher (three words from a host-given block; then `extern#1772+$88` = 1) | map a memory range |
+| `$CD` | `TestMMU` (mostly followed by "mmu error"), `MapVirtual` and `UnmapAll` (once per page each), the dispatcher (`$CD(-1)`, then `+$88` = 0) | set or clear one page's MMU entry (-1: all) |
+| `$D3` | `TestMMU` ("mmu phys access"), `CopyHostMemory`, `MapVirtual` (`$D3(1)` … `$D3(0)`), the dispatcher | set the host access mode, return the old one (1 = through the host's logical mapping, 0 = physical) |
+| `$D4` | `TestMMU` ("get phys size"), `CopyHostMemory` | `$D4(addr, &bytes)`: the physical address of `addr`; `bytes` is cut to the contiguous length |
 | `$C5` | `TestCLUT` and its helpers | read the CLUT |
 | `$x11` | `TestTimer`, `CacheFindStamp`, `CacheCreate` | the clock (HIF `$111`) |
 | `$C0` | `InitPacket` and three readers of the feature flags | the comm header base |
@@ -3136,6 +3170,36 @@ calls and the heap work inside an interrupt handler; "locals/foreigns got
 trashed" are its register checks. File 1 also holds `$00084` (sets a CPS
 bit) and `$0009C` (sets or clears TMR's interrupt enable, `$01000000`).
 
+**`CopyHostMemory` (`$16C48`): copy a host block into card memory.** The
+arguments are `(src, bytes, isHandle, mode, buf)`. It rounds `bytes` up to
+words and takes the destination from a switch on `mode` (`.lit+$760`):
+0 `malloc` (`$33680`), 1 `PRAlloc`, 2 the caller's `buf`, 3 `CacheAlloc`.
+Mode 2's table word decodes to `$144C8`. That is a bit-11 error of the
+`.lit` key, since `$16CC8` (`lr7 = buf`) is the only fitting case block.
+Without a buffer it returns 0. Then there are three ways to copy:
+
+* `extern#1772+$08` = 0: the card cannot read host memory itself (the
+  flag is bit 3 of a host flags word, `[[.bss]+4]`, set at init). A handle
+  goes through `CallBack($12, 1, 3, buf, src, n)` (`$33E10`). A plain block
+  in the host ROM is read directly, the others through `CallBack(8, 1, 3,
+  buf, src, n)` (`$33DD4`).
+* `+$88` = 0 (no host VM mapping): a handle is dereferenced, and a source
+  outside the ROM is masked with `+$94`. Init sets `+$94` to `$00FFFFFF`, or to `$FFFFFFFF`
+  when the host flag `$200` (32-bit addressing) is set. Then the block is
+  copied with `CopyLongsStorem`, or with `$16F5C` (a shift-and-merge copy)
+  when the source is not word-aligned.
+* `+$88` = 1: the handle's master pointer and the block are translated with
+  `$D4`. If the range is contiguous, the copy runs with `$D3(0)` (physical).
+  If not, it runs with `$D3(1)` on the logical address. The old mode is
+  restored at the end.
+
+`$33544` decides "host ROM". With the 32-bit flag it tests address bits
+28-31 = 4, otherwise bits 20-23 = 8. That matches the Mac II ROM at
+`$40800000` (32-bit) or `$800000` (24-bit). ROM is read at `addr |
+$F0000000`, which is `$F0800000` in both cases: slot 0's NuBus space.
+Mode 2 returns the (dereferenced) source instead of the buffer. The
+callers are the dispatcher's case blocks `$14318`-`$14EF0`.
+
 **System 6's strings.** Every System 7 `.lit` string is found in System 6's
 `.lit` by its plain first characters, so the messages are the same. Placed
 at their System 6 offsets, System 7's 14 certain strings give 113 full key
@@ -3145,8 +3209,11 @@ strings at `.lit $0000`-`$0178`, the names of its arithmetic stubs. Read from
 the certain first and fourth characters of each word:
 
 * `Bogus`;
-* `RMAverage16Hack`, `RMAverage16`, `RMAddPin16`, `RMAddOver16`,
-  `RMSubPin16`, `RMTransparent16`, `RMMax16`, `RMSubOver16`, `RMMin16`;
+* `RBAverage16Half`, `RBAverage16`, `RBAddPin16`, `RBAddOver16`,
+  `RBSubPin16`, `RBTransparent16`, `RBMax16`, `RBSubOver16`, `RBMin16`
+  (RgnBlt's loops; an earlier version of this list read `RM…` and
+  `…16Hack`, but the second character is plain at `.lit`'s start and is
+  `$42` = `B`, and the last word of the first name is `alf`);
 * `StretchAverage16`, `StretchAddPin16`, `StretchAddOver16`,
   `StretchSubPin16`, `StretchTransparent16`, `StretchMax16`,
   `StretchSubOver16`, `StretchMin16`;

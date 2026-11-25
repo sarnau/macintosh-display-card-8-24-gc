@@ -76,9 +76,13 @@ RC byte is plain at the start of a section.
   look like noise: `Vec` is the keystream itself (an all-zero section),
   `PublicIn` too; `Apple` decodes with `Vec`'s keystream to the copyright string
   "Copyright (c) 1989, Apple Computer, Inc. All Rights Reserved" (every other
-  two-character chunk lives in the masked low half); `PublicOu` has a plain
-  header (`3210 0070 0 4C00x4 0001`: handshake constant, four `0x4C00....`
-  pointers) and another copy of the copyright text in its high halves.
+  two-character chunk lives in the masked low half); `PublicOu` has its own
+  keystream (its zero words; bits 0-10 repeat every 192 words), which
+  decodes its header to `$32100456 $00700D01 0 $4C007000 $4C007800
+  $4C007300 $4C008C00 $00010000`: `HifComm`, `InpArgs`, `VidComm` and the
+  host's packet (`runtime_publicout.py`; bits 11-14 of the header's key
+  are taken as 0), and it holds another copy of the copyright text in its
+  high halves.
 * **`Antelope`** is masked the same way (`.text`, `.lit`, `.data`, the `Code`
   stub), with its own tables. Its 3,726 known-plaintext key values (spill/fill
   asserts `asgeu 64`/`asleu 65`, the NOP `aseq 64,gr1,gr1` = 2,064 words,
