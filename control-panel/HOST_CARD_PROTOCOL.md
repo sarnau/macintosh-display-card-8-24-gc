@@ -608,7 +608,10 @@ has no solution beyond bit 7.
   all jump and call targets print as `?`;
 * words whose whole plaintext is known (the frame and padding idioms) are
   decoded in full;
-* labels are the 768 `.text` entries of the ACEF symbol table.
+* labels are the 768 `.text` entries of the ACEF symbol table: 709
+  functions and 59 object-file starts on a tag word (`firmware/README.md`,
+  "How the firmware was built"), so `sub_01a4c` is BitBlt's file start
+  and the function is `sub_01a50`.
 
 On loads the destination is RA, so loads read completely apart from their
 control fields.
@@ -2612,8 +2615,10 @@ packet pointer is at `.bss+$0000`.
 The `$38xxx`/`$39xxx` handlers are 16-byte system-call stubs:
 `const gr121, N` / `asneq trap, gr1, gr1` / `jmpi lr0` (the 29K OS
 convention: the service number goes in `gr121`). Only N's low byte is plain.
-35 such stubs exist. The others (`$13770`-`$16BA0`) all sit in one module,
-`$11AD4`-`$174FC`. Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
+35 such stubs exist. The others (`$13770`-`$16BA0`) sit in two object files
+next to each other, `$1376C`-`$13F50` and `$13F50`-`$174FC` (files 14 and 15
+of `antelope_modules.py`; an earlier reading took `$11AD4`-`$174FC` for one
+module). Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
 `$14274`) are consecutive functions of `$50`-`$9C` bytes, each called by one
 one- or two-long block. That fits small state setters (pen, colours,
 patterns) better than drawing routines.

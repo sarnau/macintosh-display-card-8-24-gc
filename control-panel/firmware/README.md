@@ -182,7 +182,9 @@ delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
   reason codes and routine banners in `Hand.asm`.
 * `disasm/text.asm`, `Code.asm`, `lit.asm`, `data.asm` -- Antelope, made from the
   **masked** bytes: only the opcode byte and the relocation annotations are
-  meaningful. The 768 function entry addresses (from the symbol table) are real.
+  meaningful. The 768 `.text` addresses from the symbol table are real: 709
+  function entries and 59 object-file starts, which sit on the tag word 4 bytes
+  before a file's first function (see "How the firmware was built").
 * `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
   known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
   plain. For 98% of the words RC, the high immediate byte and branch
@@ -306,7 +308,7 @@ are section-relative addresses:
 
 | section | symbols | |
 |---------|--------:|--|
-| `.text` | **768** | accelerator function entry points |
+| `.text` | **768** | 709 function entry points and 59 object-file starts (tag words) |
 | `.data` | 84 | data objects |
 | `.lit` | 21 | literals |
 | `.bss`/`Code`/… | 40 | misc |
@@ -314,7 +316,7 @@ are section-relative addresses:
 **The names themselves were stripped** — there is no string table anywhere in
 the file (a full ASCII scan of the symbol region finds nothing), so only the
 *addresses* survive. That is still a real gain: `disasm/text.asm` marks all
-**768 functions** with `sub_XXXXX:` labels at their true entry points (vs. mere
+**768 addresses** (709 functions and 59 file starts) with `sub_XXXXX:` labels at their true entry points (vs. mere
 branch targets), turning the listing into cleanly-bounded functions — e.g.
 
 ```
@@ -331,6 +333,134 @@ To recover the actual *names* one would need a build artifact this stripped
 firmware no longer carries (a `.map`, an unstripped `.o`, or symbolic debug
 info) — none is present in the shipped control-panel software.
 
+
+## How the firmware was built (`../antelope_modules.py`)
+
+The file headers, section flags and symbol tables keep enough of the build to
+say how both programs were made. Nothing names a compiler, so that part is
+inference.
+
+### Two programs, two kinds of build
+
+| | `Runtime` (ACEF 1) | `32-Bit Antelope` (ACEF 100) |
+|---|---|---|
+| source | hand-written assembly: no `sub gr1,gr1,N` prologues, no `jmpi lr0` returns, no tag words | C (25 Apple object files) plus libraries and some assembly |
+| file flags | `$020F`: relocations, line numbers and local symbols stripped, executable, 32-bit big-endian (`F_AR32W`) | `$0200`: not executable, relocations and symbols kept: an `ld -r` style partial link |
+| sections | 13 at fixed card addresses, all `STYP_ABS` (`$4000`), named after the memory map (`PublicOu` is `PublicOut` cut to COFF's 8 characters) | `Code` (absolute, `$F000`, the entry), then `.text`, `.lit`, `.data`, `Apple`, `.data1`, `.bss` at 0, placed by `ACEFLoad` at run time |
+| version, date (optional header) | System 6: `$00110000`, 1991-01-22 11:56:36; System 7: `$00700D01`, 1992-04-22 12:59:12 | System 6: `$00110000`, 1991-01-22 12:42:27; System 7: `$00700D01`, 1992-04-22 13:27:04 |
+| file `timdat` (whose low byte is the obfuscation key) | 36 s / 28 s later | 292 s / 293 s later |
+
+`ACEFLoad` itself prints these fields ("Program '%s' version %08x date %d").
+The dates are Macintosh times (seconds since 1904, local time), in both the
+optional header and the file header. So at least the ACEF packer ran on a
+Mac, presumably as an MPW tool. Each release was built on one day:
+`Runtime`, then `Antelope` half an hour later. The gap between a program's
+two dates is the same in both years for the same program (about 5 minutes for
+the 243 KB `Antelope`, half a minute for `Runtime`), so it is probably the
+duration of one build step after the link, such as packing and masking. The
+System 6 version `$00110000` matches its package ("8•24 GC SW 1.1"). In System
+7's `$00700D01`, the high half matches 7.0 (the package is 7.0.1); the low half
+`$0D01` is unexplained, perhaps a development stage and build number. Both
+`Runtime` headers keep a stale buffer after the program name, `Runtime\0` followed by
+`tart.ACEF`, so the packer's files had the extension `.ACEF`. The copyright
+years are 1989 (`Runtime`'s `Apple` section), 1990 (`Antelope`'s `Apple`
+section and the ACEF signature block). `Antelope`'s `Apple` section repeats the version
+record: `$00700D01`, a date (`$A61B1A0C`, low half masked), "32-Bit Antelope" and
+the copyright, so the version and build date were also compiled into the program.
+
+### The AMD 29K tool conventions
+
+* **COFF as AMD defined it for the 29K**: `.lit` has the flags `$8020`
+  (`STYP_LIT`, AMD's read-only literal section), the fixed sections `$4000`
+  (`STYP_ABS`), and the file flag `F_AR32W`. ACEF (magic `$012A`/`$012B`
+  instead of AMD's `$017A`/`$017B`) is this COFF repacked: 6-byte symbols
+  without names, metadata XORed, sections masked.
+* **AMD's calling convention**, in full: register-stack frames
+  (`sub gr1,gr1,N` / `asgeu V_SPILL,gr1,gr126` / `add lr1,gr1,M` and the fill
+  `asleu V_FILL,lr1,gr127`), a **tag word** before every function (opcode
+  byte 0, never executed, the debugger's frame description), `gr121` (`tav`)
+  for the service number, `gr122` (`tpc`) for transparent millicode calls.
+* **Trap numbers as link-time symbols.** The table's four absolute symbols are
+  `$40`, `$41`, `$42` and `$45`: `V_SPILL`, `V_FILL`, the card's own service
+  trap 66, and 69, AMD's HIF system call. The 748 byte relocations of type 29
+  (always `$40` or `$41`) fill these into the spill and fill asserts at load
+  time, so the objects were built with the trap numbers left symbolic, as
+  AMD's runtime does.
+* **AMD's HIF library.** Each HIF stub (close, exit, lseek, open, read,
+  tmpnam, write) is its own object file of 36 bytes: a tag word, then
+  `const gr121,N` / `asneq 69` / `jmpti gr121,lr0`, and errno on failure.
+  That is the layout of a Unix library archive, from which the linker pulled
+  only the members referenced.
+* **A BSD-style C library** on top: `printf`/`vprintf`, `fseek`, `_doprnt`,
+  20-byte `FILE`s in `_iob`, the V7/BSD `_ctype_` bits, `exit` with a handler
+  table, `memset`, plus multiply and divide millicode. It is 14,788 bytes and
+  identical in size and layout in both releases. So it is a prebuilt vendor
+  library, unchanged over 15 months.
+
+This is the AMD 29K development environment of 1989-91: AMD's COFF
+assembler and linker conventions, the HIF runtime, and a C compiler that
+emits `.lit` and tag words. The C compiler AMD offered for this was MetaWare's
+High C 29K, which is the most likely candidate. The GNU a29k port (1990)
+targets the same conventions, though, and without names the format alone does
+not decide between them.
+
+### The 69 object files
+
+The symbol table keeps COFF's per-file layout: a `.file` symbol per object
+file (scnum -2, its value the index of the next one; the chain is consistent),
+the file's symbols, and its section symbols, with the file's start in each
+section. Global symbols without aux entries follow at the end, as in COFF. A
+symbol slot with scnum -3 is a placeholder: the packer wrote each symbol that
+had an aux entry into the aux slot, which keeps the original symbol indices
+for the relocations. Three kinds of file show:
+
+| files (System 7) | kind | what |
+|---|---|---|
+| 0 | assembly | `Code`, the entry stub at `$F000` (crt0) |
+| 1-3 | assembly / C | `$00000`-`$00F74`: low-level helpers (the 32×32 multiply `$00CC4` is in file 2), and file 3, the `Apple` version record |
+| 4-28 | **C with debug information** | Apple's code, `$00F74`-`$37C10`. Every function has an aux entry, and every file has `.text .data .bss .lit` sections, `.lit` also when empty. Line numbers were stripped |
+| 29 | C without debug information | `$37C10`-`$38F24`, 43 functions with ordinary prologues (`$37D68` is a fill routine); role not yet known |
+| 30 | assembly | `$38F24`-`$39114`, the card's service-call stubs: `const gr121,N` / `asneq 66` (the card's services `$B8`-`$D6`) or `asneq 69` (HIF `$111`/`$112`), no tag words |
+| 31-44, 59-66, 68 | C without debug information | the C library: `printf.o` (`$39114`), `fseek` (`$39300`), `_doprnt` (`$398B8`, with `.data1`), `_ctype_` (a `.lit`-only file at `$3AA98`), the ctype functions, `exit` (`$3AC84`), stdio (`$3B014`) |
+| 45-51, 67 | assembly | the HIF stubs, one per file |
+| 52-57 | assembly | `memset` and millicode; the divide `$3BA38` is file 57 |
+
+The 768 `.text` addresses in `symbols.txt` are **709 functions and 59 file
+starts**. In C files and most assembly files a file starts 4 bytes before its
+first function, on the tag word; `disasm/text.partial.asm` labels those words as
+`sub_` too (`sub_01a4c` is the file start, BitBlt is `sub_01a50`). Every
+file's `.data`, `.bss` and `.lit` start is known as well. This explains the
+bases of the `.lit` switch tables: each table is relocated against its own
+file's `.text` start (`$31DA8` is file 25's).
+
+**System 6 against System 7.** System 6 has 71 files, also 709 functions. Files
+0-27 are the same files in the same link order, and the library is identical.
+The differences:
+
+* file 4 shrank from 29 functions to 4: System 6's 26 16-bit arithmetic
+  stubs (`$01378`-`$017C4`) are gone;
+* files 12, 15, 18 and 22 grew (37→45, 51→58, 38→47, 65→89 functions; file
+  22, with the StretchBits helpers, from 15,952 to 24,896 bytes);
+* in place of file 28 System 6 has the `'rpza'` codec (`$331C0`, 38,052
+  bytes) and two assembly files after it (`$3C664`, `$3DA08`). System 7 has
+  the module-support file there (`$3772C`, request 999 and the `$80xx`
+  services), which loads code from the host instead;
+* Apple's C code is 243,680 bytes in System 6 and 224,412 in System 7; the
+  21 undefined symbols of System 7 (19 in System 6) are what `ACEFLoad` and
+  the kernel supply.
+
+### What this gives the analysis
+
+* Function boundaries are now exact (709, not 768), and they group into 25 Apple
+  source files whose sizes and order are the same in both releases. System 6
+  and System 7 can be compared file by file.
+* About 15 KB is vendor library code with known behaviour. It needs no
+  reverse engineering and can be named from the standard library.
+* Each file's `.data` start bounds its data objects. That is a structural constraint for the
+  still-masked `.data`.
+* Earlier "module" readings based on `.lit` bases or guesses can be checked
+  against real file boundaries. One correction so far: `$11AD4`-`$174FC` is
+  three files, not one.
 
 ## What is open
 
