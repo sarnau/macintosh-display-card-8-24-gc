@@ -2930,6 +2930,32 @@ while Apple's code keeps them in `.lit`: one more sign of two different
 compilers. `firmware/disasm/data.partial.asm` (`antelope_data_dump.py`) lists
 `.data` with file and symbol labels, flags and relocation targets.
 
+**Known tables and the two builds together** (`antelope_data_key.py --merge`).
+File 20's `.data` holds three pixel tables whose values follow from their
+index: a bit interleave at `$440` (256 bytes; bits 0-3 of i go to bits 0, 4,
+1, 5 and bits 4-7 to 2, 6, 3, 7), a bit-doubling table at `$550`
+(1-to-2-bit expansion) and a bit-to-nibble table at `$970` (1-to-4-bit). All
+576 entries agree with the model's bits 0-12, so they serve as known
+plaintext (flag `k`). Each build's sure words are then offered to the other
+as samples (flag `x`). Result for System 7: 1,331 of 1,596 words sure, 265
+uncertain; System 6 likewise. Where both builds are sure they agree on all
+1,321 words.
+
+Two limits found on the way:
+* a value whose bits 0-12 are zero (`$C000`, `$000F0000`) passes as a zero
+  sample and decodes to 0, and then both builds agree on the wrong value.
+  The known tables showed this and now override such samples;
+* pairing the builds' *uncertain* words by a shared candidate value fails.
+  In the doubling table it was right for 2 of 76 words, because both keys'
+  steps can be equal (`$E000`). It is not used.
+
+File 26's `.data` (the self-test file, with `TestSlotBurst` `$37000`) holds
+its messages as strings: "branch failed", "add failed", "sub failed", "mul
+failed", "div failed", "loop failed", "function call failed", "timertest
+failed", "clocktest failed", "logic error", "timer error", "interleave
+failure", "long error", "adr error". So there is a CPU, timer and memory
+self-test on the card.
+
 ### `.lit` strings in full (`antelope_lit_strings.py`)
 
 The same idea reads the middle characters of `.lit`'s strings. Relocated
@@ -2937,8 +2963,10 @@ The same idea reads the middle characters of `.lit`'s strings. Relocated
 the full plaintext and so the full key (482 samples, all agreeing with
 `antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from one of
 the nearest samples, the one that reads best. Bits 8-11 are then refitted
-per class on whole words, never at the cost of a table match. Characters
-outside printable ASCII drop from 81 to 21. Single-bit errors remain in the
+per class on whole words, never at the cost of a table match or a full
+sample. Two strings whose text is certain (`DisposeOffscreen: NULL offscreen
+Handle`, `ITabMatch: Inverse Table is not up-to-date`) add 20 full samples.
+Characters outside printable ASCII drop from 83 to 21. Single-bit errors remain in the
 middle characters. Read with those corrected (`?` = masked and not
 readable):
 
@@ -2968,7 +2996,12 @@ readable):
 **Service `$C0` (open).** `InitPacket` takes the packet pointer from
 `[$C0() + $418]`. On the host, `gc24` reads the packet address from its
 device record `+$0C`, and `LoadFirmware` writes `image+$0C` = the card address
-`ACEFLoad` returned for the program. How the two meet is not settled: the
+`ACEFLoad` returned for the program. The device record `gc24` uses is the
+driver's unit record, and `BuildUnitRecords` sets its `+$0C` to
+`$F0000000 | slot<<24 | slot<<20` + `$8C00` (`DRVR.s` `$1FD0`-`$1FF0`). So the
+host's packet is at offset `$s08C00` of the slot space, presumably card SRAM
+`$4C008C00`, right after `InpArgs`. No host program writes a field at
+`+$418`, and the kernel never touches `$4C006818`. How the two meet is not settled: the
 `PrivNZ` pointer for `$C0` (`$20017DC`, accurate only to about `$7C`) falls in
 the kernel's region-table lookup, and no stub there fits a call without
 arguments.

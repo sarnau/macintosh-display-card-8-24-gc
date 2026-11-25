@@ -27,9 +27,19 @@ Check: each relocated word, decoded with the other samples only, must be a
 given, the decoded section is written to data.partial.bin; the sidecar
 data.partial.bin.flag has one byte per word: 'z' a sample (zero word),
 'r' a relocated word, '=' both neighbouring samples agree on bits 13-23,
-'~' they differ (nearest taken: bits 13-23 less sure).
+'~' they differ (nearest taken: bits 13-23 less sure); 'k' known
+plaintext (known(): tables identified by their structure; overrides 'z');
+'x' (--merge) a sample from the other build's sure value.
 
-Usage:  antelope_data_key.py [ACEF_100.bin [DIR]]   (DIR: the unpacked image, default the System 7 one)
+Limits: a word whose value has bits 0-12 zero (e.g. $C000) passes as a
+'z' sample and decodes to 0; both builds then agree on the wrong value.
+Pairing the two builds' uncertain words by a shared candidate value was
+tried and rejected: in the bit-doubling table it was right for 2 of 76
+words, because both keys' steps can be equal.
+
+Usage:  antelope_data_key.py [ACEF_100.bin [DIR]]
+        antelope_data_key.py --merge SYS7_ACEF DIR7 SYS6_ACEF DIR6   (cross-build samples)
+          (DIR: the unpacked image, default the System 7 one)
 """
 import bisect, collections, os, struct, sys
 import unmask_antelope_low as u
@@ -63,10 +73,10 @@ def main():
         print('zero-top words decoding to 0 in bits 0-%-2d: %3d  (chance %.1f)' % (b - 1, n, len(Z) / 2.0 ** b))
 
     if len(sys.argv) > 1:
-        decode(D, sys.argv[1], out)
+        decode(D, sys.argv[1], out, force=known())
 
 
-def decode(D, acef, outdir):
+def decode(D, acef, outdir, extra=None, quiet=False, force=None):
     import apply_reloc as a
     import antelope_modules as am
     N = len(D)
@@ -86,7 +96,8 @@ def decode(D, acef, outdir):
         if n >= 0.7 * sum(c.values()):
             P0, D0 = P, v
             break
-    print('13-bit level: key mod 2^13 = J13[k mod %d] + $%X * (k div %d)' % (P0, D0, P0))
+    say = (lambda *x: None) if quiet else print
+    say('13-bit level: key mod 2^13 = J13[k mod %d] + $%X * (k div %d)' % (P0, D0, P0))
 
     def fit(js):
         J = {}
@@ -120,6 +131,20 @@ def decode(D, acef, outdir):
         if lim <= 0x2000:
             H[j] = ((D[j] >> 13 << 13) - (L(j) & ~0x1FFF)) & 0xFFFFFF
             kind[j] = 'r' if j not in kind else kind[j]
+    for j, v in (force or {}).items():       # known plaintext overrides 'z'
+        kx = (D[j] ^ v) & 0xFFFFFF
+        if (kx - L(j)) & 0x1FFF == 0:
+            H[j] = (kx - L(j)) & 0xFFFFFF
+            kind[j] = 'k'
+    taken = 0
+    for j, v in (extra or {}).items():       # plaintexts from the other build
+        kx = (D[j] ^ v) & 0xFFFFFF
+        if j not in H and (kx - L(j)) & 0x1FFF == 0:
+            H[j] = (kx - L(j)) & 0xFFFFFF
+            kind[j] = 'x'
+            taken += 1
+    if extra is not None:
+        say('cross-build samples offered %d, consistent with this key in bits 0-12: %d' % (len(extra), taken))
     zs = sorted(H)
 
     def key(j, skip=None):
@@ -136,17 +161,89 @@ def decode(D, acef, outdir):
         k, _ = key(j, skip=j)
         p = (D[j] ^ k) & 0xFFFFFF
         good += p < lim and p % 4 == 0
-    print('relocated words decoding (held out) to an aligned offset inside their file: %d of %d' % (good, len(rel)))
+    say('relocated words decoding (held out) to an aligned offset inside their file: %d of %d' % (good, len(rel)))
     out, flag = [], []
     for j in range(N):
         k, same = key(j)
         out.append(D[j] ^ k)
         flag.append(kind.get(j, '=' if same else '~'))
-    base = os.path.join(outdir, 'data.partial.bin')
-    open(base, 'wb').write(struct.pack('>%dI' % N, *out))
-    open(base + '.flag', 'w').write(''.join(flag))
-    print('wrote %s (+ .flag): %s' % (base, dict(collections.Counter(flag))))
+    if outdir:
+        base = os.path.join(outdir, 'data.partial.bin')
+        open(base, 'wb').write(struct.pack('>%dI' % N, *out))
+        open(base + '.flag', 'w').write(''.join(flag))
+        say('wrote %s (+ .flag): %s' % (base, dict(collections.Counter(flag))))
+    return out, flag, good
+
+
+def known():
+    """Known plaintext: three tables in file 20's .data (same offsets in
+    both builds), identified by their structure and checked against the
+    model's bits 0-12 (all entries agree):
+      $440-$53F  256 bytes, a bit interleave: bits 0-3 of i go to bits
+                 0, 4, 1, 5 and bits 4-7 to bits 2, 6, 3, 7
+      $550-$94F  256 words, each bit of i doubled (1-to-2-bit pixels)
+      $970-$D6F  256 words, each bit of i made a nibble (1-to-4-bit pixels)"""
+    dbl = lambda i: sum(3 << (2 * b) for b in range(8) if i >> b & 1)
+    ex4 = lambda i: sum(0xF << (4 * b) for b in range(8) if i >> b & 1)
+    MAP = [0, 4, 1, 5, 2, 6, 3, 7]
+    perm = lambda i: sum(1 << MAP[b] for b in range(8) if i >> b & 1)
+    k = {0x550 // 4 + i: dbl(i) for i in range(256)}
+    k.update({0x970 // 4 + i: ex4(i) for i in range(256)})
+    k.update({0x440 // 4 + w: sum(perm(4 * w + q) << (24 - 8 * q) for q in range(4)) for w in range(64)})
+    return k
+
+
+def data_starts(acef):
+    import antelope_modules as am
+    d = open(acef, 'rb').read()
+    h = am.header(d)
+    fs, _, _ = am.files(d, h['symptr'], h['nsyms'])
+    own, _ = am.split_globals(fs[-1])
+    rows = [am.classify(f['syms']) for f in fs[:-1]] + [am.classify(own)]
+    return [r['secs'].get(4) for r in rows]
+
+
+def merge(acef7, dir7, acef6, dir6):
+    """Each build's sure words (z, r, =) as plaintext samples for the other,
+    paired by object file and offset (System 7 file n = System 6 file n for
+    n < 28; 29, 30 = 31, 32; n >= 31 = n + 2), only where the two files'
+    .data have the same length.  Repeated until stable."""
+    D7 = u.words(os.path.join(dir7, 'data.bin'))
+    D6 = u.words(os.path.join(dir6, 'data.bin'))
+    s7, s6 = data_starts(acef7), data_starts(acef6)
+    end = lambda st, a, total: min([x for x in st if x is not None and x > a] + [total])
+    pairs = []
+    fmap = [(n, n) for n in range(28)] + [(29, 31), (30, 32)] + [(n, n + 2) for n in range(31, len(s7))]
+    for a, b in fmap:
+        if b >= len(s6) or s7[a] is None or s6[b] is None:
+            continue
+        n7 = end(s7, s7[a], 4 * len(D7)) - s7[a]
+        n6 = end(s6, s6[b], 4 * len(D6)) - s6[b]
+        if n7 == n6:
+            pairs += [(s7[a] // 4 + i, s6[b] // 4 + i) for i in range(n7 // 4)]
+    pairs = sorted(set(pairs))
+    print('paired words: %d' % len(pairs))
+    x7 = x6 = {}
+    for it in range(4):
+        o7, f7, g7 = decode(D7, acef7, None, x7, quiet=True, force=known())
+        o6, f6, g6 = decode(D6, acef6, None, x6, quiet=True, force=known())
+        sure7 = sum(1 for c in f7 if c != '~')
+        sure6 = sum(1 for c in f6 if c != '~')
+        agree = sum(1 for a, b in pairs if f7[a] != '~' and f6[b] != '~' and o7[a] == o6[b])
+        both = sum(1 for a, b in pairs if f7[a] != '~' and f6[b] != '~')
+        print('round %d: sure words S7 %d, S6 %d; relocation check S7 %d, S6 %d of 101; both sure %d, equal %d' % (
+            it, sure7, sure6, g7, g6, both, agree))
+        n7 = {a: o6[b] for a, b in pairs if f6[b] != '~' and f7[a] == '~'}
+        n6 = {b: o7[a] for a, b in pairs if f7[a] != '~' and f6[b] == '~'}
+        if n7.keys() <= x7.keys() and n6.keys() <= x6.keys():
+            break
+        x7, x6 = {**x7, **n7}, {**x6, **n6}
+    decode(D7, acef7, dir7, x7, force=known())
+    decode(D6, acef6, dir6, x6, force=known())
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) == 6 and sys.argv[1] == '--merge':
+        merge(*sys.argv[2:])
+    else:
+        main()

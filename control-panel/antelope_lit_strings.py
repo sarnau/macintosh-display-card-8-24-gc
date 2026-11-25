@@ -21,6 +21,12 @@ Usage:  antelope_lit_strings.py ACEF_100.bin
 """
 import bisect, collections, contextlib, glob, io, math, os, sys
 import antelope_lit_key as LK
+
+# Strings whose text is certain (read from the decode, and the first and
+# fourth character of every word is plain, which the script checks): each
+# word they cover in full gives a full key sample.
+KNOWN = [(0x0548, b'DisposeOffscreen: NULL offscreen Handle\0'),
+         (0x00D0, b'ITabMatch: Inverse Table is not up-to-date\0')]
 import unmask_antelope_low as u
 
 
@@ -67,8 +73,19 @@ def main(acef):
                     samples[k] = (W[k] ^ c[0]) & 0xFFFFFF
     for k, (b, t) in LK.PINS.items():
         samples[k] = (W[k] ^ (t - b)) & 0xFFFFFF
+    used = 0
+    for off, txt in KNOWN:
+        for i in range(len(txt) // 4):
+            k = off // 4 + i
+            w = int.from_bytes(txt[4 * i:4 * i + 4], 'big')
+            if (W[k] ^ w) >> 24 == 0 and ((W[k] ^ m12(k)) ^ w) & 0xFF == 0:
+                samples.setdefault(k, (W[k] ^ w) & 0xFFFFFF)
+                used += 1
+            else:
+                print('known text does not fit .lit $%04X' % (4 * k))
+    print('known-text words used as samples: %d' % used)
     bad = sum(1 for k, v in samples.items() if (v ^ m12(k)) & 0xFFF)
-    print('full-key samples: %d (disagree with fitted bits 0-11: %d)' % (len(samples), bad))
+    print('full-key samples: %d (disagree with fitted bits 0-11: %d; known text may correct bits 8-11)' % (len(samples), bad))
     sk = sorted(samples)
 
     def highs(k):
@@ -83,7 +100,7 @@ def main(acef):
     swset = set(sw)
     hi = {k: highs(k)[0] for k in sw}
     lp = bigram()
-    dec = lambda k: W[k] ^ (hi[k] | m12(k))
+    dec = lambda k: W[k] ^ samples[k] if k in samples else W[k] ^ (hi[k] | m12(k))
     by = lambda k: dec(k).to_bytes(4, 'big') if k in swset else b'\0\0\0\0'
 
     def wscore(k):
@@ -112,8 +129,10 @@ def main(acef):
 
     def tmatch_ok(bit, c):
         m = (1 << (bit + 1)) - 1
-        return sum(1 for k in cons if k % P_of[bit] == c and
-                   any((b & m) == ((W[k] ^ m12(k)) & m) for b in cons[k]))
+        t = sum(1 for k in cons if k % P_of[bit] == c and
+                any((b & m) == ((W[k] ^ m12(k)) & m) for b in cons[k]))
+        # full-key samples (table words with one candidate, known text) count double
+        return t + 2 * sum(1 for k, v in samples.items() if k % P_of[bit] == c and not (v ^ m12(k)) & m)
     P_of = dict(LK.LEVELS)
     for it in range(4):
         changed = 0
