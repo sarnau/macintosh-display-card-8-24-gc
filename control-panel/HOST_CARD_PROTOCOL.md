@@ -2074,9 +2074,11 @@ in "The cursor".
        `$1C298`, `$1C8A8`), is a shared flag. PRInit stores its *address*
        in the descriptor it builds for modules (`$16748`), so code outside
        Antelope can change it. Its meaning and initial value are in masked
-       `.data`. `$04110`, `$0E804` and `$1C8A8` (pattern fills) have no
-       const references; only `$0E804` has a known caller (`$1114C`). They
-       are left unnamed. One candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
+       `.data`; decoded, it is 1 (see "`.data` decoded"). The pattern fills
+       have no const references, but direct calls within their file reach
+       them: `$04110` from BitBlt (`$02B3C`), `$1C8A8` from RgnBlt (`$1B090`),
+       `$0E804` from `$1114C`. So they are BitBlt's and RgnBlt's own
+       pattern paths. One candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
        `gr64`, the feature flags the host wrote to `PublicIn+$18`. In those
        flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
        unit's config word `+$128` has bit `$40`. The config word comes from
@@ -2913,33 +2915,63 @@ Values the analysis was waiting for:
 high bits are sure only next to samples (flag `z`, `r` or `=`, 726 of 1,596
 words); elsewhere they can be off by a step.
 
+**System 6 confirms the decode independently.** Its `.data` key has the same
+form with other constants, `J13[k mod 96] + $1000·(k div 96)`. The tool picks
+the period from the data, and 98 of 101 relocated words pass. Compared file
+by file with System 7 (files 0-27 directly, the library shifted by two),
+**all 1,282 words where both decodes are sure are equal**, although the two
+keys share nothing. System 6 has `arithMode` at the same `.data+$2EC`. The
+library's `.data` is identical.
+
+Nearly all 101 relocated words are switch tables of the C library: `_doprnt`
+(`$399E0`) and the number converters `$3A5A4` and `$3A90C` (plus 3 pointers
+into `.data1`). So the library's compiler puts switch tables in `.data`,
+while Apple's code keeps them in `.lit`: one more sign of two different
+compilers. `firmware/disasm/data.partial.asm` (`antelope_data_dump.py`) lists
+`.data` with file and symbol labels, flags and relocation targets.
+
 ### `.lit` strings in full (`antelope_lit_strings.py`)
 
 The same idea reads the middle characters of `.lit`'s strings. Relocated
 `.lit` words whose fitted 12-bit offset picks exactly one case block give
 the full plaintext and so the full key (482 samples, all agreeing with
-`antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from the
-nearest sample. Most text reads; single-bit errors remain in the middle
-characters. Read with those corrected:
+`antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from one of
+the nearest samples, the one that reads best. Bits 8-11 are then refitted
+per class on whole words, never at the cost of a table match. Characters
+outside printable ASCII drop from 81 to 21. Single-bit errors remain in the
+middle characters. Read with those corrected (`?` = masked and not
+readable):
 
-* `P??Monet: Starting up, comm block at %X` (main's message; the first and
-  fourth characters of each word are plain, so "Monet" is sure in both
-  this and the next) and `Mo?etMain: Sequence error %d != %d, func = %d,
-  last func = %d`;
+* `P??Mo?et: Starting up, comm block at %X` (main's message) and
+  `Mo?etMain: Sequence error %d != %d, func = %d, last func = %d`. The first
+  and fourth characters of each word are plain; the `?` after `Mo` is a
+  masked middle character, so "Monet" is likely but not certain;
 * `Unknown Function: 0x%X`;
 * `ITabMatch: Inverse Table is not up-to-date`;
 * `DrawMultiObject/opWhichPat: can't get a PatternCacheEntry for pattern`,
   `… can't find PixPat in cache`, `… can't get a RGBPatCacheEntry for RGB
-  Pattern`, `DrawMultiObject/opSwapFont: width table is …`;
+  Pattern`; `DrawMultiObject/opSwapFont: width table is not in the cache`,
+  `… font is not in cache`;
 * `DisposeOffscreen: NULL offscreen Handle`, `FlushOffscreen: NULL
   offscreen Handle`, `FlushColorTable: NULL color table Handle`,
-  `CacheGDevice: NULL GDevice`, `CachePixPat: NULL PixPatHandle`, and the
-  `Flush…` twins;
-* `ScaleBlt/…IndexToAny: unsupported … = %d`, `ScaleBlt: unknown scaleNum = %d`;
+  `CacheGDevice: NULL GDevice`, `CachePixPat: NULL PixPatHandle`,
+  `FlushGDevice: NULL GDevice`, `FlushPixPat: NULL PixPatHandle`,
+  `Cache…: still busy, cacheType = %d, cache = %lx`, `PRInit: unable to
+  allocate …`;
+* `ScaleBlt/scIndexToAny: unsupported dstShift = %d`, `ScaleBlt: unknown
+  scaleNum = %d`;
 * `GetSeek: invalid rectFlag for seekMask = %d`;
 * `malloc allocated %d bytes outside of the heap bounds, pointer = %x,
-  heapMin = %x, heapMax = %x`, `MapVirtual: bytes == 0`, `CallBack %d
+  heapMin = %x, heapMax = %x`, `MapVirtual: bytes == 0`, `CallBack %X
   during inactive request`.
+
+**Service `$C0` (open).** `InitPacket` takes the packet pointer from
+`[$C0() + $418]`. On the host, `gc24` reads the packet address from its
+device record `+$0C`, and `LoadFirmware` writes `image+$0C` = the card address
+`ACEFLoad` returned for the program. How the two meet is not settled: the
+`PrivNZ` pointer for `$C0` (`$20017DC`, accurate only to about `$7C`) falls in
+the kernel's region-table lookup, and no stub there fits a call without
+arguments.
 
 ## 8. The kernel's service table (vector 66)
 
