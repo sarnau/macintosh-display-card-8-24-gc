@@ -404,12 +404,39 @@ the copyright, so the version and build date were also compiled into the program
   identical in size and layout in both releases. So it is a prebuilt vendor
   library, unchanged over 15 months.
 
+* **AMD's `crt0`, trimmed.** `Code` (38 words) is AMD's `crt0.s` `start`
+  routine (newlib `libc/sys/a29khif/crt0.s`, 48 words) without the two
+  `HIF_setvec` calls that install its own spill and fill handlers. Apple's
+  kernel provides vectors 64/65 itself, and crt0's handlers are not linked.
+  The opcode bytes are identical word for word, in both releases. The four
+  `Code` labels are crt0's `start`, `argcloop`, `NoLibInit` and `loop` (words 0,
+  13, 26, 34). It stores `gr96`/`gr97` into `__29027Mode`, gets `argv`
+  (HIF getargs), calls `__LibInit` if set, then `main`, then `exit`
+  (`$3AC88`). Two of the undefined symbols are crt0's common blocks
+  (`.comm`, the value is the size): `__29027Mode` (8) and `__LibInit` (4).
+  Through the placeholder symbol 1048, `_main` is **`$31DAC`**, the first
+  function of file 25, the dispatcher's file.
+* **Millicode.** Files 55-57 are transparent routines (return `jmpi tpc`):
+  a multiply (`$3B814` etc., 55 `mulu` steps) and two divides (`$3B950`
+  etc. with 31 `div` steps, and `$3BA38` with `div0`, 31 `div`, `divl`,
+  `divrem`). Apple's C code calls them 89 times, always as `const`/`consth
+  reg` + `calli tpc,reg`: multiply 59, `$3B950` 22, `$3BA38` 8. Files
+  52-54 are C-callable `memset` and string/memory routines. newlib has no
+  source for these. Its `intrinsi.h` is the floating-point package that
+  Quantitative Technology Corporation wrote for AMD.
+
 This is the AMD 29K development environment of 1989-91: AMD's COFF
-assembler and linker conventions, the HIF runtime, and a C compiler that
-emits `.lit` and tag words. The C compiler AMD offered for this was MetaWare's
-High C 29K, which is the most likely candidate. The GNU a29k port (1990)
-targets the same conventions, though, and without names the format alone does
-not decide between them.
+assembler and linker conventions, AMD's HIF library and `crt0` (both
+verbatim), and a C compiler that emits `.lit`, AMD tag words and transparent
+millicode calls. **GCC is ruled out, at least as GCC 2.95 has the a29k port**
+(`config/a29k/a29k.md`). It compiles `*`, `/` and `%` to the `multiply`,
+`divide` and `dividu` instructions. Those trap on the Am29000 and need an
+emulating OS, and Apple's kernel has no handler for them (vectors 22-63
+report reason `$A3`). Apple's C code contains none of them. GCC also does
+write the same tag word (argument count, frame size) and `.sect .lit` in every
+file, so those two features don't tell the compilers apart. That leaves a
+vendor compiler, most likely MetaWare's High C 29K, the compiler AMD offered
+with these libraries (and the "HighC29K" toolkit in AMD's 1990 data book).
 
 ### The 69 object files
 

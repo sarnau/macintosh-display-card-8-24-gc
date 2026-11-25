@@ -461,7 +461,7 @@ decodes to the standard Am29000 frame:
 | `sub gr1,gr1,N` | word before `asgeu 64` | 281 | `$250101NN` |
 | `add lr1,gr1,N` | word after `asgeu 64` | 163 | `$158101NN` |
 | `add gr1,gr1,N` | 3 words before `asleu 65` (epilogue) | 450 | `$150101NN` |
-| tag word | word before the `sub` | 277 | `$00......`: zero only in bits 0-15 |
+| tag word | word before the `sub` | 277 | `$00......`: bits 16-23 the argument count, bits 0-15 the memory-frame size in bytes (0 for most functions, e.g. `$0030` where the prologue does `msp -= 48`); not used as samples |
 
 N is read from the plain low byte. Test of the guessed upper fields: the
 implied keys' bits 13-16 were compared with existing samples in the same
