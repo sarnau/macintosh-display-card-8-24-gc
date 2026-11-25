@@ -444,5 +444,3 @@ The differences:
 
 * Some flag bits (1, 3, 10, 30, 31) are read only in outline
   (`../HOST_CARD_PROTOCOL.md` section 9, "The flags word on the card").
-* The CFG and OPS bits the flags switch are given by number; which
-  processor features they are was not looked up.

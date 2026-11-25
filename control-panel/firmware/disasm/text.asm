@@ -10,7 +10,7 @@
 *  "extern#N" is an undefined symbol (N = its symbol index).  The spill/
 *  fill asserts carry trap number 0 in the file; the loader patches
 *  in V_SPILL/V_FILL (64/65) from the byte relocations.
-*  410 functions named.
+*  663 functions named.
 *
 *  Instruction mix (top 24 mnemonics):
 *    add       14953
@@ -77,7 +77,7 @@ sub_00020:   ; Int2Handler
   0007c:  c0000060  jmpi     gr96
   00080:  70400101  nop         ; [delay slot]
 
-sub_00084:
+sub_00084:   ; SetInterruptMask
   00084:  c6600200  mfsr     gr96, CPS
   00088:  9d60600c  andn     gr96, gr96, $0c
   0008c:  93606004  or       gr96, gr96, $04
@@ -85,7 +85,7 @@ sub_00084:
   00094:  c0000080  jmpi     lr0
   00098:  70400101  nop         ; [delay slot]
 
-sub_0009c:
+sub_0009c:   ; SetTimerInterrupt
   0009c:  03006100  const    gr97, $0000
   000a0:  02016100  consth   gr97, $0100
   000a4:  c6600900  mfsr     gr96, TMR
@@ -155,7 +155,7 @@ sub_00140:   ; Report
   00170:  02006200  consth   gr98, $0000   ; hi of .text $00f84 (ReportToLog)
   00174:  c0000062  jmpi     gr98
 
-sub_00178:
+sub_00178:   ; CopyLongsShifted
   00178:  81858503  sll      lr5, lr5, $03   ; [delay slot]
   0017c:  ce008685  mtsr     FC, lr5
   00180:  35708520  subr     gr112, lr5, $20
@@ -360,7 +360,7 @@ L_0044c:
   0045c:  c0000080  jmpi     lr0
   00460:  70400101  nop         ; [delay slot]
 
-sub_00464:
+sub_00464:   ; PixShrink8Max
   00464:  83608501  srl      gr96, lr5, $01
   00468:  03006600  const    gr102, $0000
   0046c:  03006700  const    gr103, $0000
@@ -404,7 +404,7 @@ L_004bc:
   004f4:  c0000080  jmpi     lr0
   004f8:  70400101  nop         ; [delay slot]
 
-sub_004fc:
+sub_004fc:   ; PixStretch32
   004fc:  8185850f  sll      lr5, lr5, $0f
   00500:  83608501  srl      gr96, lr5, $01
   00504:  60616161  cpeq     gr97, gr97, gr97
@@ -422,7 +422,7 @@ L_00510:
   0052c:  a0ff00f7  jmp      $00508   ; -> L_00508
   00530:  70400101  nop         ; [delay slot]
 
-sub_00534:
+sub_00534:   ; PixStretch16to32
   00534:  030368e0  const    gr104, $03e0
   00538:  81676805  sll      gr103, gr104, $05
   0053c:  03036a80  const    gr106, $0380
@@ -461,7 +461,7 @@ L_0059c:
   005b8:  a0ff00e6  jmp      $00550   ; -> L_00550
   005bc:  70400101  nop         ; [delay slot]
 
-sub_005c0:
+sub_005c0:   ; PixStretch16to32Smooth
   005c0:  03017101  const    gr113, $0101
   005c4:  02007101  consth   gr113, $0001
   005c8:  037c6800  const    gr104, $7c00
@@ -520,7 +520,7 @@ L_00674:
   00690:  a0ff00df  jmp      $0060c   ; -> L_0060c
   00694:  70400101  nop         ; [delay slot]
 
-sub_00698:
+sub_00698:   ; PixStretch32Smooth
   00698:  03017101  const    gr113, $0101
   0069c:  02007101  consth   gr113, $0001
   006a0:  03807280  const    gr114, $8080
@@ -565,7 +565,7 @@ L_00714:
   00730:  a0ff00e6  jmp      $006c8   ; -> L_006c8
   00734:  70400101  nop         ; [delay slot]
 
-sub_00738:
+sub_00738:   ; AverageRows32
   00738:  03017801  const    gr120, $0101
   0073c:  02007801  consth   gr120, $0001
   00740:  03807a80  const    gr122, $8080
@@ -725,7 +725,7 @@ L_00884:
   009a0:  c0000080  jmpi     lr0
   009a4:  70400101  nop         ; [delay slot]
 
-sub_009a8:
+sub_009a8:   ; PixStretch16to32SmoothRows
   009a8:  03017101  const    gr113, $0101
   009ac:  02007101  consth   gr113, $0001
   009b0:  037c6800  const    gr104, $7c00
@@ -808,7 +808,7 @@ L_00a8c:
   00ad8:  a0ff00c7  jmp      $009f4   ; -> L_009f4
   00adc:  70400101  nop         ; [delay slot]
 
-sub_00ae0:
+sub_00ae0:   ; PixStretch32SmoothRows
   00ae0:  03017101  const    gr113, $0101
   00ae4:  02007101  consth   gr113, $0001
   00ae8:  03807280  const    gr114, $8080
@@ -880,7 +880,7 @@ L_00b94:
   00be4:  a0ff00cb  jmp      $00b10   ; -> L_00b10
   00be8:  70400101  nop         ; [delay slot]
 
-sub_00bec:
+sub_00bec:   ; PixDouble32SmoothRows
   00bec:  03017101  const    gr113, $0101
   00bf0:  02007101  consth   gr113, $0001
   00bf4:  03807280  const    gr114, $8080
@@ -1046,7 +1046,7 @@ sub_00dc8:   ; LongMul
   00e58:  c0000080  jmpi     lr0
   00e5c:  1e006282  store    0, 0, gr98, lr2   ; [delay slot]
 
-sub_00e60:
+sub_00e60:   ; Div64
   00e60:  16006182  load     0, 0, gr97, lr2
   00e64:  15828204  add      lr2, lr2, $04
   00e68:  16006282  load     0, 0, gr98, lr2
@@ -1117,11 +1117,11 @@ sub_00f34:   ; Sub64
   00f5c:  c0000080  jmpi     lr0
   00f60:  1e006482  store    0, 0, gr100, lr2   ; [delay slot]
 
-sub_00f64:
+sub_00f64:   ; GetFramePtr
   00f64:  c0000080  jmpi     lr0
   00f68:  15608100  add      gr96, lr1, $00   ; [delay slot]
 
-sub_00f6c:
+sub_00f6c:   ; SetFramePtr
   00f6c:  c0000080  jmpi     lr0
   00f70:  15818200  add      lr1, lr2, $00   ; [delay slot]
 
@@ -1235,7 +1235,7 @@ L_010e0:
   010f0:  02008d00  consth   lr13, $0000   ; hi of .data+$028c   ; [delay slot]
   010f4:  00120030  .word    $00120030   ; tag word: 16 arguments, frame $30
 
-sub_010f8:
+sub_010f8:   ; ReportToLogWide
   010f8:  250101a8  sub      gr1, gr1, $a8
   010fc:  5e00017e  asgeu    trap64, gr1, gr126
   01100:  0300a910  const    lr41, $0010   ; lo of .data+$0290
@@ -1808,7 +1808,7 @@ L_01904:
   01908:  03008e01  const    lr14, $0001   ; [delay slot]
   0190c:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_01910:
+sub_01910:   ; MapCoord
   01910:  60608486  cpeq     gr96, lr4, lr6
   01914:  ac006014  jmpt     gr96, $01964   ; -> L_01964
   01918:  24828283  sub      lr2, lr2, lr3   ; [delay slot]
@@ -1836,7 +1836,7 @@ L_01964:
   01968:  14608582  add      gr96, lr5, lr2   ; [delay slot]
   0196c:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_01970:
+sub_01970:   ; MapRect
   01970:  25010120  sub      gr1, gr1, $20
   01974:  5e00017e  asgeu    trap64, gr1, gr126
   01978:  16126b8b  load     0, 12, gr107, lr11
@@ -1862,7 +1862,7 @@ sub_01970:
   019c8:  15856700  add      lr5, gr103, $00
   019cc:  24646066  sub      gr100, gr96, gr102
   019d0:  1612828a  load     0, 12, lr2, lr10
-  019d4:  a8ff80cf  call     lr0, $01910   ; -> sub_01910
+  019d4:  a8ff80cf  call     lr0, $01910   ; -> MapCoord
   019d8:  15866500  add      lr6, gr101, $00   ; [delay slot]
   019dc:  1e02608a  store    0, 2, gr96, lr10
   019e0:  15638a02  add      gr99, lr10, $02
@@ -1870,7 +1870,7 @@ sub_01970:
   019e8:  15836a00  add      lr3, gr106, $00
   019ec:  15846800  add      lr4, gr104, $00
   019f0:  15856600  add      lr5, gr102, $00
-  019f4:  a8ff80c7  call     lr0, $01910   ; -> sub_01910
+  019f4:  a8ff80c7  call     lr0, $01910   ; -> MapCoord
   019f8:  15866400  add      lr6, gr100, $00   ; [delay slot]
   019fc:  1e026063  store    0, 2, gr96, gr99
   01a00:  15638a04  add      gr99, lr10, $04
@@ -1878,7 +1878,7 @@ sub_01970:
   01a08:  15836b00  add      lr3, gr107, $00
   01a0c:  15846900  add      lr4, gr105, $00
   01a10:  15856700  add      lr5, gr103, $00
-  01a14:  a8ff80bf  call     lr0, $01910   ; -> sub_01910
+  01a14:  a8ff80bf  call     lr0, $01910   ; -> MapCoord
   01a18:  15866500  add      lr6, gr101, $00   ; [delay slot]
   01a1c:  1e026063  store    0, 2, gr96, gr99
   01a20:  15638a06  add      gr99, lr10, $06
@@ -1886,7 +1886,7 @@ sub_01970:
   01a28:  15836a00  add      lr3, gr106, $00
   01a2c:  15846800  add      lr4, gr104, $00
   01a30:  15856600  add      lr5, gr102, $00
-  01a34:  a8ff80b7  call     lr0, $01910   ; -> sub_01910
+  01a34:  a8ff80b7  call     lr0, $01910   ; -> MapCoord
   01a38:  15866400  add      lr6, gr100, $00   ; [delay slot]
   01a3c:  15010120  add      gr1, gr1, $20
   01a40:  1e026063  store    0, 2, gr96, gr99
@@ -2236,12 +2236,12 @@ L_01f24:
   01f28:  ac006210  jmpt     gr98, $01f68   ; -> L_01f68
   01f2c:  61616300  cpeq     gr97, gr99, $00   ; [delay slot]
   01f30:  ac006104  jmpt     gr97, $01f40   ; -> L_01f40
-  01f34:  03138e94  const    lr14, $1394   ; lo of .text $02de0 (sub_02de0)   ; [delay slot]
+  01f34:  03138e94  const    lr14, $1394   ; lo of .text $02de0 (bSETUP0)   ; [delay slot]
   01f38:  a0000004  jmp      $01f48   ; -> L_01f48
-  01f3c:  02008e00  consth   lr14, $0000   ; hi of .text $02de0 (sub_02de0)   ; [delay slot]
+  01f3c:  02008e00  consth   lr14, $0000   ; hi of .text $02de0 (bSETUP0)   ; [delay slot]
 L_01f40:
-  01f40:  03148ed4  const    lr14, $14d4   ; lo of .text $02f20 (sub_02f20)
-  01f44:  02008e00  consth   lr14, $0000   ; hi of .text $02f20 (sub_02f20)
+  01f40:  03148ed4  const    lr14, $14d4   ; lo of .text $02f20 (bLEFT0)
+  01f44:  02008e00  consth   lr14, $0000   ; hi of .text $02f20 (bLEFT0)
 L_01f48:
   01f48:  15829500  add      lr2, lr21, $00
   01f4c:  15839e00  add      lr3, lr30, $00
@@ -2257,7 +2257,7 @@ L_01f68:
   01f70:  1584a300  add      lr4, lr35, $00
   01f74:  1586a200  add      lr6, lr34, $00
   01f78:  1587a100  add      lr7, lr33, $00
-  01f7c:  a804801d  call     lr0, $02ff0   ; -> sub_02ff0
+  01f7c:  a804801d  call     lr0, $02ff0   ; -> bFastShift0
   01f80:  158aa000  add      lr10, lr32, $00   ; [delay slot]
   01f84:  a003005d  jmp      $02cf8   ; -> L_02cf8
   01f88:  70400101  nop         ; [delay slot]
@@ -3221,7 +3221,7 @@ L_02dd4:
   02dd8:  03009303  const    lr19, $0003   ; [delay slot]
   02ddc:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_02de0:
+sub_02de0:   ; bSETUP0
   02de0:  25010130  sub      gr1, gr1, $30
   02de4:  5e00017e  asgeu    trap64, gr1, gr126
   02de8:  15810158  add      lr1, gr1, $58
@@ -3314,7 +3314,7 @@ L_02ef8:
   02f18:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   02f1c:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_02f20:
+sub_02f20:   ; bLEFT0
   02f20:  25658902  sub      gr101, lr9, $02
   02f24:  15838304  add      lr3, lr3, $04
   02f28:  15828204  add      lr2, lr2, $04
@@ -3372,7 +3372,7 @@ L_02fb0:
   02fe8:  70400101  nop         ; [delay slot]
   02fec:  000b0000  .word    $000b0000   ; tag word: 9 arguments, frame $0
 
-sub_02ff0:
+sub_02ff0:   ; bFastShift0
   02ff0:  25898902  sub      lr9, lr9, $02
   02ff4:  15688a20  add      gr104, lr10, $20
   02ff8:  35678a00  subr     gr103, lr10, $00
@@ -7762,7 +7762,7 @@ file_08:   ; object file 8 (C-g): .text starts here
 sub_06bac:
   06bac:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_06bb0:
+sub_06bb0:   ; IsSlotBAddress
   06bb0:  8361821c  srl      gr97, lr2, $1c
   06bb4:  6360610b  cpneq    gr96, gr97, $0b
   06bb8:  ac006004  jmpt     gr96, $06bc8   ; -> L_06bc8
@@ -7863,8 +7863,8 @@ L_06cec:
   06d18:  16126190  load     0, 12, gr97, lr16
   06d1c:  63606100  cpneq    gr96, gr97, $00
   06d20:  ac006026  jmpt     gr96, $06db8   ; -> L_06db8
-  06d24:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)   ; [delay slot]
-  06d28:  02006000  consth   gr96, $0000   ; hi of .text $33544 (sub_33544)
+  06d24:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)   ; [delay slot]
+  06d28:  02006000  consth   gr96, $0000   ; hi of .text $33544 (IsHostROMAddress)
   06d2c:  c8008060  calli    lr0, gr96
   06d30:  15828700  add      lr2, lr7, $00   ; [delay slot]
   06d34:  61606000  cpeq     gr96, gr96, $00
@@ -7878,8 +7878,8 @@ L_06cec:
   06d54:  c8007a61  calli    gr122, gr97
   06d58:  9e846088  setip    lr4, gr96, lr8   ; [delay slot]
   06d5c:  15828700  add      lr2, lr7, $00
-  06d60:  03006000  const    gr96, $0000   ; lo of .text $142c4 (sub_142c4)
-  06d64:  02006000  consth   gr96, $0000   ; hi of .text $142c4 (sub_142c4)
+  06d60:  03006000  const    gr96, $0000   ; lo of .text $142c4 (CacheHostCopy)
+  06d64:  02006000  consth   gr96, $0000   ; hi of .text $142c4 (CacheHostCopy)
   06d68:  c8008060  calli    lr0, gr96
   06d6c:  15838400  add      lr3, lr4, $00   ; [delay slot]
   06d70:  61616000  cpeq     gr97, gr96, $00
@@ -8274,8 +8274,8 @@ L_072f0:
   07300:  ac006117  jmpt     gr97, $0735c   ; -> L_0735c
   07304:  0300826c  const    lr2, $006c   ; lo of .data+$030c   ; [delay slot]
   07308:  03009108  const    lr17, $0008
-  0730c:  03006000  const    gr96, $0000   ; lo of .text $16034 (sub_16034)
-  07310:  02006000  consth   gr96, $0000   ; hi of .text $16034 (sub_16034)
+  0730c:  03006000  const    gr96, $0000   ; lo of .text $16034 (CacheFindBitPattern)
+  07310:  02006000  consth   gr96, $0000   ; hi of .text $16034 (CacheFindBitPattern)
   07314:  c8008060  calli    lr0, gr96
   07318:  02008200  consth   lr2, $0000   ; hi of .data+$030c   ; [delay slot]
   0731c:  15619208  add      gr97, lr18, $08
@@ -8289,8 +8289,8 @@ L_0732c:
   07338:  95919104  xor      lr17, lr17, $04   ; [delay slot]
 L_0733c:
   0733c:  0300910c  const    lr17, $000c
-  07340:  03006000  const    gr96, $0000   ; lo of .text $16034 (sub_16034)
-  07344:  02006000  consth   gr96, $0000   ; hi of .text $16034 (sub_16034)
+  07340:  03006000  const    gr96, $0000   ; lo of .text $16034 (CacheFindBitPattern)
+  07344:  02006000  consth   gr96, $0000   ; hi of .text $16034 (CacheFindBitPattern)
   07348:  c8008060  calli    lr0, gr96
   0734c:  02008200  consth   lr2, $0000   ; hi of .data+$030c   ; [delay slot]
   07350:  15619208  add      gr97, lr18, $08
@@ -9100,8 +9100,8 @@ L_07e98:
   07ec8:  15889f00  add      lr8, lr31, $00
   07ecc:  15899800  add      lr9, lr24, $00
   07ed0:  158aaf00  add      lr10, lr47, $00
-  07ed4:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (sub_0e398)
-  07ed8:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (sub_0e398)
+  07ed4:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (DrawSlab)
+  07ed8:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (DrawSlab)
   07edc:  c80080b4  calli    lr0, lr52
   07ee0:  158bb300  add      lr11, lr51, $00   ; [delay slot]
   07ee4:  a000004c  jmp      $08014   ; -> L_08014
@@ -9124,8 +9124,8 @@ L_07eec:
   07f24:  15889f00  add      lr8, lr31, $00
   07f28:  15899800  add      lr9, lr24, $00
   07f2c:  158aaf00  add      lr10, lr47, $00
-  07f30:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (sub_0e398)
-  07f34:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (sub_0e398)
+  07f30:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (DrawSlab)
+  07f34:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (DrawSlab)
   07f38:  c80080b4  calli    lr0, lr52
   07f3c:  158bb300  add      lr11, lr51, $00   ; [delay slot]
   07f40:  160061a8  load     0, 0, gr97, lr40
@@ -9169,8 +9169,8 @@ L_07f9c:
   07fc8:  15889f00  add      lr8, lr31, $00
   07fcc:  15899800  add      lr9, lr24, $00
   07fd0:  158aaf00  add      lr10, lr47, $00
-  07fd4:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (sub_0e398)
-  07fd8:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (sub_0e398)
+  07fd4:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (DrawSlab)
+  07fd8:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (DrawSlab)
   07fdc:  c80080b4  calli    lr0, lr52
   07fe0:  158bb300  add      lr11, lr51, $00   ; [delay slot]
   07fe4:  1582a000  add      lr2, lr32, $00
@@ -9203,8 +9203,8 @@ L_08034:
   08040:  4561aab4  cple     gr97, lr42, $b4   ; [delay slot]
   08044:  acff61f3  jmpt     gr97, $08010   ; -> L_08010
   08048:  0301621c  const    gr98, $011c   ; [delay slot]
-  0804c:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (sub_0e398)
-  08050:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (sub_0e398)
+  0804c:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (DrawSlab)
+  08050:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (DrawSlab)
   08054:  6263a1a6  cpneq    gr99, lr33, lr38
   08058:  15987d74  add      lr24, gr125, $74
   0805c:  1461627d  add      gr97, gr98, gr125
@@ -9256,8 +9256,8 @@ L_080d8:
   0810c:  1582a000  add      lr2, lr32, $00   ; [delay slot]
 L_08110:
   08110:  0301621c  const    gr98, $011c
-  08114:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (sub_0e398)
-  08118:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (sub_0e398)
+  08114:  0300b400  const    lr52, $0000   ; lo of .text $0e398 (DrawSlab)
+  08118:  0200b400  consth   lr52, $0000   ; hi of .text $0e398 (DrawSlab)
   0811c:  4060b564  cplt     gr96, lr53, gr100
   08120:  15987d74  add      lr24, gr125, $74
   08124:  1461627d  add      gr97, gr98, gr125
@@ -9760,7 +9760,7 @@ L_087fc:
   08814:  15849300  add      lr4, lr19, $00
   08818:  1585a200  add      lr5, lr34, $00
   0881c:  1586a100  add      lr6, lr33, $00
-  08820:  a8028094  call     lr0, $09270   ; -> sub_09270
+  08820:  a8028094  call     lr0, $09270   ; -> FillRow32
   08824:  15878c00  add      lr7, lr12, $00   ; [delay slot]
   08828:  a00100e8  jmp      $08fc8   ; -> L_08fc8
   0882c:  70400101  nop         ; [delay slot]
@@ -9771,7 +9771,7 @@ L_08830:
   0883c:  15859300  add      lr5, lr19, $00
   08840:  1586a200  add      lr6, lr34, $00
   08844:  1587a100  add      lr7, lr33, $00
-  08848:  a80180f6  call     lr0, $09020   ; -> sub_09020
+  08848:  a80180f6  call     lr0, $09020   ; -> FillRowMasked
   0884c:  15888c00  add      lr8, lr12, $00   ; [delay slot]
   08850:  a00100de  jmp      $08fc8   ; -> L_08fc8
   08854:  70400101  nop         ; [delay slot]
@@ -10046,7 +10046,7 @@ L_08c28:
   08c3c:  1589a200  add      lr9, lr34, $00
   08c40:  158aa300  add      lr10, lr35, $00
   08c44:  158ba100  add      lr11, lr33, $00
-  08c48:  a80280c1  call     lr0, $0974c   ; -> sub_0974c
+  08c48:  a80280c1  call     lr0, $0974c   ; -> FastSlant
   08c4c:  158d9000  add      lr13, lr16, $00   ; [delay slot]
   08c50:  a00000de  jmp      $08fc8   ; -> L_08fc8
   08c54:  70400101  nop         ; [delay slot]
@@ -10155,7 +10155,7 @@ L_08dac:
   08ddc:  15859300  add      lr5, lr19, $00
   08de0:  1586a300  add      lr6, lr35, $00
   08de4:  15879400  add      lr7, lr20, $00
-  08de8:  a8078043  call     lr0, $0aaf4   ; -> sub_0aaf4
+  08de8:  a8078043  call     lr0, $0aaf4   ; -> WideLineSlabsFill
   08dec:  15889b00  add      lr8, lr27, $00   ; [delay slot]
   08df0:  a0000076  jmp      $08fc8   ; -> L_08fc8
   08df4:  70400101  nop         ; [delay slot]
@@ -10165,7 +10165,7 @@ L_08df8:
   08e00:  15859300  add      lr5, lr19, $00
   08e04:  1586a300  add      lr6, lr35, $00
   08e08:  15879400  add      lr7, lr20, $00
-  08e0c:  a8078080  call     lr0, $0ac0c   ; -> sub_0ac0c
+  08e0c:  a8078080  call     lr0, $0ac0c   ; -> WideLineSlabsXor
   08e10:  15889b00  add      lr8, lr27, $00   ; [delay slot]
   08e14:  a000006d  jmp      $08fc8   ; -> L_08fc8
   08e18:  70400101  nop         ; [delay slot]
@@ -10180,7 +10180,7 @@ L_08e1c:
   08e38:  15859300  add      lr5, lr19, $00
   08e3c:  1586a300  add      lr6, lr35, $00
   08e40:  15879400  add      lr7, lr20, $00
-  08e44:  a807802c  call     lr0, $0aaf4   ; -> sub_0aaf4
+  08e44:  a807802c  call     lr0, $0aaf4   ; -> WideLineSlabsFill
   08e48:  15889b00  add      lr8, lr27, $00   ; [delay slot]
   08e4c:  a000005f  jmp      $08fc8   ; -> L_08fc8
   08e50:  70400101  nop         ; [delay slot]
@@ -10246,8 +10246,8 @@ L_08ef8:
   08f2c:  4c609e65  cpge     gr96, lr30, gr101
   08f30:  ac006026  jmpt     gr96, $08fc8   ; -> L_08fc8
   08f34:  03009d00  const    lr29, $0000   ; [delay slot]
-  08f38:  03009a00  const    lr26, $0000   ; lo of .text $0e398 (sub_0e398)
-  08f3c:  02009a00  consth   lr26, $0000   ; hi of .text $0e398 (sub_0e398)
+  08f38:  03009a00  const    lr26, $0000   ; lo of .text $0e398 (DrawSlab)
+  08f3c:  02009a00  consth   lr26, $0000   ; hi of .text $0e398 (DrawSlab)
   08f40:  15607db4  add      gr96, gr125, $b4
   08f44:  159c7d14  add      lr28, gr125, $14
   08f48:  16008d60  load     0, 0, lr13, gr96
@@ -10314,7 +10314,7 @@ L_09014:
   09018:  16126299  load     0, 12, gr98, lr25   ; [delay slot]
   0901c:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_09020:
+sub_09020:   ; FillRowMasked
   09020:  25010118  sub      gr1, gr1, $18
   09024:  5e00017e  asgeu    trap64, gr1, gr126
   09028:  15608b02  add      gr96, lr11, $02
@@ -10477,7 +10477,7 @@ L_0925c:
   09268:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   0926c:  00080000  .word    $00080000   ; tag word: 6 arguments, frame $0
 
-sub_09270:
+sub_09270:   ; FillRow32
   09270:  25010118  sub      gr1, gr1, $18
   09274:  5e00017e  asgeu    trap64, gr1, gr126
   09278:  15608a02  add      gr96, lr10, $02
@@ -10829,7 +10829,7 @@ L_09730:
   09744:  70400101  nop         ; [delay slot]
   09748:  000e0000  .word    $000e0000   ; tag word: 12 arguments, frame $0
 
-sub_0974c:
+sub_0974c:   ; FastSlant
   0974c:  25010138  sub      gr1, gr1, $38
   09750:  5e00017e  asgeu    trap64, gr1, gr126
   09754:  15810170  add      lr1, gr1, $70
@@ -10893,12 +10893,12 @@ L_09824:
   09828:  ac006012  jmpt     gr96, $09870   ; -> L_09870
   0982c:  70400101  nop         ; [delay slot]
   09830:  ac009304  jmpt     lr19, $09840   ; -> L_09840
-  09834:  031d608c  const    gr96, $1d8c   ; lo of .text $0a3a0 (sub_0a3a0)   ; [delay slot]
+  09834:  031d608c  const    gr96, $1d8c   ; lo of .text $0a3a0 (shallowXor32)   ; [delay slot]
   09838:  a0000004  jmp      $09848   ; -> L_09848
-  0983c:  02006000  consth   gr96, $0000   ; hi of .text $0a3a0 (sub_0a3a0)   ; [delay slot]
+  0983c:  02006000  consth   gr96, $0000   ; hi of .text $0a3a0 (shallowXor32)   ; [delay slot]
 L_09840:
-  09840:  031e6038  const    gr96, $1e38   ; lo of .text $0a44c (sub_0a44c)
-  09844:  02006000  consth   gr96, $0000   ; hi of .text $0a44c (sub_0a44c)
+  09840:  031e6038  const    gr96, $1e38   ; lo of .text $0a44c (shallowXor32Left)
+  09844:  02006000  consth   gr96, $0000   ; hi of .text $0a44c (shallowXor32Left)
 L_09848:
   09848:  15829600  add      lr2, lr22, $00
   0984c:  15848500  add      lr4, lr5, $00
@@ -10912,12 +10912,12 @@ L_09848:
   0986c:  61608d00  cpeq     gr96, lr13, $00   ; [delay slot]
 L_09870:
   09870:  ac009304  jmpt     lr19, $09880   ; -> L_09880
-  09874:  031e60e8  const    gr96, $1ee8   ; lo of .text $0a4fc (sub_0a4fc)   ; [delay slot]
+  09874:  031e60e8  const    gr96, $1ee8   ; lo of .text $0a4fc (shallowCopy32)   ; [delay slot]
   09878:  a0000004  jmp      $09888   ; -> L_09888
-  0987c:  02006000  consth   gr96, $0000   ; hi of .text $0a4fc (sub_0a4fc)   ; [delay slot]
+  0987c:  02006000  consth   gr96, $0000   ; hi of .text $0a4fc (shallowCopy32)   ; [delay slot]
 L_09880:
-  09880:  031f6080  const    gr96, $1f80   ; lo of .text $0a594 (sub_0a594)
-  09884:  02006000  consth   gr96, $0000   ; hi of .text $0a594 (sub_0a594)
+  09880:  031f6080  const    gr96, $1f80   ; lo of .text $0a594 (shallowCopy32Left)
+  09884:  02006000  consth   gr96, $0000   ; hi of .text $0a594 (shallowCopy32Left)
 L_09888:
   09888:  15829600  add      lr2, lr22, $00
   0988c:  15848500  add      lr4, lr5, $00
@@ -10964,12 +10964,12 @@ L_0991c:
   09920:  ac00600e  jmpt     gr96, $09958   ; -> L_09958
   09924:  70400101  nop         ; [delay slot]
   09928:  ac009304  jmpt     lr19, $09938   ; -> L_09938
-  0992c:  03166014  const    gr96, $1614   ; lo of .text $09c28 (sub_09c28)   ; [delay slot]
+  0992c:  03166014  const    gr96, $1614   ; lo of .text $09c28 (shallowXorN)   ; [delay slot]
   09930:  a0000004  jmp      $09940   ; -> L_09940
-  09934:  02006000  consth   gr96, $0000   ; hi of .text $09c28 (sub_09c28)   ; [delay slot]
+  09934:  02006000  consth   gr96, $0000   ; hi of .text $09c28 (shallowXorN)   ; [delay slot]
 L_09938:
-  09938:  031760d0  const    gr96, $17d0   ; lo of .text $09de4 (sub_09de4)
-  0993c:  02006000  consth   gr96, $0000   ; hi of .text $09de4 (sub_09de4)
+  09938:  031760d0  const    gr96, $17d0   ; lo of .text $09de4 (shallowXorNLeft)
+  0993c:  02006000  consth   gr96, $0000   ; hi of .text $09de4 (shallowXorNLeft)
 L_09940:
   09940:  15829600  add      lr2, lr22, $00
   09944:  15879100  add      lr7, lr17, $00
@@ -10979,12 +10979,12 @@ L_09940:
   09954:  70400101  nop         ; [delay slot]
 L_09958:
   09958:  ac009304  jmpt     lr19, $09968   ; -> L_09968
-  0995c:  031960b8  const    gr96, $19b8   ; lo of .text $09fcc (sub_09fcc)   ; [delay slot]
+  0995c:  031960b8  const    gr96, $19b8   ; lo of .text $09fcc (shallowCopyN)   ; [delay slot]
   09960:  a0000004  jmp      $09970   ; -> L_09970
-  09964:  02006000  consth   gr96, $0000   ; hi of .text $09fcc (sub_09fcc)   ; [delay slot]
+  09964:  02006000  consth   gr96, $0000   ; hi of .text $09fcc (shallowCopyN)   ; [delay slot]
 L_09968:
-  09968:  031b608c  const    gr96, $1b8c   ; lo of .text $0a1a0 (sub_0a1a0)
-  0996c:  02006000  consth   gr96, $0000   ; hi of .text $0a1a0 (sub_0a1a0)
+  09968:  031b608c  const    gr96, $1b8c   ; lo of .text $0a1a0 (shallowCopyNLeft)
+  0996c:  02006000  consth   gr96, $0000   ; hi of .text $0a1a0 (shallowCopyNLeft)
 L_09970:
   09970:  15829600  add      lr2, lr22, $00
   09974:  15879100  add      lr7, lr17, $00
@@ -11047,7 +11047,7 @@ L_09a14:
   09a44:  15858600  add      lr5, lr6, $00
   09a48:  15869100  add      lr6, lr17, $00
   09a4c:  15879500  add      lr7, lr21, $00
-  09a50:  a8038092  call     lr0, $0a898   ; -> sub_0a898
+  09a50:  a8038092  call     lr0, $0a898   ; -> steepXorN
   09a54:  15888b00  add      lr8, lr11, $00   ; [delay slot]
   09a58:  a0000065  jmp      $09bec   ; -> L_09bec
   09a5c:  70400101  nop         ; [delay slot]
@@ -11055,14 +11055,14 @@ L_09a14:
   09a64:  14826096  add      lr2, gr96, lr22
   09a68:  15848600  add      lr4, lr6, $00
   09a6c:  15859100  add      lr5, lr17, $00
-  09a70:  a80380cb  call     lr0, $0a99c   ; -> sub_0a99c
+  09a70:  a80380cb  call     lr0, $0a99c   ; -> steepXor8
   09a74:  15869500  add      lr6, lr21, $00   ; [delay slot]
   09a78:  a000005d  jmp      $09bec   ; -> L_09bec
   09a7c:  70400101  nop         ; [delay slot]
   09a80:  15829600  add      lr2, lr22, $00
   09a84:  15848600  add      lr4, lr6, $00
   09a88:  15859100  add      lr5, lr17, $00
-  09a8c:  a80380ee  call     lr0, $0aa44   ; -> sub_0aa44
+  09a8c:  a80380ee  call     lr0, $0aa44   ; -> steepXor32
   09a90:  15869500  add      lr6, lr21, $00   ; [delay slot]
   09a94:  a0000056  jmp      $09bec   ; -> L_09bec
   09a98:  70400101  nop         ; [delay slot]
@@ -11070,7 +11070,7 @@ L_09a14:
   09aa0:  15858600  add      lr5, lr6, $00
   09aa4:  15869100  add      lr6, lr17, $00
   09aa8:  15879500  add      lr7, lr21, $00
-  09aac:  a803809c  call     lr0, $0a91c   ; -> sub_0a91c
+  09aac:  a803809c  call     lr0, $0a91c   ; -> steepXorNLeft
   09ab0:  15888b00  add      lr8, lr11, $00   ; [delay slot]
   09ab4:  a000004e  jmp      $09bec   ; -> L_09bec
   09ab8:  70400101  nop         ; [delay slot]
@@ -11078,14 +11078,14 @@ L_09a14:
   09ac0:  14826096  add      lr2, gr96, lr22
   09ac4:  15848600  add      lr4, lr6, $00
   09ac8:  15859100  add      lr5, lr17, $00
-  09acc:  a80380c9  call     lr0, $0a9f0   ; -> sub_0a9f0
+  09acc:  a80380c9  call     lr0, $0a9f0   ; -> steepXor8Left
   09ad0:  15869500  add      lr6, lr21, $00   ; [delay slot]
   09ad4:  a0000046  jmp      $09bec   ; -> L_09bec
   09ad8:  70400101  nop         ; [delay slot]
   09adc:  15829600  add      lr2, lr22, $00
   09ae0:  15848600  add      lr4, lr6, $00
   09ae4:  15859100  add      lr5, lr17, $00
-  09ae8:  a80380ed  call     lr0, $0aa9c   ; -> sub_0aa9c
+  09ae8:  a80380ed  call     lr0, $0aa9c   ; -> steepXor32Left
   09aec:  15869500  add      lr6, lr21, $00   ; [delay slot]
   09af0:  a000003f  jmp      $09bec   ; -> L_09bec
   09af4:  70400101  nop         ; [delay slot]
@@ -11094,7 +11094,7 @@ L_09a14:
   09b00:  15869100  add      lr6, lr17, $00
   09b04:  15879500  add      lr7, lr21, $00
   09b08:  15888b00  add      lr8, lr11, $00
-  09b0c:  a80280c6  call     lr0, $0a624   ; -> sub_0a624
+  09b0c:  a80280c6  call     lr0, $0a624   ; -> steepCopyN
   09b10:  15899a00  add      lr9, lr26, $00   ; [delay slot]
   09b14:  a0000036  jmp      $09bec   ; -> L_09bec
   09b18:  70400101  nop         ; [delay slot]
@@ -11103,7 +11103,7 @@ L_09a14:
   09b24:  15848600  add      lr4, lr6, $00
   09b28:  15859100  add      lr5, lr17, $00
   09b2c:  15869500  add      lr6, lr21, $00
-  09b30:  a803800e  call     lr0, $0a768   ; -> sub_0a768
+  09b30:  a803800e  call     lr0, $0a768   ; -> steepCopy8
   09b34:  15879a00  add      lr7, lr26, $00   ; [delay slot]
   09b38:  a000002d  jmp      $09bec   ; -> L_09bec
   09b3c:  70400101  nop         ; [delay slot]
@@ -11111,7 +11111,7 @@ L_09a14:
   09b44:  15848600  add      lr4, lr6, $00
   09b48:  15859100  add      lr5, lr17, $00
   09b4c:  15869500  add      lr6, lr21, $00
-  09b50:  a803802c  call     lr0, $0a800   ; -> sub_0a800
+  09b50:  a803802c  call     lr0, $0a800   ; -> steepCopy32
   09b54:  15879a00  add      lr7, lr26, $00   ; [delay slot]
   09b58:  a0000025  jmp      $09bec   ; -> L_09bec
   09b5c:  70400101  nop         ; [delay slot]
@@ -11120,7 +11120,7 @@ L_09a14:
   09b68:  15869100  add      lr6, lr17, $00
   09b6c:  15879500  add      lr7, lr21, $00
   09b70:  15888b00  add      lr8, lr11, $00
-  09b74:  a80280d5  call     lr0, $0a6c8   ; -> sub_0a6c8
+  09b74:  a80280d5  call     lr0, $0a6c8   ; -> steepCopyNLeft
   09b78:  15899a00  add      lr9, lr26, $00   ; [delay slot]
   09b7c:  a000001c  jmp      $09bec   ; -> L_09bec
   09b80:  70400101  nop         ; [delay slot]
@@ -11129,7 +11129,7 @@ L_09a14:
   09b8c:  15848600  add      lr4, lr6, $00
   09b90:  15859100  add      lr5, lr17, $00
   09b94:  15869500  add      lr6, lr21, $00
-  09b98:  a8038007  call     lr0, $0a7b4   ; -> sub_0a7b4
+  09b98:  a8038007  call     lr0, $0a7b4   ; -> steepCopy8Left
   09b9c:  15879a00  add      lr7, lr26, $00   ; [delay slot]
   09ba0:  a0000013  jmp      $09bec   ; -> L_09bec
   09ba4:  70400101  nop         ; [delay slot]
@@ -11137,7 +11137,7 @@ L_09a14:
   09bac:  15848600  add      lr4, lr6, $00
   09bb0:  15859100  add      lr5, lr17, $00
   09bb4:  15869500  add      lr6, lr21, $00
-  09bb8:  a8038025  call     lr0, $0a84c   ; -> sub_0a84c
+  09bb8:  a8038025  call     lr0, $0a84c   ; -> steepCopy32Left
   09bbc:  15879a00  add      lr7, lr26, $00   ; [delay slot]
   09bc0:  a000000b  jmp      $09bec   ; -> L_09bec
   09bc4:  70400101  nop         ; [delay slot]
@@ -11170,7 +11170,7 @@ L_09c14:
   09c20:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   09c24:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_09c28:
+sub_09c28:   ; shallowXorN
   09c28:  45608600  cple     gr96, lr6, $00
   09c2c:  ac00603e  jmpt     gr96, $09d24   ; -> L_09d24
   09c30:  15658b00  add      gr101, lr11, $00   ; [delay slot]
@@ -11297,7 +11297,7 @@ L_09db0:
   09ddc:  1e006082  store    0, 0, gr96, lr2   ; [delay slot]
   09de0:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_09de4:
+sub_09de4:   ; shallowXorNLeft
   09de4:  45608600  cple     gr96, lr6, $00
   09de8:  ac006043  jmpt     gr96, $09ef4   ; -> L_09ef4
   09dec:  15658b00  add      gr101, lr11, $00   ; [delay slot]
@@ -11435,7 +11435,7 @@ L_09f98:
   09fc4:  1e006063  store    0, 0, gr96, gr99   ; [delay slot]
   09fc8:  000d0000  .word    $000d0000   ; tag word: 11 arguments, frame $0
 
-sub_09fcc:
+sub_09fcc:   ; shallowCopyN
   09fcc:  45608600  cple     gr96, lr6, $00
   09fd0:  ac006041  jmpt     gr96, $0a0d4   ; -> L_0a0d4
   09fd4:  15668b00  add      gr102, lr11, $00   ; [delay slot]
@@ -11568,7 +11568,7 @@ L_0a16c:
   0a198:  1e006082  store    0, 0, gr96, lr2   ; [delay slot]
   0a19c:  000d0000  .word    $000d0000   ; tag word: 11 arguments, frame $0
 
-sub_0a1a0:
+sub_0a1a0:   ; shallowCopyNLeft
   0a1a0:  45608600  cple     gr96, lr6, $00
   0a1a4:  ac006046  jmpt     gr96, $0a2bc   ; -> L_0a2bc
   0a1a8:  15668b00  add      gr102, lr11, $00   ; [delay slot]
@@ -11712,7 +11712,7 @@ L_0a36c:
   0a398:  1e006063  store    0, 0, gr96, gr99   ; [delay slot]
   0a39c:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_0a3a0:
+sub_0a3a0:   ; shallowXor32
   0a3a0:  45608500  cple     gr96, lr5, $00
   0a3a4:  ac00601b  jmpt     gr96, $0a410   ; -> L_0a410
   0a3a8:  03006400  const    gr100, $0000   ; [delay slot]
@@ -11763,7 +11763,7 @@ L_0a424:
   0a444:  70400101  nop         ; [delay slot]
   0a448:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_0a44c:
+sub_0a44c:   ; shallowXor32Left
   0a44c:  45608500  cple     gr96, lr5, $00
   0a450:  ac00601b  jmpt     gr96, $0a4bc   ; -> L_0a4bc
   0a454:  03006300  const    gr99, $0000   ; [delay slot]
@@ -11815,7 +11815,7 @@ L_0a4d4:
   0a4f4:  70400101  nop         ; [delay slot]
   0a4f8:  000b0000  .word    $000b0000   ; tag word: 9 arguments, frame $0
 
-sub_0a4fc:
+sub_0a4fc:   ; shallowCopy32
   0a4fc:  45608500  cple     gr96, lr5, $00
   0a500:  ac006019  jmpt     gr96, $0a564   ; -> L_0a564
   0a504:  03006300  const    gr99, $0000   ; [delay slot]
@@ -11861,7 +11861,7 @@ L_0a574:
   0a58c:  70400101  nop         ; [delay slot]
   0a590:  000b0000  .word    $000b0000   ; tag word: 9 arguments, frame $0
 
-sub_0a594:
+sub_0a594:   ; shallowCopy32Left
   0a594:  45608500  cple     gr96, lr5, $00
   0a598:  ac006017  jmpt     gr96, $0a5f4   ; -> L_0a5f4
   0a59c:  03006200  const    gr98, $0000   ; [delay slot]
@@ -11905,7 +11905,7 @@ L_0a604:
   0a61c:  70400101  nop         ; [delay slot]
   0a620:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_0a624:
+sub_0a624:   ; steepCopyN
   0a624:  03006001  const    gr96, $0001
   0a628:  80606084  sll      gr96, gr96, lr4
   0a62c:  25616001  sub      gr97, gr96, $01
@@ -11951,7 +11951,7 @@ L_0a6ac:
   0a6c0:  70400101  nop         ; [delay slot]
   0a6c4:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_0a6c8:
+sub_0a6c8:   ; steepCopyNLeft
   0a6c8:  03006001  const    gr96, $0001
   0a6cc:  80606084  sll      gr96, gr96, lr4
   0a6d0:  25616001  sub      gr97, gr96, $01
@@ -11996,7 +11996,7 @@ L_0a74c:
   0a760:  70400101  nop         ; [delay slot]
   0a764:  00080000  .word    $00080000   ; tag word: 6 arguments, frame $0
 
-sub_0a768:
+sub_0a768:   ; steepCopy8
   0a768:  45608400  cple     gr96, lr4, $00
   0a76c:  cc006080  jmpti    gr96, lr0
   0a770:  916287ff  and      gr98, lr7, $ff   ; [delay slot]
@@ -12019,7 +12019,7 @@ L_0a798:
   0a7ac:  70400101  nop         ; [delay slot]
   0a7b0:  00080000  .word    $00080000   ; tag word: 6 arguments, frame $0
 
-sub_0a7b4:
+sub_0a7b4:   ; steepCopy8Left
   0a7b4:  45608400  cple     gr96, lr4, $00
   0a7b8:  cc006080  jmpti    gr96, lr0
   0a7bc:  916287ff  and      gr98, lr7, $ff   ; [delay slot]
@@ -12042,7 +12042,7 @@ L_0a7e4:
   0a7f8:  70400101  nop         ; [delay slot]
   0a7fc:  00080000  .word    $00080000   ; tag word: 6 arguments, frame $0
 
-sub_0a800:
+sub_0a800:   ; steepCopy32
   0a800:  45608400  cple     gr96, lr4, $00
   0a804:  cc006080  jmpti    gr96, lr0
   0a808:  70400101  nop         ; [delay slot]
@@ -12065,7 +12065,7 @@ L_0a830:
   0a844:  70400101  nop         ; [delay slot]
   0a848:  00080000  .word    $00080000   ; tag word: 6 arguments, frame $0
 
-sub_0a84c:
+sub_0a84c:   ; steepCopy32Left
   0a84c:  45608400  cple     gr96, lr4, $00
   0a850:  cc006080  jmpti    gr96, lr0
   0a854:  70400101  nop         ; [delay slot]
@@ -12088,7 +12088,7 @@ L_0a87c:
   0a890:  70400101  nop         ; [delay slot]
   0a894:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_0a898:
+sub_0a898:   ; steepXorN
   0a898:  03006001  const    gr96, $0001
   0a89c:  80606084  sll      gr96, gr96, lr4
   0a8a0:  25616001  sub      gr97, gr96, $01
@@ -12126,7 +12126,7 @@ L_0a900:
   0a914:  70400101  nop         ; [delay slot]
   0a918:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_0a91c:
+sub_0a91c:   ; steepXorNLeft
   0a91c:  03006001  const    gr96, $0001
   0a920:  80606084  sll      gr96, gr96, lr4
   0a924:  25616001  sub      gr97, gr96, $01
@@ -12163,7 +12163,7 @@ L_0a980:
   0a994:  70400101  nop         ; [delay slot]
   0a998:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_0a99c:
+sub_0a99c:   ; steepXor8
   0a99c:  45608400  cple     gr96, lr4, $00
   0a9a0:  cc006080  jmpti    gr96, lr0
   0a9a4:  70400101  nop         ; [delay slot]
@@ -12188,7 +12188,7 @@ L_0a9d4:
   0a9e8:  70400101  nop         ; [delay slot]
   0a9ec:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_0a9f0:
+sub_0a9f0:   ; steepXor8Left
   0a9f0:  45608400  cple     gr96, lr4, $00
   0a9f4:  cc006080  jmpti    gr96, lr0
   0a9f8:  70400101  nop         ; [delay slot]
@@ -12213,7 +12213,7 @@ L_0aa28:
   0aa3c:  70400101  nop         ; [delay slot]
   0aa40:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_0aa44:
+sub_0aa44:   ; steepXor32
   0aa44:  45608400  cple     gr96, lr4, $00
   0aa48:  cc006080  jmpti    gr96, lr0
   0aa4c:  70400101  nop         ; [delay slot]
@@ -12239,7 +12239,7 @@ L_0aa80:
   0aa94:  70400101  nop         ; [delay slot]
   0aa98:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_0aa9c:
+sub_0aa9c:   ; steepXor32Left
   0aa9c:  45608400  cple     gr96, lr4, $00
   0aaa0:  cc006080  jmpti    gr96, lr0
   0aaa4:  70400101  nop         ; [delay slot]
@@ -12265,7 +12265,7 @@ L_0aad8:
   0aaec:  70400101  nop         ; [delay slot]
   0aaf0:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_0aaf4:
+sub_0aaf4:   ; WideLineSlabsFill
   0aaf4:  15608502  add      gr96, lr5, $02
   0aaf8:  16126360  load     0, 12, gr99, gr96
   0aafc:  15608506  add      gr96, lr5, $06
@@ -12345,7 +12345,7 @@ L_0abe8:
   0ac04:  70400101  nop         ; [delay slot]
   0ac08:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_0ac0c:
+sub_0ac0c:   ; WideLineSlabsXor
   0ac0c:  15608502  add      gr96, lr5, $02
   0ac10:  16126360  load     0, 12, gr99, gr96
   0ac14:  15608506  add      gr96, lr5, $06
@@ -12570,8 +12570,8 @@ L_0af04:
   0af30:  63839cc9  cpneq    lr3, lr28, $c9
   0af34:  ac008308  jmpt     lr3, $0af54   ; -> L_0af54
   0af38:  14a560e6  add      lr37, gr96, lr102   ; [delay slot]
-  0af3c:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (sub_32ab8)
-  0af40:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (sub_32ab8)
+  0af3c:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (ReleaseHostEarly)
+  0af40:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (ReleaseHostEarly)
   0af44:  c8008060  calli    lr0, gr96
   0af48:  03008201  const    lr2, $0001   ; [delay slot]
   0af4c:  a0000007  jmp      $0af68   ; -> L_0af68
@@ -13265,8 +13265,8 @@ L_0b8e4:
   0b910:  1560c93c  add      gr96, lr73, $3c
   0b914:  1e006160  store    0, 0, gr97, gr96
   0b918:  1e00af62  store    0, 0, lr47, gr98
-  0b91c:  03006000  const    gr96, $0000   ; lo of .text $15154 (sub_15154)
-  0b920:  02006000  consth   gr96, $0000   ; hi of .text $15154 (sub_15154)
+  0b91c:  03006000  const    gr96, $0000   ; lo of .text $15154 (InitEntryList36)
+  0b920:  02006000  consth   gr96, $0000   ; hi of .text $15154 (InitEntryList36)
   0b924:  c8008060  calli    lr0, gr96
   0b928:  1583c940  add      lr3, lr73, $40   ; [delay slot]
 L_0b92c:
@@ -13374,8 +13374,8 @@ L_0ba5c:
   0baa0:  c8008080  calli    lr0, lr0
   0baa4:  03008406  const    lr4, $0006   ; [delay slot]
   0baa8:  1582c910  add      lr2, lr73, $10
-  0baac:  03006000  const    gr96, $0000   ; lo of .text $1518c (sub_1518c)
-  0bab0:  02006000  consth   gr96, $0000   ; hi of .text $1518c (sub_1518c)
+  0baac:  03006000  const    gr96, $0000   ; lo of .text $1518c (InitEntryList32)
+  0bab0:  02006000  consth   gr96, $0000   ; hi of .text $1518c (InitEntryList32)
   0bab4:  c8008060  calli    lr0, gr96
   0bab8:  1583c968  add      lr3, lr73, $68   ; [delay slot]
   0babc:  1e008887  store    0, 0, lr8, lr7
@@ -14724,8 +14724,8 @@ L_0cddc:
   0ce44:  1584df00  add      lr4, lr95, $00
   0ce48:  1585d100  add      lr5, lr81, $00
   0ce4c:  1586e000  add      lr6, lr96, $00
-  0ce50:  03006000  const    gr96, $0000   ; lo of .text $09270 (sub_09270)
-  0ce54:  02006000  consth   gr96, $0000   ; hi of .text $09270 (sub_09270)
+  0ce50:  03006000  const    gr96, $0000   ; lo of .text $09270 (FillRow32)
+  0ce54:  02006000  consth   gr96, $0000   ; hi of .text $09270 (FillRow32)
   0ce58:  c8008060  calli    lr0, gr96
   0ce5c:  1587d600  add      lr7, lr86, $00   ; [delay slot]
   0ce60:  a000000d  jmp      $0ce94   ; -> L_0ce94
@@ -14737,8 +14737,8 @@ L_0ce68:
   0ce74:  1585df00  add      lr5, lr95, $00
   0ce78:  1586d100  add      lr6, lr81, $00
   0ce7c:  1587e000  add      lr7, lr96, $00
-  0ce80:  03006000  const    gr96, $0000   ; lo of .text $09020 (sub_09020)
-  0ce84:  02006000  consth   gr96, $0000   ; hi of .text $09020 (sub_09020)
+  0ce80:  03006000  const    gr96, $0000   ; lo of .text $09020 (FillRowMasked)
+  0ce84:  02006000  consth   gr96, $0000   ; hi of .text $09020 (FillRowMasked)
   0ce88:  c8008060  calli    lr0, gr96
   0ce8c:  1588d600  add      lr8, lr86, $00   ; [delay slot]
 L_0ce90:
@@ -14840,8 +14840,8 @@ L_0cf94:
   0cffc:  1584df00  add      lr4, lr95, $00
   0d000:  1585d100  add      lr5, lr81, $00
   0d004:  1586e000  add      lr6, lr96, $00
-  0d008:  03006000  const    gr96, $0000   ; lo of .text $09270 (sub_09270)
-  0d00c:  02006000  consth   gr96, $0000   ; hi of .text $09270 (sub_09270)
+  0d008:  03006000  const    gr96, $0000   ; lo of .text $09270 (FillRow32)
+  0d00c:  02006000  consth   gr96, $0000   ; hi of .text $09270 (FillRow32)
   0d010:  c8008060  calli    lr0, gr96
   0d014:  1587d600  add      lr7, lr86, $00   ; [delay slot]
   0d018:  a000000c  jmp      $0d048   ; -> L_0d048
@@ -14853,8 +14853,8 @@ L_0d020:
   0d02c:  1585df00  add      lr5, lr95, $00
   0d030:  1586d100  add      lr6, lr81, $00
   0d034:  1587e000  add      lr7, lr96, $00
-  0d038:  03006000  const    gr96, $0000   ; lo of .text $09020 (sub_09020)
-  0d03c:  02006000  consth   gr96, $0000   ; hi of .text $09020 (sub_09020)
+  0d038:  03006000  const    gr96, $0000   ; lo of .text $09020 (FillRowMasked)
+  0d03c:  02006000  consth   gr96, $0000   ; hi of .text $09020 (FillRowMasked)
   0d040:  c8008060  calli    lr0, gr96
   0d044:  1588d600  add      lr8, lr86, $00   ; [delay slot]
 L_0d048:
@@ -16203,7 +16203,7 @@ file_12:   ; object file 12 (C-g): .text starts here
 sub_0e394:
   0e394:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_0e398:
+sub_0e398:   ; DrawSlab
   0e398:  25010130  sub      gr1, gr1, $30
   0e39c:  5e00017e  asgeu    trap64, gr1, gr126
   0e3a0:  15609302  add      gr96, lr19, $02
@@ -20212,8 +20212,8 @@ sub_11ad8:   ; DrawText
   11ae8:  14810181  add      lr1, gr1, lr1
   11aec:  03017ae0  const    gr122, $01e0
   11af0:  247d7d7a  sub      gr125, gr125, gr122
-  11af4:  03006000  const    gr96, $0000   ; lo of .text $00f64 (sub_00f64)
-  11af8:  02006000  consth   gr96, $0000   ; hi of .text $00f64 (sub_00f64)
+  11af4:  03006000  const    gr96, $0000   ; lo of .text $00f64 (GetFramePtr)
+  11af8:  02006000  consth   gr96, $0000   ; hi of .text $00f64 (GetFramePtr)
   11afc:  c8008060  calli    lr0, gr96
   11b00:  03009200  const    lr18, $0000   ; [delay slot]
   11b04:  15986000  add      lr24, gr96, $00
@@ -20465,8 +20465,8 @@ L_11de4:
   11e9c:  146162c6  add      gr97, gr98, lr70
   11ea0:  15607d46  add      gr96, gr125, $46
   11ea4:  1e026160  store    0, 2, gr97, gr96
-  11ea8:  03006000  const    gr96, $0000   ; lo of .text $01970 (sub_01970)
-  11eac:  02006000  consth   gr96, $0000   ; hi of .text $01970 (sub_01970)
+  11ea8:  03006000  const    gr96, $0000   ; lo of .text $01970 (MapRect)
+  11eac:  02006000  consth   gr96, $0000   ; hi of .text $01970 (MapRect)
   11eb0:  c8008060  calli    lr0, gr96
   11eb4:  1582a600  add      lr2, lr38, $00   ; [delay slot]
 L_11eb8:
@@ -21461,8 +21461,8 @@ L_12c64:
   12c6c:  acfd60a2  jmpt     gr96, $122f4   ; -> L_122f4
   12c70:  70400101  nop         ; [delay slot]
 L_12c74:
-  12c74:  03006000  const    gr96, $0000   ; lo of .text $00f6c (sub_00f6c)
-  12c78:  02006000  consth   gr96, $0000   ; hi of .text $00f6c (sub_00f6c)
+  12c74:  03006000  const    gr96, $0000   ; lo of .text $00f6c (SetFramePtr)
+  12c78:  02006000  consth   gr96, $0000   ; hi of .text $00f6c (SetFramePtr)
   12c7c:  c8008060  calli    lr0, gr96
   12c80:  15829800  add      lr2, lr24, $00   ; [delay slot]
   12c84:  6360c700  cpneq    gr96, lr71, $00
@@ -21848,8 +21848,8 @@ L_13168:
   131ec:  1e026260  store    0, 2, gr98, gr96   ; [delay slot]
   131f0:  15837d40  add      lr3, gr125, $40
   131f4:  15847d48  add      lr4, gr125, $48
-  131f8:  03006000  const    gr96, $0000   ; lo of .text $01970 (sub_01970)
-  131fc:  02006000  consth   gr96, $0000   ; hi of .text $01970 (sub_01970)
+  131f8:  03006000  const    gr96, $0000   ; lo of .text $01970 (MapRect)
+  131fc:  02006000  consth   gr96, $0000   ; hi of .text $01970 (MapRect)
   13200:  c8008060  calli    lr0, gr96
   13204:  1582c500  add      lr2, lr69, $00   ; [delay slot]
 L_13208:
@@ -22340,8 +22340,8 @@ L_138fc:
   13908:  ac00600c  jmpt     gr96, $13938   ; -> L_13938
   1390c:  15609a44  add      gr96, lr26, $44   ; [delay slot]
   13910:  16008260  load     0, 0, lr2, gr96
-  13914:  03006000  const    gr96, $0000   ; lo of .text $155b4 (sub_155b4)
-  13918:  02006000  consth   gr96, $0000   ; hi of .text $155b4 (sub_155b4)
+  13914:  03006000  const    gr96, $0000   ; lo of .text $155b4 (CacheScreenDevices)
+  13918:  02006000  consth   gr96, $0000   ; hi of .text $155b4 (CacheScreenDevices)
   1391c:  c8008060  calli    lr0, gr96
   13920:  70400101  nop         ; [delay slot]
   13924:  63606000  cpneq    gr96, gr96, $00
@@ -22813,7 +22813,7 @@ L_13fb8:
   13fc4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   13fc8:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_13fcc:
+sub_13fcc:   ; GetRegionFlag
   13fcc:  0300608c  const    gr96, $008c   ; lo of extern#1772+$8c
   13fd0:  02006000  consth   gr96, $0000   ; hi of extern#1772+$8c
   13fd4:  c0000080  jmpi     lr0
@@ -23033,7 +23033,7 @@ L_142b0:
   142bc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   142c0:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_142c4:
+sub_142c4:   ; CacheHostCopy
   142c4:  25010128  sub      gr1, gr1, $28
   142c8:  5e00017e  asgeu    trap64, gr1, gr126
   142cc:  15810138  add      lr1, gr1, $38
@@ -23181,7 +23181,7 @@ L_144c8:
   144d4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   144d8:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_144dc:
+sub_144dc:   ; ForgetScreenDevice
   144dc:  15608224  add      gr96, lr2, $24
   144e0:  16126060  load     0, 12, gr96, gr96
   144e4:  03a06100  const    gr97, $a000
@@ -23706,9 +23706,9 @@ L_14c10:
   14c44:  15846000  add      lr4, gr96, $00   ; [delay slot]
 L_14c48:
   14c48:  1600848e  load     0, 0, lr4, lr14
-  14c4c:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)
+  14c4c:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)
   14c50:  15878400  add      lr7, lr4, $00
-  14c54:  02006000  consth   gr96, $0000   ; hi of .text $33544 (sub_33544)
+  14c54:  02006000  consth   gr96, $0000   ; hi of .text $33544 (IsHostROMAddress)
   14c58:  c8008060  calli    lr0, gr96
   14c5c:  15828700  add      lr2, lr7, $00   ; [delay slot]
   14c60:  61606000  cpeq     gr96, gr96, $00
@@ -24059,7 +24059,7 @@ L_15140:
   1514c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   15150:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_15154:
+sub_15154:   ; InitEntryList36
   15154:  03006300  const    gr99, $0000
   15158:  01ff62ff  constn   gr98, $ffff
   1515c:  03006000  const    gr96, $0000
@@ -24076,7 +24076,7 @@ L_15160:
   15184:  70400101  nop         ; [delay slot]
   15188:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_1518c:
+sub_1518c:   ; InitEntryList32
   1518c:  03006300  const    gr99, $0000
   15190:  01ff62ff  constn   gr98, $ffff
   15194:  03006000  const    gr96, $0000
@@ -24128,7 +24128,7 @@ L_15230:
   15238:  6260608c  cpneq    gr96, gr96, lr12
   1523c:  ac006004  jmpt     gr96, $1524c   ; -> L_1524c
   15240:  03008205  const    lr2, $0005   ; [delay slot]
-  15244:  a802807a  call     lr0, $15c2c   ; -> sub_15c2c
+  15244:  a802807a  call     lr0, $15c2c   ; -> CacheFreeSubBuffers
   15248:  15838900  add      lr3, lr9, $00   ; [delay slot]
 L_1524c:
   1524c:  0300608c  const    gr96, $008c   ; lo of extern#1772+$8c
@@ -24211,7 +24211,7 @@ L_15334:
   15370:  63606000  cpneq    gr96, gr96, $00
   15374:  a400600a  jmpf     gr96, $1539c   ; -> L_1539c
   15378:  15828918  add      lr2, lr9, $18   ; [delay slot]
-  1537c:  a8ff8084  call     lr0, $1518c   ; -> sub_1518c
+  1537c:  a8ff8084  call     lr0, $1518c   ; -> InitEntryList32
   15380:  15838954  add      lr3, lr9, $54   ; [delay slot]
   15384:  1e008c88  store    0, 0, lr12, lr8
   15388:  15608900  add      gr96, lr9, $00
@@ -24369,7 +24369,7 @@ sub_1553c:   ; SetShieldRect
   155ac:  1e026061  store    0, 2, gr96, gr97   ; [delay slot]
   155b0:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_155b4:
+sub_155b4:   ; CacheScreenDevices
   155b4:  25010120  sub      gr1, gr1, $20
   155b8:  5e00017e  asgeu    trap64, gr1, gr126
   155bc:  0300851c  const    lr5, $001c   ; lo of extern#1753+$1c
@@ -24825,7 +24825,7 @@ L_15bd8:
   15bf0:  15828900  add      lr2, lr9, $00   ; [delay slot]
   15bf4:  15828800  add      lr2, lr8, $00
 L_15bf8:
-  15bf8:  a800800d  call     lr0, $15c2c   ; -> sub_15c2c
+  15bf8:  a800800d  call     lr0, $15c2c   ; -> CacheFreeSubBuffers
   15bfc:  15838900  add      lr3, lr9, $00   ; [delay slot]
   15c00:  03006000  const    gr96, $0000   ; lo of .text $376a0 (HeapFree)
   15c04:  02006000  consth   gr96, $0000   ; hi of .text $376a0 (HeapFree)
@@ -24840,7 +24840,7 @@ L_15c10:
   15c24:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   15c28:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_15c2c:
+sub_15c2c:   ; CacheFreeSubBuffers
   15c2c:  25010110  sub      gr1, gr1, $10
   15c30:  5e00017e  asgeu    trap64, gr1, gr126
   15c34:  81618601  sll      gr97, lr6, $01
@@ -25133,7 +25133,7 @@ L_16020:
   1602c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   16030:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_16034:
+sub_16034:   ; CacheFindBitPattern
   16034:  25010108  sub      gr1, gr1, $08
   16038:  5e00017e  asgeu    trap64, gr1, gr126
   1603c:  16006384  load     0, 0, gr99, lr4
@@ -25199,7 +25199,7 @@ sub_1610c:   ; CacheBitPattern
   1610c:  25010110  sub      gr1, gr1, $10
   16110:  5e00017e  asgeu    trap64, gr1, gr126
   16114:  1581011c  add      lr1, gr1, $1c
-  16118:  a8ff80c7  call     lr0, $16034   ; -> sub_16034
+  16118:  a8ff80c7  call     lr0, $16034   ; -> CacheFindBitPattern
   1611c:  15828600  add      lr2, lr6, $00   ; [delay slot]
   16120:  63616000  cpneq    gr97, gr96, $00
   16124:  ac006104  jmpt     gr97, $16134   ; -> L_16134
@@ -25213,7 +25213,7 @@ L_16134:
   16140:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   16144:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_16148:
+sub_16148:   ; CopySmallPixMapToCard
   16148:  25010120  sub      gr1, gr1, $20
   1614c:  5e00017e  asgeu    trap64, gr1, gr126
   16150:  15608a0c  add      gr96, lr10, $0c
@@ -25349,8 +25349,8 @@ L_162c4:
   1633c:  03006078  const    gr96, $0078   ; lo of extern#1772+$78
   16340:  02006000  consth   gr96, $0000   ; hi of extern#1772+$78
   16344:  1e026160  store    0, 2, gr97, gr96
-  16348:  03006000  const    gr96, $0000   ; lo of .text $33520 (sub_33520)
-  1634c:  02006000  consth   gr96, $0000   ; hi of .text $33520 (sub_33520)
+  16348:  03006000  const    gr96, $0000   ; lo of .text $33520 (Is32BitMode)
+  1634c:  02006000  consth   gr96, $0000   ; hi of .text $33520 (Is32BitMode)
   16350:  c8008060  calli    lr0, gr96
   16354:  70400101  nop         ; [delay slot]
   16358:  61606000  cpeq     gr96, gr96, $00
@@ -25364,8 +25364,8 @@ L_16370:
   16370:  03006094  const    gr96, $0094   ; lo of extern#1772+$94
   16374:  02006000  consth   gr96, $0000   ; hi of extern#1772+$94
   16378:  1e006160  store    0, 0, gr97, gr96
-  1637c:  03006000  const    gr96, $0000   ; lo of .text $33500 (sub_33500)
-  16380:  02006000  consth   gr96, $0000   ; hi of .text $33500 (sub_33500)
+  1637c:  03006000  const    gr96, $0000   ; lo of .text $33500 (GetHostFlag08)
+  16380:  02006000  consth   gr96, $0000   ; hi of .text $33500 (GetHostFlag08)
   16384:  c8008060  calli    lr0, gr96
   16388:  70400101  nop         ; [delay slot]
   1638c:  03006108  const    gr97, $0008   ; lo of extern#1772+$8
@@ -25435,8 +25435,8 @@ L_163e4:
   16480:  1e006061  store    0, 0, gr96, gr97
   16484:  15616410  add      gr97, gr100, $10
   16488:  1e008461  store    0, 0, lr4, gr97
-  1648c:  0305608c  const    gr96, $058c   ; lo of .text $144dc (sub_144dc)
-  16490:  02006000  consth   gr96, $0000   ; hi of .text $144dc (sub_144dc)
+  1648c:  0305608c  const    gr96, $058c   ; lo of .text $144dc (ForgetScreenDevice)
+  16490:  02006000  consth   gr96, $0000   ; hi of .text $144dc (ForgetScreenDevice)
   16494:  15616414  add      gr97, gr100, $14
   16498:  1e006061  store    0, 0, gr96, gr97
   1649c:  03006448  const    gr100, $0048   ; lo of extern#1745+$48
@@ -25546,7 +25546,7 @@ L_163e4:
   1663c:  15616414  add      gr97, gr100, $14
   16640:  1e008461  store    0, 0, lr4, gr97
   16644:  15608a08  add      gr96, lr10, $08
-  16648:  a8fb80db  call     lr0, $155b4   ; -> sub_155b4
+  16648:  a8fb80db  call     lr0, $155b4   ; -> CacheScreenDevices
   1664c:  16008260  load     0, 0, lr2, gr96   ; [delay slot]
   16650:  63606000  cpneq    gr96, gr96, $00
   16654:  ac006006  jmpt     gr96, $1666c   ; -> L_1666c
@@ -25574,7 +25574,7 @@ L_1666c:
   166a8:  03008210  const    lr2, $0010   ; lo of extern#1736+$10
   166ac:  02008200  consth   lr2, $0000   ; hi of extern#1736+$10
   166b0:  03008340  const    lr3, $0040   ; lo of extern#1736+$40
-  166b4:  a8fa80a8  call     lr0, $15154   ; -> sub_15154
+  166b4:  a8fa80a8  call     lr0, $15154   ; -> InitEntryList36
   166b8:  02008300  consth   lr3, $0000   ; hi of extern#1736+$40   ; [delay slot]
   166bc:  0300600c  const    gr96, $000c   ; lo of extern#1856+$c
   166c0:  02006000  consth   gr96, $0000   ; hi of extern#1856+$c
@@ -25594,7 +25594,7 @@ L_1666c:
   166f8:  03008210  const    lr2, $0010   ; lo of extern#1856+$10
   166fc:  02008200  consth   lr2, $0000   ; hi of extern#1856+$10
   16700:  03008340  const    lr3, $0040   ; lo of extern#1856+$40
-  16704:  a8fa8094  call     lr0, $15154   ; -> sub_15154
+  16704:  a8fa8094  call     lr0, $15154   ; -> InitEntryList36
   16708:  02008300  consth   lr3, $0000   ; hi of extern#1856+$40   ; [delay slot]
   1670c:  15608a04  add      gr96, lr10, $04
   16710:  1e008560  store    0, 0, lr5, gr96
@@ -25671,8 +25671,8 @@ L_167bc:
   16828:  02006100  consth   gr97, $0000   ; hi of .text $22a8c (scaleBlt)
   1682c:  15626014  add      gr98, gr96, $14
   16830:  1e006162  store    0, 0, gr97, gr98
-  16834:  03006100  const    gr97, $0000   ; lo of .text $3008c (sub_3008c)
-  16838:  02006100  consth   gr97, $0000   ; hi of .text $3008c (sub_3008c)
+  16834:  03006100  const    gr97, $0000   ; lo of .text $3008c (FastStretch32)
+  16838:  02006100  consth   gr97, $0000   ; hi of .text $3008c (FastStretch32)
   1683c:  15626018  add      gr98, gr96, $18
   16840:  1e006162  store    0, 0, gr97, gr98
   16844:  03006100  const    gr97, $0000   ; lo of .text $075dc (DrawArc)
@@ -25753,7 +25753,7 @@ L_1695c:
   1696c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   16970:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_16974:
+sub_16974:   ; CallExit
   16974:  25010108  sub      gr1, gr1, $08
   16978:  5e00017e  asgeu    trap64, gr1, gr126
   1697c:  03006000  const    gr96, $0000   ; lo of .text $3b428 (_exit)
@@ -25946,7 +25946,7 @@ L_16bf8:
   16c18:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   16c1c:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_16c20:
+sub_16c20:   ; PQDAllocRoomAll
   16c20:  03006000  const    gr96, $0000   ; lo of extern#1839+$0
   16c24:  02006000  consth   gr96, $0000   ; hi of extern#1839+$0
   16c28:  16006160  load     0, 0, gr97, gr96
@@ -26016,8 +26016,8 @@ L_16ce4:
   16d18:  a000001f  jmp      $16d94   ; -> L_16d94
   16d1c:  158a6000  add      lr10, gr96, $00   ; [delay slot]
 L_16d20:
-  16d20:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)
-  16d24:  02006000  consth   gr96, $0000   ; hi of .text $33544 (sub_33544)
+  16d20:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)
+  16d24:  02006000  consth   gr96, $0000   ; hi of .text $33544 (IsHostROMAddress)
   16d28:  c8008060  calli    lr0, gr96
   16d2c:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   16d30:  61606000  cpeq     gr96, gr96, $00
@@ -26029,7 +26029,7 @@ L_16d20:
   16d48:  61608500  cpeq     gr96, lr5, $00
   16d4c:  ac006006  jmpt     gr96, $16d64   ; -> L_16d64
   16d50:  15828700  add      lr2, lr7, $00   ; [delay slot]
-  16d54:  a8008082  call     lr0, $16f5c   ; -> sub_16f5c
+  16d54:  a8008082  call     lr0, $16f5c   ; -> CopyLongsFromUnaligned
   16d58:  15848b00  add      lr4, lr11, $00   ; [delay slot]
   16d5c:  a000000f  jmp      $16d98   ; -> L_16d98
   16d60:  63608d02  cpneq    gr96, lr13, $02   ; [delay slot]
@@ -26084,9 +26084,9 @@ L_16db0:
 L_16e0c:
   16e0c:  03008400  const    lr4, $0000   ; lo of .text $390b4 (svc_D3)
   16e10:  02008400  consth   lr4, $0000   ; hi of .text $390b4 (svc_D3)
-  16e14:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)
+  16e14:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)
 L_16e18:
-  16e18:  02006000  consth   gr96, $0000   ; hi of .text $33544 (sub_33544)
+  16e18:  02006000  consth   gr96, $0000   ; hi of .text $33544 (IsHostROMAddress)
   16e1c:  c8008060  calli    lr0, gr96
   16e20:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   16e24:  61606000  cpeq     gr96, gr96, $00
@@ -26104,7 +26104,7 @@ L_16e3c:
   16e50:  c8008084  calli    lr0, lr4
   16e54:  15828600  add      lr2, lr6, $00   ; [delay slot]
   16e58:  a0ff00f0  jmp      $16e18   ; -> L_16e18
-  16e5c:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)   ; [delay slot]
+  16e5c:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)   ; [delay slot]
 L_16e60:
   16e60:  908a858a  and      lr10, lr5, lr10
   16e64:  81608b02  sll      gr96, lr11, $02
@@ -26131,7 +26131,7 @@ L_16ea8:
   16eac:  61608500  cpeq     gr96, lr5, $00
   16eb0:  ac006019  jmpt     gr96, $16f14   ; -> L_16f14
   16eb4:  15828700  add      lr2, lr7, $00   ; [delay slot]
-  16eb8:  a8008029  call     lr0, $16f5c   ; -> sub_16f5c
+  16eb8:  a8008029  call     lr0, $16f5c   ; -> CopyLongsFromUnaligned
   16ebc:  15848b00  add      lr4, lr11, $00   ; [delay slot]
   16ec0:  a000001a  jmp      $16f28   ; -> L_16f28
   16ec4:  70400101  nop         ; [delay slot]
@@ -26142,11 +26142,11 @@ L_16ec8:
 L_16ed4:
   16ed4:  61608c00  cpeq     gr96, lr12, $00
   16ed8:  ac006004  jmpt     gr96, $16ee8   ; -> L_16ee8
-  16edc:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)   ; [delay slot]
+  16edc:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)   ; [delay slot]
   16ee0:  16008a8a  load     0, 0, lr10, lr10
-  16ee4:  03006000  const    gr96, $0000   ; lo of .text $33544 (sub_33544)
+  16ee4:  03006000  const    gr96, $0000   ; lo of .text $33544 (IsHostROMAddress)
 L_16ee8:
-  16ee8:  02006000  consth   gr96, $0000   ; hi of .text $33544 (sub_33544)
+  16ee8:  02006000  consth   gr96, $0000   ; hi of .text $33544 (IsHostROMAddress)
   16eec:  c8008060  calli    lr0, gr96
   16ef0:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   16ef4:  61606000  cpeq     gr96, gr96, $00
@@ -26180,7 +26180,7 @@ L_16f44:
   16f54:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   16f58:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_16f5c:
+sub_16f5c:   ; CopyLongsFromUnaligned
   16f5c:  24838385  sub      lr3, lr3, lr5
   16f60:  81628503  sll      gr98, lr5, $03
   16f64:  35616220  subr     gr97, gr98, $20
@@ -26204,7 +26204,7 @@ L_16f7c:
   16fa8:  70400101  nop         ; [delay slot]
   16fac:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_16fb0:
+sub_16fb0:   ; CopyLongsToUnaligned
   16fb0:  24828285  sub      lr2, lr2, lr5
   16fb4:  81638503  sll      gr99, lr5, $03
   16fb8:  16006282  load     0, 0, gr98, lr2
@@ -27808,8 +27808,8 @@ L_1866c:
   1866c:  ac009509  jmpt     lr21, $18690   ; -> L_18690
   18670:  81618302  sll      gr97, lr3, $02   ; [delay slot]
   18674:  1483618a  add      lr3, gr97, lr10
-  18678:  03006000  const    gr96, $0000   ; lo of .text $27678 (sub_27678)
-  1867c:  02006000  consth   gr96, $0000   ; hi of .text $27678 (sub_27678)
+  18678:  03006000  const    gr96, $0000   ; lo of .text $27678 (LuminanceToBit)
+  1867c:  02006000  consth   gr96, $0000   ; hi of .text $27678 (LuminanceToBit)
   18680:  c8008060  calli    lr0, gr96
   18684:  15828600  add      lr2, lr6, $00   ; [delay slot]
   18688:  a000000a  jmp      $186b0   ; -> L_186b0
@@ -27929,8 +27929,8 @@ L_187fc:
   18820:  ac009509  jmpt     lr21, $18844   ; -> L_18844
   18824:  1e02608d  store    0, 2, gr96, lr13   ; [delay slot]
   18828:  15828700  add      lr2, lr7, $00
-  1882c:  03006000  const    gr96, $0000   ; lo of .text $27678 (sub_27678)
-  18830:  02006000  consth   gr96, $0000   ; hi of .text $27678 (sub_27678)
+  1882c:  03006000  const    gr96, $0000   ; lo of .text $27678 (LuminanceToBit)
+  18830:  02006000  consth   gr96, $0000   ; hi of .text $27678 (LuminanceToBit)
   18834:  c8008060  calli    lr0, gr96
   18838:  15838b00  add      lr3, lr11, $00   ; [delay slot]
   1883c:  a0000008  jmp      $1885c   ; -> L_1885c
@@ -27958,7 +27958,7 @@ L_18880:
   18884:  1612648c  load     0, 12, gr100, lr12   ; [delay slot]
   18888:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_1888c:
+sub_1888c:   ; PinExtrapolate
   1888c:  15608200  add      gr96, lr2, $00
   18890:  24616083  sub      gr97, gr96, lr3
   18894:  14606160  add      gr96, gr97, gr96
@@ -27992,21 +27992,21 @@ sub_188c4:   ; PatDither
   188f8:  c8008089  calli    lr0, lr9
   188fc:  15838a00  add      lr3, lr10, $00   ; [delay slot]
   18900:  16028284  load     0, 2, lr2, lr4
-  18904:  a8ff80e2  call     lr0, $1888c   ; -> sub_1888c
+  18904:  a8ff80e2  call     lr0, $1888c   ; -> PinExtrapolate
   18908:  1602838a  load     0, 2, lr3, lr10   ; [delay slot]
   1890c:  15887d10  add      lr8, gr125, $10
   18910:  1e026088  store    0, 2, gr96, lr8
   18914:  15608e24  add      gr96, lr14, $24
   18918:  16028260  load     0, 2, lr2, gr96
   1891c:  15607d1a  add      gr96, gr125, $1a
-  18920:  a8ff80db  call     lr0, $1888c   ; -> sub_1888c
+  18920:  a8ff80db  call     lr0, $1888c   ; -> PinExtrapolate
   18924:  16028360  load     0, 2, lr3, gr96   ; [delay slot]
   18928:  15847d12  add      lr4, gr125, $12
   1892c:  1e026084  store    0, 2, gr96, lr4
   18930:  15608e26  add      gr96, lr14, $26
   18934:  16028260  load     0, 2, lr2, gr96
   18938:  15607d1c  add      gr96, gr125, $1c
-  1893c:  a8ff80d4  call     lr0, $1888c   ; -> sub_1888c
+  1893c:  a8ff80d4  call     lr0, $1888c   ; -> PinExtrapolate
   18940:  16028360  load     0, 2, lr3, gr96   ; [delay slot]
   18944:  15867d14  add      lr6, gr125, $14
   18948:  1e026086  store    0, 2, gr96, lr6
@@ -28017,17 +28017,17 @@ sub_188c4:   ; PatDither
   1895c:  c8008089  calli    lr0, lr9
   18960:  15838500  add      lr3, lr5, $00   ; [delay slot]
   18964:  16028288  load     0, 2, lr2, lr8
-  18968:  a8ff80c9  call     lr0, $1888c   ; -> sub_1888c
+  18968:  a8ff80c9  call     lr0, $1888c   ; -> PinExtrapolate
   1896c:  16028385  load     0, 2, lr3, lr5   ; [delay slot]
   18970:  1e026085  store    0, 2, gr96, lr5
   18974:  16028284  load     0, 2, lr2, lr4
   18978:  15847d0a  add      lr4, gr125, $0a
-  1897c:  a8ff80c4  call     lr0, $1888c   ; -> sub_1888c
+  1897c:  a8ff80c4  call     lr0, $1888c   ; -> PinExtrapolate
   18980:  16028384  load     0, 2, lr3, lr4   ; [delay slot]
   18984:  1e026084  store    0, 2, gr96, lr4
   18988:  16028286  load     0, 2, lr2, lr6
   1898c:  15867d0c  add      lr6, gr125, $0c
-  18990:  a8ff80bf  call     lr0, $1888c   ; -> sub_1888c
+  18990:  a8ff80bf  call     lr0, $1888c   ; -> PinExtrapolate
   18994:  16028386  load     0, 2, lr3, lr6   ; [delay slot]
   18998:  1e026086  store    0, 2, gr96, lr6
   1899c:  c800808b  calli    lr0, lr11
@@ -28039,21 +28039,21 @@ sub_188c4:   ; PatDither
   189b4:  16028385  load     0, 2, lr3, lr5
   189b8:  16026087  load     0, 2, gr96, lr7
   189bc:  15828300  add      lr2, lr3, $00
-  189c0:  a8ff80b3  call     lr0, $1888c   ; -> sub_1888c
+  189c0:  a8ff80b3  call     lr0, $1888c   ; -> PinExtrapolate
   189c4:  15836000  add      lr3, gr96, $00   ; [delay slot]
   189c8:  1e026087  store    0, 2, gr96, lr7
   189cc:  16028384  load     0, 2, lr3, lr4
   189d0:  15637d02  add      gr99, gr125, $02
   189d4:  16026063  load     0, 2, gr96, gr99
   189d8:  15828300  add      lr2, lr3, $00
-  189dc:  a8ff80ac  call     lr0, $1888c   ; -> sub_1888c
+  189dc:  a8ff80ac  call     lr0, $1888c   ; -> PinExtrapolate
   189e0:  15836000  add      lr3, gr96, $00   ; [delay slot]
   189e4:  1e026063  store    0, 2, gr96, gr99
   189e8:  16028386  load     0, 2, lr3, lr6
   189ec:  15637d04  add      gr99, gr125, $04
   189f0:  16026063  load     0, 2, gr96, gr99
   189f4:  15828300  add      lr2, lr3, $00
-  189f8:  a8ff80a5  call     lr0, $1888c   ; -> sub_1888c
+  189f8:  a8ff80a5  call     lr0, $1888c   ; -> PinExtrapolate
   189fc:  15836000  add      lr3, gr96, $00   ; [delay slot]
   18a00:  1e026063  store    0, 2, gr96, gr99
   18a04:  c800808b  calli    lr0, lr11
@@ -29362,8 +29362,8 @@ L_19c04:
   19c2c:  15878c00  add      lr7, lr12, $00
   19c30:  1588a600  add      lr8, lr38, $00
   19c34:  158aa700  add      lr10, lr39, $00
-  19c38:  03006000  const    gr96, $0000   ; lo of .text $0e398 (sub_0e398)
-  19c3c:  02006000  consth   gr96, $0000   ; hi of .text $0e398 (sub_0e398)
+  19c38:  03006000  const    gr96, $0000   ; lo of .text $0e398 (DrawSlab)
+  19c3c:  02006000  consth   gr96, $0000   ; hi of .text $0e398 (DrawSlab)
   19c40:  c8008060  calli    lr0, gr96
   19c44:  158ba800  add      lr11, lr40, $00   ; [delay slot]
   19c48:  1612638c  load     0, 12, gr99, lr12
@@ -29648,7 +29648,7 @@ L_1a00c:
   1a03c:  1586aa00  add      lr6, lr42, $00
   1a040:  15899000  add      lr9, lr16, $00
   1a044:  158aa800  add      lr10, lr40, $00
-  1a048:  a80c805d  call     lr0, $1d1bc   ; -> sub_1d1bc
+  1a048:  a80c805d  call     lr0, $1d1bc   ; -> rHilite32
   1a04c:  158b9100  add      lr11, lr17, $00   ; [delay slot]
   1a050:  a0040081  jmp      $1b254   ; -> L_1b254
   1a054:  70400101  nop         ; [delay slot]
@@ -29667,7 +29667,7 @@ L_1a058:
   1a084:  15896000  add      lr9, gr96, $00
   1a088:  158a9000  add      lr10, lr16, $00
   1a08c:  158ba800  add      lr11, lr40, $00
-  1a090:  a80b80bc  call     lr0, $1cf80   ; -> sub_1cf80
+  1a090:  a80b80bc  call     lr0, $1cf80   ; -> rHilite
   1a094:  158c9100  add      lr12, lr17, $00   ; [delay slot]
   1a098:  a004006f  jmp      $1b254   ; -> L_1b254
   1a09c:  70400101  nop         ; [delay slot]
@@ -29876,7 +29876,7 @@ L_1a364:
   1a398:  15898a00  add      lr9, lr10, $00
   1a39c:  158a9000  add      lr10, lr16, $00
   1a3a0:  158ba800  add      lr11, lr40, $00
-  1a3a4:  a804809e  call     lr0, $1b61c   ; -> sub_1b61c
+  1a3a4:  a804809e  call     lr0, $1b61c   ; -> rSrcCopyFast
   1a3a8:  158c9100  add      lr12, lr17, $00   ; [delay slot]
   1a3ac:  a00300aa  jmp      $1b254   ; -> L_1b254
   1a3b0:  70400101  nop         ; [delay slot]
@@ -29889,7 +29889,7 @@ L_1a3b4:
   1a3c8:  15898a00  add      lr9, lr10, $00
   1a3cc:  158a9000  add      lr10, lr16, $00
   1a3d0:  158ba800  add      lr11, lr40, $00
-  1a3d4:  a80480f4  call     lr0, $1b7a4   ; -> sub_1b7a4
+  1a3d4:  a80480f4  call     lr0, $1b7a4   ; -> rSrcCopyRtoL
   1a3d8:  158c9100  add      lr12, lr17, $00   ; [delay slot]
   1a3dc:  a003009e  jmp      $1b254   ; -> L_1b254
   1a3e0:  70400101  nop         ; [delay slot]
@@ -29905,7 +29905,7 @@ L_1a3e4:
   1a404:  158aa900  add      lr10, lr41, $00
   1a408:  158b9000  add      lr11, lr16, $00
   1a40c:  158ca800  add      lr12, lr40, $00
-  1a410:  a804802b  call     lr0, $1b4bc   ; -> sub_1b4bc
+  1a410:  a804802b  call     lr0, $1b4bc   ; -> rSrcCopyLtoR
   1a414:  158d9100  add      lr13, lr17, $00   ; [delay slot]
   1a418:  a003008f  jmp      $1b254   ; -> L_1b254
   1a41c:  70400101  nop         ; [delay slot]
@@ -29961,7 +29961,7 @@ L_1a488:
   1a4d0:  1588aa00  add      lr8, lr42, $00
   1a4d4:  158e6200  add      lr14, gr98, $00
   1a4d8:  158f9000  add      lr15, lr16, $00
-  1a4dc:  a80f80a0  call     lr0, $1e35c   ; -> rHilite32
+  1a4dc:  a80f80a0  call     lr0, $1e35c   ; -> rSlowHilite32
   1a4e0:  1590a800  add      lr16, lr40, $00   ; [delay slot]
   1a4e4:  a002009c  jmp      $1af54   ; -> L_1af54
   1a4e8:  70400101  nop         ; [delay slot]
@@ -29986,7 +29986,7 @@ L_1a4ec:
   1a530:  1588aa00  add      lr8, lr42, $00
   1a534:  158ea900  add      lr14, lr41, $00
   1a538:  158f6200  add      lr15, gr98, $00
-  1a53c:  a8208087  call     lr0, $22758   ; -> rHilite
+  1a53c:  a8208087  call     lr0, $22758   ; -> rSlowHilite
   1a540:  1591a800  add      lr17, lr40, $00   ; [delay slot]
   1a544:  a0020084  jmp      $1af54   ; -> L_1af54
   1a548:  70400101  nop         ; [delay slot]
@@ -30809,7 +30809,7 @@ L_1b198:
   1b1d8:  158cb400  add      lr12, lr52, $00
   1b1dc:  158d6100  add      lr13, gr97, $00
   1b1e0:  158f9000  add      lr15, lr16, $00
-  1b1e4:  a8038062  call     lr0, $1bf6c   ; -> sub_1bf6c
+  1b1e4:  a8038062  call     lr0, $1bf6c   ; -> rcMASK0
   1b1e8:  1590a800  add      lr16, lr40, $00   ; [delay slot]
   1b1ec:  a000001a  jmp      $1b254   ; -> L_1b254
   1b1f0:  70400101  nop         ; [delay slot]
@@ -30838,7 +30838,7 @@ L_1b21c:
 L_1b244:
   1b244:  158e9000  add      lr14, lr16, $00
   1b248:  158fa800  add      lr15, lr40, $00
-  1b24c:  a80380ae  call     lr0, $1c104   ; -> sub_1c104
+  1b24c:  a80380ae  call     lr0, $1c104   ; -> rcSrcOr
   1b250:  15909100  add      lr16, lr17, $00   ; [delay slot]
 L_1b254:
   1b254:  61609600  cpeq     gr96, lr22, $00
@@ -30863,18 +30863,18 @@ L_1b280:
   1b294:  70400101  nop         ; [delay slot]
   1b298:  a0ff00ef  jmp      $1b254   ; -> L_1b254
   1b29c:  70400101  nop         ; [delay slot]
-  1b2a0:  03159a9c  const    lr26, $159c   ; lo of .text $1b33c (sub_1b33c)
+  1b2a0:  03159a9c  const    lr26, $159c   ; lo of .text $1b33c (rSrcCopySlow)
   1b2a4:  a0000014  jmp      $1b2f4   ; -> L_1b2f4
-  1b2a8:  02009a00  consth   lr26, $0000   ; hi of .text $1b33c (sub_1b33c)   ; [delay slot]
-  1b2ac:  031d9a40  const    lr26, $1d40   ; lo of .text $1bae0 (sub_1bae0)
+  1b2a8:  02009a00  consth   lr26, $0000   ; hi of .text $1b33c (rSrcCopySlow)   ; [delay slot]
+  1b2ac:  031d9a40  const    lr26, $1d40   ; lo of .text $1bae0 (rSrcOr)
   1b2b0:  a0000011  jmp      $1b2f4   ; -> L_1b2f4
-  1b2b4:  02009a00  consth   lr26, $0000   ; hi of .text $1bae0 (sub_1bae0)   ; [delay slot]
-  1b2b8:  031e9ac4  const    lr26, $1ec4   ; lo of .text $1bc64 (sub_1bc64)
+  1b2b4:  02009a00  consth   lr26, $0000   ; hi of .text $1bae0 (rSrcOr)   ; [delay slot]
+  1b2b8:  031e9ac4  const    lr26, $1ec4   ; lo of .text $1bc64 (rSrcXor)
   1b2bc:  a000000e  jmp      $1b2f4   ; -> L_1b2f4
-  1b2c0:  02009a00  consth   lr26, $0000   ; hi of .text $1bc64 (sub_1bc64)   ; [delay slot]
-  1b2c4:  03209a48  const    lr26, $2048   ; lo of .text $1bde8 (sub_1bde8)
+  1b2c0:  02009a00  consth   lr26, $0000   ; hi of .text $1bc64 (rSrcXor)   ; [delay slot]
+  1b2c4:  03209a48  const    lr26, $2048   ; lo of .text $1bde8 (rSrcBic)
   1b2c8:  a000000b  jmp      $1b2f4   ; -> L_1b2f4
-  1b2cc:  02009a00  consth   lr26, $0000   ; hi of .text $1bde8 (sub_1bde8)   ; [delay slot]
+  1b2cc:  02009a00  consth   lr26, $0000   ; hi of .text $1bde8 (rSrcBic)   ; [delay slot]
 L_1b2d0:
   1b2d0:  4b60ae03  cpgtu    gr96, lr46, $03
   1b2d4:  ac006008  jmpt     gr96, $1b2f4   ; -> L_1b2f4
@@ -30907,7 +30907,7 @@ L_1b330:
   1b334:  03009503  const    lr21, $0003   ; [delay slot]
   1b338:  00100000  .word    $00100000   ; tag word: 14 arguments, frame $0
 
-sub_1b33c:
+sub_1b33c:   ; rSrcCopySlow
   1b33c:  25010118  sub      gr1, gr1, $18
   1b340:  5e00017e  asgeu    trap64, gr1, gr126
   1b344:  15810158  add      lr1, gr1, $58
@@ -31019,7 +31019,7 @@ L_1b4a8:
   1b4b4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1b4b8:  000e0000  .word    $000e0000   ; tag word: 12 arguments, frame $0
 
-sub_1b4bc:
+sub_1b4bc:   ; rSrcCopyLtoR
   1b4bc:  25010118  sub      gr1, gr1, $18
   1b4c0:  5e00017e  asgeu    trap64, gr1, gr126
   1b4c4:  15810150  add      lr1, gr1, $50
@@ -31119,7 +31119,7 @@ L_1b608:
   1b614:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1b618:  000d0000  .word    $000d0000   ; tag word: 11 arguments, frame $0
 
-sub_1b61c:
+sub_1b61c:   ; rSrcCopyFast
   1b61c:  25010130  sub      gr1, gr1, $30
   1b620:  5e00017e  asgeu    trap64, gr1, gr126
   1b624:  15810164  add      lr1, gr1, $64
@@ -31232,7 +31232,7 @@ L_1b790:
   1b79c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1b7a0:  000d0000  .word    $000d0000   ; tag word: 11 arguments, frame $0
 
-sub_1b7a4:
+sub_1b7a4:   ; rSrcCopyRtoL
   1b7a4:  25010118  sub      gr1, gr1, $18
   1b7a8:  5e00017e  asgeu    trap64, gr1, gr126
   1b7ac:  1581014c  add      lr1, gr1, $4c
@@ -31453,7 +31453,7 @@ L_1bacc:
   1bad8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1badc:  00100000  .word    $00100000   ; tag word: 14 arguments, frame $0
 
-sub_1bae0:
+sub_1bae0:   ; rSrcOr
   1bae0:  25010118  sub      gr1, gr1, $18
   1bae4:  5e00017e  asgeu    trap64, gr1, gr126
   1bae8:  15810158  add      lr1, gr1, $58
@@ -31566,7 +31566,7 @@ L_1bc50:
   1bc5c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1bc60:  00100000  .word    $00100000   ; tag word: 14 arguments, frame $0
 
-sub_1bc64:
+sub_1bc64:   ; rSrcXor
   1bc64:  25010118  sub      gr1, gr1, $18
   1bc68:  5e00017e  asgeu    trap64, gr1, gr126
   1bc6c:  15810158  add      lr1, gr1, $58
@@ -31679,7 +31679,7 @@ L_1bdd4:
   1bde0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1bde4:  00100000  .word    $00100000   ; tag word: 14 arguments, frame $0
 
-sub_1bde8:
+sub_1bde8:   ; rSrcBic
   1bde8:  25010118  sub      gr1, gr1, $18
   1bdec:  5e00017e  asgeu    trap64, gr1, gr126
   1bdf0:  15810158  add      lr1, gr1, $58
@@ -31792,7 +31792,7 @@ L_1bf58:
   1bf64:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1bf68:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_1bf6c:
+sub_1bf6c:   ; rcMASK0
   1bf6c:  25010118  sub      gr1, gr1, $18
   1bf70:  5e00017e  asgeu    trap64, gr1, gr126
   1bf74:  15810160  add      lr1, gr1, $60
@@ -31910,7 +31910,7 @@ L_1c0f0:
   1c0fc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1c100:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_1c104:
+sub_1c104:   ; rcSrcOr
   1c104:  25010118  sub      gr1, gr1, $18
   1c108:  5e00017e  asgeu    trap64, gr1, gr126
   1c10c:  1581015c  add      lr1, gr1, $5c
@@ -32946,7 +32946,7 @@ L_1cf6c:
   1cf78:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1cf7c:  000d0000  .word    $000d0000   ; tag word: 11 arguments, frame $0
 
-sub_1cf80:
+sub_1cf80:   ; rHilite
   1cf80:  25010120  sub      gr1, gr1, $20
   1cf84:  5e00017e  asgeu    trap64, gr1, gr126
   1cf88:  15810154  add      lr1, gr1, $54
@@ -33115,7 +33115,7 @@ L_1d1a0:
   1d1b4:  1e006769  store    0, 0, gr103, gr105   ; [delay slot]
   1d1b8:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_1d1bc:
+sub_1d1bc:   ; rHilite32
   1d1bc:  25010118  sub      gr1, gr1, $18
   1d1c0:  5e00017e  asgeu    trap64, gr1, gr126
   1d1c4:  15810148  add      lr1, gr1, $48
@@ -34449,7 +34449,7 @@ L_1e348:
   1e354:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   1e358:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_1e35c:   ; rHilite32
+sub_1e35c:   ; rSlowHilite32
   1e35c:  25010130  sub      gr1, gr1, $30
   1e360:  5e00017e  asgeu    trap64, gr1, gr126
   1e364:  01ff84ff  constn   lr4, $ffff
@@ -39442,7 +39442,7 @@ L_22744:
   22750:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   22754:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_22758:   ; rHilite
+sub_22758:   ; rSlowHilite
   22758:  25010140  sub      gr1, gr1, $40
   2275c:  5e00017e  asgeu    trap64, gr1, gr126
   22760:  15810188  add      lr1, gr1, $88
@@ -39702,19 +39702,19 @@ sub_22a8c:   ; scaleBlt
   22ac0:  1600607a  load     0, 0, gr96, gr122
   22ac4:  c0000060  jmpi     gr96
   22ac8:  70400101  nop         ; [delay slot]
-  22acc:  03209438  const    lr20, $2038   ; lo of .text $24ac0 (sub_24ac0)
-  22ad0:  02009400  consth   lr20, $0000   ; hi of .text $24ac0 (sub_24ac0)
+  22acc:  03209438  const    lr20, $2038   ; lo of .text $24ac0 (sc32to8)
+  22ad0:  02009400  consth   lr20, $0000   ; hi of .text $24ac0 (sc32to8)
   22ad4:  a000000c  jmp      $22b04   ; -> L_22b04
   22ad8:  03008900  const    lr9, $0000   ; [delay slot]
-  22adc:  03099478  const    lr20, $0978   ; lo of .text $23400 (sub_23400)
-  22ae0:  02009400  consth   lr20, $0000   ; hi of .text $23400 (sub_23400)
+  22adc:  03099478  const    lr20, $0978   ; lo of .text $23400 (scCopy16to32)
+  22ae0:  02009400  consth   lr20, $0000   ; hi of .text $23400 (scCopy16to32)
   22ae4:  a0000008  jmp      $22b04   ; -> L_22b04
   22ae8:  03008903  const    lr9, $0003   ; [delay slot]
-  22aec:  03229460  const    lr20, $2260   ; lo of .text $24ce8 (sub_24ce8)
+  22aec:  03229460  const    lr20, $2260   ; lo of .text $24ce8 (sc32to8gray)
   22af0:  a0000004  jmp      $22b00   ; -> L_22b00
-  22af4:  02009400  consth   lr20, $0000   ; hi of .text $24ce8 (sub_24ce8)   ; [delay slot]
-  22af8:  03249484  const    lr20, $2484   ; lo of .text $24f0c (sub_24f0c)
-  22afc:  02009400  consth   lr20, $0000   ; hi of .text $24f0c (sub_24f0c)
+  22af4:  02009400  consth   lr20, $0000   ; hi of .text $24ce8 (sc32to8gray)   ; [delay slot]
+  22af8:  03249484  const    lr20, $2484   ; lo of .text $24f0c (sc32to8Dither)
+  22afc:  02009400  consth   lr20, $0000   ; hi of .text $24f0c (sc32to8Dither)
 L_22b00:
   22b00:  03008900  const    lr9, $0000
 L_22b04:
@@ -39927,18 +39927,18 @@ L_22e00:
   22e1c:  1600897a  load     0, 0, lr9, gr122
   22e20:  c0000089  jmpi     lr9
   22e24:  1612879c  load     0, 12, lr7, lr28   ; [delay slot]
-  22e28:  031c9458  const    lr20, $1c58   ; lo of .text $246e0 (sub_246e0)
+  22e28:  031c9458  const    lr20, $1c58   ; lo of .text $246e0 (scIndToInd1)
   22e2c:  a0000024  jmp      $22ebc   ; -> L_22ebc
-  22e30:  02009400  consth   lr20, $0000   ; hi of .text $246e0 (sub_246e0)   ; [delay slot]
-  22e34:  031e9448  const    lr20, $1e48   ; lo of .text $248d0 (sub_248d0)
+  22e30:  02009400  consth   lr20, $0000   ; hi of .text $246e0 (scIndToInd1)   ; [delay slot]
+  22e34:  031e9448  const    lr20, $1e48   ; lo of .text $248d0 (scIndToInd8)
   22e38:  a0000021  jmp      $22ebc   ; -> L_22ebc
-  22e3c:  02009400  consth   lr20, $0000   ; hi of .text $248d0 (sub_248d0)   ; [delay slot]
-  22e40:  0307945c  const    lr20, $075c   ; lo of .text $231e4 (sub_231e4)
+  22e3c:  02009400  consth   lr20, $0000   ; hi of .text $248d0 (scIndToInd8)   ; [delay slot]
+  22e40:  0307945c  const    lr20, $075c   ; lo of .text $231e4 (scIndexedto16)
   22e44:  a000001e  jmp      $22ebc   ; -> L_22ebc
-  22e48:  02009400  consth   lr20, $0000   ; hi of .text $231e4 (sub_231e4)   ; [delay slot]
-  22e4c:  0306942c  const    lr20, $062c   ; lo of .text $230b4 (sub_230b4)
+  22e48:  02009400  consth   lr20, $0000   ; hi of .text $231e4 (scIndexedto16)   ; [delay slot]
+  22e4c:  0306942c  const    lr20, $062c   ; lo of .text $230b4 (scIndexedto32)
   22e50:  a000001b  jmp      $22ebc   ; -> L_22ebc
-  22e54:  02009400  consth   lr20, $0000   ; hi of .text $230b4 (sub_230b4)   ; [delay slot]
+  22e54:  02009400  consth   lr20, $0000   ; hi of .text $230b4 (scIndexedto32)   ; [delay slot]
   22e58:  03008200  const    lr2, $0000   ; lo of .lit+$0900
 L_22e5c:
   22e5c:  02008200  consth   lr2, $0000   ; hi of .lit+$0900
@@ -39961,62 +39961,62 @@ L_22e5c:
   22ea0:  70400101  nop         ; [delay slot]
   22ea4:  6360a100  cpneq    gr96, lr33, $00
   22ea8:  ac006007  jmpt     gr96, $22ec4   ; -> L_22ec4
-  22eac:  0306942c  const    lr20, $062c   ; lo of .text $230b4 (sub_230b4)   ; [delay slot]
+  22eac:  0306942c  const    lr20, $062c   ; lo of .text $230b4 (scIndexedto32)   ; [delay slot]
   22eb0:  0300a300  const    lr35, $0000   ; lo of .data+$0430
   22eb4:  0200a300  consth   lr35, $0000   ; hi of .data+$0430
-  22eb8:  02009400  consth   lr20, $0000   ; hi of .text $230b4 (sub_230b4)
+  22eb8:  02009400  consth   lr20, $0000   ; hi of .text $230b4 (scIndexedto32)
 L_22ebc:
   22ebc:  a0ff0012  jmp      $22b04   ; -> L_22b04
   22ec0:  03008901  const    lr9, $0001   ; [delay slot]
 L_22ec4:
-  22ec4:  030a94e0  const    lr20, $0ae0   ; lo of .text $23568 (sub_23568)
-  22ec8:  02009400  consth   lr20, $0000   ; hi of .text $23568 (sub_23568)
+  22ec4:  030a94e0  const    lr20, $0ae0   ; lo of .text $23568 (scIndexedto32Or)
+  22ec8:  02009400  consth   lr20, $0000   ; hi of .text $23568 (scIndexedto32Or)
   22ecc:  a0ff000e  jmp      $22b04   ; -> L_22b04
   22ed0:  03008902  const    lr9, $0002   ; [delay slot]
   22ed4:  6360a100  cpneq    gr96, lr33, $00
   22ed8:  ac006007  jmpt     gr96, $22ef4   ; -> L_22ef4
-  22edc:  0307945c  const    lr20, $075c   ; lo of .text $231e4 (sub_231e4)   ; [delay slot]
+  22edc:  0307945c  const    lr20, $075c   ; lo of .text $231e4 (scIndexedto16)   ; [delay slot]
   22ee0:  0300a308  const    lr35, $0008   ; lo of .data+$0438
   22ee4:  0200a300  consth   lr35, $0000   ; hi of .data+$0438
-  22ee8:  02009400  consth   lr20, $0000   ; hi of .text $231e4 (sub_231e4)
+  22ee8:  02009400  consth   lr20, $0000   ; hi of .text $231e4 (scIndexedto16)
   22eec:  a0ff0006  jmp      $22b04   ; -> L_22b04
   22ef0:  03008901  const    lr9, $0001   ; [delay slot]
 L_22ef4:
-  22ef4:  030c9410  const    lr20, $0c10   ; lo of .text $23698 (sub_23698)
-  22ef8:  02009400  consth   lr20, $0000   ; hi of .text $23698 (sub_23698)
+  22ef4:  030c9410  const    lr20, $0c10   ; lo of .text $23698 (scIndexedto16Or)
+  22ef8:  02009400  consth   lr20, $0000   ; hi of .text $23698 (scIndexedto16Or)
   22efc:  a0ff0002  jmp      $22b04   ; -> L_22b04
   22f00:  03008902  const    lr9, $0002   ; [delay slot]
   22f04:  6360a100  cpneq    gr96, lr33, $00
   22f08:  ac006005  jmpt     gr96, $22f1c   ; -> L_22f1c
-  22f0c:  030e945c  const    lr20, $0e5c   ; lo of .text $238e4 (sub_238e4)   ; [delay slot]
-  22f10:  02009400  consth   lr20, $0000   ; hi of .text $238e4 (sub_238e4)
+  22f0c:  030e945c  const    lr20, $0e5c   ; lo of .text $238e4 (scInd1ToInd8)   ; [delay slot]
+  22f10:  02009400  consth   lr20, $0000   ; hi of .text $238e4 (scInd1ToInd8)
   22f14:  a0fe00fc  jmp      $22b04   ; -> L_22b04
   22f18:  03008901  const    lr9, $0001   ; [delay slot]
 L_22f1c:
-  22f1c:  03109464  const    lr20, $1064   ; lo of .text $23aec (sub_23aec)
-  22f20:  02009400  consth   lr20, $0000   ; hi of .text $23aec (sub_23aec)
+  22f1c:  03109464  const    lr20, $1064   ; lo of .text $23aec (scInd1ToInd8Or)
+  22f20:  02009400  consth   lr20, $0000   ; hi of .text $23aec (scInd1ToInd8Or)
   22f24:  a0fe00f8  jmp      $22b04   ; -> L_22b04
   22f28:  03008902  const    lr9, $0002   ; [delay slot]
   22f2c:  6360a100  cpneq    gr96, lr33, $00
   22f30:  ac006005  jmpt     gr96, $22f44   ; -> L_22f44
-  22f34:  03129480  const    lr20, $1280   ; lo of .text $23d08 (sub_23d08)   ; [delay slot]
-  22f38:  02009400  consth   lr20, $0000   ; hi of .text $23d08 (sub_23d08)
+  22f34:  03129480  const    lr20, $1280   ; lo of .text $23d08 (scInd1ToInd4)   ; [delay slot]
+  22f38:  02009400  consth   lr20, $0000   ; hi of .text $23d08 (scInd1ToInd4)
   22f3c:  a0fe00f2  jmp      $22b04   ; -> L_22b04
   22f40:  03008901  const    lr9, $0001   ; [delay slot]
 L_22f44:
-  22f44:  0314948c  const    lr20, $148c   ; lo of .text $23f14 (sub_23f14)
-  22f48:  02009400  consth   lr20, $0000   ; hi of .text $23f14 (sub_23f14)
+  22f44:  0314948c  const    lr20, $148c   ; lo of .text $23f14 (scInd1ToInd4Or)
+  22f48:  02009400  consth   lr20, $0000   ; hi of .text $23f14 (scInd1ToInd4Or)
   22f4c:  a0fe00ee  jmp      $22b04   ; -> L_22b04
   22f50:  03008902  const    lr9, $0002   ; [delay slot]
   22f54:  6360a100  cpneq    gr96, lr33, $00
   22f58:  ac006005  jmpt     gr96, $22f6c   ; -> L_22f6c
-  22f5c:  031694ac  const    lr20, $16ac   ; lo of .text $24134 (sub_24134)   ; [delay slot]
-  22f60:  02009400  consth   lr20, $0000   ; hi of .text $24134 (sub_24134)
+  22f5c:  031694ac  const    lr20, $16ac   ; lo of .text $24134 (scInd1ToInd2)   ; [delay slot]
+  22f60:  02009400  consth   lr20, $0000   ; hi of .text $24134 (scInd1ToInd2)
   22f64:  a0fe00e8  jmp      $22b04   ; -> L_22b04
   22f68:  03008901  const    lr9, $0001   ; [delay slot]
 L_22f6c:
-  22f6c:  03199478  const    lr20, $1978   ; lo of .text $24400 (sub_24400)
-  22f70:  02009400  consth   lr20, $0000   ; hi of .text $24400 (sub_24400)
+  22f6c:  03199478  const    lr20, $1978   ; lo of .text $24400 (scInd1ToInd2Or)
+  22f70:  02009400  consth   lr20, $0000   ; hi of .text $24400 (scInd1ToInd2Or)
   22f74:  a0fe00e4  jmp      $22b04   ; -> L_22b04
   22f78:  03008902  const    lr9, $0002   ; [delay slot]
 L_22f7c:
@@ -40104,7 +40104,7 @@ L_230a8:
   230ac:  03009203  const    lr18, $0003   ; [delay slot]
   230b0:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_230b4:
+sub_230b4:   ; scIndexedto32
   230b4:  25010118  sub      gr1, gr1, $18
   230b8:  5e00017e  asgeu    trap64, gr1, gr126
   230bc:  1581015c  add      lr1, gr1, $5c
@@ -40190,7 +40190,7 @@ L_231d0:
   231dc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   231e0:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_231e4:
+sub_231e4:   ; scIndexedto16
   231e4:  25010118  sub      gr1, gr1, $18
   231e8:  5e00017e  asgeu    trap64, gr1, gr126
   231ec:  1581015c  add      lr1, gr1, $5c
@@ -40341,7 +40341,7 @@ L_233ec:
   233f8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   233fc:  00100000  .word    $00100000   ; tag word: 14 arguments, frame $0
 
-sub_23400:
+sub_23400:   ; scCopy16to32
   23400:  25010110  sub      gr1, gr1, $10
   23404:  5e00017e  asgeu    trap64, gr1, gr126
   23408:  15810150  add      lr1, gr1, $50
@@ -40441,7 +40441,7 @@ L_23554:
   23560:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   23564:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_23568:
+sub_23568:   ; scIndexedto32Or
   23568:  25010118  sub      gr1, gr1, $18
   2356c:  5e00017e  asgeu    trap64, gr1, gr126
   23570:  1581015c  add      lr1, gr1, $5c
@@ -40528,7 +40528,7 @@ L_23684:
   23690:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   23694:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_23698:
+sub_23698:   ; scIndexedto16Or
   23698:  25010118  sub      gr1, gr1, $18
   2369c:  5e00017e  asgeu    trap64, gr1, gr126
   236a0:  1581015c  add      lr1, gr1, $5c
@@ -40695,7 +40695,7 @@ L_238d0:
   238dc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   238e0:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_238e4:
+sub_238e4:   ; scInd1ToInd8
   238e4:  25010110  sub      gr1, gr1, $10
   238e8:  5e00017e  asgeu    trap64, gr1, gr126
   238ec:  15810154  add      lr1, gr1, $54
@@ -40843,7 +40843,7 @@ L_23ad8:
   23ae4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   23ae8:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_23aec:
+sub_23aec:   ; scInd1ToInd8Or
   23aec:  25010110  sub      gr1, gr1, $10
   23af0:  5e00017e  asgeu    trap64, gr1, gr126
   23af4:  15810154  add      lr1, gr1, $54
@@ -40996,7 +40996,7 @@ L_23cf4:
   23d00:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   23d04:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_23d08:
+sub_23d08:   ; scInd1ToInd4
   23d08:  25010110  sub      gr1, gr1, $10
   23d0c:  5e00017e  asgeu    trap64, gr1, gr126
   23d10:  15810154  add      lr1, gr1, $54
@@ -41145,7 +41145,7 @@ L_23f00:
   23f0c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   23f10:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_23f14:
+sub_23f14:   ; scInd1ToInd4Or
   23f14:  25010110  sub      gr1, gr1, $10
   23f18:  5e00017e  asgeu    trap64, gr1, gr126
   23f1c:  15810154  add      lr1, gr1, $54
@@ -41299,7 +41299,7 @@ L_24120:
   2412c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   24130:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_24134:
+sub_24134:   ; scInd1ToInd2
   24134:  25010110  sub      gr1, gr1, $10
   24138:  5e00017e  asgeu    trap64, gr1, gr126
   2413c:  15810154  add      lr1, gr1, $54
@@ -41502,7 +41502,7 @@ L_243ec:
   243f8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   243fc:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_24400:
+sub_24400:   ; scInd1ToInd2Or
   24400:  25010110  sub      gr1, gr1, $10
   24404:  5e00017e  asgeu    trap64, gr1, gr126
   24408:  15810154  add      lr1, gr1, $54
@@ -41710,7 +41710,7 @@ L_246cc:
   246d8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   246dc:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_246e0:
+sub_246e0:   ; scIndToInd1
   246e0:  25010118  sub      gr1, gr1, $18
   246e4:  5e00017e  asgeu    trap64, gr1, gr126
   246e8:  1581015c  add      lr1, gr1, $5c
@@ -41850,7 +41850,7 @@ L_248bc:
   248c8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   248cc:  00110000  .word    $00110000   ; tag word: 15 arguments, frame $0
 
-sub_248d0:
+sub_248d0:   ; scIndToInd8
   248d0:  25010118  sub      gr1, gr1, $18
   248d4:  5e00017e  asgeu    trap64, gr1, gr126
   248d8:  1581015c  add      lr1, gr1, $5c
@@ -41990,7 +41990,7 @@ L_24aac:
   24ab8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   24abc:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_24ac0:
+sub_24ac0:   ; sc32to8
   24ac0:  25010120  sub      gr1, gr1, $20
   24ac4:  5e00017e  asgeu    trap64, gr1, gr126
   24ac8:  15810168  add      lr1, gr1, $68
@@ -42144,7 +42144,7 @@ L_24cd4:
   24ce0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   24ce4:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_24ce8:
+sub_24ce8:   ; sc32to8gray
   24ce8:  25010110  sub      gr1, gr1, $10
   24cec:  5e00017e  asgeu    trap64, gr1, gr126
   24cf0:  15810158  add      lr1, gr1, $58
@@ -42297,7 +42297,7 @@ L_24ef8:
   24f04:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   24f08:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_24f0c:
+sub_24f0c:   ; sc32to8Dither
   24f0c:  25010128  sub      gr1, gr1, $28
   24f10:  5e00017e  asgeu    trap64, gr1, gr126
   24f14:  15609b04  add      gr96, lr27, $04
@@ -45169,7 +45169,7 @@ file_22:   ; object file 22 (C-g): .text starts here
 sub_27674:
   27674:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_27678:
+sub_27678:   ; LuminanceToBit
   27678:  16026382  load     0, 2, gr99, lr2
   2767c:  15608202  add      gr96, lr2, $02
   27680:  16026260  load     0, 2, gr98, gr96
@@ -45195,7 +45195,7 @@ L_276c4:
   276cc:  1e006083  store    0, 0, gr96, lr3   ; [delay slot]
   276d0:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_276d4:
+sub_276d4:   ; SetupStretch
   276d4:  ac008204  jmpt     lr2, $276e4   ; -> L_276e4
   276d8:  70400101  nop         ; [delay slot]
   276dc:  a4008304  jmpf     lr3, $276ec   ; -> L_276ec
@@ -45205,9 +45205,9 @@ L_276e4:
   276e8:  03006000  const    gr96, $0000   ; [delay slot]
 L_276ec:
   276ec:  ac006004  jmpt     gr96, $276fc   ; -> L_276fc
-  276f0:  03236050  const    gr96, $2350   ; lo of .text $299c4 (sub_299c4)   ; [delay slot]
+  276f0:  03236050  const    gr96, $2350   ; lo of .text $299c4 (ONE)   ; [delay slot]
   276f4:  c0000080  jmpi     lr0
-  276f8:  02006000  consth   gr96, $0000   ; hi of .text $299c4 (sub_299c4)   ; [delay slot]
+  276f8:  02006000  consth   gr96, $0000   ; hi of .text $299c4 (ONE)   ; [delay slot]
 L_276fc:
   276fc:  44608283  cple     gr96, lr2, lr3
   27700:  ac00605d  jmpt     gr96, $27874   ; -> L_27874
@@ -45222,47 +45222,47 @@ L_276fc:
   27724:  63618520  cpneq    gr97, lr5, $20
   27728:  ac006105  jmpt     gr97, $2773c   ; -> L_2773c
   2772c:  1e006084  store    0, 0, gr96, lr4   ; [delay slot]
-  27730:  03006000  const    gr96, $0000   ; lo of .text $004fc (sub_004fc)
+  27730:  03006000  const    gr96, $0000   ; lo of .text $004fc (PixStretch32)
   27734:  c0000080  jmpi     lr0
-  27738:  02006000  consth   gr96, $0000   ; hi of .text $004fc (sub_004fc)   ; [delay slot]
+  27738:  02006000  consth   gr96, $0000   ; hi of .text $004fc (PixStretch32)   ; [delay slot]
 L_2773c:
   2773c:  45618500  cple     gr97, lr5, $00
   27740:  ac00611c  jmpt     gr97, $277b0   ; -> L_277b0
   27744:  032a63aa  const    gr99, $2aaa   ; [delay slot]
-  27748:  035060d4  const    gr96, $50d4   ; lo of .text $2c748 (sub_2c748)
+  27748:  035060d4  const    gr96, $50d4   ; lo of .text $2c748 (PIXSTR)
   2774c:  c0000080  jmpi     lr0
-  27750:  02006000  consth   gr96, $0000   ; hi of .text $2c748 (sub_2c748)   ; [delay slot]
+  27750:  02006000  consth   gr96, $0000   ; hi of .text $2c748 (PIXSTR)   ; [delay slot]
 L_27754:
-  27754:  032660d0  const    gr96, $26d0   ; lo of .text $29d44 (sub_29d44)
+  27754:  032660d0  const    gr96, $26d0   ; lo of .text $29d44 (DOUBLE)
   27758:  c0000080  jmpi     lr0
-  2775c:  02006000  consth   gr96, $0000   ; hi of .text $29d44 (sub_29d44)   ; [delay slot]
+  2775c:  02006000  consth   gr96, $0000   ; hi of .text $29d44 (DOUBLE)   ; [delay slot]
 L_27760:
-  27760:  03296030  const    gr96, $2930   ; lo of .text $29fa4 (sub_29fa4)
+  27760:  03296030  const    gr96, $2930   ; lo of .text $29fa4 (QUAD)
   27764:  c0000080  jmpi     lr0
-  27768:  02006000  consth   gr96, $0000   ; hi of .text $29fa4 (sub_29fa4)   ; [delay slot]
+  27768:  02006000  consth   gr96, $0000   ; hi of .text $29fa4 (QUAD)   ; [delay slot]
 L_2776c:
-  2776c:  032c606c  const    gr96, $2c6c   ; lo of .text $2a2e0 (sub_2a2e0)
+  2776c:  032c606c  const    gr96, $2c6c   ; lo of .text $2a2e0 (EIGHT)
   27770:  c0000080  jmpi     lr0
-  27774:  02006000  consth   gr96, $0000   ; hi of .text $2a2e0 (sub_2a2e0)   ; [delay slot]
+  27774:  02006000  consth   gr96, $0000   ; hi of .text $2a2e0 (EIGHT)   ; [delay slot]
 L_27778:
-  27778:  032d602c  const    gr96, $2d2c   ; lo of .text $2a3a0 (sub_2a3a0)
+  27778:  032d602c  const    gr96, $2d2c   ; lo of .text $2a3a0 (SIXTEEN)
   2777c:  c0000080  jmpi     lr0
-  27780:  02006000  consth   gr96, $0000   ; hi of .text $2a3a0 (sub_2a3a0)   ; [delay slot]
+  27780:  02006000  consth   gr96, $0000   ; hi of .text $2a3a0 (SIXTEEN)   ; [delay slot]
 L_27784:
-  27784:  032d60e0  const    gr96, $2de0   ; lo of .text $2a454 (sub_2a454)
+  27784:  032d60e0  const    gr96, $2de0   ; lo of .text $2a454 (THRTWO)
   27788:  c0000080  jmpi     lr0
-  2778c:  02006000  consth   gr96, $0000   ; hi of .text $2a454 (sub_2a454)   ; [delay slot]
+  2778c:  02006000  consth   gr96, $0000   ; hi of .text $2a454 (THRTWO)   ; [delay slot]
 L_27790:
   27790:  c0000080  jmpi     lr0
-  27794:  02006000  consth   gr96, $0000   ; hi of .text $29cb0 (sub_29cb0)   ; [delay slot]
+  27794:  02006000  consth   gr96, $0000   ; hi of .text $29cb0 (ONE_5)   ; [delay slot]
 L_27798:
-  27798:  032860bc  const    gr96, $28bc   ; lo of .text $29f30 (sub_29f30)
+  27798:  032860bc  const    gr96, $28bc   ; lo of .text $29f30 (TRIPLE)
   2779c:  c0000080  jmpi     lr0
-  277a0:  02006000  consth   gr96, $0000   ; hi of .text $29f30 (sub_29f30)   ; [delay slot]
+  277a0:  02006000  consth   gr96, $0000   ; hi of .text $29f30 (TRIPLE)   ; [delay slot]
 L_277a4:
-  277a4:  032b60ec  const    gr96, $2bec   ; lo of .text $2a260 (sub_2a260)
+  277a4:  032b60ec  const    gr96, $2bec   ; lo of .text $2a260 (SIX)
   277a8:  c0000080  jmpi     lr0
-  277ac:  02006000  consth   gr96, $0000   ; hi of .text $2a260 (sub_2a260)   ; [delay slot]
+  277ac:  02006000  consth   gr96, $0000   ; hi of .text $2a260 (SIX)   ; [delay slot]
 L_277b0:
   277b0:  48616063  cpgt     gr97, gr96, gr99
   277b4:  ac00610f  jmpt     gr97, $277f0   ; -> L_277f0
@@ -45299,7 +45299,7 @@ L_2781c:
   27828:  03aa61aa  const    gr97, $aaaa   ; [delay slot]
   2782c:  60606061  cpeq     gr96, gr96, gr97
   27830:  acff60d8  jmpt     gr96, $27790   ; -> L_27790
-  27834:  0326603c  const    gr96, $263c   ; lo of .text $29cb0 (sub_29cb0)   ; [delay slot]
+  27834:  0326603c  const    gr96, $263c   ; lo of .text $29cb0 (ONE_5)   ; [delay slot]
 L_27838:
   27838:  c8007a62  calli    gr122, gr98
   2783c:  9e608283  setip    gr96, lr2, lr3   ; [delay slot]
@@ -45310,13 +45310,13 @@ L_27838:
   27850:  ac006106  jmpt     gr97, $27868   ; -> L_27868
   27854:  70400101  nop         ; [delay slot]
   27858:  1e006084  store    0, 0, gr96, lr4
-  2785c:  032e60a4  const    gr96, $2ea4   ; lo of .text $2a518 (sub_2a518)
+  2785c:  032e60a4  const    gr96, $2ea4   ; lo of .text $2a518 (EIGHTS)
   27860:  c0000080  jmpi     lr0
-  27864:  02006000  consth   gr96, $0000   ; hi of .text $2a518 (sub_2a518)   ; [delay slot]
+  27864:  02006000  consth   gr96, $0000   ; hi of .text $2a518 (EIGHTS)   ; [delay slot]
 L_27868:
-  27868:  032f6038  const    gr96, $2f38   ; lo of .text $2a5ac (sub_2a5ac)
+  27868:  032f6038  const    gr96, $2f38   ; lo of .text $2a5ac (STRCH)
   2786c:  c0000080  jmpi     lr0
-  27870:  02006000  consth   gr96, $0000   ; hi of .text $2a5ac (sub_2a5ac)   ; [delay slot]
+  27870:  02006000  consth   gr96, $0000   ; hi of .text $2a5ac (STRCH)   ; [delay slot]
 L_27874:
   27874:  81608210  sll      gr96, lr2, $10
   27878:  87606010  sra      gr96, gr96, $10
@@ -45329,31 +45329,31 @@ L_27874:
   27894:  63618503  cpneq    gr97, lr5, $03
   27898:  ac006105  jmpt     gr97, $278ac   ; -> L_278ac
   2789c:  1e006084  store    0, 0, gr96, lr4   ; [delay slot]
-  278a0:  03006000  const    gr96, $0000   ; lo of .text $00464 (sub_00464)
+  278a0:  03006000  const    gr96, $0000   ; lo of .text $00464 (PixShrink8Max)
   278a4:  c0000080  jmpi     lr0
-  278a8:  02006000  consth   gr96, $0000   ; hi of .text $00464 (sub_00464)   ; [delay slot]
+  278a8:  02006000  consth   gr96, $0000   ; hi of .text $00464 (PixShrink8Max)   ; [delay slot]
 L_278ac:
   278ac:  45618500  cple     gr97, lr5, $00
   278b0:  ac006110  jmpt     gr97, $278f0   ; -> L_278f0
   278b4:  03406100  const    gr97, $4000   ; [delay slot]
-  278b8:  034d6094  const    gr96, $4d94   ; lo of .text $2c408 (sub_2c408)
+  278b8:  034d6094  const    gr96, $4d94   ; lo of .text $2c408 (PIXSHRNK)
   278bc:  c0000080  jmpi     lr0
-  278c0:  02006000  consth   gr96, $0000   ; hi of .text $2c408 (sub_2c408)   ; [delay slot]
+  278c0:  02006000  consth   gr96, $0000   ; hi of .text $2c408 (PIXSHRNK)   ; [delay slot]
 L_278c4:
-  278c4:  032560b4  const    gr96, $25b4   ; lo of .text $29c28 (sub_29c28)
+  278c4:  032560b4  const    gr96, $25b4   ; lo of .text $29c28 (EIGHTH)
   278c8:  c0000080  jmpi     lr0
-  278cc:  02006000  consth   gr96, $0000   ; hi of .text $29c28 (sub_29c28)   ; [delay slot]
+  278cc:  02006000  consth   gr96, $0000   ; hi of .text $29c28 (EIGHTH)   ; [delay slot]
 L_278d0:
-  278d0:  03256060  const    gr96, $2560   ; lo of .text $29bd4 (sub_29bd4)
+  278d0:  03256060  const    gr96, $2560   ; lo of .text $29bd4 (QRTR)
   278d4:  c0000080  jmpi     lr0
-  278d8:  02006000  consth   gr96, $0000   ; hi of .text $29bd4 (sub_29bd4)   ; [delay slot]
+  278d8:  02006000  consth   gr96, $0000   ; hi of .text $29bd4 (QRTR)   ; [delay slot]
 L_278dc:
-  278dc:  032460a0  const    gr96, $24a0   ; lo of .text $29b14 (sub_29b14)
+  278dc:  032460a0  const    gr96, $24a0   ; lo of .text $29b14 (HALF)
   278e0:  c0000080  jmpi     lr0
-  278e4:  02006000  consth   gr96, $0000   ; hi of .text $29b14 (sub_29b14)   ; [delay slot]
+  278e4:  02006000  consth   gr96, $0000   ; hi of .text $29b14 (HALF)   ; [delay slot]
 L_278e8:
   278e8:  c0000080  jmpi     lr0
-  278ec:  02006000  consth   gr96, $0000   ; hi of .text $29aa0 (sub_29aa0)   ; [delay slot]
+  278ec:  02006000  consth   gr96, $0000   ; hi of .text $29aa0 (THREE4)   ; [delay slot]
 L_278f0:
   278f0:  48626061  cpgt     gr98, gr96, gr97
   278f4:  ac006209  jmpt     gr98, $27918   ; -> L_27918
@@ -45364,7 +45364,7 @@ L_278f0:
   27908:  acff60ef  jmpt     gr96, $278c4   ; -> L_278c4
   2790c:  70400101  nop         ; [delay slot]
   27910:  a000000a  jmp      $27938   ; -> L_27938
-  27914:  032f60e4  const    gr96, $2fe4   ; lo of .text $2a658 (sub_2a658)   ; [delay slot]
+  27914:  032f60e4  const    gr96, $2fe4   ; lo of .text $2a658 (SHRINK)   ; [delay slot]
 L_27918:
   27918:  03806100  const    gr97, $8000
   2791c:  60616061  cpeq     gr97, gr96, gr97
@@ -45372,11 +45372,11 @@ L_27918:
   27924:  03c06100  const    gr97, $c000   ; [delay slot]
   27928:  60606061  cpeq     gr96, gr96, gr97
   2792c:  acff60ef  jmpt     gr96, $278e8   ; -> L_278e8
-  27930:  0324602c  const    gr96, $242c   ; lo of .text $29aa0 (sub_29aa0)   ; [delay slot]
-  27934:  032f60e4  const    gr96, $2fe4   ; lo of .text $2a658 (sub_2a658)
+  27930:  0324602c  const    gr96, $242c   ; lo of .text $29aa0 (THREE4)   ; [delay slot]
+  27934:  032f60e4  const    gr96, $2fe4   ; lo of .text $2a658 (SHRINK)
 L_27938:
   27938:  c0000080  jmpi     lr0
-  2793c:  02006000  consth   gr96, $0000   ; hi of .text $2a658 (sub_2a658)   ; [delay slot]
+  2793c:  02006000  consth   gr96, $0000   ; hi of .text $2a658 (SHRINK)   ; [delay slot]
   27940:  000b0000  .word    $000b0000   ; tag word: 9 arguments, frame $0
 
 sub_27944:   ; stMASK0
@@ -45604,7 +45604,7 @@ L_27c20:
   27c30:  70400101  nop         ; [delay slot]
   27c34:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_27c38:
+sub_27c38:   ; MaskedCopyLongs
   27c38:  cc008680  jmpti    lr6, lr0
   27c3c:  70400101  nop         ; [delay slot]
 L_27c40:
@@ -45623,7 +45623,7 @@ L_27c58:
   27c6c:  70400101  nop         ; [delay slot]
   27c70:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_27c74:
+sub_27c74:   ; MaskedAndLongs
   27c74:  cc008680  jmpti    lr6, lr0
   27c78:  70400101  nop         ; [delay slot]
 L_27c7c:
@@ -45644,7 +45644,7 @@ L_27c9c:
   27cb0:  70400101  nop         ; [delay slot]
   27cb4:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_27cb8:
+sub_27cb8:   ; MaskedXorLongs
   27cb8:  cc008680  jmpti    lr6, lr0
   27cbc:  70400101  nop         ; [delay slot]
 L_27cc0:
@@ -45665,7 +45665,7 @@ L_27ce0:
   27cf4:  70400101  nop         ; [delay slot]
   27cf8:  000a0000  .word    $000a0000   ; tag word: 8 arguments, frame $0
 
-sub_27cfc:
+sub_27cfc:   ; MaskedOrNotLongs
   27cfc:  cc008680  jmpti    lr6, lr0
   27d00:  70400101  nop         ; [delay slot]
 L_27d04:
@@ -47751,7 +47751,7 @@ L_299ac:
   299bc:  70400101  nop         ; [delay slot]
   299c0:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_299c4:
+sub_299c4:   ; ONE
   299c4:  24608483  sub      gr96, lr4, lr3
   299c8:  87616002  sra      gr97, gr96, $02
   299cc:  41606102  cplt     gr96, gr97, $02
@@ -47778,7 +47778,7 @@ L_29a08:
   29a18:  1e006083  store    0, 0, gr96, lr3   ; [delay slot]
   29a1c:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_29a20:
+sub_29a20:   ; ONEColor
   29a20:  24608483  sub      gr96, lr4, lr3
   29a24:  87626002  sra      gr98, gr96, $02
   29a28:  41606202  cplt     gr96, gr98, $02
@@ -47814,7 +47814,7 @@ L_29a7c:
   29a98:  1e006083  store    0, 0, gr96, lr3   ; [delay slot]
   29a9c:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29aa0:
+sub_29aa0:   ; THREE4
   29aa0:  03006100  const    gr97, $0000
 L_29aa4:
   29aa4:  16006382  load     0, 0, gr99, lr2
@@ -47847,7 +47847,7 @@ L_29ab0:
   29b0c:  70400101  nop         ; [delay slot]
   29b10:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29b14:
+sub_29b14:   ; HALF
   29b14:  24608483  sub      gr96, lr4, lr3
   29b18:  87646002  sra      gr100, gr96, $02
   29b1c:  03556555  const    gr101, $5555
@@ -47898,7 +47898,7 @@ L_29b30:
   29bcc:  70400101  nop         ; [delay slot]
   29bd0:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29bd4:
+sub_29bd4:   ; QRTR
   29bd4:  0300621c  const    gr98, $001c
 L_29bd8:
   29bd8:  16006382  load     0, 0, gr99, lr2
@@ -47924,7 +47924,7 @@ L_29bf8:
   29c20:  70400101  nop         ; [delay slot]
   29c24:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29c28:
+sub_29c28:   ; EIGHTH
   29c28:  03006218  const    gr98, $0018
 L_29c2c:
   29c2c:  16006382  load     0, 0, gr99, lr2
@@ -47965,7 +47965,7 @@ L_29c80:
   29ca8:  70400101  nop         ; [delay slot]
   29cac:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29cb0:
+sub_29cb0:   ; ONE_5
   29cb0:  03016200  const    gr98, $0100   ; lo of .data+$0540
   29cb4:  02006200  consth   gr98, $0000   ; hi of .data+$0540
 L_29cb8:
@@ -48005,7 +48005,7 @@ L_29cb8:
   29d3c:  70400101  nop         ; [delay slot]
   29d40:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29d44:
+sub_29d44:   ; DOUBLE
   29d44:  24608483  sub      gr96, lr4, lr3
   29d48:  87646002  sra      gr100, gr96, $02
   29d4c:  41606402  cplt     gr96, gr100, $02
@@ -48066,7 +48066,7 @@ L_29dd8:
   29e20:  1e006083  store    0, 0, gr96, lr3   ; [delay slot]
   29e24:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_29e28:
+sub_29e28:   ; DOUBLEColor
   29e28:  24608483  sub      gr96, lr4, lr3
   29e2c:  87646002  sra      gr100, gr96, $02
   29e30:  41606402  cplt     gr96, gr100, $02
@@ -48136,7 +48136,7 @@ L_29ed4:
   29f28:  1e006083  store    0, 0, gr96, lr3   ; [delay slot]
   29f2c:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29f30:
+sub_29f30:   ; TRIPLE
   29f30:  03056310  const    gr99, $0510   ; lo of .data+$0950
   29f34:  02006300  consth   gr99, $0000   ; hi of .data+$0950
   29f38:  03056218  const    gr98, $0518   ; lo of .data+$0958
@@ -48168,7 +48168,7 @@ L_29f48:
   29f9c:  70400101  nop         ; [delay slot]
   29fa0:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_29fa4:
+sub_29fa4:   ; QUAD
   29fa4:  24608483  sub      gr96, lr4, lr3
   29fa8:  87636002  sra      gr99, gr96, $02
   29fac:  41606304  cplt     gr96, gr99, $04
@@ -48253,7 +48253,7 @@ L_2a0c8:
   2a0d0:  02006100  consth   gr97, $0000   ; hi of .data+$0970   ; [delay slot]
   2a0d4:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2a0d8:
+sub_2a0d8:   ; QUADColor
   2a0d8:  24608483  sub      gr96, lr4, lr3
   2a0dc:  87646002  sra      gr100, gr96, $02
   2a0e0:  41606404  cplt     gr96, gr100, $04
@@ -48359,7 +48359,7 @@ L_2a250:
   2a258:  02006200  consth   gr98, $0000   ; hi of .data+$0970   ; [delay slot]
   2a25c:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a260:
+sub_2a260:   ; SIX
   2a260:  03096330  const    gr99, $0930   ; lo of .data+$0d70
   2a264:  02006300  consth   gr99, $0000   ; hi of .data+$0d70
   2a268:  03096150  const    gr97, $0950   ; lo of .data+$0d90
@@ -48394,7 +48394,7 @@ L_2a278:
   2a2d8:  70400101  nop         ; [delay slot]
   2a2dc:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a2e0:
+sub_2a2e0:   ; EIGHT
   2a2e0:  030961b0  const    gr97, $09b0   ; lo of .data+$0df0
   2a2e4:  02006100  consth   gr97, $0000   ; hi of .data+$0df0
 L_2a2e8:
@@ -48418,7 +48418,7 @@ L_2a2e8:
   2a32c:  70400101  nop         ; [delay slot]
   2a330:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2a334:
+sub_2a334:   ; EIGHTColor
   2a334:  030962b0  const    gr98, $09b0   ; lo of .data+$0df0
   2a338:  02006200  consth   gr98, $0000   ; hi of .data+$0df0
 L_2a33c:
@@ -48448,7 +48448,7 @@ L_2a33c:
   2a398:  70400101  nop         ; [delay slot]
   2a39c:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a3a0:
+sub_2a3a0:   ; SIXTEEN
   2a3a0:  03006220  const    gr98, $0020
 L_2a3a4:
   2a3a4:  16006382  load     0, 0, gr99, lr2
@@ -48474,7 +48474,7 @@ L_2a3c0:
   2a3ec:  70400101  nop         ; [delay slot]
   2a3f0:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2a3f4:
+sub_2a3f4:   ; SIXTEENColor
   2a3f4:  03006220  const    gr98, $0020
 L_2a3f8:
   2a3f8:  16006382  load     0, 0, gr99, lr2
@@ -48503,7 +48503,7 @@ L_2a414:
   2a44c:  70400101  nop         ; [delay slot]
   2a450:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a454:
+sub_2a454:   ; THRTWO
   2a454:  03006220  const    gr98, $0020
 L_2a458:
   2a458:  16006382  load     0, 0, gr99, lr2
@@ -48532,7 +48532,7 @@ L_2a47c:
   2a4a8:  70400101  nop         ; [delay slot]
   2a4ac:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2a4b0:
+sub_2a4b0:   ; THRTWOColor
   2a4b0:  03006220  const    gr98, $0020
 L_2a4b4:
   2a4b4:  16006382  load     0, 0, gr99, lr2
@@ -48564,7 +48564,7 @@ L_2a4d8:
   2a510:  70400101  nop         ; [delay slot]
   2a514:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a518:
+sub_2a518:   ; EIGHTS
   2a518:  83658503  srl      gr101, lr5, $03
   2a51c:  4e608384  cpgeu    gr96, lr3, lr4
 L_2a520:
@@ -48611,7 +48611,7 @@ L_2a5a0:
   2a5a4:  42618384  cpltu    gr97, lr3, lr4   ; [delay slot]
   2a5a8:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a5ac:
+sub_2a5ac:   ; STRCH
   2a5ac:  83658501  srl      gr101, lr5, $01
   2a5b0:  60636363  cpeq     gr99, gr99, gr99
   2a5b4:  15646300  add      gr100, gr99, $00
@@ -48662,7 +48662,7 @@ L_2a62c:
   2a650:  70400101  nop         ; [delay slot]
   2a654:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2a658:
+sub_2a658:   ; SHRINK
   2a658:  83658501  srl      gr101, lr5, $01
   2a65c:  60636363  cpeq     gr99, gr99, gr99
   2a660:  15646300  add      gr100, gr99, $00
@@ -48769,7 +48769,7 @@ sub_2a714:   ; Scale16to32
   2a7d0:  70400101  nop         ; [delay slot]
   2a7d4:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2a7d8:
+sub_2a7d8:   ; ScaleIndexedToIndexed
   2a7d8:  63608720  cpneq    gr96, lr7, $20
   2a7dc:  ac006015  jmpt     gr96, $2a830   ; -> L_2a830
   2a7e0:  03006420  const    gr100, $0020   ; [delay slot]
@@ -50750,7 +50750,7 @@ L_2c3dc:
   2c400:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   2c404:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2c408:
+sub_2c408:   ; PIXSHRNK
   2c408:  63618620  cpneq    gr97, lr6, $20
   2c40c:  ac00613e  jmpt     gr97, $2c504   ; -> L_2c504
   2c410:  83608501  srl      gr96, lr5, $01   ; [delay slot]
@@ -50984,7 +50984,7 @@ L_2c73c:
   2c740:  14606085  add      gr96, gr96, lr5   ; [delay slot]
   2c744:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_2c748:
+sub_2c748:   ; PIXSTR
   2c748:  63608620  cpneq    gr96, lr6, $20
   2c74c:  ac006016  jmpt     gr96, $2c7a4   ; -> L_2c7a4
   2c750:  83688501  srl      gr104, lr5, $01   ; [delay slot]
@@ -51060,7 +51060,7 @@ L_2c840:
   2c844:  02006201  consth   gr98, $0001   ; [delay slot]
   2c848:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2c84c:
+sub_2c84c:   ; Combine32in32
   2c84c:  15648508  add      gr100, lr5, $08
   2c850:  91608303  and      gr96, lr3, $03
   2c854:  81606003  sll      gr96, gr96, $03
@@ -51182,7 +51182,7 @@ L_2c9f8:
   2ca08:  70400101  nop         ; [delay slot]
   2ca0c:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2ca10:
+sub_2ca10:   ; Combine321632
   2ca10:  91608303  and      gr96, lr3, $03
   2ca14:  81606003  sll      gr96, gr96, $03
   2ca18:  24866086  sub      lr6, gr96, lr6
@@ -51303,7 +51303,7 @@ L_2cbb8:
   2cbc8:  70400101  nop         ; [delay slot]
   2cbcc:  00090000  .word    $00090000   ; tag word: 7 arguments, frame $0
 
-sub_2cbd0:
+sub_2cbd0:   ; Combine323232
   2cbd0:  cc008880  jmpti    lr8, lr0
   2cbd4:  70400101  nop         ; [delay slot]
 L_2cbd8:
@@ -51390,7 +51390,7 @@ L_2ccec:
   2ccfc:  70400101  nop         ; [delay slot]
   2cd00:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_2cd04:
+sub_2cd04:   ; NDEEP
   2cd04:  25010118  sub      gr1, gr1, $18
   2cd08:  5e00017e  asgeu    trap64, gr1, gr126
   2cd0c:  15810148  add      lr1, gr1, $48
@@ -51493,7 +51493,7 @@ L_2ce54:
   2ce64:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   2ce68:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_2ce6c:
+sub_2ce6c:   ; ONEDEEP
   2ce6c:  25010118  sub      gr1, gr1, $18
   2ce70:  5e00017e  asgeu    trap64, gr1, gr126
   2ce74:  91608903  and      gr96, lr9, $03
@@ -51596,7 +51596,7 @@ L_2cfbc:
   2cfcc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   2cfd0:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
 
-sub_2cfd4:
+sub_2cfd4:   ; Average16and32
   2cfd4:  15608300  add      gr96, lr3, $00
   2cfd8:  15678408  add      gr103, lr4, $08
   2cfdc:  45618901  cple     gr97, lr9, $01
@@ -52625,8 +52625,8 @@ L_2de74:
   2de7c:  16006060  load     0, 0, gr96, gr96
   2de80:  63606000  cpneq    gr96, gr96, $00
   2de84:  ac006005  jmpt     gr96, $2de98   ; -> L_2de98
-  2de88:  03006000  const    gr96, $0000   ; lo of .text $16148 (sub_16148)   ; [delay slot]
-  2de8c:  02006000  consth   gr96, $0000   ; hi of .text $16148 (sub_16148)
+  2de88:  03006000  const    gr96, $0000   ; lo of .text $16148 (CopySmallPixMapToCard)   ; [delay slot]
+  2de8c:  02006000  consth   gr96, $0000   ; hi of .text $16148 (CopySmallPixMapToCard)
   2de90:  c8008060  calli    lr0, gr96
   2de94:  15828800  add      lr2, lr8, $00   ; [delay slot]
 L_2de98:
@@ -52777,8 +52777,8 @@ L_2e054:
   2e094:  16006060  load     0, 0, gr96, gr96
   2e098:  63606000  cpneq    gr96, gr96, $00
   2e09c:  ac006005  jmpt     gr96, $2e0b0   ; -> L_2e0b0
-  2e0a0:  03006000  const    gr96, $0000   ; lo of .text $16148 (sub_16148)   ; [delay slot]
-  2e0a4:  02006000  consth   gr96, $0000   ; hi of .text $16148 (sub_16148)
+  2e0a0:  03006000  const    gr96, $0000   ; lo of .text $16148 (CopySmallPixMapToCard)   ; [delay slot]
+  2e0a4:  02006000  consth   gr96, $0000   ; hi of .text $16148 (CopySmallPixMapToCard)
   2e0a8:  c8008060  calli    lr0, gr96
   2e0ac:  1582c400  add      lr2, lr68, $00   ; [delay slot]
 L_2e0b0:
@@ -53006,8 +53006,8 @@ L_2e3c4:
   2e3c8:  03006088  const    gr96, $0088   ; lo of extern#1772+$88   ; [delay slot]
   2e3cc:  02006000  consth   gr96, $0000   ; hi of extern#1772+$88
   2e3d0:  16009e60  load     0, 0, lr30, gr96
-  2e3d4:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (sub_32ab8)
-  2e3d8:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (sub_32ab8)
+  2e3d4:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (ReleaseHostEarly)
+  2e3d8:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (ReleaseHostEarly)
   2e3dc:  c8008060  calli    lr0, gr96
   2e3e0:  03008201  const    lr2, $0001   ; [delay slot]
 L_2e3e4:
@@ -53624,44 +53624,44 @@ L_2ec4c:
   2ec7c:  1600607a  load     0, 0, gr96, gr122
   2ec80:  c0000060  jmpi     gr96
   2ec84:  70400101  nop         ; [delay slot]
-  2ec88:  0300c200  const    lr66, $0000   ; lo of .text $29a20 (sub_29a20)
+  2ec88:  0300c200  const    lr66, $0000   ; lo of .text $29a20 (ONEColor)
   2ec8c:  a0000010  jmp      $2eccc   ; -> L_2eccc
-  2ec90:  0200c200  consth   lr66, $0000   ; hi of .text $29a20 (sub_29a20)   ; [delay slot]
-  2ec94:  0300c200  const    lr66, $0000   ; lo of .text $29e28 (sub_29e28)
+  2ec90:  0200c200  consth   lr66, $0000   ; hi of .text $29a20 (ONEColor)   ; [delay slot]
+  2ec94:  0300c200  const    lr66, $0000   ; lo of .text $29e28 (DOUBLEColor)
   2ec98:  a000000d  jmp      $2eccc   ; -> L_2eccc
-  2ec9c:  0200c200  consth   lr66, $0000   ; hi of .text $29e28 (sub_29e28)   ; [delay slot]
-  2eca0:  0300c200  const    lr66, $0000   ; lo of .text $2a0d8 (sub_2a0d8)
+  2ec9c:  0200c200  consth   lr66, $0000   ; hi of .text $29e28 (DOUBLEColor)   ; [delay slot]
+  2eca0:  0300c200  const    lr66, $0000   ; lo of .text $2a0d8 (QUADColor)
   2eca4:  a000000a  jmp      $2eccc   ; -> L_2eccc
-  2eca8:  0200c200  consth   lr66, $0000   ; hi of .text $2a0d8 (sub_2a0d8)   ; [delay slot]
-  2ecac:  0300c200  const    lr66, $0000   ; lo of .text $2a334 (sub_2a334)
+  2eca8:  0200c200  consth   lr66, $0000   ; hi of .text $2a0d8 (QUADColor)   ; [delay slot]
+  2ecac:  0300c200  const    lr66, $0000   ; lo of .text $2a334 (EIGHTColor)
   2ecb0:  a0000007  jmp      $2eccc   ; -> L_2eccc
-  2ecb4:  0200c200  consth   lr66, $0000   ; hi of .text $2a334 (sub_2a334)   ; [delay slot]
-  2ecb8:  0300c200  const    lr66, $0000   ; lo of .text $2a3f4 (sub_2a3f4)
+  2ecb4:  0200c200  consth   lr66, $0000   ; hi of .text $2a334 (EIGHTColor)   ; [delay slot]
+  2ecb8:  0300c200  const    lr66, $0000   ; lo of .text $2a3f4 (SIXTEENColor)
   2ecbc:  a0000004  jmp      $2eccc   ; -> L_2eccc
-  2ecc0:  0200c200  consth   lr66, $0000   ; hi of .text $2a3f4 (sub_2a3f4)   ; [delay slot]
-  2ecc4:  0300c200  const    lr66, $0000   ; lo of .text $2a4b0 (sub_2a4b0)
-  2ecc8:  0200c200  consth   lr66, $0000   ; hi of .text $2a4b0 (sub_2a4b0)
+  2ecc0:  0200c200  consth   lr66, $0000   ; hi of .text $2a3f4 (SIXTEENColor)   ; [delay slot]
+  2ecc4:  0300c200  const    lr66, $0000   ; lo of .text $2a4b0 (THRTWOColor)
+  2ecc8:  0200c200  consth   lr66, $0000   ; hi of .text $2a4b0 (THRTWOColor)
 L_2eccc:
   2eccc:  a000004d  jmp      $2ee00   ; -> L_2ee00
   2ecd0:  158a921e  add      lr10, lr18, $1e   ; [delay slot]
-  2ecd4:  0300c200  const    lr66, $0000   ; lo of .text $299c4 (sub_299c4)
+  2ecd4:  0300c200  const    lr66, $0000   ; lo of .text $299c4 (ONE)
   2ecd8:  a000001b  jmp      $2ed44   ; -> L_2ed44
-  2ecdc:  0200c200  consth   lr66, $0000   ; hi of .text $299c4 (sub_299c4)   ; [delay slot]
-  2ece0:  0300c200  const    lr66, $0000   ; lo of .text $29d44 (sub_29d44)
+  2ecdc:  0200c200  consth   lr66, $0000   ; hi of .text $299c4 (ONE)   ; [delay slot]
+  2ece0:  0300c200  const    lr66, $0000   ; lo of .text $29d44 (DOUBLE)
   2ece4:  a0000018  jmp      $2ed44   ; -> L_2ed44
-  2ece8:  0200c200  consth   lr66, $0000   ; hi of .text $29d44 (sub_29d44)   ; [delay slot]
-  2ecec:  0300c200  const    lr66, $0000   ; lo of .text $29fa4 (sub_29fa4)
+  2ece8:  0200c200  consth   lr66, $0000   ; hi of .text $29d44 (DOUBLE)   ; [delay slot]
+  2ecec:  0300c200  const    lr66, $0000   ; lo of .text $29fa4 (QUAD)
   2ecf0:  a0000015  jmp      $2ed44   ; -> L_2ed44
-  2ecf4:  0200c200  consth   lr66, $0000   ; hi of .text $29fa4 (sub_29fa4)   ; [delay slot]
-  2ecf8:  0300c200  const    lr66, $0000   ; lo of .text $2a2e0 (sub_2a2e0)
+  2ecf4:  0200c200  consth   lr66, $0000   ; hi of .text $29fa4 (QUAD)   ; [delay slot]
+  2ecf8:  0300c200  const    lr66, $0000   ; lo of .text $2a2e0 (EIGHT)
   2ecfc:  a0000012  jmp      $2ed44   ; -> L_2ed44
-  2ed00:  0200c200  consth   lr66, $0000   ; hi of .text $2a2e0 (sub_2a2e0)   ; [delay slot]
-  2ed04:  0300c200  const    lr66, $0000   ; lo of .text $2a3a0 (sub_2a3a0)
+  2ed00:  0200c200  consth   lr66, $0000   ; hi of .text $2a2e0 (EIGHT)   ; [delay slot]
+  2ed04:  0300c200  const    lr66, $0000   ; lo of .text $2a3a0 (SIXTEEN)
   2ed08:  a000000f  jmp      $2ed44   ; -> L_2ed44
-  2ed0c:  0200c200  consth   lr66, $0000   ; hi of .text $2a3a0 (sub_2a3a0)   ; [delay slot]
-  2ed10:  0300c200  const    lr66, $0000   ; lo of .text $2a454 (sub_2a454)
+  2ed0c:  0200c200  consth   lr66, $0000   ; hi of .text $2a3a0 (SIXTEEN)   ; [delay slot]
+  2ed10:  0300c200  const    lr66, $0000   ; lo of .text $2a454 (THRTWO)
   2ed14:  a000000c  jmp      $2ed44   ; -> L_2ed44
-  2ed18:  0200c200  consth   lr66, $0000   ; hi of .text $2a454 (sub_2a454)   ; [delay slot]
+  2ed18:  0200c200  consth   lr66, $0000   ; hi of .text $2a454 (THRTWO)   ; [delay slot]
 L_2ed1c:
   2ed1c:  4b609205  cpgtu    gr96, lr18, $05
   2ed20:  ac006009  jmpt     gr96, $2ed44   ; -> L_2ed44
@@ -53677,8 +53677,8 @@ L_2ed44:
   2ed44:  a000002f  jmp      $2ee00   ; -> L_2ee00
   2ed48:  158a9218  add      lr10, lr18, $18   ; [delay slot]
 L_2ed4c:
-  2ed4c:  0300c200  const    lr66, $0000   ; lo of .text $2a7d8 (sub_2a7d8)
-  2ed50:  0200c200  consth   lr66, $0000   ; hi of .text $2a7d8 (sub_2a7d8)
+  2ed4c:  0300c200  const    lr66, $0000   ; lo of .text $2a7d8 (ScaleIndexedToIndexed)
+  2ed50:  0200c200  consth   lr66, $0000   ; hi of .text $2a7d8 (ScaleIndexedToIndexed)
   2ed54:  03008a1e  const    lr10, $001e
   2ed58:  1582a000  add      lr2, lr32, $00
   2ed5c:  1583b600  add      lr3, lr54, $00
@@ -53700,8 +53700,8 @@ L_2ed8c:
   2ed98:  03006088  const    gr96, $0088   ; lo of extern#1772+$88
   2ed9c:  02006000  consth   gr96, $0000   ; hi of extern#1772+$88
   2eda0:  16009e60  load     0, 0, lr30, gr96
-  2eda4:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (sub_32ab8)
-  2eda8:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (sub_32ab8)
+  2eda4:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (ReleaseHostEarly)
+  2eda8:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (ReleaseHostEarly)
   2edac:  c8008060  calli    lr0, gr96
   2edb0:  03008201  const    lr2, $0001   ; [delay slot]
 L_2edb4:
@@ -53957,8 +53957,8 @@ L_2f100:
   2f134:  158ee200  add      lr14, lr98, $00
   2f138:  1590e100  add      lr16, lr97, $00
   2f13c:  15919e00  add      lr17, lr30, $00
-  2f140:  03006000  const    gr96, $0000   ; lo of .text $3008c (sub_3008c)
-  2f144:  02006000  consth   gr96, $0000   ; hi of .text $3008c (sub_3008c)
+  2f140:  03006000  const    gr96, $0000   ; lo of .text $3008c (FastStretch32)
+  2f144:  02006000  consth   gr96, $0000   ; hi of .text $3008c (FastStretch32)
 L_2f148:
   2f148:  c8008060  calli    lr0, gr96
   2f14c:  70400101  nop         ; [delay slot]
@@ -54106,8 +54106,8 @@ L_2f334:
   2f338:  1582b800  add      lr2, lr56, $00
   2f33c:  15838b00  add      lr3, lr11, $00
   2f340:  1584c900  add      lr4, lr73, $00
-  2f344:  03008600  const    lr6, $0000   ; lo of .text $276d4 (sub_276d4)
-  2f348:  02008600  consth   lr6, $0000   ; hi of .text $276d4 (sub_276d4)
+  2f344:  03008600  const    lr6, $0000   ; lo of .text $276d4 (SetupStretch)
+  2f348:  02008600  consth   lr6, $0000   ; hi of .text $276d4 (SetupStretch)
   2f34c:  c8008086  calli    lr0, lr6
   2f350:  1585af00  add      lr5, lr47, $00   ; [delay slot]
   2f354:  15c86000  add      lr72, gr96, $00
@@ -54550,14 +54550,14 @@ L_2f9bc:
   2f9d8:  1600b27a  load     0, 0, lr50, gr122
   2f9dc:  c00000b2  jmpi     lr50
   2f9e0:  15887d70  add      lr8, gr125, $70   ; [delay slot]
-  2f9e4:  03008f00  const    lr15, $0000   ; lo of .text $2ce6c (sub_2ce6c)
+  2f9e4:  03008f00  const    lr15, $0000   ; lo of .text $2ce6c (ONEDEEP)
   2f9e8:  a0000007  jmp      $2fa04   ; -> L_2fa04
-  2f9ec:  02008f00  consth   lr15, $0000   ; hi of .text $2ce6c (sub_2ce6c)   ; [delay slot]
-  2f9f0:  03008f00  const    lr15, $0000   ; lo of .text $2cd04 (sub_2cd04)
+  2f9ec:  02008f00  consth   lr15, $0000   ; hi of .text $2ce6c (ONEDEEP)   ; [delay slot]
+  2f9f0:  03008f00  const    lr15, $0000   ; lo of .text $2cd04 (NDEEP)
   2f9f4:  a0000004  jmp      $2fa04   ; -> L_2fa04
-  2f9f8:  02008f00  consth   lr15, $0000   ; hi of .text $2cd04 (sub_2cd04)   ; [delay slot]
-  2f9fc:  03008f00  const    lr15, $0000   ; lo of .text $2cfd4 (sub_2cfd4)
-  2fa00:  02008f00  consth   lr15, $0000   ; hi of .text $2cfd4 (sub_2cfd4)
+  2f9f8:  02008f00  consth   lr15, $0000   ; hi of .text $2cd04 (NDEEP)   ; [delay slot]
+  2f9fc:  03008f00  const    lr15, $0000   ; lo of .text $2cfd4 (Average16and32)
+  2fa00:  02008f00  consth   lr15, $0000   ; hi of .text $2cfd4 (Average16and32)
 L_2fa04:
   2fa04:  ac00bb35  jmpt     lr59, $2fad8   ; -> L_2fad8
   2fa08:  6163c400  cpeq     gr99, lr68, $00   ; [delay slot]
@@ -54567,10 +54567,10 @@ L_2fa04:
   2fa18:  16126164  load     0, 12, gr97, gr100
   2fa1c:  ac00631d  jmpt     gr99, $2fa90   ; -> L_2fa90
   2fa20:  16126262  load     0, 12, gr98, gr98   ; [delay slot]
-  2fa24:  0300af00  const    lr47, $0000   ; lo of .text $2cfd4 (sub_2cfd4)
+  2fa24:  0300af00  const    lr47, $0000   ; lo of .text $2cfd4 (Average16and32)
   2fa28:  4b609205  cpgtu    gr96, lr18, $05
   2fa2c:  ac00601b  jmpt     gr96, $2fa98   ; -> L_2fa98
-  2fa30:  0200af00  consth   lr47, $0000   ; hi of .text $2cfd4 (sub_2cfd4)   ; [delay slot]
+  2fa30:  0200af00  consth   lr47, $0000   ; hi of .text $2cfd4 (Average16and32)   ; [delay slot]
   2fa34:  15609200  add      gr96, lr18, $00
   2fa38:  81606002  sll      gr96, gr96, $02
   2fa3c:  03017a28  const    gr122, $0128   ; lo of .lit+$0c00
@@ -54586,18 +54586,18 @@ L_2fa54:
   2fa60:  1600af7a  load     0, 0, lr47, gr122
   2fa64:  c00000af  jmpi     lr47
   2fa68:  70400101  nop         ; [delay slot]
-  2fa6c:  0300b200  const    lr50, $0000   ; lo of .text $2c84c (sub_2c84c)
+  2fa6c:  0300b200  const    lr50, $0000   ; lo of .text $2c84c (Combine32in32)
   2fa70:  a000000b  jmp      $2fa9c   ; -> L_2fa9c
-  2fa74:  0200b200  consth   lr50, $0000   ; hi of .text $2c84c (sub_2c84c)   ; [delay slot]
-  2fa78:  0300b200  const    lr50, $0000   ; lo of .text $2ca10 (sub_2ca10)
+  2fa74:  0200b200  consth   lr50, $0000   ; hi of .text $2c84c (Combine32in32)   ; [delay slot]
+  2fa78:  0300b200  const    lr50, $0000   ; lo of .text $2ca10 (Combine321632)
   2fa7c:  a0000008  jmp      $2fa9c   ; -> L_2fa9c
-  2fa80:  0200b200  consth   lr50, $0000   ; hi of .text $2ca10 (sub_2ca10)   ; [delay slot]
-  2fa84:  0300b200  const    lr50, $0000   ; lo of .text $2cbd0 (sub_2cbd0)
+  2fa80:  0200b200  consth   lr50, $0000   ; hi of .text $2ca10 (Combine321632)   ; [delay slot]
+  2fa84:  0300b200  const    lr50, $0000   ; lo of .text $2cbd0 (Combine323232)
   2fa88:  a0000005  jmp      $2fa9c   ; -> L_2fa9c
-  2fa8c:  0200b200  consth   lr50, $0000   ; hi of .text $2cbd0 (sub_2cbd0)   ; [delay slot]
+  2fa8c:  0200b200  consth   lr50, $0000   ; hi of .text $2cbd0 (Combine323232)   ; [delay slot]
 L_2fa90:
-  2fa90:  0300af00  const    lr47, $0000   ; lo of .text $2ce6c (sub_2ce6c)
-  2fa94:  0200af00  consth   lr47, $0000   ; hi of .text $2ce6c (sub_2ce6c)
+  2fa90:  0300af00  const    lr47, $0000   ; lo of .text $2ce6c (ONEDEEP)
+  2fa94:  0200af00  consth   lr47, $0000   ; hi of .text $2ce6c (ONEDEEP)
 L_2fa98:
   2fa98:  0300b200  const    lr50, $0000
 L_2fa9c:
@@ -55037,7 +55037,7 @@ file_24:   ; object file 24 (C-g): .text starts here
 sub_30088:
   30088:  001200a0  .word    $001200a0   ; tag word: 16 arguments, frame $a0
 
-sub_3008c:
+sub_3008c:   ; FastStretch32
   3008c:  25010160  sub      gr1, gr1, $60
   30090:  5e00017e  asgeu    trap64, gr1, gr126
   30094:  158101a8  add      lr1, gr1, $a8
@@ -55287,7 +55287,7 @@ L_30414:
   30440:  15838e00  add      lr3, lr14, $00
   30444:  1584a700  add      lr4, lr39, $00
   30448:  158da400  add      lr13, lr36, $00
-  3044c:  a8008023  call     lr0, $304d8   ; -> sub_304d8
+  3044c:  a8008023  call     lr0, $304d8   ; -> FastStretchRows32
   30450:  158ea500  add      lr14, lr37, $00   ; [delay slot]
   30454:  a0000011  jmp      $30498   ; -> L_30498
   30458:  61609300  cpeq     gr96, lr19, $00   ; [delay slot]
@@ -55304,7 +55304,7 @@ L_3045c:
   30480:  15838e00  add      lr3, lr14, $00
   30484:  1584a700  add      lr4, lr39, $00
   30488:  158da400  add      lr13, lr36, $00
-  3048c:  a80380fc  call     lr0, $3147c   ; -> sub_3147c
+  3048c:  a80380fc  call     lr0, $3147c   ; -> FastStretchRows16to32
   30490:  158ea500  add      lr14, lr37, $00   ; [delay slot]
 L_30494:
   30494:  61609300  cpeq     gr96, lr19, $00
@@ -55329,7 +55329,7 @@ L_304cc:
   304d0:  03009203  const    lr18, $0003   ; [delay slot]
   304d4:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_304d8:
+sub_304d8:   ; FastStretchRows32
   304d8:  25010130  sub      gr1, gr1, $30
   304dc:  5e00017e  asgeu    trap64, gr1, gr126
   304e0:  15810178  add      lr1, gr1, $78
@@ -55370,8 +55370,8 @@ L_3054c:
   30558:  1484608f  add      lr4, gr96, lr15
   3055c:  15838f00  add      lr3, lr15, $00
   30560:  15859800  add      lr5, lr24, $00
-  30564:  03006000  const    gr96, $0000   ; lo of .text $004fc (sub_004fc)
-  30568:  02006000  consth   gr96, $0000   ; hi of .text $004fc (sub_004fc)
+  30564:  03006000  const    gr96, $0000   ; lo of .text $004fc (PixStretch32)
+  30568:  02006000  consth   gr96, $0000   ; hi of .text $004fc (PixStretch32)
   3056c:  c8008060  calli    lr0, gr96
   30570:  03008620  const    lr6, $0020   ; [delay slot]
   30574:  a0000010  jmp      $305b4   ; -> L_305b4
@@ -55384,8 +55384,8 @@ L_3057c:
   3058c:  15828e00  add      lr2, lr14, $00
   30590:  15838f00  add      lr3, lr15, $00
   30594:  15859800  add      lr5, lr24, $00
-  30598:  03006000  const    gr96, $0000   ; lo of .text $004fc (sub_004fc)
-  3059c:  02006000  consth   gr96, $0000   ; hi of .text $004fc (sub_004fc)
+  30598:  03006000  const    gr96, $0000   ; lo of .text $004fc (PixStretch32)
+  3059c:  02006000  consth   gr96, $0000   ; hi of .text $004fc (PixStretch32)
   305a0:  c8008060  calli    lr0, gr96
   305a4:  03008620  const    lr6, $0020   ; [delay slot]
   305a8:  148e928e  add      lr14, lr18, lr14
@@ -55412,8 +55412,8 @@ L_305e0:
   305ec:  15828e00  add      lr2, lr14, $00
   305f0:  15838f00  add      lr3, lr15, $00
   305f4:  15859800  add      lr5, lr24, $00
-  305f8:  03006000  const    gr96, $0000   ; lo of .text $004fc (sub_004fc)
-  305fc:  02006000  consth   gr96, $0000   ; hi of .text $004fc (sub_004fc)
+  305f8:  03006000  const    gr96, $0000   ; lo of .text $004fc (PixStretch32)
+  305fc:  02006000  consth   gr96, $0000   ; hi of .text $004fc (PixStretch32)
   30600:  c8008060  calli    lr0, gr96
   30604:  03008620  const    lr6, $0020   ; [delay slot]
   30608:  148e928e  add      lr14, lr18, lr14
@@ -55612,7 +55612,7 @@ L_308dc:
   308e8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   308ec:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_308f0:
+sub_308f0:   ; FastStretchRows32Smooth
   308f0:  25010148  sub      gr1, gr1, $48
   308f4:  5e00017e  asgeu    trap64, gr1, gr126
   308f8:  15810190  add      lr1, gr1, $90
@@ -55654,8 +55654,8 @@ L_3097c:
   3097c:  14848a8d  add      lr4, lr10, lr13
   30980:  15829400  add      lr2, lr20, $00
   30984:  15838d00  add      lr3, lr13, $00
-  30988:  03009c00  const    lr28, $0000   ; lo of .text $00698 (sub_00698)
-  3098c:  02009c00  consth   lr28, $0000   ; hi of .text $00698 (sub_00698)
+  30988:  03009c00  const    lr28, $0000   ; lo of .text $00698 (PixStretch32Smooth)
+  3098c:  02009c00  consth   lr28, $0000   ; hi of .text $00698 (PixStretch32Smooth)
   30990:  c800809c  calli    lr0, lr28
   30994:  15859e00  add      lr5, lr30, $00   ; [delay slot]
   30998:  4c60899d  cpge     gr96, lr9, lr29
@@ -55672,8 +55672,8 @@ L_309a4:
   309c0:  15859e00  add      lr5, lr30, $00
   309c4:  15868e00  add      lr6, lr14, $00
   309c8:  15878c00  add      lr7, lr12, $00
-  309cc:  03006000  const    gr96, $0000   ; lo of .text $00ae0 (sub_00ae0)
-  309d0:  02006000  consth   gr96, $0000   ; hi of .text $00ae0 (sub_00ae0)
+  309cc:  03006000  const    gr96, $0000   ; lo of .text $00ae0 (PixStretch32SmoothRows)
+  309d0:  02006000  consth   gr96, $0000   ; hi of .text $00ae0 (PixStretch32SmoothRows)
   309d4:  c8008060  calli    lr0, gr96
   309d8:  15889600  add      lr8, lr22, $00   ; [delay slot]
   309dc:  14949894  add      lr20, lr24, lr20
@@ -55732,8 +55732,8 @@ L_30a88:
   30a8c:  14848a8d  add      lr4, lr10, lr13
   30a90:  15829400  add      lr2, lr20, $00
   30a94:  15838d00  add      lr3, lr13, $00
-  30a98:  03009c00  const    lr28, $0000   ; lo of .text $00698 (sub_00698)
-  30a9c:  02009c00  consth   lr28, $0000   ; hi of .text $00698 (sub_00698)
+  30a98:  03009c00  const    lr28, $0000   ; lo of .text $00698 (PixStretch32Smooth)
+  30a9c:  02009c00  consth   lr28, $0000   ; hi of .text $00698 (PixStretch32Smooth)
   30aa0:  c800809c  calli    lr0, lr28
   30aa4:  15859e00  add      lr5, lr30, $00   ; [delay slot]
   30aa8:  4c60899d  cpge     gr96, lr9, lr29
@@ -55769,8 +55769,8 @@ L_30b0c:
   30b14:  15828c00  add      lr2, lr12, $00   ; [delay slot]
   30b18:  15838e00  add      lr3, lr14, $00
   30b1c:  15848d00  add      lr4, lr13, $00
-  30b20:  03006000  const    gr96, $0000   ; lo of .text $00738 (sub_00738)
-  30b24:  02006000  consth   gr96, $0000   ; hi of .text $00738 (sub_00738)
+  30b20:  03006000  const    gr96, $0000   ; lo of .text $00738 (AverageRows32)
+  30b24:  02006000  consth   gr96, $0000   ; hi of .text $00738 (AverageRows32)
   30b28:  c8008060  calli    lr0, gr96
   30b2c:  15859900  add      lr5, lr25, $00   ; [delay slot]
   30b30:  15958c00  add      lr21, lr12, $00
@@ -55968,7 +55968,7 @@ L_30e00:
   30e0c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   30e10:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_30e14:
+sub_30e14:   ; FastStretchRows32Smooth2x
   30e14:  25010148  sub      gr1, gr1, $48
   30e18:  5e00017e  asgeu    trap64, gr1, gr126
   30e1c:  15810190  add      lr1, gr1, $90
@@ -56008,16 +56008,16 @@ L_30e94:
   30e98:  15829400  add      lr2, lr20, $00
   30e9c:  15838d00  add      lr3, lr13, $00
   30ea0:  15848a00  add      lr4, lr10, $00
-  30ea4:  03008900  const    lr9, $0000   ; lo of .text $00698 (sub_00698)
-  30ea8:  02008900  consth   lr9, $0000   ; hi of .text $00698 (sub_00698)
+  30ea4:  03008900  const    lr9, $0000   ; lo of .text $00698 (PixStretch32Smooth)
+  30ea8:  02008900  consth   lr9, $0000   ; hi of .text $00698 (PixStretch32Smooth)
   30eac:  c8008089  calli    lr0, lr9
   30eb0:  03808500  const    lr5, $8000   ; [delay slot]
   30eb4:  24889d9c  sub      lr8, lr29, lr28
   30eb8:  41608804  cplt     gr96, lr8, $04
   30ebc:  ac006069  jmpt     gr96, $31060   ; -> L_31060
   30ec0:  14949894  add      lr20, lr24, lr20   ; [delay slot]
-  30ec4:  03009700  const    lr23, $0000   ; lo of .text $00bec (sub_00bec)
-  30ec8:  02009700  consth   lr23, $0000   ; hi of .text $00bec (sub_00bec)
+  30ec4:  03009700  const    lr23, $0000   ; lo of .text $00bec (PixDouble32SmoothRows)
+  30ec8:  02009700  consth   lr23, $0000   ; hi of .text $00bec (PixDouble32SmoothRows)
   30ecc:  03009c00  const    lr28, $0000   ; lo of .text $00248 (CopyLongsBurst)
   30ed0:  02009c00  consth   lr28, $0000   ; hi of .text $00248 (CopyLongsBurst)
   30ed4:  14958b8e  add      lr21, lr11, lr14
@@ -56060,8 +56060,8 @@ L_30f5c:
   30f60:  15848a00  add      lr4, lr10, $00
   30f64:  15858e00  add      lr5, lr14, $00
   30f68:  15868c00  add      lr6, lr12, $00
-  30f6c:  03009700  const    lr23, $0000   ; lo of .text $00bec (sub_00bec)
-  30f70:  02009700  consth   lr23, $0000   ; hi of .text $00bec (sub_00bec)
+  30f6c:  03009700  const    lr23, $0000   ; lo of .text $00bec (PixDouble32SmoothRows)
+  30f70:  02009700  consth   lr23, $0000   ; hi of .text $00bec (PixDouble32SmoothRows)
   30f74:  c8008097  calli    lr0, lr23
   30f78:  15879600  add      lr7, lr22, $00   ; [delay slot]
   30f7c:  14949894  add      lr20, lr24, lr20
@@ -56092,8 +56092,8 @@ L_30fd8:
   30fdc:  15848a00  add      lr4, lr10, $00
   30fe0:  15858e00  add      lr5, lr14, $00
   30fe4:  15868c00  add      lr6, lr12, $00
-  30fe8:  03009700  const    lr23, $0000   ; lo of .text $00bec (sub_00bec)
-  30fec:  02009700  consth   lr23, $0000   ; hi of .text $00bec (sub_00bec)
+  30fe8:  03009700  const    lr23, $0000   ; lo of .text $00bec (PixDouble32SmoothRows)
+  30fec:  02009700  consth   lr23, $0000   ; hi of .text $00bec (PixDouble32SmoothRows)
   30ff0:  c8008097  calli    lr0, lr23
   30ff4:  15879600  add      lr7, lr22, $00   ; [delay slot]
   30ff8:  14969a96  add      lr22, lr26, lr22
@@ -56170,8 +56170,8 @@ L_310e8:
   310f0:  15829400  add      lr2, lr20, $00
   310f4:  15838d00  add      lr3, lr13, $00
   310f8:  15848a00  add      lr4, lr10, $00
-  310fc:  03008900  const    lr9, $0000   ; lo of .text $00698 (sub_00698)
-  31100:  02008900  consth   lr9, $0000   ; hi of .text $00698 (sub_00698)
+  310fc:  03008900  const    lr9, $0000   ; lo of .text $00698 (PixStretch32Smooth)
+  31100:  02008900  consth   lr9, $0000   ; hi of .text $00698 (PixStretch32Smooth)
   31104:  c8008089  calli    lr0, lr9
   31108:  03808500  const    lr5, $8000   ; [delay slot]
   3110c:  4c60889d  cpge     gr96, lr8, lr29
@@ -56208,8 +56208,8 @@ L_31174:
   3117c:  15828c00  add      lr2, lr12, $00   ; [delay slot]
   31180:  15838e00  add      lr3, lr14, $00
   31184:  15848d00  add      lr4, lr13, $00
-  31188:  03006000  const    gr96, $0000   ; lo of .text $00738 (sub_00738)
-  3118c:  02006000  consth   gr96, $0000   ; hi of .text $00738 (sub_00738)
+  31188:  03006000  const    gr96, $0000   ; lo of .text $00738 (AverageRows32)
+  3118c:  02006000  consth   gr96, $0000   ; hi of .text $00738 (AverageRows32)
   31190:  c8008060  calli    lr0, gr96
   31194:  15859900  add      lr5, lr25, $00   ; [delay slot]
   31198:  15958c00  add      lr21, lr12, $00
@@ -56407,7 +56407,7 @@ L_31468:
   31474:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   31478:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_3147c:
+sub_3147c:   ; FastStretchRows16to32
   3147c:  25010130  sub      gr1, gr1, $30
   31480:  5e00017e  asgeu    trap64, gr1, gr126
   31484:  15810178  add      lr1, gr1, $78
@@ -56447,8 +56447,8 @@ L_314f0:
   314f8:  81609302  sll      gr96, lr19, $02
   314fc:  1484608f  add      lr4, gr96, lr15
   31500:  15838f00  add      lr3, lr15, $00
-  31504:  03006000  const    gr96, $0000   ; lo of .text $00534 (sub_00534)
-  31508:  02006000  consth   gr96, $0000   ; hi of .text $00534 (sub_00534)
+  31504:  03006000  const    gr96, $0000   ; lo of .text $00534 (PixStretch16to32)
+  31508:  02006000  consth   gr96, $0000   ; hi of .text $00534 (PixStretch16to32)
   3150c:  c8008060  calli    lr0, gr96
   31510:  15859800  add      lr5, lr24, $00   ; [delay slot]
   31514:  a000000f  jmp      $31550   ; -> L_31550
@@ -56460,8 +56460,8 @@ L_3151c:
   31528:  1484608f  add      lr4, gr96, lr15
   3152c:  15828e00  add      lr2, lr14, $00
   31530:  15838f00  add      lr3, lr15, $00
-  31534:  03006000  const    gr96, $0000   ; lo of .text $00534 (sub_00534)
-  31538:  02006000  consth   gr96, $0000   ; hi of .text $00534 (sub_00534)
+  31534:  03006000  const    gr96, $0000   ; lo of .text $00534 (PixStretch16to32)
+  31538:  02006000  consth   gr96, $0000   ; hi of .text $00534 (PixStretch16to32)
   3153c:  c8008060  calli    lr0, gr96
   31540:  15859800  add      lr5, lr24, $00   ; [delay slot]
   31544:  148e928e  add      lr14, lr18, lr14
@@ -56487,8 +56487,8 @@ L_3157c:
   31584:  1484608f  add      lr4, gr96, lr15
   31588:  15828e00  add      lr2, lr14, $00
   3158c:  15838f00  add      lr3, lr15, $00
-  31590:  03006000  const    gr96, $0000   ; lo of .text $00534 (sub_00534)
-  31594:  02006000  consth   gr96, $0000   ; hi of .text $00534 (sub_00534)
+  31590:  03006000  const    gr96, $0000   ; lo of .text $00534 (PixStretch16to32)
+  31594:  02006000  consth   gr96, $0000   ; hi of .text $00534 (PixStretch16to32)
   31598:  c8008060  calli    lr0, gr96
   3159c:  15859800  add      lr5, lr24, $00   ; [delay slot]
   315a0:  148e928e  add      lr14, lr18, lr14
@@ -56687,7 +56687,7 @@ L_31874:
   31880:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   31884:  00120000  .word    $00120000   ; tag word: 16 arguments, frame $0
 
-sub_31888:
+sub_31888:   ; FastStretchRows16to32Smooth
   31888:  25010148  sub      gr1, gr1, $48
   3188c:  5e00017e  asgeu    trap64, gr1, gr126
   31890:  15810190  add      lr1, gr1, $90
@@ -56729,8 +56729,8 @@ L_31914:
   31914:  14848a8d  add      lr4, lr10, lr13
   31918:  15829400  add      lr2, lr20, $00
   3191c:  15838d00  add      lr3, lr13, $00
-  31920:  03009c00  const    lr28, $0000   ; lo of .text $005c0 (sub_005c0)
-  31924:  02009c00  consth   lr28, $0000   ; hi of .text $005c0 (sub_005c0)
+  31920:  03009c00  const    lr28, $0000   ; lo of .text $005c0 (PixStretch16to32Smooth)
+  31924:  02009c00  consth   lr28, $0000   ; hi of .text $005c0 (PixStretch16to32Smooth)
   31928:  c800809c  calli    lr0, lr28
   3192c:  15859e00  add      lr5, lr30, $00   ; [delay slot]
   31930:  4c60899d  cpge     gr96, lr9, lr29
@@ -56747,8 +56747,8 @@ L_3193c:
   31958:  15859e00  add      lr5, lr30, $00
   3195c:  15868e00  add      lr6, lr14, $00
   31960:  15878c00  add      lr7, lr12, $00
-  31964:  03006000  const    gr96, $0000   ; lo of .text $009a8 (sub_009a8)
-  31968:  02006000  consth   gr96, $0000   ; hi of .text $009a8 (sub_009a8)
+  31964:  03006000  const    gr96, $0000   ; lo of .text $009a8 (PixStretch16to32SmoothRows)
+  31968:  02006000  consth   gr96, $0000   ; hi of .text $009a8 (PixStretch16to32SmoothRows)
   3196c:  c8008060  calli    lr0, gr96
   31970:  15889600  add      lr8, lr22, $00   ; [delay slot]
   31974:  14949894  add      lr20, lr24, lr20
@@ -56807,8 +56807,8 @@ L_31a20:
   31a24:  14848a8d  add      lr4, lr10, lr13
   31a28:  15829400  add      lr2, lr20, $00
   31a2c:  15838d00  add      lr3, lr13, $00
-  31a30:  03009c00  const    lr28, $0000   ; lo of .text $005c0 (sub_005c0)
-  31a34:  02009c00  consth   lr28, $0000   ; hi of .text $005c0 (sub_005c0)
+  31a30:  03009c00  const    lr28, $0000   ; lo of .text $005c0 (PixStretch16to32Smooth)
+  31a34:  02009c00  consth   lr28, $0000   ; hi of .text $005c0 (PixStretch16to32Smooth)
   31a38:  c800809c  calli    lr0, lr28
   31a3c:  15859e00  add      lr5, lr30, $00   ; [delay slot]
   31a40:  4c60899d  cpge     gr96, lr9, lr29
@@ -56844,8 +56844,8 @@ L_31aa4:
   31aac:  15828c00  add      lr2, lr12, $00   ; [delay slot]
   31ab0:  15838e00  add      lr3, lr14, $00
   31ab4:  15848d00  add      lr4, lr13, $00
-  31ab8:  03006000  const    gr96, $0000   ; lo of .text $00738 (sub_00738)
-  31abc:  02006000  consth   gr96, $0000   ; hi of .text $00738 (sub_00738)
+  31ab8:  03006000  const    gr96, $0000   ; lo of .text $00738 (AverageRows32)
+  31abc:  02006000  consth   gr96, $0000   ; hi of .text $00738 (AverageRows32)
   31ac0:  c8008060  calli    lr0, gr96
   31ac4:  15859900  add      lr5, lr25, $00   ; [delay slot]
   31ac8:  15958c00  add      lr21, lr12, $00
@@ -57916,7 +57916,7 @@ L_32a8c:
   32ab0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   32ab4:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_32ab8:
+sub_32ab8:   ; ReleaseHostEarly
   32ab8:  25010110  sub      gr1, gr1, $10
   32abc:  5e00017e  asgeu    trap64, gr1, gr126
   32ac0:  61608601  cpeq     gr96, lr6, $01
@@ -57978,7 +57978,7 @@ L_32b80:
   32b8c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   32b90:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_32b94:
+sub_32b94:   ; NullProc
   32b94:  c0000080  jmpi     lr0
   32b98:  70400101  nop         ; [delay slot]
   32b9c:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
@@ -57990,7 +57990,7 @@ sub_32ba0:   ; GetPacket
   32bac:  16006060  load     0, 0, gr96, gr96   ; [delay slot]
   32bb0:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_32bb4:
+sub_32bb4:   ; GetHostFlag80
   32bb4:  03006000  const    gr96, $0000   ; lo of .bss+$0000
   32bb8:  02006000  consth   gr96, $0000   ; hi of .bss+$0000
   32bbc:  16006060  load     0, 0, gr96, gr96
@@ -58635,7 +58635,7 @@ L_334ec:
   334f8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   334fc:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_33500:
+sub_33500:   ; GetHostFlag08
   33500:  03006000  const    gr96, $0000   ; lo of .bss+$0000
   33504:  02006000  consth   gr96, $0000   ; hi of .bss+$0000
   33508:  16006060  load     0, 0, gr96, gr96
@@ -58645,7 +58645,7 @@ sub_33500:
   33518:  91606008  and      gr96, gr96, $08   ; [delay slot]
   3351c:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_33520:
+sub_33520:   ; Is32BitMode
   33520:  03006000  const    gr96, $0000   ; lo of .bss+$0000
   33524:  02006000  consth   gr96, $0000   ; hi of .bss+$0000
   33528:  16006060  load     0, 0, gr96, gr96
@@ -58656,10 +58656,10 @@ sub_33520:
   3353c:  90606061  and      gr96, gr96, gr97   ; [delay slot]
   33540:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_33544:
+sub_33544:   ; IsHostROMAddress
   33544:  25010108  sub      gr1, gr1, $08
   33548:  5e00017e  asgeu    trap64, gr1, gr126
-  3354c:  a8ff80f5  call     lr0, $33520   ; -> sub_33520
+  3354c:  a8ff80f5  call     lr0, $33520   ; -> Is32BitMode
   33550:  15810114  add      lr1, gr1, $14   ; [delay slot]
   33554:  61606000  cpeq     gr96, gr96, $00
   33558:  ac006008  jmpt     gr96, $33578   ; -> L_33578
@@ -59522,7 +59522,7 @@ L_34168:
   34178:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3417c:  00120040  .word    $00120040   ; tag word: 16 arguments, frame $40
 
-sub_34180:
+sub_34180:   ; TestStructAssign
   34180:  25010118  sub      gr1, gr1, $18
   34184:  5e00017e  asgeu    trap64, gr1, gr126
   34188:  257d7d40  sub      gr125, gr125, $40
@@ -59571,7 +59571,7 @@ L_34218:
   34224:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   34228:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3422c:
+sub_3422c:   ; TestStructReturn
   3422c:  25010118  sub      gr1, gr1, $18
   34230:  5e00017e  asgeu    trap64, gr1, gr126
   34234:  15608840  add      gr96, lr8, $40
@@ -59593,7 +59593,7 @@ L_34244:
   34270:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   34274:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_34278:
+sub_34278:   ; TestStructCopy
   34278:  25010118  sub      gr1, gr1, $18
   3427c:  5e00017e  asgeu    trap64, gr1, gr126
   34280:  15828800  add      lr2, lr8, $00
@@ -59656,7 +59656,7 @@ sub_34304:   ; TestCPU
   34338:  a0010009  jmp      $3475c   ; -> L_3475c
   3433c:  16006060  load     0, 0, gr96, gr96   ; [delay slot]
 L_34340:
-  34340:  a801809e  call     lr0, $349b8   ; -> sub_349b8
+  34340:  a801809e  call     lr0, $349b8   ; -> TestBranch
   34344:  70400101  nop         ; [delay slot]
   34348:  61606001  cpeq     gr96, gr96, $01
   3434c:  ac00600b  jmpt     gr96, $34378   ; -> L_34378
@@ -59843,7 +59843,7 @@ L_34590:
   345e8:  03016000  const    gr96, $0100
   345ec:  1475607d  add      gr117, gr96, gr125
   345f0:  15827400  add      lr2, gr116, $00
-  345f4:  a8ff8021  call     lr0, $34278   ; -> sub_34278
+  345f4:  a8ff8021  call     lr0, $34278   ; -> TestStructCopy
   345f8:  15837500  add      lr3, gr117, $00   ; [delay slot]
   345fc:  03006004  const    gr96, $0004
   34600:  030161a4  const    gr97, $01a4
@@ -59851,7 +59851,7 @@ L_34590:
   34608:  1e026061  store    0, 2, gr96, gr97
   3460c:  030160dc  const    gr96, $01dc
   34610:  147b607d  add      gr123, gr96, gr125
-  34614:  a8ff8006  call     lr0, $3422c   ; -> sub_3422c
+  34614:  a8ff8006  call     lr0, $3422c   ; -> TestStructReturn
   34618:  15827500  add      lr2, gr117, $00   ; [delay slot]
   3461c:  0400870f  mtsrim   CR, $000f
   34620:  3e006074  storem   0, 0, gr96, gr116
@@ -59869,7 +59869,7 @@ L_34638:
   3464c:  15827400  add      lr2, gr116, $00
   34650:  0400870e  mtsrim   CR, $000e
   34654:  36008375  loadm    0, 0, lr3, gr117
-  34658:  a8fe80ca  call     lr0, $34180   ; -> sub_34180
+  34658:  a8fe80ca  call     lr0, $34180   ; -> TestStructAssign
   3465c:  70400101  nop         ; [delay slot]
   34660:  15607dfc  add      gr96, gr125, $fc
   34664:  16128560  load     0, 12, lr5, gr96
@@ -59887,7 +59887,7 @@ L_34638:
   34694:  16006060  load     0, 0, gr96, gr96   ; [delay slot]
 L_34698:
   34698:  15829300  add      lr2, lr19, $00
-  3469c:  a80080a0  call     lr0, $3491c   ; -> sub_3491c
+  3469c:  a80080a0  call     lr0, $3491c   ; -> TestRecursion
   346a0:  03008300  const    lr3, $0000   ; [delay slot]
   346a4:  61606001  cpeq     gr96, gr96, $01
   346a8:  ac00600c  jmpt     gr96, $346d8   ; -> L_346d8
@@ -59919,7 +59919,7 @@ L_346d8:
   3470c:  a0000014  jmp      $3475c   ; -> L_3475c
   34710:  16006060  load     0, 0, gr96, gr96   ; [delay slot]
 L_34714:
-  34714:  a800806a  call     lr0, $348bc   ; -> sub_348bc
+  34714:  a800806a  call     lr0, $348bc   ; -> TestClock
   34718:  70400101  nop         ; [delay slot]
   3471c:  61606001  cpeq     gr96, gr96, $01
   34720:  ac00600c  jmpt     gr96, $34750   ; -> L_34750
@@ -60039,14 +60039,14 @@ L_348a4:
   348b4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   348b8:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_348bc:
+sub_348bc:   ; TestClock
   348bc:  03006004  const    gr96, $0004   ; lo of .bss+$001c
   348c0:  02006000  consth   gr96, $0000   ; hi of .bss+$001c
   348c4:  c0000080  jmpi     lr0
   348c8:  16006060  load     0, 0, gr96, gr96   ; [delay slot]
   348cc:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_348d0:
+sub_348d0:   ; WaitClock
   348d0:  25010108  sub      gr1, gr1, $08
   348d4:  5e00017e  asgeu    trap64, gr1, gr126
   348d8:  03006000  const    gr96, $0000   ; lo of .text $38fe8 (svc_111 = HIF clock)
@@ -60068,7 +60068,7 @@ L_348f0:
   34914:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   34918:  000400a0  .word    $000400a0   ; tag word: 2 arguments, frame $a0
 
-sub_3491c:
+sub_3491c:   ; TestRecursion
   3491c:  25010110  sub      gr1, gr1, $10
   34920:  5e00017e  asgeu    trap64, gr1, gr126
   34924:  15810120  add      lr1, gr1, $20
@@ -60105,7 +60105,7 @@ L_34994:
   34994:  25828601  sub      lr2, lr6, $01
 L_34998:
   34998:  15617d0c  add      gr97, gr125, $0c
-  3499c:  a8ff80e0  call     lr0, $3491c   ; -> sub_3491c
+  3499c:  a8ff80e0  call     lr0, $3491c   ; -> TestRecursion
   349a0:  16128361  load     0, 12, lr3, gr97   ; [delay slot]
 L_349a4:
   349a4:  15010110  add      gr1, gr1, $10
@@ -60114,7 +60114,7 @@ L_349a4:
   349b0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   349b4:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_349b8:
+sub_349b8:   ; TestBranch
   349b8:  25010118  sub      gr1, gr1, $18
   349bc:  5e00017e  asgeu    trap64, gr1, gr126
   349c0:  15810120  add      lr1, gr1, $20
@@ -60352,7 +60352,7 @@ L_34cd4:
   34ce0:  03008700  const    lr7, $0000
   34ce4:  4c60878b  cpge     gr96, lr7, lr11
   34ce8:  ac00600a  jmpt     gr96, $34d10   ; -> L_34d10
-  34cec:  03006000  const    gr96, $0000   ; lo of .text $0009c (sub_0009c)   ; [delay slot]
+  34cec:  03006000  const    gr96, $0000   ; lo of .text $0009c (SetTimerInterrupt)   ; [delay slot]
   34cf0:  81608702  sll      gr96, lr7, $02
 L_34cf4:
   34cf4:  1484608a  add      lr4, gr96, lr10
@@ -60361,9 +60361,9 @@ L_34cf4:
   34d00:  4060878b  cplt     gr96, lr7, lr11
   34d04:  acff60fc  jmpt     gr96, $34cf4   ; -> L_34cf4
   34d08:  81608702  sll      gr96, lr7, $02   ; [delay slot]
-  34d0c:  03006000  const    gr96, $0000   ; lo of .text $0009c (sub_0009c)
+  34d0c:  03006000  const    gr96, $0000   ; lo of .text $0009c (SetTimerInterrupt)
 L_34d10:
-  34d10:  02006000  consth   gr96, $0000   ; hi of .text $0009c (sub_0009c)
+  34d10:  02006000  consth   gr96, $0000   ; hi of .text $0009c (SetTimerInterrupt)
   34d14:  c8008060  calli    lr0, gr96
   34d18:  03008200  const    lr2, $0000   ; [delay slot]
   34d1c:  01ff60ff  constn   gr96, $ffff
@@ -60388,8 +60388,8 @@ L_34d60:
   34d60:  030061c8  const    gr97, $00c8
   34d64:  02446100  consth   gr97, $4400
   34d68:  1e006061  store    0, 0, gr96, gr97
-  34d6c:  03006000  const    gr96, $0000   ; lo of .text $0009c (sub_0009c)
-  34d70:  02006000  consth   gr96, $0000   ; hi of .text $0009c (sub_0009c)
+  34d6c:  03006000  const    gr96, $0000   ; lo of .text $0009c (SetTimerInterrupt)
+  34d70:  02006000  consth   gr96, $0000   ; hi of .text $0009c (SetTimerInterrupt)
   34d74:  c8008060  calli    lr0, gr96
   34d78:  03008201  const    lr2, $0001   ; [delay slot]
   34d7c:  03008700  const    lr7, $0000
@@ -60590,7 +60590,7 @@ L_35024:
   35030:  03008a00  const    lr10, $0000   ; [delay slot]
   35034:  03008a00  const    lr10, $0000
 L_35038:
-  35038:  a80780c5  call     lr0, $36f4c   ; -> sub_36f4c
+  35038:  a80780c5  call     lr0, $36f4c   ; -> Random
   3503c:  70400101  nop         ; [delay slot]
   35040:  81618a02  sll      gr97, lr10, $02
   35044:  1461617d  add      gr97, gr97, gr125
@@ -61049,7 +61049,7 @@ L_35694:
   356a4:  61618400  cpeq     gr97, lr4, $00
   356a8:  ac006119  jmpt     gr97, $3570c   ; -> L_3570c
   356ac:  70400101  nop         ; [delay slot]
-  356b0:  a8068027  call     lr0, $36f4c   ; -> sub_36f4c
+  356b0:  a8068027  call     lr0, $36f4c   ; -> Random
   356b4:  70400101  nop         ; [delay slot]
   356b8:  03026100  const    gr97, $0200
   356bc:  14616186  add      gr97, gr97, lr6
@@ -61074,7 +61074,7 @@ L_356dc:
   35704:  a000002a  jmp      $357ac   ; -> L_357ac
   35708:  15888801  add      lr8, lr8, $01   ; [delay slot]
 L_3570c:
-  3570c:  a8068010  call     lr0, $36f4c   ; -> sub_36f4c
+  3570c:  a8068010  call     lr0, $36f4c   ; -> Random
   35710:  70400101  nop         ; [delay slot]
   35714:  030d6140  const    gr97, $0d40
   35718:  02006103  consth   gr97, $0003
@@ -61098,7 +61098,7 @@ L_3570c:
 L_35760:
   35760:  148b838b  add      lr11, lr3, lr11
   35764:  15638600  add      gr99, lr6, $00
-  35768:  a80580f9  call     lr0, $36f4c   ; -> sub_36f4c
+  35768:  a80580f9  call     lr0, $36f4c   ; -> Random
   3576c:  1e008763  store    0, 0, lr7, gr99   ; [delay slot]
   35770:  03026100  const    gr97, $0200
   35774:  14616186  add      gr97, gr97, lr6
@@ -61166,7 +61166,7 @@ L_35834:
   3584c:  acff62ee  jmpt     gr98, $35804   ; -> L_35804
   35850:  70400101  nop         ; [delay slot]
 L_35854:
-  35854:  a80580be  call     lr0, $36f4c   ; -> sub_36f4c
+  35854:  a80580be  call     lr0, $36f4c   ; -> Random
   35858:  70400101  nop         ; [delay slot]
   3585c:  9161603f  and      gr97, gr96, $3f
   35860:  4d616105  cpge     gr97, gr97, $05
@@ -62477,7 +62477,7 @@ sub_36b08:   ; Int2TestHandler
   36b24:  15856000  add      lr5, gr96, $00
   36b28:  15828800  add      lr2, lr8, $00
   36b2c:  15838900  add      lr3, lr9, $00
-  36b30:  a8008020  call     lr0, $36bb0   ; -> sub_36bb0
+  36b30:  a8008020  call     lr0, $36bb0   ; -> TestHandlerHeap
   36b34:  15848a00  add      lr4, lr10, $00   ; [delay slot]
   36b38:  63606006  cpneq    gr96, gr96, $06
   36b3c:  ac006007  jmpt     gr96, $36b58   ; -> L_36b58
@@ -62513,7 +62513,7 @@ L_36b9c:
   36ba8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   36bac:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_36bb0:
+sub_36bb0:   ; TestHandlerHeap
   36bb0:  25010118  sub      gr1, gr1, $18
   36bb4:  5e00017e  asgeu    trap64, gr1, gr126
   36bb8:  1581012c  add      lr1, gr1, $2c
@@ -62537,7 +62537,7 @@ L_36bd8:
   36bfc:  ac006105  jmpt     gr97, $36c10   ; -> L_36c10
   36c00:  25826001  sub      lr2, gr96, $01   ; [delay slot]
   36c04:  03008300  const    lr3, $0000
-  36c08:  a8ff80ea  call     lr0, $36bb0   ; -> sub_36bb0
+  36c08:  a8ff80ea  call     lr0, $36bb0   ; -> TestHandlerHeap
   36c0c:  03008400  const    lr4, $0000   ; [delay slot]
 L_36c10:
   36c10:  03006000  const    gr96, $0000   ; lo of .text $376a0 (HeapFree)
@@ -62648,7 +62648,7 @@ L_36d7c:
   36d88:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   36d8c:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_36d90:
+sub_36d90:   ; WriteCLUT
   36d90:  25010108  sub      gr1, gr1, $08
   36d94:  5e00017e  asgeu    trap64, gr1, gr126
   36d98:  61608400  cpeq     gr96, lr4, $00
@@ -62772,7 +62772,7 @@ sub_36ef0:   ; TestFailure
   36f44:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   36f48:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_36f4c:
+sub_36f4c:   ; Random
   36f4c:  03046374  const    gr99, $0474   ; lo of .data+$1384
   36f50:  02006300  consth   gr99, $0000   ; hi of .data+$1384
   36f54:  16006263  load     0, 0, gr98, gr99
@@ -63060,7 +63060,7 @@ L_37328:
   37348:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3734c:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_37350:
+sub_37350:   ; ListInsert
   37350:  1e008382  store    0, 0, lr3, lr2
   37354:  15628304  add      gr98, lr3, $04
   37358:  16006162  load     0, 0, gr97, gr98
@@ -63072,7 +63072,7 @@ sub_37350:
   37370:  1e008262  store    0, 0, lr2, gr98   ; [delay slot]
   37374:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_37378:
+sub_37378:   ; ListRemove
   37378:  16006282  load     0, 0, gr98, lr2
   3737c:  15618204  add      gr97, lr2, $04
   37380:  16006061  load     0, 0, gr96, gr97
@@ -63235,7 +63235,7 @@ sub_3754c:   ; HeapFreeBlock
 L_375bc:
   375bc:  14606063  add      gr96, gr96, gr99
   375c0:  1e006067  store    0, 0, gr96, gr103
-  375c4:  a8ff806d  call     lr0, $37378   ; -> sub_37378
+  375c4:  a8ff806d  call     lr0, $37378   ; -> ListRemove
   375c8:  16008269  load     0, 0, lr2, gr105   ; [delay slot]
   375cc:  1568680c  add      gr104, gr104, $0c
   375d0:  16006386  load     0, 0, gr99, lr6
@@ -63262,7 +63262,7 @@ L_37618:
   3761c:  1563600c  add      gr99, gr96, $0c
   37620:  14606263  add      gr96, gr98, gr99
   37624:  1e006061  store    0, 0, gr96, gr97
-  37628:  a8ff8054  call     lr0, $37378   ; -> sub_37378
+  37628:  a8ff8054  call     lr0, $37378   ; -> ListRemove
   3762c:  15826900  add      lr2, gr105, $00   ; [delay slot]
   37630:  1568680c  add      gr104, gr104, $0c
 L_37634:
@@ -63360,8 +63360,8 @@ sub_37730:   ; ModuleRequest
   37768:  01806003  constn   gr96, $8003
   3776c:  62608d60  cpneq    gr96, lr13, gr96
   37770:  ac006005  jmpt     gr96, $37784   ; -> L_37784
-  37774:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (sub_32ab8)   ; [delay slot]
-  37778:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (sub_32ab8)
+  37774:  03006000  const    gr96, $0000   ; lo of .text $32ab8 (ReleaseHostEarly)   ; [delay slot]
+  37778:  02006000  consth   gr96, $0000   ; hi of .text $32ab8 (ReleaseHostEarly)
   3777c:  c8008060  calli    lr0, gr96
   37780:  03008201  const    lr2, $0001   ; [delay slot]
 L_37784:
@@ -63400,7 +63400,7 @@ sub_377cc:   ; ModuleFree
   377f4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   377f8:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_377fc:
+sub_377fc:   ; ModuleSetModuleWord
   377fc:  25010118  sub      gr1, gr1, $18
   37800:  5e00017e  asgeu    trap64, gr1, gr126
   37804:  15810128  add      lr1, gr1, $28
@@ -63417,7 +63417,7 @@ sub_377fc:
   37830:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   37834:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_37838:
+sub_37838:   ; ModuleGetModuleWord
   37838:  25010118  sub      gr1, gr1, $18
   3783c:  5e00017e  asgeu    trap64, gr1, gr126
   37840:  15810124  add      lr1, gr1, $24
@@ -63432,7 +63432,7 @@ sub_37838:
   37864:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   37868:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_3786c:
+sub_3786c:   ; ModuleSetTaskWord
   3786c:  25010118  sub      gr1, gr1, $18
   37870:  5e00017e  asgeu    trap64, gr1, gr126
   37874:  15810128  add      lr1, gr1, $28
@@ -63449,7 +63449,7 @@ sub_3786c:
   378a0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   378a4:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_378a8:
+sub_378a8:   ; ModuleGetTaskWord
   378a8:  25010118  sub      gr1, gr1, $18
   378ac:  5e00017e  asgeu    trap64, gr1, gr126
   378b0:  15810124  add      lr1, gr1, $24
@@ -63580,8 +63580,8 @@ sub_379a0:   ; ModuleService
   37a84:  03006000  const    gr96, $0000
   37a88:  c0000080  jmpi     lr0
   37a8c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
-  37a90:  03006000  const    gr96, $0000   ; lo of .text $13fcc (sub_13fcc)
-  37a94:  02006000  consth   gr96, $0000   ; hi of .text $13fcc (sub_13fcc)
+  37a90:  03006000  const    gr96, $0000   ; lo of .text $13fcc (GetRegionFlag)
+  37a94:  02006000  consth   gr96, $0000   ; hi of .text $13fcc (GetRegionFlag)
   37a98:  c8008060  calli    lr0, gr96
   37a9c:  70400101  nop         ; [delay slot]
   37aa0:  15010118  add      gr1, gr1, $18
@@ -63704,7 +63704,7 @@ L_37c50:
   37c54:  61899301  cpeq     lr9, lr19, $01
   37c58:  a4008903  jmpf     lr9, $37c64   ; -> L_37c64
   37c5c:  81889500  sll      lr8, lr21, $00   ; [delay slot]
-  37c60:  a0000053  jmp      $37dac   ; -> sub_37dac
+  37c60:  a0000053  jmp      $37dac   ; -> FillStoremOneLong
 L_37c64:
   37c64:  81609500  sll      gr96, lr21, $00   ; [delay slot]
   37c68:  61899302  cpeq     lr9, lr19, $02
@@ -63721,7 +63721,7 @@ L_37c64:
   37c94:  ac00892c  jmpt     lr9, $37d44   ; -> L_37d44
   37c98:  81679c00  sll      gr103, lr28, $00   ; [delay slot]
   37c9c:  63899310  cpneq    lr9, lr19, $10
-  37ca0:  ac018936  jmpt     lr9, $38178   ; -> sub_38178
+  37ca0:  ac018936  jmpt     lr9, $38178   ; -> FillStoremBadHeight
   37ca4:  81689d00  sll      gr104, lr29, $00   ; [delay slot]
   37ca8:  81699e00  sll      gr105, lr30, $00
   37cac:  816a9f00  sll      gr106, lr31, $00
@@ -63795,7 +63795,7 @@ sub_37d68:   ; FillLongsStorem
 L_37da8:
   37da8:  81889300  sll      lr8, lr19, $00
 
-sub_37dac:
+sub_37dac:   ; FillStoremOneLong
   37dac:  03008700  const    lr7, $0000
   37db0:  81608800  sll      gr96, lr8, $00
   37db4:  81618800  sll      gr97, lr8, $00
@@ -63877,7 +63877,7 @@ L_37ec0:
   37ecc:  81608600  sll      gr96, lr6, $00   ; [delay slot]
   37ed0:  9189923c  and      lr9, lr18, $3c
   37ed4:  61848900  cpeq     lr4, lr9, $00
-  37ed8:  ac008478  jmpt     lr4, $380b8   ; -> sub_380b8
+  37ed8:  ac008478  jmpt     lr4, $380b8   ; -> FillStoremBurst
   37edc:  83898902  srl      lr9, lr9, $02   ; [delay slot]
   37ee0:  35868910  subr     lr6, lr9, $10
   37ee4:  81888602  sll      lr8, lr6, $02
@@ -63887,7 +63887,7 @@ L_37ec0:
   37ef4:  3e006092  storem   0, 0, gr96, lr18
   37ef8:  14929288  add      lr18, lr18, lr8
   37efc:  61848700  cpeq     lr4, lr7, $00
-  37f00:  ac00846e  jmpt     lr4, $380b8   ; -> sub_380b8
+  37f00:  ac00846e  jmpt     lr4, $380b8   ; -> FillStoremBurst
   37f04:  35868610  subr     lr6, lr6, $10   ; [delay slot]
   37f08:  61848710  cpeq     lr4, lr7, $10
   37f0c:  ac008454  jmpt     lr4, $3805c   ; -> L_3805c
@@ -63896,7 +63896,7 @@ L_37ec0:
   37f18:  61848704  cpeq     lr4, lr7, $04   ; [delay slot]
   37f1c:  ac008416  jmpt     lr4, $37f74   ; -> L_37f74
   37f20:  8184891f  sll      lr4, lr9, $1f   ; [delay slot]
-  37f24:  a4008465  jmpf     lr4, $380b8   ; -> sub_380b8
+  37f24:  a4008465  jmpf     lr4, $380b8   ; -> FillStoremBurst
   37f28:  81866000  sll      lr6, gr96, $00   ; [delay slot]
   37f2c:  81886100  sll      lr8, gr97, $00
   37f30:  81608800  sll      gr96, lr8, $00
@@ -63914,12 +63914,12 @@ L_37ec0:
   37f60:  816c8800  sll      gr108, lr8, $00
   37f64:  816d8600  sll      gr109, lr6, $00
   37f68:  816e8800  sll      gr110, lr8, $00
-  37f6c:  a0000053  jmp      $380b8   ; -> sub_380b8
+  37f6c:  a0000053  jmp      $380b8   ; -> FillStoremBurst
   37f70:  816f8600  sll      gr111, lr6, $00   ; [delay slot]
 L_37f74:
   37f74:  91898903  and      lr9, lr9, $03
   37f78:  61848900  cpeq     lr4, lr9, $00
-  37f7c:  ac00844f  jmpt     lr4, $380b8   ; -> sub_380b8
+  37f7c:  ac00844f  jmpt     lr4, $380b8   ; -> FillStoremBurst
   37f80:  35898904  subr     lr9, lr9, $04   ; [delay slot]
   37f84:  15898960  add      lr9, lr9, $60
   37f88:  81898902  sll      lr9, lr9, $02
@@ -63950,12 +63950,12 @@ L_37f74:
   37fec:  816c8600  sll      gr108, lr6, $00
   37ff0:  816d8800  sll      gr109, lr8, $00
   37ff4:  816e8700  sll      gr110, lr7, $00
-  37ff8:  a0000030  jmp      $380b8   ; -> sub_380b8
+  37ff8:  a0000030  jmp      $380b8   ; -> FillStoremBurst
   37ffc:  816f8900  sll      gr111, lr9, $00   ; [delay slot]
 L_38000:
   38000:  91898907  and      lr9, lr9, $07
   38004:  61848900  cpeq     lr4, lr9, $00
-  38008:  ac00842c  jmpt     lr4, $380b8   ; -> sub_380b8
+  38008:  ac00842c  jmpt     lr4, $380b8   ; -> FillStoremBurst
   3800c:  35898908  subr     lr9, lr9, $08   ; [delay slot]
   38010:  15898960  add      lr9, lr9, $60
   38014:  81898902  sll      lr9, lr9, $02
@@ -63975,12 +63975,12 @@ L_38020:
   38048:  816c6400  sll      gr108, gr100, $00
   3804c:  816d6500  sll      gr109, gr101, $00
   38050:  816e6600  sll      gr110, gr102, $00
-  38054:  a0000019  jmp      $380b8   ; -> sub_380b8
+  38054:  a0000019  jmp      $380b8   ; -> FillStoremBurst
   38058:  816f6700  sll      gr111, gr103, $00   ; [delay slot]
 L_3805c:
   3805c:  9189890f  and      lr9, lr9, $0f
   38060:  61848900  cpeq     lr4, lr9, $00
-  38064:  ac008415  jmpt     lr4, $380b8   ; -> sub_380b8
+  38064:  ac008415  jmpt     lr4, $380b8   ; -> FillStoremBurst
   38068:  81848900  sll      lr4, lr9, $00   ; [delay slot]
   3806c:  35898910  subr     lr9, lr9, $10
   38070:  03008700  const    lr7, $0000   ; lo of .data+$1390
@@ -64003,10 +64003,10 @@ L_38094:
   380b0:  ce008788  mtsr     CR, lr8
   380b4:  36000087  loadm    0, 0, gr0, lr7
 
-sub_380b8:
+sub_380b8:   ; FillStoremBurst
   380b8:  83839404  srl      lr3, lr20, $04
   380bc:  61848300  cpeq     lr4, lr3, $00
-  380c0:  ac008410  jmpt     lr4, $38100   ; -> sub_38100
+  380c0:  ac008410  jmpt     lr4, $38100   ; -> FillStoremTail
   380c4:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_380c8:
   380c8:  c6850200  mfsr     lr5, CPS
@@ -64024,17 +64024,17 @@ L_380c8:
   380f8:  15929240  add      lr18, lr18, $40   ; [delay slot]
   380fc:  9194940f  and      lr20, lr20, $0f
 
-sub_38100:
+sub_38100:   ; FillStoremTail
   38100:  25949401  sub      lr20, lr20, $01
-  38104:  ac009404  jmpt     lr20, $38114   ; -> sub_38114
+  38104:  ac009404  jmpt     lr20, $38114   ; -> FillStoremDone
   38108:  9183940f  and      lr3, lr20, $0f   ; [delay slot]
   3810c:  ce008783  mtsr     CR, lr3
   38110:  3e006092  storem   0, 0, gr96, lr18
 
-sub_38114:
+sub_38114:   ; FillStoremDone
   38114:  03006000  const    gr96, $0000
 
-sub_38118:
+sub_38118:   ; FillStoremRestore
   38118:  a8008000  call     lr0, $390b4   ; -> .text $390b4 (svc_D3)
   3811c:  81828e00  sll      lr2, lr14, $00   ; [delay slot]
   38120:  ce00038a  mtsr     CFG, lr10
@@ -64049,7 +64049,7 @@ sub_38118:
   38144:  c0000080  jmpi     lr0
   38148:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3814c:
+sub_3814c:   ; FillStoresLoop
   3814c:  25949401  sub      lr20, lr20, $01
   38150:  ac009405  jmpt     lr20, $38164   ; -> L_38164
   38154:  25949401  sub      lr20, lr20, $01   ; [delay slot]
@@ -64064,33 +64064,33 @@ L_38164:
   38170:  c0000080  jmpi     lr0
   38174:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_38178:
-  38178:  a0ff00e8  jmp      $38118   ; -> sub_38118
+sub_38178:   ; FillStoremBadHeight
+  38178:  a0ff00e8  jmp      $38118   ; -> FillStoremRestore
   3817c:  01ff60ff  constn   gr96, $ffff   ; [delay slot]
 
 sub_38180:   ; FillStoremPlain
   38180:  83839404  srl      lr3, lr20, $04
   38184:  9194940f  and      lr20, lr20, $0f
   38188:  25838301  sub      lr3, lr3, $01
-  3818c:  acff83dd  jmpt     lr3, $38100   ; -> sub_38100
+  3818c:  acff83dd  jmpt     lr3, $38100   ; -> FillStoremTail
   38190:  25838301  sub      lr3, lr3, $01   ; [delay slot]
 L_38194:
   38194:  0400870f  mtsrim   CR, $000f
   38198:  3e006092  storem   0, 0, gr96, lr18
   3819c:  b4ff83fe  jmpfdec  lr3, $38194   ; -> L_38194
   381a0:  15929240  add      lr18, lr18, $40   ; [delay slot]
-  381a4:  a0ff00d7  jmp      $38100   ; -> sub_38100
+  381a4:  a0ff00d7  jmp      $38100   ; -> FillStoremTail
   381a8:  70400101  nop         ; [delay slot]
 
-sub_381ac:
+sub_381ac:   ; FillStoresLoopDone
   381ac:  25949401  sub      lr20, lr20, $01
-  381b0:  acff94d9  jmpt     lr20, $38114   ; -> sub_38114
+  381b0:  acff94d9  jmpt     lr20, $38114   ; -> FillStoremDone
   381b4:  25949401  sub      lr20, lr20, $01   ; [delay slot]
 L_381b8:
   381b8:  1e006092  store    0, 0, gr96, lr18
   381bc:  b4ff94ff  jmpfdec  lr20, $381b8   ; -> L_381b8
   381c0:  15929204  add      lr18, lr18, $04   ; [delay slot]
-  381c4:  a0ff00d4  jmp      $38114   ; -> sub_38114
+  381c4:  a0ff00d4  jmp      $38114   ; -> FillStoremDone
   381c8:  70400101  nop         ; [delay slot]
 
 sub_381cc:   ; FillStoremDirect
@@ -64171,20 +64171,20 @@ L_38258:
   382dc:  ac008304  jmpt     lr3, $382ec   ; -> L_382ec
   382e0:  70400101  nop         ; [delay slot]
 L_382e4:
-  382e4:  a00000a4  jmp      $38574   ; -> sub_38574
+  382e4:  a00000a4  jmp      $38574   ; -> CopyStoremUnmapPlain
   382e8:  70400101  nop         ; [delay slot]
 L_382ec:
   382ec:  81936000  sll      lr19, gr96, $00
   382f0:  81928900  sll      lr18, lr9, $00
 L_382f4:
   382f4:  41849410  cplt     lr4, lr20, $10
-  382f8:  ac0084ac  jmpt     lr4, $385a8   ; -> sub_385a8
+  382f8:  ac0084ac  jmpt     lr4, $385a8   ; -> CopyStoremTail
   382fc:  91899203  and      lr9, lr18, $03   ; [delay slot]
   38300:  61898900  cpeq     lr9, lr9, $00
-  38304:  a400899e  jmpf     lr9, $3857c   ; -> sub_3857c
+  38304:  a400899e  jmpf     lr9, $3857c   ; -> CopyStoremPlain
   38308:  91899303  and      lr9, lr19, $03   ; [delay slot]
   3830c:  61898900  cpeq     lr9, lr9, $00
-  38310:  a400899b  jmpf     lr9, $3857c   ; -> sub_3857c
+  38310:  a400899b  jmpf     lr9, $3857c   ; -> CopyStoremPlain
   38314:  8389921c  srl      lr9, lr18, $1c   ; [delay slot]
   38318:  6184890f  cpeq     lr4, lr9, $0f
   3831c:  a4008405  jmpf     lr4, $38330   ; -> L_38330
@@ -64198,12 +64198,12 @@ L_38330:
   38338:  70400101  nop         ; [delay slot]
   3833c:  81929204  sll      lr18, lr18, $04
   38340:  83929204  srl      lr18, lr18, $04
-  38344:  a00000b8  jmp      $38624   ; -> sub_38624
+  38344:  a00000b8  jmp      $38624   ; -> CopyStoremBurstLoad
   38348:  92929278  or       lr18, lr18, gr120   ; [delay slot]
 L_3834c:
   3834c:  8384781c  srl      lr4, gr120, $1c
   38350:  60848984  cpeq     lr4, lr9, lr4
-  38354:  ac0084b4  jmpt     lr4, $38624   ; -> sub_38624
+  38354:  ac0084b4  jmpt     lr4, $38624   ; -> CopyStoremBurstLoad
   38358:  8389931c  srl      lr9, lr19, $1c   ; [delay slot]
   3835c:  6184890f  cpeq     lr4, lr9, $0f
   38360:  a4008405  jmpf     lr4, $38374   ; -> L_38374
@@ -64217,16 +64217,16 @@ L_38374:
   3837c:  70400101  nop         ; [delay slot]
   38380:  81939304  sll      lr19, lr19, $04
   38384:  83939304  srl      lr19, lr19, $04
-  38388:  a0010003  jmp      $38794   ; -> sub_38794
+  38388:  a0010003  jmp      $38794   ; -> CopyStoremBurstStore
   3838c:  92939378  or       lr19, lr19, gr120   ; [delay slot]
 L_38390:
   38390:  8384781c  srl      lr4, gr120, $1c
   38394:  60848984  cpeq     lr4, lr9, lr4
-  38398:  ac0084ff  jmpt     lr4, $38794   ; -> sub_38794
+  38398:  ac0084ff  jmpt     lr4, $38794   ; -> CopyStoremBurstStore
   3839c:  70400101  nop         ; [delay slot]
   383a0:  9189933c  and      lr9, lr19, $3c
   383a4:  61848900  cpeq     lr4, lr9, $00
-  383a8:  ac00840c  jmpt     lr4, $383d8   ; -> sub_383d8
+  383a8:  ac00840c  jmpt     lr4, $383d8   ; -> CopyStoremBurstBoth
   383ac:  83848902  srl      lr4, lr9, $02   ; [delay slot]
   383b0:  35838410  subr     lr3, lr4, $10
   383b4:  81848302  sll      lr4, lr3, $02
@@ -64239,7 +64239,7 @@ L_38390:
   383d0:  3e006092  storem   0, 0, gr96, lr18
   383d4:  14929284  add      lr18, lr18, lr4
 
-sub_383d8:
+sub_383d8:   ; CopyStoremBurstBoth
   383d8:  9189923c  and      lr9, lr18, $3c
   383dc:  61848900  cpeq     lr4, lr9, $00
   383e0:  ac00844f  jmpt     lr4, $3851c   ; -> L_3851c
@@ -64248,7 +64248,7 @@ sub_383d8:
   383ec:  ac008433  jmpt     lr4, $384b8   ; -> L_384b8
   383f0:  83839404  srl      lr3, lr20, $04   ; [delay slot]
   383f4:  61848300  cpeq     lr4, lr3, $00
-  383f8:  ac00846c  jmpt     lr4, $385a8   ; -> sub_385a8
+  383f8:  ac00846c  jmpt     lr4, $385a8   ; -> CopyStoremTail
   383fc:  25838302  sub      lr3, lr3, $02   ; [delay slot]
   38400:  83848902  srl      lr4, lr9, $02
   38404:  35898408  subr     lr9, lr4, $08
@@ -64295,12 +64295,12 @@ L_38418:
   384a4:  14929288  add      lr18, lr18, lr8
   384a8:  b4ff83dc  jmpfdec  lr3, $38418   ; -> L_38418
   384ac:  70400101  nop         ; [delay slot]
-  384b0:  a000003e  jmp      $385a8   ; -> sub_385a8
+  384b0:  a000003e  jmp      $385a8   ; -> CopyStoremTail
   384b4:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 L_384b8:
   384b8:  83839404  srl      lr3, lr20, $04
   384bc:  61848300  cpeq     lr4, lr3, $00
-  384c0:  ac00843a  jmpt     lr4, $385a8   ; -> sub_385a8
+  384c0:  ac00843a  jmpt     lr4, $385a8   ; -> CopyStoremTail
   384c4:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_384c8:
   384c8:  c6850200  mfsr     lr5, CPS
@@ -64322,12 +64322,12 @@ L_384c8:
   38508:  ce000285  mtsr     CPS, lr5
   3850c:  b4ff83ef  jmpfdec  lr3, $384c8   ; -> L_384c8
   38510:  15929220  add      lr18, lr18, $20   ; [delay slot]
-  38514:  a0000025  jmp      $385a8   ; -> sub_385a8
+  38514:  a0000025  jmp      $385a8   ; -> CopyStoremTail
   38518:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 L_3851c:
   3851c:  83839404  srl      lr3, lr20, $04
   38520:  61848300  cpeq     lr4, lr3, $00
-  38524:  ac008421  jmpt     lr4, $385a8   ; -> sub_385a8
+  38524:  ac008421  jmpt     lr4, $385a8   ; -> CopyStoremTail
   38528:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_3852c:
   3852c:  0400870f  mtsrim   CR, $000f
@@ -64346,17 +64346,17 @@ L_3852c:
   38560:  ce000285  mtsr     CPS, lr5
   38564:  b4ff83f2  jmpfdec  lr3, $3852c   ; -> L_3852c
   38568:  15929240  add      lr18, lr18, $40   ; [delay slot]
-  3856c:  a000000f  jmp      $385a8   ; -> sub_385a8
+  3856c:  a000000f  jmp      $385a8   ; -> CopyStoremTail
   38570:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 
-sub_38574:
+sub_38574:   ; CopyStoremUnmapPlain
   38574:  a8008000  call     lr0, $390b4   ; -> .text $390b4 (svc_D3)
   38578:  81828e00  sll      lr2, lr14, $00   ; [delay slot]
 
-sub_3857c:
+sub_3857c:   ; CopyStoremPlain
   3857c:  83839404  srl      lr3, lr20, $04
   38580:  61848300  cpeq     lr4, lr3, $00
-  38584:  ac008409  jmpt     lr4, $385a8   ; -> sub_385a8
+  38584:  ac008409  jmpt     lr4, $385a8   ; -> CopyStoremTail
   38588:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_3858c:
   3858c:  0400870f  mtsrim   CR, $000f
@@ -64367,19 +64367,19 @@ L_3858c:
   385a0:  b4ff83fb  jmpfdec  lr3, $3858c   ; -> L_3858c
   385a4:  15929240  add      lr18, lr18, $40   ; [delay slot]
 
-sub_385a8:
+sub_385a8:   ; CopyStoremTail
   385a8:  9189940f  and      lr9, lr20, $0f
   385ac:  25898901  sub      lr9, lr9, $01
-  385b0:  ac008905  jmpt     lr9, $385c4   ; -> sub_385c4
+  385b0:  ac008905  jmpt     lr9, $385c4   ; -> CopyStoremDone
   385b4:  ce008789  mtsr     CR, lr9   ; [delay slot]
   385b8:  36006093  loadm    0, 0, gr96, lr19
   385bc:  ce008789  mtsr     CR, lr9
   385c0:  3e006092  storem   0, 0, gr96, lr18
 
-sub_385c4:
+sub_385c4:   ; CopyStoremDone
   385c4:  03006000  const    gr96, $0000
 
-sub_385c8:
+sub_385c8:   ; CopyStoremRestore
   385c8:  a8008000  call     lr0, $390b4   ; -> .text $390b4 (svc_D3)
   385cc:  81828e00  sll      lr2, lr14, $00   ; [delay slot]
   385d0:  ce00038a  mtsr     CFG, lr10
@@ -64394,7 +64394,7 @@ sub_385c8:
   385f4:  c0000080  jmpi     lr0
   385f8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_385fc:
+sub_385fc:   ; CopyLoadsLoop
   385fc:  25949402  sub      lr20, lr20, $02
 L_38600:
   38600:  16006093  load     0, 0, gr96, lr19
@@ -64402,14 +64402,14 @@ L_38600:
   38608:  1e006092  store    0, 0, gr96, lr18
   3860c:  b4ff94fd  jmpfdec  lr20, $38600   ; -> L_38600
   38610:  15929204  add      lr18, lr18, $04   ; [delay slot]
-  38614:  a0ff00ec  jmp      $385c4   ; -> sub_385c4
+  38614:  a0ff00ec  jmp      $385c4   ; -> CopyStoremDone
   38618:  70400101  nop         ; [delay slot]
 
-sub_3861c:
-  3861c:  a0ff00eb  jmp      $385c8   ; -> sub_385c8
+sub_3861c:   ; CopyStoremFail
+  3861c:  a0ff00eb  jmp      $385c8   ; -> CopyStoremRestore
   38620:  01ff60ff  constn   gr96, $ffff   ; [delay slot]
 
-sub_38624:
+sub_38624:   ; CopyStoremBurstLoad
   38624:  8389931c  srl      lr9, lr19, $1c
   38628:  6184890f  cpeq     lr4, lr9, $0f
   3862c:  a4008405  jmpf     lr4, $38640   ; -> L_38640
@@ -64419,15 +64419,15 @@ sub_38624:
   3863c:  9189890f  and      lr9, lr9, $0f   ; [delay slot]
 L_38640:
   38640:  61848904  cpeq     lr4, lr9, $04
-  38644:  acff84ce  jmpt     lr4, $3857c   ; -> sub_3857c
+  38644:  acff84ce  jmpt     lr4, $3857c   ; -> CopyStoremPlain
 L_38648:
   38648:  8384781c  srl      lr4, gr120, $1c   ; [delay slot]
   3864c:  60848984  cpeq     lr4, lr9, lr4
-  38650:  acff84cb  jmpt     lr4, $3857c   ; -> sub_3857c
+  38650:  acff84cb  jmpt     lr4, $3857c   ; -> CopyStoremPlain
   38654:  70400101  nop         ; [delay slot]
   38658:  9189933c  and      lr9, lr19, $3c
   3865c:  61848900  cpeq     lr4, lr9, $00
-  38660:  ac00840c  jmpt     lr4, $38690   ; -> sub_38690
+  38660:  ac00840c  jmpt     lr4, $38690   ; -> CopyStoremBurstLoad16
   38664:  83848902  srl      lr4, lr9, $02   ; [delay slot]
   38668:  35838410  subr     lr3, lr4, $10
   3866c:  81848302  sll      lr4, lr3, $02
@@ -64440,10 +64440,10 @@ L_38648:
   38688:  3e006092  storem   0, 0, gr96, lr18
   3868c:  14929284  add      lr18, lr18, lr4
 
-sub_38690:
+sub_38690:   ; CopyStoremBurstLoad16
   38690:  83839404  srl      lr3, lr20, $04
   38694:  61848300  cpeq     lr4, lr3, $00
-  38698:  acff84c4  jmpt     lr4, $385a8   ; -> sub_385a8
+  38698:  acff84c4  jmpt     lr4, $385a8   ; -> CopyStoremTail
   3869c:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_386a0:
   386a0:  c6850200  mfsr     lr5, CPS
@@ -64465,7 +64465,7 @@ L_386a0:
   386e0:  9194940f  and      lr20, lr20, $0f
   386e4:  83839403  srl      lr3, lr20, $03
   386e8:  61848300  cpeq     lr4, lr3, $00
-  386ec:  ac008413  jmpt     lr4, $38738   ; -> sub_38738
+  386ec:  ac008413  jmpt     lr4, $38738   ; -> CopyStoremBurstLoad4
   386f0:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_386f4:
   386f4:  c6850200  mfsr     lr5, CPS
@@ -64486,10 +64486,10 @@ L_386f4:
   38730:  15929220  add      lr18, lr18, $20   ; [delay slot]
   38734:  91949407  and      lr20, lr20, $07
 
-sub_38738:
+sub_38738:   ; CopyStoremBurstLoad4
   38738:  83839402  srl      lr3, lr20, $02
   3873c:  61848300  cpeq     lr4, lr3, $00
-  38740:  ac008413  jmpt     lr4, $3878c   ; -> sub_3878c
+  38740:  ac008413  jmpt     lr4, $3878c   ; -> CopyStoremBurstLoadEnd
   38744:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38748:
   38748:  c6850200  mfsr     lr5, CPS
@@ -64510,14 +64510,14 @@ L_38748:
   38784:  15929210  add      lr18, lr18, $10   ; [delay slot]
   38788:  91949403  and      lr20, lr20, $03
 
-sub_3878c:
-  3878c:  a0ff0087  jmp      $385a8   ; -> sub_385a8
+sub_3878c:   ; CopyStoremBurstLoadEnd
+  3878c:  a0ff0087  jmp      $385a8   ; -> CopyStoremTail
   38790:  70400101  nop         ; [delay slot]
 
-sub_38794:
+sub_38794:   ; CopyStoremBurstStore
   38794:  9189923c  and      lr9, lr18, $3c
   38798:  61848900  cpeq     lr4, lr9, $00
-  3879c:  ac00840c  jmpt     lr4, $387cc   ; -> sub_387cc
+  3879c:  ac00840c  jmpt     lr4, $387cc   ; -> CopyStoremBurstStore16
   387a0:  83848902  srl      lr4, lr9, $02   ; [delay slot]
   387a4:  35838410  subr     lr3, lr4, $10
   387a8:  81848302  sll      lr4, lr3, $02
@@ -64530,10 +64530,10 @@ sub_38794:
   387c4:  3e006092  storem   0, 0, gr96, lr18
   387c8:  14929284  add      lr18, lr18, lr4
 
-sub_387cc:
+sub_387cc:   ; CopyStoremBurstStore16
   387cc:  83839404  srl      lr3, lr20, $04
   387d0:  61848300  cpeq     lr4, lr3, $00
-  387d4:  acff8475  jmpt     lr4, $385a8   ; -> sub_385a8
+  387d4:  acff8475  jmpt     lr4, $385a8   ; -> CopyStoremTail
   387d8:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_387dc:
   387dc:  0400870f  mtsrim   CR, $000f
@@ -64555,7 +64555,7 @@ L_387dc:
   3881c:  9194940f  and      lr20, lr20, $0f
   38820:  83839403  srl      lr3, lr20, $03
   38824:  61848300  cpeq     lr4, lr3, $00
-  38828:  ac008413  jmpt     lr4, $38874   ; -> sub_38874
+  38828:  ac008413  jmpt     lr4, $38874   ; -> CopyStoremBurstStore4
   3882c:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38830:
   38830:  04008707  mtsrim   CR, $0007
@@ -64576,10 +64576,10 @@ L_38830:
   3886c:  15929220  add      lr18, lr18, $20   ; [delay slot]
   38870:  91949407  and      lr20, lr20, $07
 
-sub_38874:
+sub_38874:   ; CopyStoremBurstStore4
   38874:  83839402  srl      lr3, lr20, $02
   38878:  61848300  cpeq     lr4, lr3, $00
-  3887c:  ac008413  jmpt     lr4, $388c8   ; -> sub_388c8
+  3887c:  ac008413  jmpt     lr4, $388c8   ; -> CopyStoremBurstStoreEnd
   38880:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38884:
   38884:  04008703  mtsrim   CR, $0003
@@ -64600,8 +64600,8 @@ L_38884:
   388c0:  15929210  add      lr18, lr18, $10   ; [delay slot]
   388c4:  91949403  and      lr20, lr20, $03
 
-sub_388c8:
-  388c8:  a0ff0038  jmp      $385a8   ; -> sub_385a8
+sub_388c8:   ; CopyStoremBurstStoreEnd
+  388c8:  a0ff0038  jmp      $385a8   ; -> CopyStoremTail
   388cc:  70400101  nop         ; [delay slot]
 
 sub_388d0:   ; CopyLongsBackStorem
@@ -64659,7 +64659,7 @@ L_38910:
 L_38998:
   38998:  a8008000  call     lr0, $390b4   ; -> .text $390b4 (svc_D3)
   3899c:  81828e00  sll      lr2, lr14, $00   ; [delay slot]
-  389a0:  a0000091  jmp      $38be4   ; -> sub_38be4
+  389a0:  a0000091  jmp      $38be4   ; -> CopyBackPlain
   389a4:  70400101  nop         ; [delay slot]
 L_389a8:
   389a8:  81936000  sll      lr19, gr96, $00
@@ -64667,12 +64667,12 @@ L_389a8:
 L_389b0:
   389b0:  91899203  and      lr9, lr18, $03
   389b4:  61898900  cpeq     lr9, lr9, $00
-  389b8:  a400898b  jmpf     lr9, $38be4   ; -> sub_38be4
+  389b8:  a400898b  jmpf     lr9, $38be4   ; -> CopyBackPlain
   389bc:  91899303  and      lr9, lr19, $03   ; [delay slot]
   389c0:  61898900  cpeq     lr9, lr9, $00
-  389c4:  a4008988  jmpf     lr9, $38be4   ; -> sub_38be4
+  389c4:  a4008988  jmpf     lr9, $38be4   ; -> CopyBackPlain
   389c8:  41849410  cplt     lr4, lr20, $10   ; [delay slot]
-  389cc:  ac008491  jmpt     lr4, $38c10   ; -> sub_38c10
+  389cc:  ac008491  jmpt     lr4, $38c10   ; -> CopyBackTail
   389d0:  8389921c  srl      lr9, lr18, $1c   ; [delay slot]
   389d4:  6184890f  cpeq     lr4, lr9, $0f
   389d8:  a4008405  jmpf     lr4, $389ec   ; -> L_389ec
@@ -64686,12 +64686,12 @@ L_389ec:
   389f4:  70400101  nop         ; [delay slot]
   389f8:  81929204  sll      lr18, lr18, $04
   389fc:  83929204  srl      lr18, lr18, $04
-  38a00:  a000009e  jmp      $38c78   ; -> sub_38c78
+  38a00:  a000009e  jmp      $38c78   ; -> CopyBackBurstLoad
   38a04:  92929278  or       lr18, lr18, gr120   ; [delay slot]
 L_38a08:
   38a08:  8384781c  srl      lr4, gr120, $1c
   38a0c:  60848984  cpeq     lr4, lr9, lr4
-  38a10:  ac00849a  jmpt     lr4, $38c78   ; -> sub_38c78
+  38a10:  ac00849a  jmpt     lr4, $38c78   ; -> CopyBackBurstLoad
   38a14:  8389931c  srl      lr9, lr19, $1c   ; [delay slot]
   38a18:  6184890f  cpeq     lr4, lr9, $0f
   38a1c:  a4008405  jmpf     lr4, $38a30   ; -> L_38a30
@@ -64705,16 +64705,16 @@ L_38a30:
   38a38:  70400101  nop         ; [delay slot]
   38a3c:  81939304  sll      lr19, lr19, $04
   38a40:  83939304  srl      lr19, lr19, $04
-  38a44:  a00000e9  jmp      $38de8   ; -> sub_38de8
+  38a44:  a00000e9  jmp      $38de8   ; -> CopyBackBurstStore
   38a48:  92939378  or       lr19, lr19, gr120   ; [delay slot]
 L_38a4c:
   38a4c:  8384781c  srl      lr4, gr120, $1c
   38a50:  60848984  cpeq     lr4, lr9, lr4
-  38a54:  ac0084e5  jmpt     lr4, $38de8   ; -> sub_38de8
+  38a54:  ac0084e5  jmpt     lr4, $38de8   ; -> CopyBackBurstStore
   38a58:  70400101  nop         ; [delay slot]
   38a5c:  9189933c  and      lr9, lr19, $3c
   38a60:  61848900  cpeq     lr4, lr9, $00
-  38a64:  ac00840c  jmpt     lr4, $38a94   ; -> sub_38a94
+  38a64:  ac00840c  jmpt     lr4, $38a94   ; -> CopyBackBurstBoth
   38a68:  83848902  srl      lr4, lr9, $02   ; [delay slot]
   38a6c:  35838410  subr     lr3, lr4, $10
   38a70:  81848302  sll      lr4, lr3, $02
@@ -64727,7 +64727,7 @@ L_38a4c:
   38a8c:  24929284  sub      lr18, lr18, lr4
   38a90:  3e006092  storem   0, 0, gr96, lr18
 
-sub_38a94:
+sub_38a94:   ; CopyBackBurstBoth
   38a94:  9189923c  and      lr9, lr18, $3c
   38a98:  61848900  cpeq     lr4, lr9, $00
   38a9c:  ac00843b  jmpt     lr4, $38b88   ; -> L_38b88
@@ -64736,7 +64736,7 @@ sub_38a94:
   38aa8:  ac00841e  jmpt     lr4, $38b20   ; -> L_38b20
   38aac:  83839404  srl      lr3, lr20, $04   ; [delay slot]
   38ab0:  61848300  cpeq     lr4, lr3, $00
-  38ab4:  ac008457  jmpt     lr4, $38c10   ; -> sub_38c10
+  38ab4:  ac008457  jmpt     lr4, $38c10   ; -> CopyBackTail
   38ab8:  25838302  sub      lr3, lr3, $02   ; [delay slot]
   38abc:  83848902  srl      lr4, lr9, $02
   38ac0:  35898408  subr     lr9, lr4, $08
@@ -64762,12 +64762,12 @@ L_38ad4:
   38b0c:  3e006092  storem   0, 0, gr96, lr18
   38b10:  b4ff83f1  jmpfdec  lr3, $38ad4   ; -> L_38ad4
   38b14:  70400101  nop         ; [delay slot]
-  38b18:  a000003e  jmp      $38c10   ; -> sub_38c10
+  38b18:  a000003e  jmp      $38c10   ; -> CopyBackTail
   38b1c:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 L_38b20:
   38b20:  83839404  srl      lr3, lr20, $04
   38b24:  61848300  cpeq     lr4, lr3, $00
-  38b28:  ac00843a  jmpt     lr4, $38c10   ; -> sub_38c10
+  38b28:  ac00843a  jmpt     lr4, $38c10   ; -> CopyBackTail
   38b2c:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38b30:
   38b30:  c6850200  mfsr     lr5, CPS
@@ -64790,12 +64790,12 @@ L_38b30:
   38b74:  ce000285  mtsr     CPS, lr5
   38b78:  b4ff83ee  jmpfdec  lr3, $38b30   ; -> L_38b30
   38b7c:  70400101  nop         ; [delay slot]
-  38b80:  a0000024  jmp      $38c10   ; -> sub_38c10
+  38b80:  a0000024  jmp      $38c10   ; -> CopyBackTail
   38b84:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 L_38b88:
   38b88:  83839404  srl      lr3, lr20, $04
   38b8c:  61848300  cpeq     lr4, lr3, $00
-  38b90:  ac008420  jmpt     lr4, $38c10   ; -> sub_38c10
+  38b90:  ac008420  jmpt     lr4, $38c10   ; -> CopyBackTail
   38b94:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38b98:
   38b98:  0400870f  mtsrim   CR, $000f
@@ -64815,13 +64815,13 @@ L_38b98:
   38bd0:  ce000285  mtsr     CPS, lr5
   38bd4:  b4ff83f1  jmpfdec  lr3, $38b98   ; -> L_38b98
   38bd8:  70400101  nop         ; [delay slot]
-  38bdc:  a000000d  jmp      $38c10   ; -> sub_38c10
+  38bdc:  a000000d  jmp      $38c10   ; -> CopyBackTail
   38be0:  9194940f  and      lr20, lr20, $0f   ; [delay slot]
 
-sub_38be4:
+sub_38be4:   ; CopyBackPlain
   38be4:  83839404  srl      lr3, lr20, $04
   38be8:  61848300  cpeq     lr4, lr3, $00
-  38bec:  ac008409  jmpt     lr4, $38c10   ; -> sub_38c10
+  38bec:  ac008409  jmpt     lr4, $38c10   ; -> CopyBackTail
   38bf0:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38bf4:
   38bf4:  0400870f  mtsrim   CR, $000f
@@ -64832,11 +64832,11 @@ L_38bf4:
   38c08:  b4ff83fb  jmpfdec  lr3, $38bf4   ; -> L_38bf4
   38c0c:  3e006092  storem   0, 0, gr96, lr18   ; [delay slot]
 
-sub_38c10:
+sub_38c10:   ; CopyBackTail
   38c10:  9189940f  and      lr9, lr20, $0f
   38c14:  81868902  sll      lr6, lr9, $02
   38c18:  25898901  sub      lr9, lr9, $01
-  38c1c:  ac008907  jmpt     lr9, $38c38   ; -> sub_38c38
+  38c1c:  ac008907  jmpt     lr9, $38c38   ; -> CopyBackDone
   38c20:  ce008789  mtsr     CR, lr9   ; [delay slot]
   38c24:  24939386  sub      lr19, lr19, lr6
   38c28:  24929286  sub      lr18, lr18, lr6
@@ -64844,10 +64844,10 @@ sub_38c10:
   38c30:  ce008789  mtsr     CR, lr9
   38c34:  3e006092  storem   0, 0, gr96, lr18
 
-sub_38c38:
+sub_38c38:   ; CopyBackDone
   38c38:  03006000  const    gr96, $0000
 
-sub_38c3c:
+sub_38c3c:   ; CopyBackRestore
   38c3c:  a8008000  call     lr0, $390b4   ; -> .text $390b4 (svc_D3)
   38c40:  81828e00  sll      lr2, lr14, $00   ; [delay slot]
   38c44:  ce00038a  mtsr     CFG, lr10
@@ -64862,11 +64862,11 @@ sub_38c3c:
   38c68:  c0000080  jmpi     lr0
   38c6c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_38c70:
-  38c70:  a0ff00f3  jmp      $38c3c   ; -> sub_38c3c
+sub_38c70:   ; CopyBackFail
+  38c70:  a0ff00f3  jmp      $38c3c   ; -> CopyBackRestore
   38c74:  01ff60ff  constn   gr96, $ffff   ; [delay slot]
 
-sub_38c78:
+sub_38c78:   ; CopyBackBurstLoad
   38c78:  8389931c  srl      lr9, lr19, $1c
   38c7c:  6184890f  cpeq     lr4, lr9, $0f
   38c80:  a4008405  jmpf     lr4, $38c94   ; -> L_38c94
@@ -64876,15 +64876,15 @@ sub_38c78:
   38c90:  9189890f  and      lr9, lr9, $0f   ; [delay slot]
 L_38c94:
   38c94:  61848904  cpeq     lr4, lr9, $04
-  38c98:  acff84d3  jmpt     lr4, $38be4   ; -> sub_38be4
+  38c98:  acff84d3  jmpt     lr4, $38be4   ; -> CopyBackPlain
 L_38c9c:
   38c9c:  8384781c  srl      lr4, gr120, $1c   ; [delay slot]
   38ca0:  60848984  cpeq     lr4, lr9, lr4
-  38ca4:  acff84d0  jmpt     lr4, $38be4   ; -> sub_38be4
+  38ca4:  acff84d0  jmpt     lr4, $38be4   ; -> CopyBackPlain
   38ca8:  70400101  nop         ; [delay slot]
   38cac:  9189933c  and      lr9, lr19, $3c
   38cb0:  61848900  cpeq     lr4, lr9, $00
-  38cb4:  ac00840a  jmpt     lr4, $38cdc   ; -> sub_38cdc
+  38cb4:  ac00840a  jmpt     lr4, $38cdc   ; -> CopyBackBurstLoad16
   38cb8:  83838902  srl      lr3, lr9, $02   ; [delay slot]
   38cbc:  24949483  sub      lr20, lr20, lr3
   38cc0:  25838301  sub      lr3, lr3, $01
@@ -64895,10 +64895,10 @@ L_38c9c:
   38cd4:  24929289  sub      lr18, lr18, lr9
   38cd8:  3e006092  storem   0, 0, gr96, lr18
 
-sub_38cdc:
+sub_38cdc:   ; CopyBackBurstLoad16
   38cdc:  83839404  srl      lr3, lr20, $04
   38ce0:  61848300  cpeq     lr4, lr3, $00
-  38ce4:  acff84cb  jmpt     lr4, $38c10   ; -> sub_38c10
+  38ce4:  acff84cb  jmpt     lr4, $38c10   ; -> CopyBackTail
   38ce8:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38cec:
   38cec:  c6850200  mfsr     lr5, CPS
@@ -64921,7 +64921,7 @@ L_38cec:
   38d30:  9194940f  and      lr20, lr20, $0f
   38d34:  83839403  srl      lr3, lr20, $03
   38d38:  61848300  cpeq     lr4, lr3, $00
-  38d3c:  ac008414  jmpt     lr4, $38d8c   ; -> sub_38d8c
+  38d3c:  ac008414  jmpt     lr4, $38d8c   ; -> CopyBackBurstLoad4
   38d40:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38d44:
   38d44:  c6850200  mfsr     lr5, CPS
@@ -64943,10 +64943,10 @@ L_38d44:
   38d84:  70400101  nop         ; [delay slot]
   38d88:  91949407  and      lr20, lr20, $07
 
-sub_38d8c:
+sub_38d8c:   ; CopyBackBurstLoad4
   38d8c:  83839402  srl      lr3, lr20, $02
   38d90:  61848300  cpeq     lr4, lr3, $00
-  38d94:  acff849f  jmpt     lr4, $38c10   ; -> sub_38c10
+  38d94:  acff849f  jmpt     lr4, $38c10   ; -> CopyBackTail
   38d98:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38d9c:
   38d9c:  c6850200  mfsr     lr5, CPS
@@ -64966,13 +64966,13 @@ L_38d9c:
   38dd4:  ce000285  mtsr     CPS, lr5
   38dd8:  b4ff83f1  jmpfdec  lr3, $38d9c   ; -> L_38d9c
   38ddc:  70400101  nop         ; [delay slot]
-  38de0:  a0ff008c  jmp      $38c10   ; -> sub_38c10
+  38de0:  a0ff008c  jmp      $38c10   ; -> CopyBackTail
   38de4:  91949403  and      lr20, lr20, $03   ; [delay slot]
 
-sub_38de8:
+sub_38de8:   ; CopyBackBurstStore
   38de8:  9189923c  and      lr9, lr18, $3c
   38dec:  61848900  cpeq     lr4, lr9, $00
-  38df0:  ac00840a  jmpt     lr4, $38e18   ; -> sub_38e18
+  38df0:  ac00840a  jmpt     lr4, $38e18   ; -> CopyBackBurstStore16
   38df4:  83838902  srl      lr3, lr9, $02   ; [delay slot]
   38df8:  24949483  sub      lr20, lr20, lr3
   38dfc:  25838301  sub      lr3, lr3, $01
@@ -64983,10 +64983,10 @@ sub_38de8:
   38e10:  24929289  sub      lr18, lr18, lr9
   38e14:  3e006092  storem   0, 0, gr96, lr18
 
-sub_38e18:
+sub_38e18:   ; CopyBackBurstStore16
   38e18:  83839404  srl      lr3, lr20, $04
   38e1c:  61848300  cpeq     lr4, lr3, $00
-  38e20:  acff847c  jmpt     lr4, $38c10   ; -> sub_38c10
+  38e20:  acff847c  jmpt     lr4, $38c10   ; -> CopyBackTail
   38e24:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38e28:
   38e28:  0400870f  mtsrim   CR, $000f
@@ -65009,7 +65009,7 @@ L_38e28:
   38e6c:  9194940f  and      lr20, lr20, $0f
   38e70:  83839403  srl      lr3, lr20, $03
   38e74:  61848300  cpeq     lr4, lr3, $00
-  38e78:  ac008414  jmpt     lr4, $38ec8   ; -> sub_38ec8
+  38e78:  ac008414  jmpt     lr4, $38ec8   ; -> CopyBackBurstStore4
   38e7c:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38e80:
   38e80:  04008707  mtsrim   CR, $0007
@@ -65031,10 +65031,10 @@ L_38e80:
   38ec0:  70400101  nop         ; [delay slot]
   38ec4:  91949407  and      lr20, lr20, $07
 
-sub_38ec8:
+sub_38ec8:   ; CopyBackBurstStore4
   38ec8:  83839402  srl      lr3, lr20, $02
   38ecc:  61848300  cpeq     lr4, lr3, $00
-  38ed0:  acff8450  jmpt     lr4, $38c10   ; -> sub_38c10
+  38ed0:  acff8450  jmpt     lr4, $38c10   ; -> CopyBackTail
   38ed4:  25838302  sub      lr3, lr3, $02   ; [delay slot]
 L_38ed8:
   38ed8:  04008703  mtsrim   CR, $0003
@@ -65054,7 +65054,7 @@ L_38ed8:
   38f10:  ce000285  mtsr     CPS, lr5
   38f14:  b4ff83f1  jmpfdec  lr3, $38ed8   ; -> L_38ed8
   38f18:  70400101  nop         ; [delay slot]
-  38f1c:  a0ff003d  jmp      $38c10   ; -> sub_38c10
+  38f1c:  a0ff003d  jmp      $38c10   ; -> CopyBackTail
   38f20:  91949403  and      lr20, lr20, $03   ; [delay slot]
 
 file_30:   ; object file 30 (asm): .text starts here
@@ -65400,7 +65400,7 @@ sub_39304:   ; fseek
   3933c:  c0000080  jmpi     lr0
   39340:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 L_39344:
-  39344:  a8008000  call     lr0, $39570   ; -> .text $39570 (sub_39570)
+  39344:  a8008000  call     lr0, $39570   ; -> .text $39570 (ftell)
   39348:  15828c00  add      lr2, lr12, $00   ; [delay slot]
   3934c:  01ff85ff  constn   lr5, $ffff
   39350:  62616085  cpneq    gr97, gr96, lr5
@@ -65454,7 +65454,7 @@ L_393fc:
   39400:  81606314  sll      gr96, gr99, $14   ; [delay slot]
 L_39404:
   39404:  15828c00  add      lr2, lr12, $00
-  39408:  a8008000  call     lr0, $3bae8   ; -> .text $3bae8 (sub_3bae8)
+  39408:  a8008000  call     lr0, $3bae8   ; -> .text $3bae8 (_stream_prepare)
   3940c:  03008300  const    lr3, $0000   ; [delay slot]
   39410:  62606085  cpneq    gr96, gr96, lr5
   39414:  ac006015  jmpt     gr96, $39468   ; -> L_39468
@@ -65554,7 +65554,7 @@ file_33:   ; object file 33 (C): .text starts here
 sub_3956c:
   3956c:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_39570:
+sub_39570:   ; ftell
   39570:  25010118  sub      gr1, gr1, $18
   39574:  5e00017e  asgeu    trap64, gr1, gr126
   39578:  15608810  add      gr96, lr8, $10
@@ -65621,7 +65621,7 @@ file_34:   ; object file 34 (C): .text starts here
 sub_39650:
   39650:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_39654:
+sub_39654:   ; _fwrite
   39654:  25010128  sub      gr1, gr1, $28
   39658:  5e00017e  asgeu    trap64, gr1, gr126
   3965c:  15868e10  add      lr6, lr14, $10
@@ -65672,7 +65672,7 @@ L_396f4:
   39700:  1e026086  store    0, 2, gr96, lr6   ; [delay slot]
 L_39704:
   39704:  16018288  load     0, 1, lr2, lr8
-  39708:  a8008000  call     lr0, $3be04   ; -> .text $3be04 (sub_3be04)
+  39708:  a8008000  call     lr0, $3be04   ; -> .text $3be04 (_flsbuf)
   3970c:  15838e00  add      lr3, lr14, $00   ; [delay slot]
   39710:  62606085  cpneq    gr96, gr96, lr5
   39714:  a400601b  jmpf     gr96, $39780   ; -> L_39780
@@ -65722,7 +65722,7 @@ sub_39798:   ; fwrite
   397a4:  a8007a00  call     gr122, $3b814   ; -> .text $3b814 (mul_millicode)
   397a8:  9e838a89  setip    lr3, lr10, lr9   ; [delay slot]
   397ac:  15828800  add      lr2, lr8, $00
-  397b0:  a8ff80a9  call     lr0, $39654   ; -> sub_39654
+  397b0:  a8ff80a9  call     lr0, $39654   ; -> _fwrite
   397b4:  15848b00  add      lr4, lr11, $00   ; [delay slot]
   397b8:  45616000  cple     gr97, gr96, $00
   397bc:  ac006104  jmpt     gr97, $397cc   ; -> L_397cc
@@ -65803,7 +65803,7 @@ file_36:   ; object file 36 (C): .text starts here
 sub_398b8:
   398b8:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_398bc:
+sub_398bc:   ; _doprnt_pad
   398bc:  25010120  sub      gr1, gr1, $20
   398c0:  5e00017e  asgeu    trap64, gr1, gr126
   398c4:  61608d00  cpeq     gr96, lr13, $00
@@ -65855,7 +65855,7 @@ L_3995c:
   39968:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3996c:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_39970:
+sub_39970:   ; _doprnt_getnum
   39970:  25010118  sub      gr1, gr1, $18
   39974:  5e00017e  asgeu    trap64, gr1, gr126
   39978:  257d7d08  sub      gr125, gr125, $08
@@ -65876,7 +65876,7 @@ sub_39970:
   399b4:  1e006189  store    0, 0, gr97, lr9   ; [delay slot]
 L_399b8:
   399b8:  15838500  add      lr3, lr5, $00
-  399bc:  a8008000  call     lr0, $3a7a0   ; -> .text $3a7a0 (sub_3a7a0)
+  399bc:  a8008000  call     lr0, $3a7a0   ; -> .text $3a7a0 (_strtoul10)
   399c0:  03008400  const    lr4, $0000   ; [delay slot]
 L_399c4:
   399c4:  16008285  load     0, 0, lr2, lr5
@@ -66001,7 +66001,7 @@ L_39b60:
   39b78:  1e00a688  store    0, 0, lr38, lr8
 L_39b7c:
   39b7c:  15828800  add      lr2, lr8, $00
-  39b80:  a8ff807c  call     lr0, $39970   ; -> sub_39970
+  39b80:  a8ff807c  call     lr0, $39970   ; -> _doprnt_getnum
   39b84:  15839400  add      lr3, lr20, $00   ; [delay slot]
   39b88:  158e6000  add      lr14, gr96, $00
   39b8c:  a4008e04  jmpf     lr14, $39b9c   ; -> L_39b9c
@@ -66024,13 +66024,13 @@ L_39ba8:
   39bc8:  15a6a601  add      lr38, lr38, $01   ; [delay slot]
   39bcc:  1e00a688  store    0, 0, lr38, lr8
   39bd0:  15828800  add      lr2, lr8, $00
-  39bd4:  a8ff8067  call     lr0, $39970   ; -> sub_39970
+  39bd4:  a8ff8067  call     lr0, $39970   ; -> _doprnt_getnum
   39bd8:  15839400  add      lr3, lr20, $00   ; [delay slot]
   39bdc:  a000000e  jmp      $39c14   ; -> L_39c14
   39be0:  70400101  nop         ; [delay slot]
 L_39be4:
   39be4:  15828800  add      lr2, lr8, $00
-  39be8:  a8ff8062  call     lr0, $39970   ; -> sub_39970
+  39be8:  a8ff8062  call     lr0, $39970   ; -> _doprnt_getnum
   39bec:  15839400  add      lr3, lr20, $00   ; [delay slot]
   39bf0:  159e6000  add      lr30, gr96, $00
   39bf4:  45609e80  cple     gr96, lr30, $80
@@ -66171,7 +66171,7 @@ L_39d8c:
 L_39ddc:
   39ddc:  15829500  add      lr2, lr21, $00
   39de0:  15839800  add      lr3, lr24, $00
-  39de4:  a8008000  call     lr0, $3a6c0   ; -> .text $3a6c0 (sub_3a6c0)
+  39de4:  a8008000  call     lr0, $3a6c0   ; -> .text $3a6c0 (_utoa10)
   39de8:  15849600  add      lr4, lr22, $00   ; [delay slot]
   39dec:  15866000  add      lr6, gr96, $00
   39df0:  a0000032  jmp      $39eb8   ; -> L_39eb8
@@ -66185,7 +66185,7 @@ L_39ddc:
   39e10:  15967d04  add      lr22, gr125, $04
   39e14:  15829500  add      lr2, lr21, $00
   39e18:  15839800  add      lr3, lr24, $00
-  39e1c:  a8008000  call     lr0, $3a768   ; -> .text $3a768 (sub_3a768)
+  39e1c:  a8008000  call     lr0, $3a768   ; -> .text $3a768 (_utoahex)
   39e20:  15849600  add      lr4, lr22, $00   ; [delay slot]
   39e24:  a0ff00ce  jmp      $39d5c   ; -> L_39d5c
   39e28:  15866000  add      lr6, gr96, $00   ; [delay slot]
@@ -66225,7 +66225,7 @@ L_39e98:
   39e9c:  15829500  add      lr2, lr21, $00
   39ea0:  15839a00  add      lr3, lr26, $00
   39ea4:  15849800  add      lr4, lr24, $00
-  39ea8:  a8008000  call     lr0, $3a5a4   ; -> .text $3a5a4 (sub_3a5a4)
+  39ea8:  a8008000  call     lr0, $3a5a4   ; -> .text $3a5a4 (_ultoa)
   39eac:  15859600  add      lr5, lr22, $00   ; [delay slot]
   39eb0:  15866000  add      lr6, gr96, $00
   39eb4:  0300a178  const    lr33, $0078
@@ -66293,7 +66293,7 @@ L_39f64:
   39f88:  15839b00  add      lr3, lr27, $00
   39f8c:  15859900  add      lr5, lr25, $00
   39f90:  15869500  add      lr6, lr21, $00
-  39f94:  a8008000  call     lr0, $3c340   ; -> .text $3c340 (sub_3c340)
+  39f94:  a8008000  call     lr0, $3c340   ; -> .text $3c340 (_dtoa)
   39f98:  15879700  add      lr7, lr23, $00   ; [delay slot]
   39f9c:  15866000  add      lr6, gr96, $00
   39fa0:  15828600  add      lr2, lr6, $00
@@ -66408,7 +66408,7 @@ L_3a104:
   3a11c:  35838300  subr     lr3, lr3, $00
   3a120:  1e008395  store    0, 0, lr3, lr21
 L_3a124:
-  3a124:  a8008000  call     lr0, $3a6f8   ; -> .text $3a6f8 (sub_3a6f8)
+  3a124:  a8008000  call     lr0, $3a6f8   ; -> .text $3a6f8 (_ltoa10)
   3a128:  15848500  add      lr4, lr5, $00   ; [delay slot]
   3a12c:  16006385  load     0, 0, gr99, lr5
   3a130:  15876000  add      lr7, gr96, $00
@@ -66529,7 +66529,7 @@ L_3a29c:
   3a2ac:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a2b0:  1583a500  add      lr3, lr37, $00
   3a2b4:  15849900  add      lr4, lr25, $00
-  3a2b8:  a8fd8081  call     lr0, $398bc   ; -> sub_398bc
+  3a2b8:  a8fd8081  call     lr0, $398bc   ; -> _doprnt_pad
   3a2bc:  15859000  add      lr5, lr16, $00   ; [delay slot]
   3a2c0:  61606000  cpeq     gr96, gr96, $00
   3a2c4:  a40060a7  jmpf     gr96, $3a560   ; -> L_3a560
@@ -66575,7 +66575,7 @@ L_3a34c:
   3a354:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a358:  1583a500  add      lr3, lr37, $00
   3a35c:  15849c00  add      lr4, lr28, $00
-  3a360:  a8fd8057  call     lr0, $398bc   ; -> sub_398bc
+  3a360:  a8fd8057  call     lr0, $398bc   ; -> _doprnt_pad
   3a364:  03008501  const    lr5, $0001   ; [delay slot]
   3a368:  61606000  cpeq     gr96, gr96, $00
   3a36c:  a400608b  jmpf     gr96, $3a598   ; -> L_3a598
@@ -66587,7 +66587,7 @@ L_3a374:
   3a380:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a384:  1583a500  add      lr3, lr37, $00
   3a388:  15849900  add      lr4, lr25, $00
-  3a38c:  a8fd804c  call     lr0, $398bc   ; -> sub_398bc
+  3a38c:  a8fd804c  call     lr0, $398bc   ; -> _doprnt_pad
   3a390:  15859000  add      lr5, lr16, $00   ; [delay slot]
   3a394:  61606000  cpeq     gr96, gr96, $00
   3a398:  a4006080  jmpf     gr96, $3a598   ; -> L_3a598
@@ -66613,7 +66613,7 @@ L_3a3c8:
   3a3e0:  1582a400  add      lr2, lr36, $00
   3a3e4:  1583a500  add      lr3, lr37, $00
   3a3e8:  15848b00  add      lr4, lr11, $00
-  3a3ec:  a8fd8034  call     lr0, $398bc   ; -> sub_398bc
+  3a3ec:  a8fd8034  call     lr0, $398bc   ; -> _doprnt_pad
   3a3f0:  03008501  const    lr5, $0001   ; [delay slot]
   3a3f4:  61606000  cpeq     gr96, gr96, $00
   3a3f8:  a400605c  jmpf     gr96, $3a568   ; -> L_3a568
@@ -66637,7 +66637,7 @@ L_3a430:
   3a438:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a43c:  1583a500  add      lr3, lr37, $00
   3a440:  15848a00  add      lr4, lr10, $00
-  3a444:  a8fd801e  call     lr0, $398bc   ; -> sub_398bc
+  3a444:  a8fd801e  call     lr0, $398bc   ; -> _doprnt_pad
   3a448:  03008501  const    lr5, $0001   ; [delay slot]
   3a44c:  61606000  cpeq     gr96, gr96, $00
   3a450:  a4006048  jmpf     gr96, $3a570   ; -> L_3a570
@@ -66659,7 +66659,7 @@ L_3a480:
   3a488:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a48c:  1583a500  add      lr3, lr37, $00
   3a490:  15848900  add      lr4, lr9, $00
-  3a494:  a8fd800a  call     lr0, $398bc   ; -> sub_398bc
+  3a494:  a8fd800a  call     lr0, $398bc   ; -> _doprnt_pad
   3a498:  03008501  const    lr5, $0001   ; [delay slot]
   3a49c:  61606000  cpeq     gr96, gr96, $00
   3a4a0:  a4006036  jmpf     gr96, $3a578   ; -> L_3a578
@@ -66685,7 +66685,7 @@ L_3a4e0:
   3a4e8:  1582a400  add      lr2, lr36, $00   ; [delay slot]
   3a4ec:  1583a500  add      lr3, lr37, $00
   3a4f0:  15849800  add      lr4, lr24, $00
-  3a4f4:  a8fc80f2  call     lr0, $398bc   ; -> sub_398bc
+  3a4f4:  a8fc80f2  call     lr0, $398bc   ; -> _doprnt_pad
   3a4f8:  15859000  add      lr5, lr16, $00   ; [delay slot]
   3a4fc:  61606000  cpeq     gr96, gr96, $00
   3a500:  a4006020  jmpf     gr96, $3a580   ; -> L_3a580
@@ -66749,7 +66749,7 @@ file_37:   ; object file 37 (C): .text starts here
 sub_3a5a0:
   3a5a0:  00070028  .word    $00070028   ; tag word: 5 arguments, frame $28
 
-sub_3a5a4:
+sub_3a5a4:   ; _ultoa
   3a5a4:  25010118  sub      gr1, gr1, $18
   3a5a8:  5e00017e  asgeu    trap64, gr1, gr126
   3a5ac:  15810134  add      lr1, gr1, $34
@@ -66831,7 +66831,7 @@ L_3a6ac:
   3a6b8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3a6bc:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3a6c0:
+sub_3a6c0:   ; _utoa10
   3a6c0:  25010120  sub      gr1, gr1, $20
   3a6c4:  5e00017e  asgeu    trap64, gr1, gr126
   3a6c8:  15810134  add      lr1, gr1, $34
@@ -66839,7 +66839,7 @@ sub_3a6c0:
   3a6d0:  0300830a  const    lr3, $000a
   3a6d4:  15848b00  add      lr4, lr11, $00
   3a6d8:  15858c00  add      lr5, lr12, $00
-  3a6dc:  a8ff80b2  call     lr0, $3a5a4   ; -> sub_3a5a4
+  3a6dc:  a8ff80b2  call     lr0, $3a5a4   ; -> _ultoa
   3a6e0:  03008600  const    lr6, $0000   ; [delay slot]
   3a6e4:  15010120  add      gr1, gr1, $20
   3a6e8:  70400101  nop      
@@ -66847,7 +66847,7 @@ sub_3a6c0:
   3a6f0:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3a6f4:  00050008  .word    $00050008   ; tag word: 3 arguments, frame $8
 
-sub_3a6f8:
+sub_3a6f8:   ; _ltoa10
   3a6f8:  25010120  sub      gr1, gr1, $20
   3a6fc:  5e00017e  asgeu    trap64, gr1, gr126
   3a700:  15810134  add      lr1, gr1, $34
@@ -66862,7 +66862,7 @@ L_3a720:
   3a720:  15857d04  add      lr5, gr125, $04
   3a724:  0300830a  const    lr3, $000a
   3a728:  15848b00  add      lr4, lr11, $00
-  3a72c:  a8ff809e  call     lr0, $3a5a4   ; -> sub_3a5a4
+  3a72c:  a8ff809e  call     lr0, $3a5a4   ; -> _ultoa
   3a730:  03008600  const    lr6, $0000   ; [delay slot]
   3a734:  16006185  load     0, 0, gr97, lr5
   3a738:  2460828a  sub      gr96, lr2, lr10
@@ -66879,7 +66879,7 @@ L_3a754:
   3a760:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3a764:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3a768:
+sub_3a768:   ; _utoahex
   3a768:  25010120  sub      gr1, gr1, $20
   3a76c:  5e00017e  asgeu    trap64, gr1, gr126
   3a770:  15810134  add      lr1, gr1, $34
@@ -66887,7 +66887,7 @@ sub_3a768:
   3a778:  03008310  const    lr3, $0010
   3a77c:  15848b00  add      lr4, lr11, $00
   3a780:  15858c00  add      lr5, lr12, $00
-  3a784:  a8ff8088  call     lr0, $3a5a4   ; -> sub_3a5a4
+  3a784:  a8ff8088  call     lr0, $3a5a4   ; -> _ultoa
   3a788:  03008601  const    lr6, $0001   ; [delay slot]
   3a78c:  15010120  add      gr1, gr1, $20
   3a790:  70400101  nop      
@@ -66898,7 +66898,7 @@ file_38:   ; object file 38 (C): .text starts here
 sub_3a79c:
   3a79c:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3a7a0:
+sub_3a7a0:   ; _strtoul10
   3a7a0:  15658200  add      gr101, lr2, $00
   3a7a4:  16016765  load     0, 1, gr103, gr101
   3a7a8:  03006401  const    gr100, $0001   ; lo of .lit+$1021
@@ -66955,7 +66955,7 @@ L_3a84c:
   3a85c:  70400101  nop         ; [delay slot]
   3a860:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3a864:
+sub_3a864:   ; _strtol10
   3a864:  25010118  sub      gr1, gr1, $18
   3a868:  5e00017e  asgeu    trap64, gr1, gr126
   3a86c:  1581012c  add      lr1, gr1, $2c
@@ -66975,7 +66975,7 @@ L_3a898:
   3a89c:  15828800  add      lr2, lr8, $00
 L_3a8a0:
   3a8a0:  15838900  add      lr3, lr9, $00
-  3a8a4:  a8ff80bf  call     lr0, $3a7a0   ; -> sub_3a7a0
+  3a8a4:  a8ff80bf  call     lr0, $3a7a0   ; -> _strtoul10
   3a8a8:  15848a00  add      lr4, lr10, $00   ; [delay slot]
   3a8ac:  a4006004  jmpf     gr96, $3a8bc   ; -> L_3a8bc
   3a8b0:  61616800  cpeq     gr97, gr104, $00   ; [delay slot]
@@ -67005,7 +67005,7 @@ L_3a8f8:
   3a904:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3a908:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_3a90c:
+sub_3a90c:   ; _strtoul_base
   3a90c:  25010128  sub      gr1, gr1, $28
   3a910:  5e00017e  asgeu    trap64, gr1, gr126
   3a914:  15810140  add      lr1, gr1, $40
@@ -67108,14 +67108,14 @@ L_3aa54:
   3aa60:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3aa64:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3aa68:
+sub_3aa68:   ; _strtoulhex
   3aa68:  25010118  sub      gr1, gr1, $18
   3aa6c:  5e00017e  asgeu    trap64, gr1, gr126
   3aa70:  1581012c  add      lr1, gr1, $2c
   3aa74:  15828800  add      lr2, lr8, $00
   3aa78:  03008310  const    lr3, $0010
   3aa7c:  15848900  add      lr4, lr9, $00
-  3aa80:  a8ff80a3  call     lr0, $3a90c   ; -> sub_3a90c
+  3aa80:  a8ff80a3  call     lr0, $3a90c   ; -> _strtoul_base
   3aa84:  15858a00  add      lr5, lr10, $00   ; [delay slot]
   3aa88:  15010118  add      gr1, gr1, $18
   3aa8c:  70400101  nop      
@@ -67269,7 +67269,7 @@ L_3ac44:
   3ac48:  15608200  add      gr96, lr2, $00   ; [delay slot]
   3ac4c:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3ac50:
+sub_3ac50:   ; isodigit
   3ac50:  03006101  const    gr97, $0001   ; lo of .lit+$1021
   3ac54:  02006100  consth   gr97, $0000   ; hi of .lit+$1021
   3ac58:  14616182  add      gr97, gr97, lr2
@@ -67311,7 +67311,7 @@ L_3acc0:
 L_3acd0:
   3acd0:  14606084  add      gr96, gr96, lr4
   3acd4:  81606002  sll      gr96, gr96, $02
-  3acd8:  a8008000  call     lr0, $3c1d4   ; -> .text $3c1d4 (sub_3c1d4)
+  3acd8:  a8008000  call     lr0, $3c1d4   ; -> .text $3c1d4 (fclose)
   3acdc:  14828360  add      lr2, lr3, gr96   ; [delay slot]
   3ace0:  15848401  add      lr4, lr4, $01
   3ace4:  41608419  cplt     gr96, lr4, $19
@@ -67328,7 +67328,7 @@ file_42:   ; object file 42 (C): .text starts here
 sub_3ad08:
   3ad08:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_3ad0c:
+sub_3ad0c:   ; _sigterminate
   3ad0c:  25010110  sub      gr1, gr1, $10
   3ad10:  03006100  const    gr97, $0000
   3ad14:  03006008  const    gr96, $0008   ; lo of .data+$1570
@@ -67364,7 +67364,7 @@ L_3ad70:
   3ad88:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3ad8c:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
 
-sub_3ad90:
+sub_3ad90:   ; _sigdeliver
   3ad90:  25010110  sub      gr1, gr1, $10
   3ad94:  5e00017e  asgeu    trap64, gr1, gr126
   3ad98:  03008214  const    lr2, $0014   ; lo of .data+$157c
@@ -67373,7 +67373,7 @@ sub_3ad90:
   3ada4:  63606300  cpneq    gr96, gr99, $00
   3ada8:  ac006005  jmpt     gr96, $3adbc   ; -> L_3adbc
   3adac:  15810118  add      lr1, gr1, $18   ; [delay slot]
-  3adb0:  a8ff80d7  call     lr0, $3ad0c   ; -> sub_3ad0c
+  3adb0:  a8ff80d7  call     lr0, $3ad0c   ; -> _sigterminate
   3adb4:  70400101  nop         ; [delay slot]
   3adb8:  16006382  load     0, 0, gr99, lr2
 L_3adbc:
@@ -67399,7 +67399,7 @@ L_3adbc:
   3ae08:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3ae0c:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3ae10:
+sub_3ae10:   ; _sigdefault
   3ae10:  25010108  sub      gr1, gr1, $08
   3ae14:  5e00017e  asgeu    trap64, gr1, gr126
   3ae18:  61608405  cpeq     gr96, lr4, $05
@@ -67413,7 +67413,7 @@ sub_3ae10:
   3ae38:  63606000  cpneq    gr96, gr96, $00
   3ae3c:  ac006005  jmpt     gr96, $3ae50   ; -> L_3ae50
   3ae40:  03006101  const    gr97, $0001   ; [delay slot]
-  3ae44:  a8ff80b2  call     lr0, $3ad0c   ; -> sub_3ad0c
+  3ae44:  a8ff80b2  call     lr0, $3ad0c   ; -> _sigterminate
   3ae48:  70400101  nop         ; [delay slot]
   3ae4c:  03006101  const    gr97, $0001
 L_3ae50:
@@ -67427,7 +67427,7 @@ L_3ae5c:
   3ae68:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3ae6c:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_3ae70:
+sub_3ae70:   ; _raise
   3ae70:  25010110  sub      gr1, gr1, $10
   3ae74:  5e00017e  asgeu    trap64, gr1, gr126
   3ae78:  41608620  cplt     gr96, lr6, $20
@@ -67448,7 +67448,7 @@ L_3aea4:
   3aeb0:  61606000  cpeq     gr96, gr96, $00
   3aeb4:  ac006005  jmpt     gr96, $3aec8   ; -> L_3aec8
   3aeb8:  03006000  const    gr96, $0000   ; lo of .data+$1568   ; [delay slot]
-  3aebc:  a8ff80b5  call     lr0, $3ad90   ; -> sub_3ad90
+  3aebc:  a8ff80b5  call     lr0, $3ad90   ; -> _sigdeliver
   3aec0:  70400101  nop         ; [delay slot]
   3aec4:  03006000  const    gr96, $0000   ; lo of .data+$1568
 L_3aec8:
@@ -67479,7 +67479,7 @@ L_3aec8:
   3af28:  ac006004  jmpt     gr96, $3af38   ; -> L_3af38
   3af2c:  70400101  nop         ; [delay slot]
 L_3af30:
-  3af30:  a8ff80b8  call     lr0, $3ae10   ; -> sub_3ae10
+  3af30:  a8ff80b8  call     lr0, $3ae10   ; -> _sigdefault
   3af34:  15828600  add      lr2, lr6, $00   ; [delay slot]
 L_3af38:
   3af38:  a000000f  jmp      $3af74   ; -> L_3af74
@@ -67508,14 +67508,14 @@ L_3af78:
   3af84:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3af88:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3af8c:
+sub_3af8c:   ; raise
   3af8c:  25010118  sub      gr1, gr1, $18
   3af90:  5e00017e  asgeu    trap64, gr1, gr126
   3af94:  15810124  add      lr1, gr1, $24
   3af98:  15828800  add      lr2, lr8, $00
   3af9c:  01ff83ff  constn   lr3, $ffff
   3afa0:  03008400  const    lr4, $0000
-  3afa4:  a8ff80b3  call     lr0, $3ae70   ; -> sub_3ae70
+  3afa4:  a8ff80b3  call     lr0, $3ae70   ; -> _raise
   3afa8:  03008500  const    lr5, $0000   ; [delay slot]
   3afac:  01ff61ff  constn   gr97, $ffff
   3afb0:  62606061  cpneq    gr96, gr96, gr97
@@ -67529,7 +67529,7 @@ L_3afc0:
   3afcc:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3afd0:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_3afd4:
+sub_3afd4:   ; signal
   3afd4:  41608220  cplt     gr96, lr2, $20
   3afd8:  ac006007  jmpt     gr96, $3aff4   ; -> L_3aff4
   3afdc:  03006116  const    gr97, $0016   ; [delay slot]
@@ -67557,7 +67557,7 @@ sub_3b018:
   3b01c:  01ff60ff  constn   gr96, $ffff   ; [delay slot]
   3b020:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3b024:
+sub_3b024:   ; _freebuf
   3b024:  25010118  sub      gr1, gr1, $18
   3b028:  5e00017e  asgeu    trap64, gr1, gr126
   3b02c:  15848808  add      lr4, lr8, $08
@@ -67590,7 +67590,7 @@ L_3b088:
   3b08c:  15838810  add      lr3, lr8, $10   ; [delay slot]
   3b090:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
 
-sub_3b094:
+sub_3b094:   ; _setvbuf
   3b094:  25010118  sub      gr1, gr1, $18
   3b098:  5e00017e  asgeu    trap64, gr1, gr126
   3b09c:  01ff84ff  constn   lr4, $ffff
@@ -67622,7 +67622,7 @@ L_3b0cc:
 L_3b0fc:
   3b0fc:  93858508  or       lr5, lr5, $08
 L_3b100:
-  3b100:  a8ff80c9  call     lr0, $3b024   ; -> sub_3b024
+  3b100:  a8ff80c9  call     lr0, $3b024   ; -> _freebuf
   3b104:  15828800  add      lr2, lr8, $00   ; [delay slot]
   3b108:  15608808  add      gr96, lr8, $08
   3b10c:  1e008960  store    0, 0, lr9, gr96
@@ -67655,7 +67655,7 @@ sub_3b160:
   3b164:  03006000  const    gr96, $0000   ; [delay slot]
   3b168:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_3b16c:
+sub_3b16c:   ; _openfile
   3b16c:  25010118  sub      gr1, gr1, $18
   3b170:  5e00017e  asgeu    trap64, gr1, gr126
   3b174:  81608c13  sll      gr96, lr12, $13
@@ -67739,7 +67739,7 @@ L_3b284:
   3b28c:  02006400  consth   gr100, $0000   ; hi of .data+$1590   ; [delay slot]
   3b290:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3b294:
+sub_3b294:   ; _closefile
   3b294:  25010110  sub      gr1, gr1, $10
   3b298:  5e00017e  asgeu    trap64, gr1, gr126
   3b29c:  1581011c  add      lr1, gr1, $1c
@@ -67752,7 +67752,7 @@ sub_3b294:
   3b2b8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3b2bc:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0
 
-sub_3b2c0:
+sub_3b2c0:   ; _tmpnam
   3b2c0:  25010110  sub      gr1, gr1, $10
   3b2c4:  5e00017e  asgeu    trap64, gr1, gr126
   3b2c8:  15810124  add      lr1, gr1, $24
@@ -67774,7 +67774,7 @@ sub_3b2f4:
   3b2f8:  15608300  add      gr96, lr3, $00   ; [delay slot]
   3b2fc:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3b300:
+sub_3b300:   ; _readbuf
   3b300:  25010120  sub      gr1, gr1, $20
   3b304:  5e00017e  asgeu    trap64, gr1, gr126
   3b308:  1581012c  add      lr1, gr1, $2c
@@ -67813,7 +67813,7 @@ L_3b36c:
   3b388:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
   3b38c:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_3b390:
+sub_3b390:   ; _writebuf
   3b390:  25010118  sub      gr1, gr1, $18
   3b394:  5e00017e  asgeu    trap64, gr1, gr126
   3b398:  15810128  add      lr1, gr1, $28
@@ -67959,7 +67959,7 @@ sub_3b500:   ; memchr
   3b520:  81658310  sll      gr101, lr3, $10
   3b524:  92836583  or       lr3, gr101, lr3
   3b528:  61656100  cpeq     gr101, gr97, $00
-  3b52c:  ac006509  jmpt     gr101, $3b550   ; -> sub_3b550
+  3b52c:  ac006509  jmpt     gr101, $3b550   ; -> memchr_aligned
   3b530:  14848461  add      lr4, lr4, gr97   ; [delay slot]
   3b534:  01ff64ff  constn   gr100, $ffff
   3b538:  81616103  sll      gr97, gr97, $03
@@ -67969,30 +67969,30 @@ sub_3b500:   ; memchr
   3b548:  9c656483  andn     gr101, gr100, lr3
   3b54c:  92636365  or       gr99, gr99, gr101
 
-sub_3b550:
+sub_3b550:   ; memchr_aligned
   3b550:  4f658405  cpgeu    gr101, lr4, $05
-  3b554:  a400650a  jmpf     gr101, $3b57c   ; -> sub_3b57c
+  3b554:  a400650a  jmpf     gr101, $3b57c   ; -> memchr_tail
   3b558:  15688403  add      gr104, lr4, $03   ; [delay slot]
   3b55c:  83686802  srl      gr104, gr104, $02
   3b560:  25686803  sub      gr104, gr104, $03
 
-sub_3b564:
+sub_3b564:   ; memchr_wordloop
   3b564:  2e656383  cpbyte   gr101, gr99, lr3
-  3b568:  ac006515  jmpt     gr101, $3b5bc   ; -> sub_3b5bc
+  3b568:  ac006515  jmpt     gr101, $3b5bc   ; -> memchr_found
   3b56c:  15828204  add      lr2, lr2, $04   ; [delay slot]
   3b570:  16006282  load     0, 0, gr98, lr2
-  3b574:  b4ff68fc  jmpfdec  gr104, $3b564   ; -> sub_3b564
+  3b574:  b4ff68fc  jmpfdec  gr104, $3b564   ; -> memchr_wordloop
   3b578:  15636200  add      gr99, gr98, $00   ; [delay slot]
 
-sub_3b57c:
+sub_3b57c:   ; memchr_tail
   3b57c:  91658403  and      gr101, lr4, $03
   3b580:  61656500  cpeq     gr101, gr101, $00
-  3b584:  ac006504  jmpt     gr101, $3b594   ; -> sub_3b594
+  3b584:  ac006504  jmpt     gr101, $3b594   ; -> memchr_lastword
   3b588:  03006400  const    gr100, $0000   ; [delay slot]
   3b58c:  01ff64ff  constn   gr100, $ffff
   3b590:  91848403  and      lr4, lr4, $03
 
-sub_3b594:
+sub_3b594:   ; memchr_lastword
   3b594:  91848407  and      lr4, lr4, $07
   3b598:  81848403  sll      lr4, lr4, $03
   3b59c:  82646484  srl      gr100, gr100, lr4
@@ -68004,7 +68004,7 @@ sub_3b594:
   3b5b4:  03006000  const    gr96, $0000   ; [delay slot]
   3b5b8:  15828204  add      lr2, lr2, $04
 
-sub_3b5bc:
+sub_3b5bc:   ; memchr_found
   3b5bc:  25608201  sub      gr96, lr2, $01
   3b5c0:  04008618  mtsrim   FC, $0018
   3b5c4:  9a678383  nand     gr103, lr3, lr3
@@ -68033,45 +68033,45 @@ sub_3b600:   ; memcpy
   3b60c:  91618303  and      gr97, lr3, $03
   3b610:  91628203  and      gr98, lr2, $03
   3b614:  60656162  cpeq     gr101, gr97, gr98
-  3b618:  ac006525  jmpt     gr101, $3b6ac   ; -> sub_3b6ac
+  3b618:  ac006525  jmpt     gr101, $3b6ac   ; -> memcpy_aligned
   3b61c:  92656162  or       gr101, gr97, gr98   ; [delay slot]
   3b620:  61656502  cpeq     gr101, gr101, $02
-  3b624:  ac00650d  jmpt     gr101, $3b658   ; -> sub_3b658
+  3b624:  ac00650d  jmpt     gr101, $3b658   ; -> memcpy_halfwords
   3b628:  61658401  cpeq     gr101, lr4, $01   ; [delay slot]
   3b62c:  25848402  sub      lr4, lr4, $02
 
-sub_3b630:
+sub_3b630:   ; memcpy_byteloop
   3b630:  16116383  load     0, 11, gr99, lr3
   3b634:  15838301  add      lr3, lr3, $01
   3b638:  0b636300  exbyte   gr99, gr99, $00
   3b63c:  16116482  load     0, 11, gr100, lr2
   3b640:  0c646463  inbyte   gr100, gr100, gr99
   3b644:  1e016482  store    0, 1, gr100, lr2
-  3b648:  b4ff84fa  jmpfdec  lr4, $3b630   ; -> sub_3b630
+  3b648:  b4ff84fa  jmpfdec  lr4, $3b630   ; -> memcpy_byteloop
   3b64c:  15828201  add      lr2, lr2, $01   ; [delay slot]
   3b650:  c0000080  jmpi     lr0
   3b654:  70400101  nop         ; [delay slot]
 
-sub_3b658:
-  3b658:  ac00650f  jmpt     gr101, $3b694   ; -> sub_3b694
+sub_3b658:   ; memcpy_halfwords
+  3b658:  ac00650f  jmpt     gr101, $3b694   ; -> memcpy_lastbyte
   3b65c:  83678401  srl      gr103, lr4, $01   ; [delay slot]
   3b660:  25676702  sub      gr103, gr103, $02
 
-sub_3b664:
+sub_3b664:   ; memcpy_hwloop
   3b664:  16126383  load     0, 12, gr99, lr3
   3b668:  15838302  add      lr3, lr3, $02
   3b66c:  7d636300  exhw     gr99, gr99, $00
   3b670:  16126482  load     0, 12, gr100, lr2
   3b674:  78646463  inhw     gr100, gr100, gr99
   3b678:  1e026482  store    0, 2, gr100, lr2
-  3b67c:  b4ff67fa  jmpfdec  gr103, $3b664   ; -> sub_3b664
+  3b67c:  b4ff67fa  jmpfdec  gr103, $3b664   ; -> memcpy_hwloop
   3b680:  15828202  add      lr2, lr2, $02   ; [delay slot]
   3b684:  91848401  and      lr4, lr4, $01
   3b688:  63658401  cpneq    gr101, lr4, $01
   3b68c:  cc006580  jmpti    gr101, lr0
   3b690:  70400101  nop         ; [delay slot]
 
-sub_3b694:
+sub_3b694:   ; memcpy_lastbyte
   3b694:  16116383  load     0, 11, gr99, lr3
   3b698:  0b636300  exbyte   gr99, gr99, $00
   3b69c:  16116482  load     0, 11, gr100, lr2
@@ -68079,13 +68079,13 @@ sub_3b694:
   3b6a4:  c0000080  jmpi     lr0
   3b6a8:  1e016482  store    0, 1, gr100, lr2   ; [delay slot]
 
-sub_3b6ac:
+sub_3b6ac:   ; memcpy_aligned
   3b6ac:  9d838303  andn     lr3, lr3, $03
   3b6b0:  16006383  load     0, 0, gr99, lr3
   3b6b4:  9d828203  andn     lr2, lr2, $03
   3b6b8:  61656100  cpeq     gr101, gr97, $00
   3b6bc:  16006482  load     0, 0, gr100, lr2
-  3b6c0:  ac006508  jmpt     gr101, $3b6e0   ; -> sub_3b6e0
+  3b6c0:  ac006508  jmpt     gr101, $3b6e0   ; -> memcpy_words
   3b6c4:  14848461  add      lr4, lr4, gr97   ; [delay slot]
   3b6c8:  01ff66ff  constn   gr102, $ffff
   3b6cc:  81616103  sll      gr97, gr97, $03
@@ -68094,30 +68094,30 @@ sub_3b6ac:
   3b6d8:  9c656466  andn     gr101, gr100, gr102
   3b6dc:  92636365  or       gr99, gr99, gr101
 
-sub_3b6e0:
+sub_3b6e0:   ; memcpy_words
   3b6e0:  45658404  cple     gr101, lr4, $04
-  3b6e4:  ac00650a  jmpt     gr101, $3b70c   ; -> sub_3b70c
+  3b6e4:  ac00650a  jmpt     gr101, $3b70c   ; -> memcpy_tail
   3b6e8:  15678403  add      gr103, lr4, $03   ; [delay slot]
   3b6ec:  83676702  srl      gr103, gr103, $02
   3b6f0:  25676703  sub      gr103, gr103, $03
 
-sub_3b6f4:
+sub_3b6f4:   ; memcpy_wordloop
   3b6f4:  1e006382  store    0, 0, gr99, lr2
   3b6f8:  15838304  add      lr3, lr3, $04
   3b6fc:  16006383  load     0, 0, gr99, lr3
-  3b700:  b4ff67fd  jmpfdec  gr103, $3b6f4   ; -> sub_3b6f4
+  3b700:  b4ff67fd  jmpfdec  gr103, $3b6f4   ; -> memcpy_wordloop
   3b704:  15828204  add      lr2, lr2, $04   ; [delay slot]
   3b708:  16006482  load     0, 0, gr100, lr2
 
-sub_3b70c:
+sub_3b70c:   ; memcpy_tail
   3b70c:  91658403  and      gr101, lr4, $03
   3b710:  63656500  cpneq    gr101, gr101, $00
-  3b714:  ac006504  jmpt     gr101, $3b724   ; -> sub_3b724
+  3b714:  ac006504  jmpt     gr101, $3b724   ; -> memcpy_partial
   3b718:  91848403  and      lr4, lr4, $03   ; [delay slot]
   3b71c:  c0000080  jmpi     lr0
   3b720:  1e006382  store    0, 0, gr99, lr2   ; [delay slot]
 
-sub_3b724:
+sub_3b724:   ; memcpy_partial
   3b724:  01ff66ff  constn   gr102, $ffff
   3b728:  81848403  sll      lr4, lr4, $03
   3b72c:  82666684  srl      gr102, gr102, lr4
@@ -68142,7 +68142,7 @@ sub_3b748:   ; memset
   3b764:  92837983  or       lr3, gr121, lr3
   3b768:  91638203  and      gr99, lr2, $03
   3b76c:  61796300  cpeq     gr121, gr99, $00
-  3b770:  ac007915  jmpt     gr121, $3b7c4   ; -> sub_3b7c4
+  3b770:  ac007915  jmpt     gr121, $3b7c4   ; -> memset_words
   3b774:  15608200  add      gr96, lr2, $00   ; [delay slot]
   3b778:  9d828203  andn     lr2, lr2, $03
   3b77c:  16006282  load     0, 0, gr98, lr2
@@ -68151,7 +68151,7 @@ sub_3b748:   ; memset
   3b788:  81636303  sll      gr99, gr99, $03
   3b78c:  01ff61ff  constn   gr97, $ffff
   3b790:  2c797979  subc     gr121, gr121, gr121
-  3b794:  a4007907  jmpf     gr121, $3b7b0   ; -> sub_3b7b0
+  3b794:  a4007907  jmpf     gr121, $3b7b0   ; -> memset_head
   3b798:  82616163  srl      gr97, gr97, gr99   ; [delay slot]
   3b79c:  35848400  subr     lr4, lr4, $00
   3b7a0:  81848403  sll      lr4, lr4, $03
@@ -68159,26 +68159,26 @@ sub_3b748:   ; memset
   3b7a8:  90616179  and      gr97, gr97, gr121
   3b7ac:  24848484  sub      lr4, lr4, lr4
 
-sub_3b7b0:
+sub_3b7b0:   ; memset_head
   3b7b0:  90798361  and      gr121, lr3, gr97
   3b7b4:  9c626261  andn     gr98, gr98, gr97
   3b7b8:  92626279  or       gr98, gr98, gr121
   3b7bc:  1e006282  store    0, 0, gr98, lr2
   3b7c0:  15828204  add      lr2, lr2, $04
 
-sub_3b7c4:
+sub_3b7c4:   ; memset_words
   3b7c4:  4f798404  cpgeu    gr121, lr4, $04
-  3b7c8:  a4007907  jmpf     gr121, $3b7e4   ; -> sub_3b7e4
+  3b7c8:  a4007907  jmpf     gr121, $3b7e4   ; -> memset_tail
   3b7cc:  83798402  srl      gr121, lr4, $02   ; [delay slot]
   3b7d0:  25797902  sub      gr121, gr121, $02
 
-sub_3b7d4:
+sub_3b7d4:   ; memset_wordloop
   3b7d4:  1e008382  store    0, 0, lr3, lr2
-  3b7d8:  b4ff79ff  jmpfdec  gr121, $3b7d4   ; -> sub_3b7d4
+  3b7d8:  b4ff79ff  jmpfdec  gr121, $3b7d4   ; -> memset_wordloop
   3b7dc:  15828204  add      lr2, lr2, $04   ; [delay slot]
   3b7e0:  91848403  and      lr4, lr4, $03
 
-sub_3b7e4:
+sub_3b7e4:   ; memset_tail
   3b7e4:  61798400  cpeq     gr121, lr4, $00
   3b7e8:  cc007980  jmpti    gr121, lr0
   3b7ec:  01ff61ff  constn   gr97, $ffff   ; [delay slot]
@@ -68199,15 +68199,15 @@ sub_3b814:   ; mul_millicode
   3b814:  04008608  mtsrim   FC, $0008
   3b818:  93740000  or       gr116, gr0, $00
   3b81c:  4a750000  cpgtu    gr117, gr0, gr0
-  3b820:  a4007505  jmpf     gr117, $3b834   ; -> sub_3b834
+  3b820:  a4007505  jmpf     gr117, $3b834   ; -> mul_millicode_8
   3b824:  92757500  or       gr117, gr117, gr0   ; [delay slot]
   3b828:  03007400  const    gr116, $0000
   3b82c:  92747400  or       gr116, gr116, gr0
   3b830:  93750000  or       gr117, gr0, $00
 
-sub_3b834:
+sub_3b834:   ; mul_millicode_8
   3b834:  4779747f  cpleu    gr121, gr116, $7f
-  3b838:  a400790d  jmpf     gr121, $3b86c   ; -> svc_7FFF
+  3b838:  a400790d  jmpf     gr121, $3b86c   ; -> mul_millicode_16
   3b83c:  ce008374  mtsr     Q, gr116   ; [delay slot]
   3b840:  75747500  mulu     gr116, gr117, $00
   3b844:  74747574  mulu     gr116, gr117, gr116
@@ -68221,10 +68221,10 @@ sub_3b834:
   3b864:  c000007a  jmpi     gr122
   3b868:  7a007475  extract  gr0, gr116, gr117   ; [delay slot]
 
-sub_3b86c:   ; svc_7FFF
+sub_3b86c:   ; mul_millicode_16
   3b86c:  037f79ff  const    gr121, $7fff
   3b870:  46797479  cpleu    gr121, gr116, gr121
-  3b874:  a4007915  jmpf     gr121, $3b8c8   ; -> sub_3b8c8
+  3b874:  a4007915  jmpf     gr121, $3b8c8   ; -> mul_millicode_32
   3b878:  75747500  mulu     gr116, gr117, $00   ; [delay slot]
   3b87c:  74747574  mulu     gr116, gr117, gr116
   3b880:  74747574  mulu     gr116, gr117, gr116
@@ -68246,7 +68246,7 @@ sub_3b86c:   ; svc_7FFF
   3b8c0:  c000007a  jmpi     gr122
   3b8c4:  7a007475  extract  gr0, gr116, gr117   ; [delay slot]
 
-sub_3b8c8:
+sub_3b8c8:   ; mul_millicode_32
   3b8c8:  74747574  mulu     gr116, gr117, gr116
   3b8cc:  74747574  mulu     gr116, gr117, gr116
   3b8d0:  74747574  mulu     gr116, gr117, gr116
@@ -68288,20 +68288,20 @@ sub_3b94c:
 sub_3b950:   ; div_millicode
   3b950:  03007500  const    gr117, $0000
   3b954:  60757500  cpeq     gr117, gr117, gr0
-  3b958:  ac007535  jmpt     gr117, $3ba2c   ; -> sub_3ba2c
+  3b958:  ac007535  jmpt     gr117, $3ba2c   ; -> div_millicode_zero
   3b95c:  15740000  add      gr116, gr0, $00   ; [delay slot]
-  3b960:  a4007404  jmpf     gr116, $3b970   ; -> sub_3b970
+  3b960:  a4007404  jmpf     gr116, $3b970   ; -> div_millicode_sign
   3b964:  14767500  add      gr118, gr117, gr0   ; [delay slot]
   3b968:  03007503  const    gr117, $0003
   3b96c:  35747400  subr     gr116, gr116, $00
 
-sub_3b970:
-  3b970:  a4007604  jmpf     gr118, $3b980   ; -> sub_3b980
+sub_3b970:   ; div_millicode_sign
+  3b970:  a4007604  jmpf     gr118, $3b980   ; -> div_millicode_core
   3b974:  ce008374  mtsr     Q, gr116   ; [delay slot]
   3b978:  95757501  xor      gr117, gr117, $01
   3b97c:  35767600  subr     gr118, gr118, $00
 
-sub_3b980:
+sub_3b980:   ; div_millicode_core
   3b980:  69740000  div0     gr116, $00
   3b984:  6a747476  div      gr116, gr116, gr118
   3b988:  6a747476  div      gr116, gr116, gr118
@@ -68338,17 +68338,17 @@ sub_3b980:
   3ba04:  6e747476  divrem   gr116, gr116, gr118
   3ba08:  c6768300  mfsr     gr118, Q
   3ba0c:  8175751e  sll      gr117, gr117, $1e
-  3ba10:  a4007503  jmpf     gr117, $3ba1c   ; -> sub_3ba1c
+  3ba10:  a4007503  jmpf     gr117, $3ba1c   ; -> div_millicode_ret
   3ba14:  81757501  sll      gr117, gr117, $01   ; [delay slot]
   3ba18:  35747400  subr     gr116, gr116, $00
 
-sub_3ba1c:
+sub_3ba1c:   ; div_millicode_ret
   3ba1c:  c400757a  jmpfi    gr117, gr122
   3ba20:  15007600  add      gr0, gr118, $00   ; [delay slot]
   3ba24:  c000007a  jmpi     gr122
   3ba28:  35007600  subr     gr0, gr118, $00   ; [delay slot]
 
-sub_3ba2c:
+sub_3ba2c:   ; div_millicode_zero
   3ba2c:  c000007a  jmpi     gr122
   3ba30:  e1000000  divide   gr0, gr0, gr0   ; [delay slot]
 
@@ -68359,7 +68359,7 @@ sub_3ba34:
 sub_3ba38:   ; udiv_millicode
   3ba38:  03007400  const    gr116, $0000
   3ba3c:  60747400  cpeq     gr116, gr116, gr0
-  3ba40:  ac007427  jmpt     gr116, $3badc   ; -> sub_3badc
+  3ba40:  ac007427  jmpt     gr116, $3badc   ; -> udiv_millicode_zero
   3ba44:  15740000  add      gr116, gr0, $00   ; [delay slot]
   3ba48:  ce008374  mtsr     Q, gr116
   3ba4c:  69740000  div0     gr116, $00
@@ -68399,7 +68399,7 @@ sub_3ba38:   ; udiv_millicode
   3bad4:  c000007a  jmpi     gr122
   3bad8:  c6008300  mfsr     gr0, Q   ; [delay slot]
 
-sub_3badc:
+sub_3badc:   ; udiv_millicode_zero
   3badc:  c000007a  jmpi     gr122
   3bae0:  e1000000  divide   gr0, gr0, gr0   ; [delay slot]
 
@@ -68407,7 +68407,7 @@ file_59:   ; object file 59 (C): .text starts here
 sub_3bae4:
   3bae4:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
 
-sub_3bae8:
+sub_3bae8:   ; _stream_prepare
   3bae8:  25010140  sub      gr1, gr1, $40
   3baec:  5e00017e  asgeu    trap64, gr1, gr126
   3baf0:  15810150  add      lr1, gr1, $50
@@ -68450,7 +68450,7 @@ L_3bb1c:
   3bb80:  a4006010  jmpf     gr96, $3bbc0   ; -> L_3bbc0
   3bb84:  70400101  nop         ; [delay slot]
 L_3bb88:
-  3bb88:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (sub_3ca10)
+  3bb88:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (_fillbuf)
   3bb8c:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bb90:  01ff8eff  constn   lr14, $ffff
   3bb94:  6260608e  cpneq    gr96, gr96, lr14
@@ -68507,7 +68507,7 @@ L_3bc20:
   3bc44:  81638202  sll      gr99, lr2, $02
   3bc48:  14618663  add      gr97, lr6, gr99
   3bc4c:  16008361  load     0, 0, lr3, gr97
-  3bc50:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3bc50:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3bc54:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bc58:  01ff8eff  constn   lr14, $ffff
   3bc5c:  6260608e  cpneq    gr96, gr96, lr14
@@ -68530,7 +68530,7 @@ L_3bc78:
   3bc9c:  61609300  cpeq     gr96, lr19, $00
   3bca0:  ac00600c  jmpt     gr96, $3bcd0   ; -> L_3bcd0
   3bca4:  70400101  nop         ; [delay slot]
-  3bca8:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (sub_3ca10)
+  3bca8:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (_fillbuf)
   3bcac:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bcb0:  6260608e  cpneq    gr96, gr96, lr14
   3bcb4:  ac006006  jmpt     gr96, $3bccc   ; -> L_3bccc
@@ -68591,7 +68591,7 @@ L_3bd68:
   3bd78:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bd7c:  03008300  const    lr3, $0000
   3bd80:  01ff84ff  constn   lr4, $ffff
-  3bd84:  a8008000  call     lr0, $3b094   ; -> .text $3b094 (sub_3b094)
+  3bd84:  a8008000  call     lr0, $3b094   ; -> .text $3b094 (_setvbuf)
   3bd88:  01ff85ff  constn   lr5, $ffff   ; [delay slot]
   3bd8c:  61606000  cpeq     gr96, gr96, $00
   3bd90:  ac006006  jmpt     gr96, $3bda8   ; -> L_3bda8
@@ -68601,13 +68601,13 @@ L_3bd68:
   3bda0:  c0000080  jmpi     lr0
   3bda4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 L_3bda8:
-  3bda8:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3bda8:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3bdac:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bdb0:  1612648d  load     0, 12, gr100, lr13
   3bdb4:  81606413  sll      gr96, gr100, $13
   3bdb8:  a4006006  jmpf     gr96, $3bdd0   ; -> L_3bdd0
   3bdbc:  9d606433  andn     gr96, gr100, $33   ; [delay slot]
-  3bdc0:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3bdc0:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3bdc4:  15829200  add      lr2, lr18, $00   ; [delay slot]
   3bdc8:  1612648d  load     0, 12, gr100, lr13
   3bdcc:  9d606433  andn     gr96, gr100, $33
@@ -68631,7 +68631,7 @@ file_60:   ; object file 60 (C): .text starts here
 sub_3be00:
   3be00:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_3be04:
+sub_3be04:   ; _flsbuf
   3be04:  25010130  sub      gr1, gr1, $30
   3be08:  5e00017e  asgeu    trap64, gr1, gr126
   3be0c:  158a8f10  add      lr10, lr15, $10
@@ -68667,7 +68667,7 @@ L_3be74:
   3be7c:  8160611e  sll      gr96, gr97, $1e
   3be80:  ac006065  jmpt     gr96, $3c014   ; -> L_3c014
   3be84:  15828f00  add      lr2, lr15, $00   ; [delay slot]
-  3be88:  a8008000  call     lr0, $3bae8   ; -> .text $3bae8 (sub_3bae8)
+  3be88:  a8008000  call     lr0, $3bae8   ; -> .text $3bae8 (_stream_prepare)
   3be8c:  03008302  const    lr3, $0002   ; [delay slot]
   3be90:  01ff89ff  constn   lr9, $ffff
   3be94:  62606089  cpneq    gr96, gr96, lr9
@@ -68709,7 +68709,7 @@ L_3bf10:
   3bf10:  1612618a  load     0, 12, gr97, lr10
   3bf14:  93606102  or       gr96, gr97, $02
   3bf18:  1e02608a  store    0, 2, gr96, lr10
-  3bf1c:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3bf1c:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3bf20:  15828f00  add      lr2, lr15, $00   ; [delay slot]
   3bf24:  158b6000  add      lr11, gr96, $00
   3bf28:  61608800  cpeq     gr96, lr8, $00
@@ -68728,7 +68728,7 @@ L_3bf4c:
   3bf54:  8160611e  sll      gr96, gr97, $1e   ; [delay slot]
   3bf58:  a4006009  jmpf     gr96, $3bf7c   ; -> L_3bf7c
   3bf5c:  81606117  sll      gr96, gr97, $17   ; [delay slot]
-  3bf60:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3bf60:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3bf64:  15828f00  add      lr2, lr15, $00   ; [delay slot]
   3bf68:  62606089  cpneq    gr96, gr96, lr9
   3bf6c:  a4006033  jmpf     gr96, $3c038   ; -> L_3c038
@@ -68738,7 +68738,7 @@ L_3bf4c:
 L_3bf7c:
   3bf7c:  a400600c  jmpf     gr96, $3bfac   ; -> L_3bfac
   3bf80:  9d606130  andn     gr96, gr97, $30   ; [delay slot]
-  3bf84:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (sub_3ca10)
+  3bf84:  a8008000  call     lr0, $3ca10   ; -> .text $3ca10 (_fillbuf)
   3bf88:  15828f00  add      lr2, lr15, $00   ; [delay slot]
   3bf8c:  158b6000  add      lr11, gr96, $00
   3bf90:  62608b89  cpneq    gr96, lr11, lr9
@@ -68800,7 +68800,7 @@ file_61:   ; object file 61 (C): .text starts here
 sub_3c040:
   3c040:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3c044:
+sub_3c044:   ; fflush
   3c044:  25010128  sub      gr1, gr1, $28
   3c048:  5e00017e  asgeu    trap64, gr1, gr126
   3c04c:  15888c10  add      lr8, lr12, $10
@@ -68872,7 +68872,7 @@ L_3c144:
   3c148:  24626083  sub      gr98, gr96, lr3
   3c14c:  15828c00  add      lr2, lr12, $00
 L_3c150:
-  3c150:  a8008000  call     lr0, $3b390   ; -> .text $3b390 (sub_3b390)
+  3c150:  a8008000  call     lr0, $3b390   ; -> .text $3b390 (_writebuf)
   3c154:  15836200  add      lr3, gr98, $00   ; [delay slot]
   3c158:  15896000  add      lr9, gr96, $00
 L_3c15c:
@@ -68912,7 +68912,7 @@ file_62:   ; object file 62 (C): .text starts here
 sub_3c1d0:
   3c1d0:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3c1d4:
+sub_3c1d4:   ; fclose
   3c1d4:  25010120  sub      gr1, gr1, $20
   3c1d8:  5e00017e  asgeu    trap64, gr1, gr126
   3c1dc:  15858a10  add      lr5, lr10, $10
@@ -68954,16 +68954,16 @@ L_3c240:
 L_3c268:
   3c268:  a400600a  jmpf     gr96, $3c290   ; -> L_3c290
   3c26c:  70400101  nop         ; [delay slot]
-  3c270:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3c270:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3c274:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   3c278:  16126385  load     0, 12, gr99, lr5
   3c27c:  81606313  sll      gr96, gr99, $13
   3c280:  a4006004  jmpf     gr96, $3c290   ; -> L_3c290
   3c284:  70400101  nop         ; [delay slot]
-  3c288:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (sub_3c044)
+  3c288:  a8008000  call     lr0, $3c044   ; -> .text $3c044 (fflush)
   3c28c:  15828a00  add      lr2, lr10, $00   ; [delay slot]
 L_3c290:
-  3c290:  a8008000  call     lr0, $3b024   ; -> .text $3b024 (sub_3b024)
+  3c290:  a8008000  call     lr0, $3b024   ; -> .text $3b024 (_freebuf)
   3c294:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   3c298:  03008400  const    lr4, $0000
   3c29c:  1e028485  store    0, 2, lr4, lr5
@@ -68978,7 +68978,7 @@ L_3c290:
   3c2c0:  02006000  consth   gr96, $0000   ; hi of extern#1639+$0
   3c2c4:  14606062  add      gr96, gr96, gr98
   3c2c8:  1e008460  store    0, 0, lr4, gr96
-  3c2cc:  a8008000  call     lr0, $3b294   ; -> .text $3b294 (sub_3b294)
+  3c2cc:  a8008000  call     lr0, $3b294   ; -> .text $3b294 (_closefile)
   3c2d0:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   3c2d4:  15856000  add      lr5, gr96, $00
   3c2d8:  81618602  sll      gr97, lr6, $02
@@ -69014,7 +69014,7 @@ file_63:   ; object file 63 (C): .text starts here
 sub_3c33c:
   3c33c:  00080018  .word    $00080018   ; tag word: 6 arguments, frame $18
 
-sub_3c340:
+sub_3c340:   ; _dtoa
   3c340:  25010148  sub      gr1, gr1, $48
   3c344:  5e00017e  asgeu    trap64, gr1, gr126
   3c348:  15810168  add      lr1, gr1, $68
@@ -69030,7 +69030,7 @@ sub_3c340:
   3c370:  15839600  add      lr3, lr22, $00
   3c374:  15849700  add      lr4, lr23, $00
   3c378:  15859800  add      lr5, lr24, $00
-  3c37c:  a8008000  call     lr0, $3c7ac   ; -> .text $3c7ac (sub_3c7ac)
+  3c37c:  a8008000  call     lr0, $3c7ac   ; -> .text $3c7ac (_fpspecial)
   3c380:  15869900  add      lr6, lr25, $00   ; [delay slot]
   3c384:  61616000  cpeq     gr97, gr96, $00
   3c388:  ac006106  jmpt     gr97, $3c3a0   ; -> L_3c3a0
@@ -69075,7 +69075,7 @@ L_3c3e8:
   3c41c:  a00000bc  jmp      $3c70c   ; -> L_3c70c
   3c420:  1e018c60  store    0, 1, lr12, gr96   ; [delay slot]
 L_3c424:
-  3c424:  a8008000  call     lr0, $3c874   ; -> .text $3c874 (sub_3c874)
+  3c424:  a8008000  call     lr0, $3c874   ; -> .text $3c874 (_dexp)
   3c428:  15829000  add      lr2, lr16, $00   ; [delay slot]
   3c42c:  158e6000  add      lr14, gr96, $00
   3c430:  a4008e12  jmpf     lr14, $3c478   ; -> L_3c478
@@ -69087,7 +69087,7 @@ L_3c424:
   3c448:  1460608e  add      gr96, gr96, lr14
   3c44c:  1560604d  add      gr96, gr96, $4d
   3c450:  878e6008  sra      lr14, gr96, $08
-  3c454:  a8008000  call     lr0, $3c74c   ; -> .text $3c74c (sub_3c74c)
+  3c454:  a8008000  call     lr0, $3c74c   ; -> .text $3c74c (_pow10)
   3c458:  35828e00  subr     lr2, lr14, $00   ; [delay slot]
   3c45c:  15946000  add      lr20, gr96, $00
   3c460:  15956100  add      lr21, gr97, $00
@@ -69111,7 +69111,7 @@ L_3c478:
   3c4a4:  70400101  nop         ; [delay slot]
   3c4a8:  03018e34  const    lr14, $0134
 L_3c4ac:
-  3c4ac:  a8008000  call     lr0, $3c74c   ; -> .text $3c74c (sub_3c74c)
+  3c4ac:  a8008000  call     lr0, $3c74c   ; -> .text $3c74c (_pow10)
   3c4b0:  15828e00  add      lr2, lr14, $00   ; [delay slot]
   3c4b4:  15946000  add      lr20, gr96, $00
   3c4b8:  15956100  add      lr21, gr97, $00
@@ -69232,7 +69232,7 @@ L_3c62c:
   3c648:  15828800  add      lr2, lr8, $00
   3c64c:  0300830a  const    lr3, $000a
   3c650:  15858700  add      lr5, lr7, $00
-  3c654:  a8008000  call     lr0, $3a5a4   ; -> .text $3a5a4 (sub_3a5a4)
+  3c654:  a8008000  call     lr0, $3a5a4   ; -> .text $3a5a4 (_ultoa)
   3c658:  03008600  const    lr6, $0000   ; [delay slot]
   3c65c:  61608f00  cpeq     gr96, lr15, $00
   3c660:  ac006038  jmpt     gr96, $3c740   ; -> L_3c740
@@ -69307,7 +69307,7 @@ file_64:   ; object file 64 (C): .text starts here
 sub_3c748:
   3c748:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3c74c:
+sub_3c74c:   ; _pow10
   3c74c:  03006400  const    gr100, $0000   ; lo of .data+$1778
   3c750:  02006400  consth   gr100, $0000   ; hi of .data+$1778
   3c754:  16006064  load     0, 0, gr96, gr100
@@ -69338,7 +69338,7 @@ file_65:   ; object file 65 (C): .text starts here
 sub_3c7a8:
   3c7a8:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
 
-sub_3c7ac:
+sub_3c7ac:   ; _fpspecial
   3c7ac:  16006282  load     0, 0, gr98, lr2
   3c7b0:  030761ff  const    gr97, $07ff
   3c7b4:  83606214  srl      gr96, gr98, $14
@@ -69395,7 +69395,7 @@ L_3c850:
   3c86c:  02006000  consth   gr96, $0000   ; hi of .data+$18e8   ; [delay slot]
   3c870:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3c874:
+sub_3c874:   ; _dexp
   3c874:  16006082  load     0, 0, gr96, lr2
   3c878:  83616014  srl      gr97, gr96, $14
   3c87c:  030760ff  const    gr96, $07ff
@@ -69405,7 +69405,7 @@ sub_3c874:
   3c88c:  24606160  sub      gr96, gr97, gr96   ; [delay slot]
   3c890:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_3c894:
+sub_3c894:   ; _dfracbits
   3c894:  257d7d08  sub      gr125, gr125, $08
   3c898:  15607d00  add      gr96, gr125, $00
   3c89c:  1e008260  store    0, 0, lr2, gr96
@@ -69445,7 +69445,7 @@ L_3c90c:
   3c918:  157d7d08  add      gr125, gr125, $08   ; [delay slot]
   3c91c:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
 
-sub_3c920:
+sub_3c920:   ; _dtrunc
   3c920:  257d7d08  sub      gr125, gr125, $08
   3c924:  15647d00  add      gr100, gr125, $00
   3c928:  1e008264  store    0, 0, lr2, gr100
@@ -69518,7 +69518,7 @@ file_68:   ; object file 68 (C): .text starts here
 sub_3ca0c:
   3ca0c:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
 
-sub_3ca10:
+sub_3ca10:   ; _fillbuf
   3ca10:  25010120  sub      gr1, gr1, $20
   3ca14:  5e00017e  asgeu    trap64, gr1, gr126
   3ca18:  1581012c  add      lr1, gr1, $2c
@@ -69533,7 +69533,7 @@ sub_3ca10:
   3ca3c:  02006100  consth   gr97, $0000   ; hi of extern#1707+$0
   3ca40:  14616162  add      gr97, gr97, gr98
   3ca44:  1e006061  store    0, 0, gr96, gr97
-  3ca48:  a8008000  call     lr0, $3b300   ; -> .text $3b300 (sub_3b300)
+  3ca48:  a8008000  call     lr0, $3b300   ; -> .text $3b300 (_readbuf)
   3ca4c:  15828a00  add      lr2, lr10, $00   ; [delay slot]
   3ca50:  15866000  add      lr6, gr96, $00
   3ca54:  01ff60ff  constn   gr96, $ffff

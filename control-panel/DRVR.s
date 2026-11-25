@@ -2919,9 +2919,10 @@ ClassifyTrapNum:
 * generation (2 = $0400009C bit31 clear, 3 = nibble 0, 4 = nibble 1), bit 8
 * set if the full $20000-byte SRAM pattern passed, and bits 16+ = (DRAM
 * configuration code + 2) << 16, where the code (0..5 or 8) records which of
-* the DRAM windows $0C000000/$0C1FFFF0, $0C200000, $0C300000 (aliased against
-* $0D100000/$0D400000/$0D500000 with AliasCheck) respond: 0 = only the first
-* 2 MB window, 1/2 = the next one or two 1 MB windows, 4/5/8 = the larger
+* the memory windows $0C000000/$0C1FFFF0 (the 2 MB VRAM, frame buffer at
+* +$10000), $0C200000, $0C300000 (DRAM; aliased against
+* $0D100000/$0D400000/$0D500000 with AliasCheck) respond: 0 = only the
+* 2 MB VRAM window, 1/2 = the next one or two 1 MB windows, 4/5/8 = the larger
 * configurations behind the alias windows.  Errors: $FFFFD8EA = SRAM below
 * $10000 good bytes or no DRAM at $0C000000/$0C1FFFF0; $FFFFD8E8 = the DRAM
 * windows are inconsistent.  Callers treat the carry/error return as failure

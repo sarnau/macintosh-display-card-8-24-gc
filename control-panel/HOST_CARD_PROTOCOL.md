@@ -160,10 +160,9 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- DrawMultiObject: all 25 opcodes are named and their cases found; left open are ColorMap's alpha-channel part, what the address bits `$01200000` select, and why a repeated font upload re-converts only glyphs `$84`-`$9E` ("Open points" there);
-- why the status bit at `$4400007C` gates the two-colour block fill;
+- DrawMultiObject: all 25 opcodes are named and their cases found; left open is which host script system rewrites the glyph images `$84`-`$9E` that the card re-reads ("Open points" there);
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
-- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the codec routines step by step;
+- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
 - some flag bits (1, 3, 10, 30, 31) are read only in outline (section 9).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
@@ -310,8 +309,15 @@ GFlags has `Interlaced` set and `BigScreen` clear, in which case it is 0.
 | Apple monitors (IDs 1, 2, 3, 6) | linear (bit 1) | linear (bit 1) |
 | NTSC / PAL | 4-way interleaved (bit 0) | linear (bit 1) |
 
-The same routine writes `+$7C` from the per-depth timing table, so `+$7C`
-is not simply the complement of `+$80`, although the two page conversions
+The same routine writes `+$7C` with `bfins d1,{0:1}` (`$607C`-`$6084`),
+which stores **bit 0** of the timing entry's second long into bit 31. In
+the declaration ROM (`341-0812.bin`), that long is 1 in every NTSC/PAL
+entry at 1-8 bpp (tables `$3EB0`, `$447C`, `$4A48`, `$5014`, at the entry
+offset by depth plus `(mode − $80) × $40`). It is 0 in their 24 bpp entries
+and in every entry of the Apple-monitor tables (`$35D2`, `$3728`, `$387E`,
+`$3A24`). So although `+$7C` comes from the table and `+$80` from GFlags,
+`+$7C` is the complement of `+$80` in every mode: 1 = interleaved, 0 =
+linear. The two page conversions
 wait for them in opposite states. The card waits for them *before* it
 acknowledges (`$2000E5C`-`$2000E78` and `$2000F2C`-`$2000F48`, then `+$04 <- 0`),
 while the host programs them only after its wait for that acknowledge
@@ -423,7 +429,7 @@ Checks of the exact decode:
   following type-28 record);
 * calls to the kernel and HIF stubs show the service (`svc_CC` …).
 
-**Names from the QuickDraw source.** 410 of the 709 functions carry names
+**Names from the QuickDraw source.** 663 of the 709 functions carry names
 (`antelope_names.py`). Most of the new ones come from the mode tables, which
 follow the 68k source's table order case by case: BitBlt's loops (`.lit
 $0008`-`$0068`: `bArith32Tab`, the indexed arithmetic loops, `bMAIN8`-`11`,
@@ -437,9 +443,32 @@ Bogus) and its arithmetic tables by `dstShift` (`.lit $0B78`), GetSeek's
 DrawArc calls SlopeFromAngle `$081E0` and FixMul `$00CC4` as `DrawArc.a` does;
 QuickPolys sorts its edges with SortVectors `$19134`. The card adds a 50%
 blend loop for indexed depths (`$0604C`, `$21BE0`) that 68k QuickDraw does not
-have. Not named for lack of evidence: scaleBlt's loops, the `$3008C` family,
-DrawLine's fast-line loops, the BitBlt copy fast paths `$02DE0`/`$02F20`/
-`$02FF0`, and most of the C library.
+have. Later passes named the rest from the same kind of evidence:
+* **scaleBlt**: the scaleNum switch (`.lit $0958`): 1 sc32to8, 3
+  sc32to8Dither, 4 scCopy16to32, 9/11 sc32to8gray, 25-29 the 1→2/4/8/16/32
+  expansions, 30 scIndexToAny (`.lit $09E0` by dstShift; 1/2 report
+  "unsupported dstShift"); a non-zero `lr33` selects an "Or" variant;
+* **StretchBits**: `$276D4` is `Stretch.a`'s SetupStretch (the same ratio
+  constants); `.lit $0B48`/`$0B60` are EXTBL's Color and plain halves
+  (ONE … THRTWO), `$0C18` VMergeTable (ONEDEEP, NDEEP, Average16and32),
+  `$0C00` CombineTable;
+* **DrawLine**: `$0974C` is FASTSLANT; `.lit $0240`/`$0280` are
+  SteepBlitXorTab/SteepBlitTab by dstShift (+10 for a negative slope; the
+  card has its own 8 and 32 bpp loops and one generic loop for 1/2/4/16);
+  horizontal fast lines `$09020`/`$09270`, wide-pen slabs `$0AAF4`/`$0AC0C`;
+  `$0E398` is `QDUtil.a`'s DrawSlab;
+* **BitBlt/RgnBlt**: the copy fast paths (bSETUP0, bLEFT0 and a shifted
+  variant) and RgnBlt's srcCopy/Or/Xor/Bic loops; the slow hilite loops are
+  `$1E35C`/`$22758`, the fast ones (mode `$3A` with an all-black small
+  pattern) `$1D1BC`/`$1CF80`;
+* **the C library**: the stdio core (ftell, fflush, fclose, `_flsbuf`, …),
+  number conversion, signal/raise, the float helpers.
+
+Also: `$36D90` writes 256 RGB triples to the RAMDAC (`$46C00000` index,
+`$46C00004` data); `$36F4C` is a Park-Miller generator for the memory tests;
+the packet's `+$04` holds host flags read by `$32BB4` (`$80`), `$33500`
+(`$08`) and `$33520` (`$200`, 32-bit addressing). The 46 functions still
+unnamed are hardware polls, stubs and helpers of unclear packet fields.
 
 One example is `sub_00178`. It sets the funnel-shift count from an argument
 (`mtsr FC, lr5`), loads 16 words into `gr96..gr111` (`mtsrim CR,$0f` +
@@ -997,7 +1026,7 @@ anchors:
 | `+$10` | `$19DA4` | **RgnBlt** | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; a four-way switch picks one of four mode loops `$1B33C`, `$1BAE0`, `$1BC64`, `$1BDE8` (`$1B2A0`-`$1B2DC`) |
 | `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: `$075DC` **DrawArc**, `$08618` **DrawLine**, `$19270` **QuickPolys** (settled by DrawMultiObject's polygon opcode, below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
 | `+$24` | `$11AD8` | **DrawText** (see "Text and fonts") | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw) and RgnBlt, not BitBlt; uses `extern#1772+$60`-`$6C` |
-| `+$18` | `$3008C` | a `GetSeek` user. Its object file (`$30088`-`$31DA4`) holds five more routines, each entering an unrolled loop through a 15-entry `.lit` jump table (`$0C30`, `$0C6C`, `$0CA8`, `$0CE4`, `$0D20`; entries are offsets from `$30088`) | |
+| `+$18` | `$3008C` | **FastStretch32**: a region-clipped scaled copy of a 16- or 32-bit source into a 32 bpp destination (GetSeek, then one row loop per srcShift, `$304D8` for 5, `$3147C` otherwise, with file 2's pixel stretchers `$004FC`/`$00534`); three smoothing variants (`$308F0`, `$30E14`, `$31888`) have no callers. Its object file (`$30088`-`$31DA4`) holds five more routines, each entering an unrolled loop through a 15-entry `.lit` jump table (`$0C30`, `$0C6C`, `$0CA8`, `$0CE4`, `$0D20`; entries are offsets from `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
 | `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
 | `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (before drawing) and its counterpart (after drawing): the cursor lock with the host, see "The cursor" below | |
@@ -1026,7 +1055,7 @@ The shared helpers are runtime and support code:
 - `$1114C` and `$11A34` return the address of a scanline loop chosen by
   the mode (36 and 7 possible loops; `$1114C` partly through `.lit`
   tables such as `$0508`), like QuickDraw's mode-case tables;
-- `$0E398` is a short arithmetic helper, and `$17500` an allocator.
+- `$0E398` is DrawSlab and `$17500` PatExpand.
 
 Readings:
 - `$19270`, with three times the stores, fits **QuickPolys**, which builds
@@ -1456,7 +1485,8 @@ per-device refresh (`$0AFC0`-`$0B1F0`) and clears them all (`$0B1F4`).
    `extern#1772` `+$0C`, `+$10`, `+$14`, `+$18`, `+$20`, `+$24` and `+$74`.
    These are the same stores every drawing case makes before it draws;
 2. it calls **`$06F1C`, ColorMap**(pixel size from slot `+$3C4`, mode
-   `lr24`, …), which follows `ColorMap` in `QDUtil.a` step for step. It
+   `lr24`, …), which follows the 1990 `ColorMap` (`QDUtil.a` up to change `<20>`),
+   without its alpha part (see "Open points"). It
    returns the mapped mode and leaves the replicated foreground and
    background longs in the per-device slots `+$3B8` and `+$3BC`:
 
@@ -1630,8 +1660,7 @@ the pattern, width-table and font entries the stream still holds.
 
        So `$44000080` bit 31 reads 1 while the frame buffer is in the
        linear layout and 0 while it is interleaved; `$4400007C` is its
-       complement (but see section 5: the host writes `+$7C` from its timing
-       table). The kernel's pixel-clock stub `$20012E8` also halves both of
+       complement (both are written by the host, section 5). The kernel's pixel-clock stub `$20012E8` also halves both of
        its values when the bit is set. For `$1701C` this means: the block
        write works only in the linear layout, and interleaved memory falls
        back to the `storem` burst. The host sets the layout (section 5):
@@ -1642,8 +1671,17 @@ the pattern, width-table and font entries the stream still holds.
        `$17264(dst, a, b, count)` (Fill2Longs, PQDInit's descriptor `+$30`)
        is the two-value version. With `a` = `b` it calls `$1701C`. Otherwise
        it tests bit 31 of `$4400007C` the same way, before its own aligned
-       paths. So the second status register gates the two-colour
-       case. The matching burst helpers are `$00294`, which loads two
+       paths. The two fills gate on the same condition. FillLongs takes the block write
+       when `$44000080` bit 31 is **set** (`$17040`-`$17048`); Fill2Longs takes it
+       when `$4400007C` bit 31 is **clear** (`$172A0`-`$172AC`; set → the burst
+       `$00294`). Both bits are written by the host (section 5), and in every mode
+       the ROM's timing tables hold they are complements: `+$80` = 1 means the
+       linear layout and `+$7C` = 1 the interleaved one. So both fills use the
+       block write exactly in the linear layout. The second register is just the
+       complementary flag, read from the other side; nothing about two colours
+       depends on it. Boot reads `+$7C` the same way: its register probe
+       (`$2003608`-`$2003634`, `$2003768`-`$2003774`) treats a set `+$7C` as the
+       TV/interleaved case. The matching burst helpers are `$00294`, which loads two
        alternating values into the burst registers, and `$00248` (`+$54`),
        a copy that moves 29 longs per `loadm`/`storem` pair;
      * **`$00348(dst, value, count)`**, FillLongsBurst. It loads the value
@@ -1850,7 +1888,7 @@ mask's bits in turn:
 * bit 0 → **`$14B64(handle, ptr)`**: find-or-create a kind-`$0A` cache
   entry, copy the width table's `$434` bytes into it with `$16C48` (the
   copy helper behind requests 8/18), and return the entry's data;
-* bits 1-4 → **`$14A80(handle, ptr, size)`**:
+* bits 1 and 2 → **`$14A80(handle, ptr, size)`**, bits 3 and 4 → `$14A80(handle, ptr, 0)` (a successful bit 1 skips bit 3, a successful bit 2 skips bit 4, `$32350`, `$323C0`):
   * find-or-create a kind-8 entry;
   * if the entry is new or holds another handle, copy the whole `FontRec`
     in (`$16C48`, mode 3; the card pointer goes to entry `+$10`);
@@ -2034,24 +2072,114 @@ offs[n] = cell - buf;  return 1
 ```
 
 The bits right of the glyph come along unmasked (they belong to the next
-glyph in the strike), so the clipping to `width` happens in DrawText. Why a
-repeated upload refreshes exactly `$84`-`$9E` (Mac Roman `Ñ` to `û`) is not
-known; the only caller takes that path when the cache entry already holds
-the handle and its `FontRec` copy.
+glyph in the strike), so the clipping to `width` happens in DrawText. 
+
+**The `$84`-`$9E` refresh is a deliberate protocol between host and card,
+not a bug.** It belongs to mask bits 3 and 4 of `$30`:
+* **Host (`sub_88E6`).** It sets bit 3 only when the width table's
+  `WidthAFID` (`+$41C`) is ≥ `$4000`, a non-Roman script font, and a byte
+  of the text lies in `$84`-`$9E` (`$8A24`-`$8A4A`). It sets bit 4 only when
+  bit 3 is set and the `FMOutput` strike is already on the card (bit `$800`
+  set and found, `$8B70`-`$8B9E`). For bits 3 and 4 it sends only (handle,
+  pointer) (`$8C4A`..), and only if bit 1 or bit 2 respectively is not
+  being sent.
+* **Card (`$322D4`).** The `$30` case mirrors this. A successful bit 1 skips
+  bit 3 (`$32350` → `$32394`), and a successful bit 2 skips bit 4
+  (`$323C0` → `$3287C`). Bits 3 and 4 call `UploadFontStrike(handle, ptr,
+  0)` (`$32384`, `$323F0`). Their handle matches the cache entry's key, so
+  `new` is 0 (`$14AB8`-`$14AC8`) and nothing is copied in full.
+* **The `new = 0` path** (`$147BC`-`$1488C`):
+  * it returns at once unless the font covers the whole range
+    (`lastChar` ≥ `$9E` and `firstChar` ≤ `$84`, `$147D0`-`$147E4`);
+  * for each of the `fRectHeight` rows it re-reads, from the host's
+    strike (`hostFont + $1A`), just the bit-image columns from
+    `locTable[$84]` to `locTable[$9F]` into the card copy
+    (`CopyHostMemory` mode 2, `$14870`);
+  * it then rebuilds the cells of those glyphs in place. It skips the
+    cells before `$84` by adding up their sizes (`$14898`-`$148E8`).
+  * `locTable`, `owTable` and the cell sizes are **not** re-read: the
+    card's copies stay.
+
+So the protocol assumes that in a script font, the glyph *images* of
+`$84`-`$9E` can change in host memory while the strike handle and all
+metrics stay the same. Something on the host rewrites those glyphs in
+place, and the card keeps up by re-reading them whenever text uses them.
+Which script system does this (and why this range, rather than for
+example the Shift-JIS lead bytes `$81`-`$9F`) is in neither code and not
+in the 7.1 sources (`FontMgr.a`, `Text.a`, `DrawText.a` have no such
+range). That part remains a reading.
 
 ##### Open points
 
-* **ColorMap's alpha-channel part** (`$06F1C`) is not checked against
-  `QDUtil.a`.
+* **ColorMap has no alpha-channel part.** In the 7.1 source the alpha block
+  sits between the mode adjustment and the colour defaults ("`<17>`
+  Beginning/End of alpha channel changes"). In `QDciPatchROM.a`, the System
+  7.x patch, the block uses `_StreamToMask` on grafVars `foreStream`
+  (`+$20`) and `backStream` (`+$26`). In `QDUtil.a` (`<SM4>`, 1993) it uses
+  `_GetForeAlphaMask`/`_GetBackAlphaMask` instead. Either way it reads
+  grafVars `streamMode` (`+$2D`) once `PmNewGVBit` is set, at 16 or 32 bits
+  per pixel, and leaves `alphaMode`, `alphaMask`, `alphaFore` and
+  `alphaBack` in the stack frame. `$06F1C`-`$075C8` has nothing of this:
+  * no grafVars access;
+  * no service or CallBack call except Color2Index `$0688C`, InvertColor
+    `$06B1C`, the pattern lookup `$16034` and `memcpy`;
+  * its only globals are `extern#1772` `+$0C`, `$14`, `$18`, `$20`, `$24`,
+    `$28`, `$2E`, `$30`, `$38`, `$3E` and `$40`.
+
+  It goes straight from the `arithMode` step (`$06F4C`-`$06F78`) to the
+  xor test (`$06F7C`). No stream record carries a stream or ratio either
+  (see the record table), and no read of grafVars `+$2D` turns up in
+  `gc24.s`. So ports that draw with alpha streams are drawn on the card as
+  if `streamMode` were 0 (reading: the host does not seem to filter them).
+  The card's version is the System 7.0-era `ColorMap` without the alpha
+  block.
+* Other differences from `QDUtil.a`, all exact:
+
+  | `ColorMap` (68K) | `$06F1C` |
+  |---|---|
+  | srcXor becomes `$32` when `HiliteMode` bit 7 is clear | not done here: the host already sends `$32`/`$3A` (`sub_8E38`) |
+  | `<14>`: with `multColor` set and a direct destination, the default colours are inverted (removed again by `<R21>`, 6/1992) | `$06FAC`-`$06FD0`: if the word at `+$24` of the fourth argument is non-zero and depth ≥ 16, then fg long = 0 and bk long = −1 (reading: that word is `multColor`) |
+  | old port: `mapToColor` turns the planar `fgColor`/`bkColor` into indices | `$07160`-`$071BC`: Color2Index of the RGBs at `+$28`/`+$30`, which the host has already converted (`sub_917E`, record `$64`) |
+  | `colrBit` negative → COLOROK | not tested: every non-zero `colrBit` (`+$2E`) takes the planar path at `$07294` (`1 << colrBit`, switch on `mode & 3`, `.lit+$1A8`) |
+  | — | an extra result: a black-on-white flag stored at `+$2C` of the second argument (`$075B0`). It is 1 when the RGBs are 0/0/0 on `$FFxx` × 3 (`$07048`-`$07074`), or, for an old port, when `fgColor` = 33 and `bkColor` = 30 (`$07180`-`$07198`) |
 * **`$17500`** is PatExpand (`Patterns.a`), called before every BitBlt and
   RgnBlt of the rectangle and region cases (and by DrawArc, DrawLine and
   QuickPolys). Its bit-pattern path `$178B8` tests patStretch -2/2 and
   indexes PatExTbl by dstShift (`.lit $07E0`); pixel patterns go through
   PatConvert `$17C60` (MakeScaleTbl `$18278`, PatDither `$188C4`).
-* **The address bits `$01200000`** that send a run to FillLongsBurst
-  instead of the block write: what they select in the card's memory map is
-  not read.
-* **Why a repeated font upload re-converts only glyphs `$84`-`$9E`** (`$14564`, the `new = 0` path).
+* **The bits `$01200000` mark card DRAM.** The card's memory, at offset
+  `$0C000000` of its super-slot space (`$sC......` from the host,
+  `$4C......` locally):
+
+  | offset | what | evidence |
+  |---|---|---|
+  | `$0C000000`-`$0C1FFFFF` | the 2 MB VRAM. The frame buffer starts at `+$10000` (`+$11400` on TV). The kernel's `Vec`, `PrivNZ`, `PublicIn`/`PublicOu`, `HifComm` and `VidComm` lie in the first `$10000`, below the frame buffer | `VideoDriver.s` `$5C3A`-`$5C5A` and `$5E74`-`$5E7E` (base = hardBase + `$0C000000` + `$10000`/`$11400`); Hand's layout conversion covers exactly this 2 MB (`$2000C14`) |
+  | bit 22 (`$0C400000`..) | the VRAM's block-write alias | `$1701C`/`$17264` set bit 22 of the destination (`$17394`) and clear it again |
+  | `$0CC00000`/`$0CC00004` | the block-write colour registers | `$170F0`, `$17378` |
+  | bit 21: `$0C200000`-`$0C3FFFFF` | DRAM, in two 1 MB windows | `DRVR.s` ProbeCard `$22EA`-`$2332` (`TestRAMLong` at `$0C200000`/`$0C300000`) |
+  | bit 24: `$0D000000`.. | the second DRAM bank | ProbeCard `$2336`-`$2390` (`AliasCheck` against `$0D100000`/`$0D400000`/`$0D500000`); flag bit 20 "DRAM above `$0D000000`" |
+
+  Every caller has just checked that the address is on this card
+  (IsOnThisCard, `$s.......` or `$Fs......`). So `(end & $01200000) ≠ 0`
+  means the run reaches DRAM rather than VRAM. There the VRAM block write
+  does not exist, so the run takes the `storem` burst (rectangle case,
+  `$0C98C`-`$0C9AC`), or `FillLongsStorem`/single stores (the other 14
+  callers, for example `$03880`-`$03894` and `$09194`-`$091A8`). Testing
+  the end alone is enough because VRAM lies below DRAM: an end below
+  `$xC200000` puts the whole run in VRAM. Bit 22 is not in the mask,
+  because addresses with it set are the VRAM's own alias. So in practice
+  the test sends fills of off-screen pixmaps in card DRAM to `storem`, and
+  frame-buffer fills to the block write.
+  * The rectangle case tests `first + rows × rowBytes`, the address after
+    the last row (`$0C98C`-`$0C994`). So a run whose last row ends exactly
+    at `$xC200000` would also take `storem`, which is harmless.
+  * Uncertain: for a standard-slot address (`$Fs......`, which IsOnThisCard
+    accepts), bit 24 is the low bit of the slot nibble. So in slots `$9`,
+    `$B` and `$D` such a run always takes `storem`. This matters only if
+    QuickDraw hands the card `$Fs` base addresses, which the video driver
+    does on its `sRsrc32Bit` path (`$5E8C`-`$5EAA`). What the standard slot
+    space decodes to is not read.
+* **The glyphs `$84`-`$9E`**: which host script system rewrites those glyph images in place (see "Text and fonts") is not known.
 
 #### The dispatcher prologue and packet layout
 
@@ -2754,10 +2882,10 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | service | handler | what the handler does | Antelope stub, use |
 |---|---|---|---|
 | `$B6 $B7 $BA $BC $BD $BE $C2 $C3` | `$2001A60` | returns -42: not implemented (also `$C9` `$200145C` and `$CA` `$2001464`, the same two words) | - |
-| `$B8` | `$20018E4` | timer interrupt enable (TMR bit 24): returns the old state, sets or clears it by `lr2` | `$39094` |
-| `$B9` | `$20018B8` | OPS bit 4 (`$10`): returns the old state, sets or clears it by `lr2` | `$39084` |
+| `$B8` | `$20018E4` | timer interrupt enable (TMR.IE, bit 24): returns the old state, sets or clears it by `lr2` | `$39094` |
+| `$B9` | `$20018B8` | OPS.SM (supervisor mode, `$10`): returns the old state, sets or clears it by `lr2` | `$39084` |
 | `$BB` | `$2001A58` | returns `gr64`, the host's feature flags (`PublicIn+$18`) | `$38F44` |
-| `$BF` | `$2001924` | OPS bit 1 (`$02`), as `$B9` | `$390A4` |
+| `$BF` | `$2001924` | OPS.DI (disable interrupts, `$02`), as `$B9` | `$390A4` |
 | `$C0` | `$2001408` | returns `$4C006400` (`PublicIn`, the comm header) | `$38FC8`, `InitPacket` and the feature-flag readers |
 | `$C1` | `$20012AC` | free memory: `gr127 - $3000 - gr65` (stack limit minus break) | `$38F24` |
 | `$C4` | `$2001250` | returns `[$4C00682C]`, the value Boot probed, shifted left by 28 | `$38F34`, the own-memory test `$13F54` |
@@ -2773,10 +2901,10 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | `$D0` | `$20019BC` | return from an interrupt handler (the flag and saved registers at `$4C00618C`) | `$390E4`; the interrupt handlers |
 | `$D1` | `$2001A48` | returns `[$4C006804]` (`PublicOut+$04`) | `$390F4` |
 | `$D2` | `$2001294` | restarts the kernel (`jmp $2001FFC`) when `gr64` bit 28 is set, else returns 0 | `$38F64`; every accepted command |
-| `$D3` | `$2001820` | host access mode: stores `lr2` at `$4C006848`, switches OPS bit 6, returns the old mode | `$390B4`; `TestMMU`, `CopyHostMemory`, `MapVirtual`, the dispatcher |
+| `$D3` | `$2001820` | host access mode: stores `lr2` at `$4C006848`, switches OPS.PD (physical data addressing), returns the old mode | `$390B4`; `TestMMU`, `CopyHostMemory`, `MapVirtual`, the dispatcher |
 | `$D4` | `$2001808` | translates `lr2` through the table walker `$2001C2C`: physical address in `gr96`, length in `gr122` (the stub stores it to `*lr3`) | `$39050`, `$39064`; `TestMMU`, `CopyHostMemory` |
 | `$D5` | `$2001260` | slot burst mask: `lr2 < 0` returns it, else clears bit `lr2` of `[$4C00643C]` and writes the mask to `$46000000` | `$39104`; command `$14` |
-| `$D6` | `$2001888` | clears flags bit 8, sets OPS bit 11 and writes 0 to `$4400005C`: the reverse of what kernel init does when bit 8 is set (see section 9, the flags word) | `$390C4` |
+| `$D6` | `$2001888` | clears flags bit 8, sets OPS.TU (trap unaligned accesses, which vector 1 then emulates) and writes 0 to `$4400005C`: the reverse of what kernel init does when bit 8 is set (see section 9, the flags word) | `$390C4` |
 
 The self-test's use of them agrees with the handlers: `TestMMU` reports
 "mapmem failed" after `$CC`, "mmu error" after `$CD`, "get phys size" and
@@ -2867,22 +2995,22 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 
 | bit | value | set by | used by (card) |
 |---|---|---|---|
-| 0 | `$1` | config `$20` (default) | init: on a CPU with revision (CFG bits 24-31) of 2 or more the flag leaves CFG bit 0 clear, otherwise CFG bit 0 is set (`$2002248`) |
-| 1, 3 | `$2`, `$8` | - | init: bit 3 sets CFG bit 1; else bit 1 sets it too, followed by a special store (`$2002288`); bit 1 also adds words to the register dump (`$2002A44`) |
+| 0 | `$1` | config `$20` (default) | init: on a CPU with revision (CFG.PRL, bits 24-31) of 2 or more the flag leaves CFG.CD clear, i.e. the branch target cache on; otherwise CD is set (`$2002248`) |
+| 1, 3 | `$2`, `$8` | - | a floating-point coprocessor: either bit sets CFG.CP (coprocessor present); with bit 1 (and not 3) init also writes a mode word to it (`store 1, 63`, a coprocessor store, `$2002288`), and the register dump saves its state (`$2002A44`) |
 | 2 | `$4` | - | vector 4 (coprocessor exception): ignored if set, else reason `$9D` |
 | 5 | `$20` | GC card types | init: clears the TLB and the pager's tables (`$4C002818`, `$4C002CA8`, free list `$4C002810`), i.e. demand paging is set up (`$2002370`) |
 | 6, 7 | `$40`, `$80` | - | init: written, inverted, to `$44000090` and `$4400008C` |
-| 8 | `$100` | GC card types | init: clears OPS bit 11 and writes -1 to `$4400005C` (`$20022D8`); cleared at init when a probe finds nothing (`$20021C0`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
-| 9 | `$200` | config `$40` (default) | not tested by the kernel; Antelope's `storem` fills and copies (`$37C40`, `$37D98`, `$38248`, `$38900`) bracket their bursts with service `$B9` (OPS bit 4) when it is set |
-| 10 | `$400` | - | init: OPS bit 13; vector 15 (trace) |
+| 8 | `$100` | GC card types | init: clears OPS.TU (no trap on unaligned access) and writes -1 to `$4400005C` (`$20022D8`); cleared at init when a probe finds nothing (`$20021C0`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
+| 9 | `$200` | config `$40` (default) | not tested by the kernel; Antelope's `storem` fills and copies (`$37C40`, `$37D98`, `$38248`, `$38900`) bracket their bursts with service `$B9` (OPS.SM, supervisor mode) when it is set |
+| 10 | `$400` | - | init: OPS.TE (trace enable); vector 15 (trace) |
 | 11 | `$800` | host, until config `$100` (cs50) clears it | the mailbox: when set, the kernel does not post its reports (`$2001BC0`, `$2002AAC`) |
 | 15 | `$8000` | - | vector 2 (out of range): ignored if set, else reason `$93` |
 | 16 | `$10000` | - | the kernel stops after init with reason `$A1` instead of starting the program (`$2002634`); the timer vector's debug hook (`$2000978`); also read by Antelope's feature-flag readers in file 25 |
-| 17 | `$20000` | - | init: OPS bit 1 |
-| 18 | `$40000` | - | vector 1 (unaligned access) and init: when clear, CFG bit 5 is set |
-| 19 | `$80000` | - | init: the timer runs without its interrupt (TMR `$7530` instead of `$01007530`) |
+| 17 | `$20000` | - | init: OPS.DI (interrupts disabled) |
+| 18 | `$40000` | - | vector 1 (unaligned access) and init: when clear, CFG.DW is set |
+| 19 | `$80000` | - | init: the timer runs without its interrupt (TMR.IE clear: `$7530` instead of `$01007530`) |
 | 20 | `$100000` | DRAM above `$0D000000` | init picks the heap base (`$20025CC`); services `$C1` and `$CB` |
-| 21 | `$200000` | GC card types | init: OPS bit 4 |
+| 21 | `$200000` | GC card types | init: OPS.SM: the program runs in supervisor mode |
 | 23 | `$800000` | GC card types | not tested on the card; the host's `ACEFLoad` uses the same bit as "load into the top of DRAM" |
 | 24 | `$1000000` | `globals+$254` | not tested by the kernel |
 | 27 | `$8000000` | kernel | "regions registered": set by the region add (`$CC`, `$20014B4`), cleared by the remove (`$2001764`) and at init; the TLB-miss handler and the table walker `$2001C2C` test it |
@@ -2893,9 +3021,14 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 
 So the default flags (`$A00B21` on a GC card with the default config: bits 0,
 5, 8, 9, 11, 21, 23) turn on paging, the `storem` interlock and the card
-register set-up, and leave the debug bits (2, 15, 16, 30, 31) and the mailbox
-off. The CFG and OPS bits are given by number; which processor features they
-are was not looked up.
+register set-up, run Antelope in supervisor mode without unaligned-access
+traps, and leave the debug bits (2, 10, 15, 16, 30, 31) and the mailbox off.
+OPS is the processor status the kernel's `iret` gives the program; the CFG,
+OPS and TMR field names are AMD's (as in MAME's `am29000.h`): CD branch target
+cache disable, CP coprocessor present, DW data width, PRL processor release;
+SM supervisor mode, DI disable interrupts, PD/PI physical data/instruction
+addressing, TU trap unaligned access, TE trace enable; TMR.IE timer interrupt
+enable.
 
 **The Control 18 word is the card-response timeout, in ticks.** The
 driver never reads unit `+$002` itself, apart from returning it with
@@ -3013,10 +3146,10 @@ What changed:
 
 * **Unaligned access (vector 1).** System 6 clears CFG `$20` and CHC bit 0
   on entry. It checks each halfword separately with the walker (`$2001AB0`,
-  length 2). System 7 sets CFG `$20` and checks the whole word (length 4),
+  length 2). System 7 sets CFG.DW (`$20`) and checks the whole word (length 4),
   with a fast path when the whole word passes. It also has a second path
-  with no range check when OPS bit 6 (`$40`) is set (`$200022C`). OPS bit 6
-  is the bit that service `$D3` switches for host access. System 7 also
+  with no range check when OPS.PD (`$40`, physical data addressing) is set
+  (`$200022C`), the bit that service `$D3` switches for host access. System 7 also
   treats a load/store-multiple count of 0 as `$200` and clears CHC on exit.
   So in System 7, unaligned accesses work in the physical host-access mode.
   In System 6 they always go through the region table (reading).
@@ -3217,7 +3350,7 @@ compares the first word with `$72707A61` (`const $7A61`, `consth $7270`):
 matches, the case loads the rest of the record (`+$04`-`+$2C` for `$39`,
 `+$04`-`+$28` for `$3A`, `+$04`-`+$3C` for `$3B`: the 11, 10 and 15 longs
 after the type that the host sends) and calls the block. Otherwise it
-compares with `$726C6520`, `'rle '` (Animation), and takes the
+compares with `$726C6520`, `'rle '`, and takes the
 alternative path; any other type stores 0. The result goes to
 `[.bss+0]+$1C`. System 6's
 host driver (`gc24` ID -4048) holds the component name "8·24GC Road Pizza"
@@ -3229,15 +3362,18 @@ commands `$39`-`$3B` fall to the default.
 **Which routine does what.** The immediates tell the two `'rpza'`
 routines apart:
 * `$374A4` is the **decoder**. It masks with `$E0` and compares with `$80`,
-  `$A0`, `$C0`, `$E0` (the four opcode classes of an `'rpza'` block
-  stream: skip, one colour, four colours, sixteen colours) and once with
-  `$E1` (the chunk header byte). It is entered by command `$39`.
+  `$A0`, `$C0`, `$E0` (skip, one colour, four colours, and `$E0`, the chunk
+  header, which `$376EC` skips without counting a block; a 16-colour block
+  has no opcode: a byte below `$80` with bit 15 of the second colour word
+  clear, `$37764`-`$377C0`) and once with `$E1` (the chunk header byte). It is entered by command `$39`.
 * `$33218` is the **encoder**. It ORs `$80`, `$A0` and `$C0` into opcode
   bytes, and it is the larger one: 4,259 words of colour arithmetic (`and
   $1F` with shifts by 5 and 10, the fields of a 16-bit pixel), dividing
   through `div_millicode`. It is entered by commands `$3A` and `$3B`.
 * For `'rle '`, `$39` calls `$3A964` and `$3A` calls `$3A254`; `$3B` calls
-  `$33218` for both types.
+  `$33218` for both types, so `$3B` with `'rle '` runs the `'rpza'` encoder.
+  `$3A254`'s previous-frame code is unreachable, since `$3A` passes 0 in
+  slot 6.
 
 **The decoder's layout.** `$374A4` (2,579 words) first calls MapVirtual
 (`$2F2D4`). It reads the first byte (byte reader `$3DA34`) and
@@ -3247,7 +3383,7 @@ the top bits of a word (`srl $1C`, `sub 8`, `cpgtu 7`; `.lit $1248`,
 `$1268`, `$1288`, `$12A8`). Each half splits on a local holding the
 destination depth (`cpneq` with `$20`, `$10` and `$08`; any other depth
 exits) into a 32-bit, a 16-bit and two 8-bit copies of the block loop
-(the two chosen by a flag bit, `sll …, $19`). In the first half each copy
+(the two chosen by bit 6 of argument 5: clear, a 32 KB colour-to-byte table; set, a four-candidate table with a 4×4 ordered dither, `$37E78`-`$37EC8`). In the first half each copy
 has its `and $E0`/`$80`/`$A0`/`$C0`/`$E0` tests, and the 8-bit copies add
 `and 1/2/3` and `cplt 4` steps. The stream readers `$3DA5C` (16 bits at
 any alignment, loaded at 7 places) and `$3DAAC` (32 bits, 11 places) are
@@ -3271,12 +3407,17 @@ in 25 switches:
 What the tables show:
 * **The four-way switches are unrolled per pixel.** Case `i` lies at
   `jmpi + 8 + $3C·i`, so case 0 starts right after the delay slot and each
-  case is 15 words. There is one switch per pixel of the 4×4 block, each
-  writing one of the four 2-bit colour indices.
+  case is 15 words. There is one switch per pixel of the 4×4 block. The
+  indices are computed before them (`$35864`-`$35B24`, by luminance
+  thresholds); each switch adds that pixel's error `|ΔR|+|ΔG|+|ΔB|` against
+  palette entry `i` (`$35B5C`-`$35C48`), and the code falls back to a raw
+  16-colour block when the maximum reaches `lr44` or the total `6·lr44`
+  (`$35C64`, `$36EE0`).
 * **The two 17-way switches split a 4×4 block's pixels into two groups and
   average each.** Before `$34EE8`, an unrolled sequence tests, for each of
-  the 16 pixels, the sign of a difference (`sub`, then `cpgt …, 0`;
-  presumably the pixel against a threshold). One branch adds the pixel's
+  the 16 pixels, the sign of its luminance `5R + 9G + 2B` minus the
+  block's mean luminance (`$34BA8`; the means are summed while loading,
+  `$334D0`…). One branch adds the pixel's
   fields to one set of sums and increments `lr80`, the other adds them to
   a second set. The switch index is `lr80`, the number `n` of the 16
   pixels in the first group, so the second group has `16 - n`. The own
@@ -3285,15 +3426,20 @@ What the tables show:
   group's sums go through `div_millicode` (`calli` to `$41950`). The
   shared default divides both. The averages are packed as 5-5-5 colours
   (`sra 3`, `sll 10`, `sll 5`): the two colours of an `'rpza'` four-colour
-  block. `$3BEBC` (in `$3B27C`) is a second copy with the same cases.
+  block, after both are pushed apart by an eighth of their difference
+  (`$35134`-`$35190`). `n` = 0 or 16 marks the block solid. The card's
+  palette is A, ¾A+¼B, ¼A+¾B, B (`$3C6B0`-`$3C6F4`, `$379B0`-`$37A0C`), not
+  QuickTime's ⅓/⅔ mixtures. `$3BEBC` (in `$3B27C`) is a second copy with the same cases.
 * **The `'rle '` rotation is an ordered dither.** The four targets add a
   constant to each of three 8-bit channels, saturating at `$FF`: `T0`
   (`$3ABC8`) adds 4 (`cpge $FC`), `T1` (`$3AC14`) adds 2 (`cpge $FE`), `T2`
   (`$3AC60`) adds 6 (`cpge $FA`), and `T3` (`$3B250`, where the others join)
   adds nothing. The index is `(a << 2) | (lr5 &
-  3)`. `lr5` is the pixel's x: it gains each line's skip count and is
-  incremented in the delay slot of the per-pixel loop (`$3AD98`). So `b` is
-  the column mod 4, and `a` (not traced) presumably the row mod 4. The loop
+  3)`. `lr5` gains each line's skip count and is incremented in the delay
+  slot of the per-pixel loop (`$3AD98`), but in the 32-bit path it is never
+  initialised or reset per line, so `b` is the column mod 4 only up to an
+  unknown offset; `a = lr27 & 3` (`$3AD50`), the line number mod 4. `T1`
+  saturates green at `$FD` (`$3AC40`). The loop
   reads a byte: with bit 7 set, `(b & $7F) + 1` pixels follow in one colour,
   given as three bytes. The matrix is
 
@@ -3302,8 +3448,13 @@ What the tables show:
       row 2:  2 6 0 4
       row 3:  4 2 6 0
 
-  a 4×4 pattern of 0-6 added before the channels are cut to 5 bits. So
-  `$3A964` converts 24-bit pixels to 16 bits with dithering. The second
+  a 4×4 pattern of 0-6 added before the channels are masked with
+  `$F8F8F8`. `$3A964` is the `'rle '` decoder and writes **32-bit** pixels
+  (`$3AD84`), so only the precision drops. The matrix applies only when the
+  absolute word `[$178]` is `$100`; with 1 the pixel is truncated, with 8
+  kept unchanged, and other values select a 2-level frame-alternating dither
+  (`$3AD38`-`$3AD7C`). The card's `'rle '` stream is a private line format,
+  not the documented Animation format. The second
   table (`$3AF28`) is the same with its own four loops.
 * **The decoder's index is the top nibble of a stream word, minus 8.** Before
   each `jmpi` the decoder loads `lr8` from `lr21` (then `lr21 += 4`),
@@ -3315,9 +3466,14 @@ What the tables show:
   the word's low 15 bits (`and $7FFF`), and stores it four times per row
   for four rows: it fills 4×4 blocks with one colour. In `'rpza'` itself,
   fill is `$A0` with a 5-bit count; this half runs only when the first
-  byte is not `$E1`, so it reads another format, not traced.
+  byte is not `$E1`. It reads the aligned word format written by the
+  unreferenced `$3CA64`: `$E0000000 | len` per block row (`$3CAA4`, patched
+  at `$3D9C4`), fill words `$80000000 | n << 16 | colour`
+  (`$3D5F8`-`$3D608`) and single 4-colour blocks (`$3D93C`-`$3D94C`); the
+  decoder also accepts skips, 4-colour runs and 16-colour blocks (`$38F00`).
 * **The decoder's exit.** `$39CAC` calls UnmapAll (`$2F5BC`, System 7's
-  `$33A9C`) and returns 1. 23 jumps (among them the out-of-range branches
+  `$33A9C`) and returns 1. That is not a result: the host was released by
+  `$2E69C(1)` at `$375A4`, before decoding. 23 jumps (among them the out-of-range branches
   and the unknown-depth exits) and 12 table entries land on it. In the
   first table cases 1, 2, 3 and 5 instead go to `$38E4C`, that table's
   default, which returns -1 without unmapping.
@@ -3351,14 +3507,373 @@ name it.
 Of System 6's 618 direct calls, none goes into the block from outside, and
 `.lit`/`.data` hold no pointers into it apart from its own switch tables,
 so the dispatcher's six address loads (and `calli`) are its only entries.
-Inside it, `$33218` calls `$3B27C`, `$374A4` calls `$39CF0`, and `$3C668`,
-`$3C7C4`, `$3DA08`, `$3DA34`, `$3DA5C` and `$3DAAC` are loaded as function
-pointers. Nine functions in it have no reference at all: `$39E50`,
-`$39EB4`, `$3A0CC`, `$3C810`, `$3C904`, `$3C94C`, `$3CA3C`, `$3CA64` and
-`$3DBC4`.
+Inside it, `$33218` calls `$3B27C` and the output byte, long and word
+stores `$331C4`, `$331D0` and `$33200` (13, 20 and 17 calls), `$374A4` calls
+`$39CF0`, and `$3C668`, `$3C7C4`, `$3DA08`, `$3DA34`, `$3DA5C` and `$3DAAC`
+are loaded as function pointers; `$3B27C` loads `$3DA14`, `$3DA20`, `$3DA28`
+and `$3DB68`, and `$374A4` and `$3A964` load `$2E69C` (outside the block),
+the early reply. Eight functions in it have no reference at all: `$39E50`,
+`$39EB4`, `$3A0CC`, `$3C810`, `$3C904`, `$3C94C`, `$3CA3C` and `$3CA64` (a
+second, word-aligned `'rpza'` encoder for 32-bit sources, whose output is the
+format the decoder's non-`$E1` half reads); `$3DBC4` is reached by falling
+through from `$3DBBC`.
 
 There are no floating-point instructions in either version, so the block is
 not a floating-point trap emulator.
+
+#### The codec, step by step
+
+**The arguments.** The case blocks copy the record longs after the type into
+the callee's argument registers in order, with two exceptions: `$3A` puts two
+zeros in slots 6 and 7, and `$3B` passes all 15. So `$3A` is `$3B` without a
+previous frame.
+
+| slot | decoder `$374A4` (`$39`) | encoder `$33218` (`$3A` / `$3B`) |
+|---|---|---|
+| 0 | `+$04` compressed data | `+$04` output buffer |
+| 1 | `+$08` not used (register overwritten before any read) | `+$08` not used |
+| 2 | `+$0C` Rect (top, left, bottom, right; mapped, 8 bytes) | `+$0C` not used |
+| 3, 4 | `+$10`, `+$14` not used | `+$10` not used; `+$14` Rect |
+| 5 | `+$18` flags: bit 6 = dither at 8 bpp | `+$18` quality word (see below) |
+| 6 | `+$1C` not used | 0 / `+$1C` previous-frame flag (only `≠ 0` is used) |
+| 7 | `+$20` destination base | 0 / `+$20` skip thresholds: `avg << 16 \| max` |
+| 8 | `+$24` destination row bytes | `+$1C` / `+$24` source base |
+| 9 | `+$28` destination depth | `+$20` / `+$28` source row bytes |
+| 10 | `+$2C` 8-bit lookup table (mapped `$20008` bytes) | `+$24` / `+$2C` source depth |
+| 11-13 | | — / `+$30`-`+$38` previous frame: base, row bytes, depth |
+| 14 | | — / `+$3C` not used (`lr102` is cleared first) |
+
+Both routines map their buffers with MapVirtual (`$2F2D4`): the Rect, the
+pixels (`height × rowBytes`), the stream (`3 × width × height` bytes), and
+remap the others if a later mapping moved them. Both work on
+`width >> 2` by `height >> 2` blocks (`sra 2`). **Pixels past the last whole
+block on the right or bottom are neither encoded nor decoded.** There is no
+clipping beyond the Rect.
+
+##### The decoder `$374A4`
+
+**Setup.** `lr19` = `$7FFF`, or `$7BFE` if bit 0 of the word at absolute
+address `$178` is set (no relocation; not traced). The mask is used only by
+the dithered 8-bit copies. After mapping, `$374A4` calls `$2E69C(1)`. That
+routine (outside the block) stores the reply word unless it is 1, waits until
+bit 2 of packet `+$18` is clear, stores 1 to `*[packet+$20]`, and sets packet
+`+$18` = 1. So **the host is answered before the decode starts** and the card
+decodes while the host runs on (likely reading; `$3A964` does the same, the
+encoder does not). Then it calls InitReader `$3DA08` (stream) and peeks the
+first byte with `$3DA34` without advancing.
+
+**The byte stream (first byte `$E1`, `$375DC`-`$38BB0`).** The format is
+public `'rpza'`. Each block row starts at `dst + row × 4 × rowBytes`. Per
+opcode byte `b` (read without advancing; each case adds its own length), `n`
+= `b & $1F`:
+
+| `b` | case (32 bpp) | does |
+|---|---|---|
+| `$80`-`$9F` | `$376CC` | skip `n+1` blocks: `dst += 16(n+1)` |
+| `$A0`-`$BF` | `$37638` | one colour (`ReadHalf & $7FFF`), `n+1` blocks, each `FillBlock32` `$3C7C4` |
+| `$C0`-`$DF` | `$376F8` | `ReadLong` = colour A `<< 16` \| colour B; then `n+1` index longs, each block `Rpza4ColorBlockTo32` `$3C668` |
+| `$E0`-`$FF` | `$376EC` | skip 4 bytes, count no block (`lr27 -= 1`): the `$E1` + 24-bit size header. The first byte is read again here, so the header is consumed by the loop. The size is never checked |
+| `$00`-`$7F` | `$37764` | `ReadLong` from the opcode byte on. If bit 15 of its low word is set: one 4-colour block (indices = next long), 8 bytes. Otherwise one 16-colour block: `Rpza16ColorBlockTo32` `$39CF0` reads 16 words, 32 bytes |
+
+The block counter `lr27` grows by `n+1` per opcode and is tested only between
+opcodes, and the pointer goes on linearly. **A run is not wrapped into the next
+block row**: blocks past the row's end land to the right of the Rect in the
+same four lines, and the next row starts at column 0 again. (ffmpeg's decoder
+wraps; the card's own encoder never makes such a run, see below.) After the
+last row: `$39CAC`, UnmapAll, return 1.
+
+**The four colours are at 0, 1/4, 3/4, 1, not 1/3, 2/3.** All copies expand A
+and B to 8 bits (`<< 3`, low bits zero), take `m = (A+B)/2`, then
+`c1 = (B+m)/2` and `c2 = (A+m)/2`, per channel with `sra 1`. Index 0 = B (the
+second word), 1 = `c1` (¾B + ¼A), 2 = `c2` (¾A + ¼B), 3 = A; 2-bit indices
+MSB first, one byte per row (`lr8 & $C0000000`, `sll 2`). The 16- and 8-bit
+copies cut the mixtures back to 5-5-5 (`sra 3`).
+
+**Per depth** (`lr27` = arg 9; anything but `$20`, `$10`, `$08` exits):
+
+* **32 bpp:** pixel = `R<<3 << 16 | G<<3 << 8 | B<<3` (no low-bit
+  replication); row skip `rowBytes - 16`. Helpers `$3C7C4` (fill, `storem`
+  of four longs × 4 rows), `$3C668` (4-colour: palette in `gr100`-`gr103`, one
+  `store` through `IPA` per pixel, `jmpfdec` × 4 rows), `$39CF0` (16 words via
+  `$3DA5C`).
+* **16 bpp** (`$37824`): halfword stores, inline. Fill and 4-colour colours
+  are masked with `$7FFF`; the 16 raw words of a 16-colour block are stored
+  unmasked.
+* **8 bpp, two copies by arg 5 bit 6** (`sll lr23, $19`):
+  * bit clear (`$385C4`): pixel = `table[colour]`, a byte per 15-bit colour
+    (`lr4 + colour`, no mask).
+  * bit set (`$37DE0`): a 4×4 ordered dither with a four-candidate table:
+    pixel = `table[8 + 4 × (colour & lr19) + ((r' + x) & 3)]`, where `x` and
+    `r` are the pixel's column and row in the block and `r'` is `r` with its
+    two bits swapped (`(r&1)<<1 | (r&2)>>1`). That is the pattern
+
+        row 0: 0 1 2 3
+        row 1: 2 3 0 1
+        row 2: 1 2 3 0
+        row 3: 3 0 1 2
+
+    The mapped size, `$20008` = 8 + 32768 × 4, fits this layout. What the
+    8-byte head holds was not traced.
+
+**The word stream (any other first byte, `$38BB0`-`$39CF0`).** It is the same
+block code in aligned 32-bit words. **It is the format of `$3CA64`**, the
+unreferenced encoder below. Per block, `w = [lr21]` (plain `load`, no byte
+reader), tested on `w & $80008000`:
+
+| `w & $80008000` | does |
+|---|---|
+| `0` | 16-colour block, 16 halfwords (32 bytes) |
+| `$00008000` | one 4-colour block: `w` = A `<< 16` \| B\|`$8000`, next word = indices |
+| `$80008000` | 4-colour run: `w` = colours, next word's low half = `n`, then `n+1` index words |
+| `$80000000` | the 8-way switch on `(w >> 28) - 8` (`.lit $1248` etc.): `$8` = fill, `n` = bits 16-25 (`& $3FF`), colour = `w & $7FFF`; `$C` = skip `n+1` blocks (same `n`); `$E`/`$F` = a row header, no block; `$9`, `$A`, `$B`, `$D` = error |
+
+The error exit is `$38E4C` in the 32-bit copy (return -1, without UnmapAll)
+and `$39CAC` in the other three. The depth split and the two 8-bit copies are
+the same as in the byte half (`$38FDC` `cpneq $10`, `$393BC` `cpneq $08` and
+`sll lr23, $19`). (A row header whose length has bit 15 set would read as a
+4-colour run. That is a latent bug.)
+
+##### The encoder `$33218`
+
+**Setup.** `lr9`/`lr10` = the skip thresholds (arg 7 high/low halves); `lr18` =
+(arg 6 ≠ 0), the previous-frame flag. Then come the maps: the source
+`height × rowBytes`, the output `3 × width × height`, and the previous frame.
+InitReader `$3DA08` is called on the output (its result is unused, since the
+encoder stores bytes itself). The output pointer `lr34` = `out + 4`, which leaves
+room for the header. `lr95` = svc_111 (HIF clock), called once per block
+(`$334A4`) and before each raw block (`$36F78`). Its result is unused; the
+purpose is unknown.
+
+**The quality word (arg 5)** gives two thresholds: `lr45`, the solid
+threshold, and `lr44`, the raw threshold (`lr43 = 6 × lr44`). The high half
+selects a level through `.lit $10F0` (`$333EC`, index `(q >> 16) - 1`);
+anything above 5 or 0 takes the low bytes as given:
+
+| `q >> 16` | case | `lr45` (solid if distance below) | `lr44` (raw if max error ≥; total ≥ 6×) |
+|---|---|---|---|
+| 1 | `$3339C` | 50 | `$FF` = never |
+| 2 | `$333A4` | 20 | never |
+| 3 | `$333AC` | 7 | never |
+| 4 | `$333C8` | 1 | 105 (total 630) |
+| 5 | `$333D4` | 1 | 50 (total 300) |
+| 0, > 5 | `$333E0` | `q & $FF` | `(q >> 8) & $FF` |
+
+`lr45 ≤ 0` disables solid blocks altogether (`cplt lr45, 1` → `$35320`).
+Quality word exactly `$30000` without a previous frame calls the fast path
+`$3B27C` instead (`$33370`-`$33394`).
+
+**Source pixels.** At depth 32 (`lr33` = depth ≠ 32 is false), each of the 16
+pixels is a long, split into 8-bit R, G, B. Any other depth is read as 16-bit
+5-5-5 and expanded with `<< 3`. Depth 8 is not handled separately; for it,
+`lr12`, the bytes per pixel, is never set. For each pixel the luminance
+`Y = 5R + 9G + 2B` is computed (`sll 2`+, `sll 3`+, `sll 1`), and their sum,
+`>> 4`, is the block mean `Ȳ` (`gr118`).
+
+**Temporal skip (only with a previous frame).** The previous frame is 32- or
+16-bit by arg 13. Per pixel, `d = |ΔR| + |ΔG| + |ΔB|` against the same pixel
+there; the code keeps the sum `gr117` and the max `gr116`. The block is skipped
+if `sum >> 4 < avg` **and** `max < max-threshold` (`$34A94`). A skip first
+flushes a pending 4-colour run. The first skip writes `$80` and remembers its
+position (`lr13`). Each further skip rewrites that byte as `$80 | k`. After
+`$9F` (32 blocks) a new `$80` follows. A skip also ends a fill run (`lr28 = -1`).
+
+**Two groups and their means** (`$34BA8`-`$350E8`). Pixels with `Y > Ȳ` go to
+the bright group (sums `lr0`, `gr124`, `gr100`, count `n` = `lr80`), the others
+to the dark group (`lr79`, `lr3`, `lr2`). The 17-way switch on `n`
+(`.lit $1104`) divides the sums:
+
+| `n` | bright | dark |
+|---|---|---|
+| 0, 16 | all pixels `>> 4`; the block is solid (`gr96 = 1`) | — |
+| 1 / 15 | as is / `÷ 15` | `÷ 15` / as is |
+| 2 / 14 | `>> 1` / `÷ 14` | `÷ 14` / `>> 1` |
+| 4 / 12 | `>> 2` / `÷ 12` | `÷ 12` / `>> 2` |
+| 8 | `>> 3` | `>> 3` |
+| others (`$350AC`) | `÷ n` | `÷ (16 - n)` |
+
+**The endpoints** (`$350F0`). `D = |ΔR| + |ΔG| + |ΔB|` between the two means
+(`lr85`). Each endpoint is pushed out by an eighth of the difference
+(`bright + Δ/8`, `dark - Δ/8`, `sra 3`). If any channel leaves 0-255 (any of
+the six ORed `>> 8` ≠ 0), the unextended means are kept. Then:
+
+* `D < lr45` (and `lr45 > 0`): solid, colour = `(bright + dark) / 2`. This is
+  the plain average of the two means, not weighted by `n`.
+* otherwise `lr8` = dark, `lr7` = bright as 5-5-5 (`sra 3`). If they are
+  equal, the block is solid as well.
+
+**Solid blocks become fill runs** (`$3522C`-`$3531C`). A pending 4-colour run
+is flushed first. A new colour writes `$A0` + the colour word and remembers the
+opcode position (`lr4`) and colour (`lr28`). The same colour as the last block
+rewrites the opcode as `$A0 | k`. At `k = $1F` the run is closed (`lr28 = -1`).
+
+**Four-colour indices** (`$3532C`, or `$357A4` when `lr44 ≠ $FF`). The code
+takes `Yd` and `Yb` of the two endpoints, `mid = (Yd + Yb)/2`,
+`t1 = (3Yd + mid)/4 = (7Yd + Yb)/8` and `t3 = (7Yb + Yd)/8`. Per pixel, in
+raster order with the first pixel in the top bits: index 0 if `Y ≤ t1`, 1 if
+`≤ mid`, 2 if `≤ t3`, else 3. These are the nearest-luminance cut points for
+the decoder's 0, ¼, ¾, 1 palette.
+
+**The 16-colour test** (`$357A4`, only when `lr44 ≠ $FF`). The two mixtures are
+computed as the decoder does them: `(3·dark + bright)/4` and
+`(3·bright + dark)/4`. **The 16 four-way switches** (`.lit $1148`-`$1238`,
+case `i` = index `i`) add, per pixel, `|ΔR| + |ΔG| + |ΔB|` between the pixel
+and its palette colour to a total `gr102`. The largest per-pixel error goes to
+`gr101`. As soon as `gr101 ≥ lr44`, or at the end if the total is `≥ 6·lr44`
+(`$36EE0`-`$36EEC`), the block is written raw (`$36EF4`): a pending 4-colour
+run is flushed, then 16 colour words go out (5-5-5, top bit clear) with no
+opcode.
+
+**Four-colour runs are written optimistically** (`$37244`-`$3730C`, the same
+at `$35668`-`$3579C`). Every 4-colour block is first written in the
+single-block form: the long `bright << 16 | dark | $8000`, then the index
+long (8 bytes). `lr39` = where the run's first block went, `lr16`/`lr37` = its
+colours, `lr15` = blocks − 1, and the index longs are kept in `.bss+$30`. A
+following block with the same two colours (`lr15 < $1F`) adds its indices.
+When the run ends (another kind of block, other colours, 32 blocks, a skip, or
+the end of the block row), the code rewrites it from `lr39` if it has two or
+more blocks: `$C0 | lr15`, the long `lr16 << 16 | lr37` (no `$8000`), then the
+`lr15 + 1` index longs. It then moves the output pointer back to the end of
+that (`lr34 = lr39`). That is `5 + 4k` bytes over the `8k` already written, so
+the run always fits.
+
+**The rows.** `lr28`, `lr100` and the 4-colour run are reset or flushed per
+block row (`$3347C`, `$37324`). So no run crosses a block row, and the
+decoder's lack of wrapping does no harm to its own streams. Source and previous
+frame advance by `4 × rowBytes` per block row.
+
+**The end** (`$373C0`). `len = lr34 - out`, the total including the header.
+The code stores `$E1000000 | len` at `out` (`$E1` + 24-bit size), also stores
+`len` at absolute address 4 (no relocation; purpose unknown), calls UnmapAll
+(`$2F5BC`) and returns `len`. The case block puts it in packet `+$1C`. The
+output bytes go out through `$331C4` (byte), `$33200` (big-endian word) and
+`$331D0` (big-endian long, four byte stores), so the stream needs no
+alignment.
+
+**`$3B27C`, the level-3 key-frame encoder.** Its arguments are (out + 4, source,
+row bytes, width, height, depth). It does the same means, extension and
+indices, with the solid threshold 7 inline (`cpge gr105, 7` at `$3C160`). It
+has no skip, no raw blocks and no `$C0` runs: every 4-colour block is a single
+block. Fill runs are counted and written when they end (`$A0 | k`, colour).
+Output goes through the buffered writer `$3DA14`/`$3DB68`/`$3DA28`. It returns
+the bytes written (0 if the depth is not 16 or 32), and `$33218` adds the
+header.
+
+##### The `'rle '` path
+
+`'rle '` here is a private line format, not the Animation stream as
+documented later. (Whether QuickTime 1.0 used it was not checked.) Each line
+group is:
+
+    long  [skipLines:8][repeat:8][lenLongs:16]
+          lenLongs × 4 bytes of packets, 4-byte aligned:
+            [skipPixels:8][items:8]  then items codes:
+              code ≥ $80: (code & $7F)+1 pixels of one colour, 3 bytes R G B
+              code < $80: code+1 pixels, 3 bytes each
+
+**The encoder `$3A254`** (`$3A`) handles 32-bit sources only. At any other
+depth it jumps straight to the line end (`$3A3C0` → `$3A848`), so every line
+comes out as an empty skip line. Runs need an exact 24-bit match
+(`& $FFFFFF`). Runs and literals hold at most 128 pixels (`cpneq …, $80`), a
+packet at most 253 items (`cplt $FD`), and skip and repeat counts stop at 255.
+An unchanged line becomes `skipLines + 1` of the next header. A line equal to
+the previous one becomes `repeat + 1` of the previous header (written into its
+byte 1). **The equality test compares only `lenLongs` bytes** (`$3A8BC`: the
+counter `gr103` counts bytes up to `lr20`, which is in longs) and never the
+lengths, so a line can be dropped as a repeat when only the first quarter of
+its data matches. That looks like a bug. The temporal skip (arg 7 = the
+threshold for `|ΔR|+|ΔG|+|ΔB|` against arg 11's frame) is dead code: `$3A`
+passes 0 in slot 6, and `$3B` with `'rle '` calls the `'rpza'` encoder
+`$33218` (`$2E3E4`). It returns the bytes written (no header).
+
+**The decoder `$3A964`** (`$39`) increments a frame counter (`.data+$12C8`),
+reads `[$178]` (absolute, as in `$374A4`) into `lr4`, maps, and calls
+`$2E69C(1)`. At depth 32 a line group is skipLines (`dst += s × rowBytes`),
+then `repeat + 1` lines, each decoded from the same data. Skips advance `dst`
+by 4 per pixel; one long is stored per pixel. Each colour is treated by `lr4`:
+
+| `[$178]` | colour stored |
+|---|---|
+| 1 | `RGB & $F8F8F8` |
+| 8 | `RGB` unchanged |
+| `$100` | `.lit $12C8`/`$1308` 4×4 ordered dither: add 0/4/2/6 (matrix in the switch-table text, `a` = line & 3, `b` = `lr5` & 3), saturate, `& $F8F8F8` |
+| other | 2-level dither: add 4 if `((line & 1) << 1 \| (lr5 & 1)) + frame` is odd, else 0; `& $F8F8F8` |
+
+So the output stays 32 bits per pixel with 5 bits of precision per channel
+(what a 16-bit screen would show), except in mode 8. In the 32-bit path,
+`lr5` (the column for the dither) is never initialised: it only gains skips
+and pixels, so the phase is arbitrary. The `+2` case saturates green to `$FD`,
+not `$FF` (`$3AC40`), a typo in the source. At other depths (`$3B03C`) items
+are halfwords: bit 15 set = `(w & $7FFF)+1` copies of the next long, otherwise
+`w+1` literal longs (two halfwords each). Skips also count in longs, but the
+loop bound is the width in pixels (`lr5 < lr21`). The `len` field is skipped,
+not used. Which stream feeds this path was not traced. It returns 1.
+
+##### The helpers
+
+* `$3DA08`-`$3DB40` (object file 30, asm): a one-word-cached reader.
+  `gr112` = the cached word's address, `gr113` = the word. `$3DA34` reads a
+  byte (`exbyte` with `BP`), `$3DA5C` a big-endian halfword at any alignment
+  (two bytes if odd), `$3DAAC` a long (two halfwords unless aligned). The
+  caller advances the address.
+* `$3DA14`/`$3DB68`/`$3DA28`/`$3DA20`: a buffered writer. `gr114` = byte
+  address, `gr115` = the word being filled. `$3DB68(value, size)` inserts 1,
+  2 or 4 bytes with `inbyte`/`inhw` and stores each completed word.
+  `$3DA28` stores the partial word, and `$3DA20` returns the address.
+* `$331C4`, `$33200`, `$331D0`: byte, word and long stores, byte by byte
+  (`store 0, 1`).
+* Unreferenced: `$39E50` / `$3C904` fill and `$39EB4` / `$3A0CC` 4- and
+  16-colour blocks at double size (each pixel 2×2, 32 bpp); `$3C810` (=
+  `$3C94C`, same code) 16 colours from aligned longs to 32 bpp; `$3CA3C` four
+  `div` steps after `div0` with the dividend in both halves (operands look
+  wrong; meaning unclear); `$3CA64` the word-format encoder: 32-bit source,
+  per block row a header long `$E0000000 | (len - 4)` (low 16 bits, patched
+  at `$3D9C4`), fill words `$80000000 | n << 16 | colour`, single 4-colour
+  blocks. It writes no skips, raw blocks or runs of 4-colour blocks.
+
+##### The codec's functions (System 6 addresses)
+
+| address | name | evidence |
+|---|---|---|
+| `$331C4` | `PutByte` | `store 0, 1, lr3, lr2` (byte store); 13 calls from the encoder writing opcodes |
+| `$331D0` | `PutLongBE` | four byte stores of `lr3 >> 24, >> 16, >> 8, lr3`; writes the colour and index longs |
+| `$33200` | `PutWordBE` | two byte stores (`sra 8`, low); writes fill colours and raw words |
+| `$33218` | `RpzaCompress` | entry of `$3A`/`$3B`; ORs `$80`/`$A0`/`$C0`; ends with `$E1000000 \| len` |
+| `$374A4` | `RpzaDecompress` | entry of `$39`; `$E1` test; opcode classes `$80`-`$E0` |
+| `$39CF0` | `Rpza16ColorBlockTo32` | 16 × `$3DA5C`, 555 → 888, 4 longs × 4 rows |
+| `$39E50` | `FillBlock32x2` | 8 stores × 8 rows of one long (unreferenced) |
+| `$39EB4` | `Rpza4ColorBlockTo32x2` | same palette as `$3C668`, each index stored 2×2 (unreferenced) |
+| `$3A0CC` | `Rpza16ColorBlockTo32x2` | 16 halfwords, each stored 2×2 (unreferenced) |
+| `$3A254` | `RleCompress32` | entry of `$3A` `'rle '`; `$80 \| (n-1)` + 3 bytes; line headers |
+| `$3A964` | `RleDecompress` | entry of `$39` `'rle '`; reads those codes; dither switches `.lit $12C8`/`$1308` |
+| `$3B27C` | `RpzaCompressKeyQ3` | called only for quality `$30000` without a previous frame; threshold 7 inline; no skips/raw/`$C0` |
+| `$3C664` | (tag word of `$3C668`) | only `.word $00060000` |
+| `$3C668` | `Rpza4ColorBlockTo32` | builds the 4-colour palette, `IPA` store per 2-bit index |
+| `$3C740` | (`$3C668`'s row loop) | `jmpfdec gr104` target |
+| `$3C7C4` | `FillBlock32` | `storem` of 4 equal longs × 4 rows |
+| `$3C810` | `Rgb555BlockTo32` | aligned longs of two 555 pixels → 32 bpp, 4 rows (unreferenced) |
+| `$3C904` | `FillBlock32x2Burst` | `storem` of 8 longs × 8 rows (unreferenced) |
+| `$3C94C` | `Rgb555BlockTo32` (copy) | instruction-for-instruction the same as `$3C810` (unreferenced) |
+| `$3CA3C` | `DivSteps4`? | `div0` + 3 `div` + `divl`, quotient from `Q` (unreferenced; uncertain) |
+| `$3CA64` | `RpzaCompressWords32` | `$E0000000` row headers, `$8…` fill words, the decoder's word format (unreferenced) |
+| `$3DA08` | `ReaderInit` | `gr112 = lr2`, `gr113 = [lr2]` |
+| `$3DA14` | `WriterInit` | `gr114 = lr2`, `gr115 = 0` |
+| `$3DA20` | `WriterPos` | returns `gr114` |
+| `$3DA28` | `WriterFlush` | `store gr115` at `gr114 & ~3` |
+| `$3DA34` | `ReadByte` | `BP = addr`, `exbyte` from the cached word, reload if the word changed |
+| `$3DA50` | (`ReadByte` reload) | `load` + `exbyte` |
+| `$3DA5C` | `ReadWord` | odd address: two `$3DB40` bytes; else `exhw` |
+| `$3DA84` | (`ReadWord` even case) | `exhw` from cache |
+| `$3DAAC` | `ReadLong` | unaligned: two `$3DAF4` halfwords; aligned: `$3DAD8` |
+| `$3DAD8` | (`ReadLong` aligned case) | |
+| `$3DAF4` | `ReadWordInner` | as `$3DA5C`, returns through `gr99` |
+| `$3DB40` | `ReadByteInner` | as `$3DA34`, returns through `gr98` |
+| `$3DB68` | `WriterPut` | `(value, size)`: size bit 2 → long, bit 1 → word, else `inbyte` |
+| `$3DB9C` | (`WriterPut` long) | splits on `gr114 & 3` |
+| `$3DBBC`, `$3DBC4`, `$3DBCC`, `$3DBF0`, `$3DC04` | (`WriterPut` long, alignment 0/0/1/2/3) | `$3DBC4` = aligned `store`, reached by fall-through |
+| `$3DC1C` | (`WriterPut` word) | two bytes via `$3DC60`, or `$3DC44` at alignment 3 |
+| `$3DC44` | (`WriterPut` word, alignment 3) | |
+| `$3DC60` | `WriterPutByteInner` | `inbyte`, store on word boundary, returns through `gr99` |
+| `$2E69C` (outside) | `ReplyEarly` | stores the reply unless it is 1, sets `*[packet+$20]` = 1 and packet `+$18` = 1 (with `$D3`); called with 1 before decoding |
 
 ### System 6 `.lit`, exact
 
