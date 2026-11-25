@@ -54,7 +54,7 @@
 *
 
 file_01:   ; object file 1 (C): .text starts here
-sub_00000:
+sub_00000:   ; Int1Handler
   00000:  03006000   const    gr96, $0000   ; lo of extern#1756
   00004:  02006000   consth   gr96, $0000   ; -> extern#1756+$0000
   00008:  0300612a~  const    gr97, $002a
@@ -64,7 +64,7 @@ sub_00000:
   00018:  c0000060~  jmpi     gr96
   0001c:  70400101   nop         ; [delay slot]
 
-sub_00020:
+sub_00020:   ; Int2Handler
   00020:  03006000   const    gr96, $0000   ; lo of .data
   00024:  02006000   consth   gr96, $0000   ; -> .data+$0000
   00028:  0400871b~  mtsrim   CR, $001b
@@ -56858,7 +56858,7 @@ sub_36644:   ; TestInterrupts
   36744:  02006000   consth   gr96, $0000   ; -> extern#1756+$0000
   36748:  1e006160~  store    0, 0, gr97, gr96
   3674c:  03008300   const    lr3, $0000   ; lo of .text
-  36750:  02008300   consth   lr3, $0000   ; -> .text $00000 (sub_00000)
+  36750:  02008300   consth   lr3, $0000   ; -> .text $00000 (sub_00000 Int1Handler)
   36754:  03008600   const    lr6, $0000   ; lo of .text+$390d4
   36758:  02008600   consth   lr6, $0000   ; -> .text $390d4 (sub_390d4)
   3675c:  c8008086~  calli    lr0, lr6
@@ -56930,7 +56930,7 @@ sub_36644:   ; TestInterrupts
   36864:  02006000   consth   gr96, $0000   ; -> extern#1756+$0000
   36868:  1e006160~  store    0, 0, gr97, gr96
   3686c:  03008300   const    lr3, $0000   ; lo of .text+$20
-  36870:  02008300   consth   lr3, $0000   ; -> .text $00020 (sub_00020)
+  36870:  02008300   consth   lr3, $0000   ; -> .text $00020 (sub_00020 Int2Handler)
   36874:  c8008086~  calli    lr0, lr6
   36878:  03008202~  const    lr2, $0002   ; [delay slot]
   3687c:  61606000~  cpeq     gr96, gr96, $00

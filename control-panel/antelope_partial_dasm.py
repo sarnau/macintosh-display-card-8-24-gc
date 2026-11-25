@@ -75,6 +75,7 @@ NAMES = {
     0x3B500: 'memchr', 0x3B600: 'memcpy', 0x3B748: 'memset',
     # main (crt0 calls it) and its set-up; millicode (transparent, return via tpc)
     0x31DAC: 'main', 0x3299C: 'InitPacket',
+    0x00000: 'Int1Handler', 0x00020: 'Int2Handler',
     # the self-test (file 26), named by its messages in .data
     0x3404C: 'SelfTest', 0x34304: 'TestCPU', 0x34774: 'TestLogic', 0x34828: 'TestTimer',
     0x34B9C: 'TestMemory', 0x34C34: 'TestInterleave', 0x34DE4: 'TestMemoryAccess',

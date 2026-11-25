@@ -3021,10 +3021,14 @@ Besides `InitPacket`, three functions in file 25 call `$C0`. They read
 `+$18 & $10000` (the feature flags that `LoadFirmware` writes to
 `image+$18`) and copy `+$10`/`+$14`. So `$C0` returns the comm header at
 `$4C006400` (`PublicIn`), and `InitPacket` reads `[$4C006818]` =
-`PublicOut+$18`. That word is initialised in the Runtime image. Unmasked with
-`PublicIn`'s keystream (accurate to about `$7C`, as for the service table),
-it is `$4C008C20`, in other words `$4C008C00`: exactly where the host puts
-the packet (below). Earlier notes on how this was traced:
+`PublicOut+$18`. That word is initialised in the Runtime image. At a
+section's start the Runtime key has no bits above 14, so bits 15-31 are
+plain: the value is `$4C008xxx`. `PublicIn`'s keystream gives `$4C008C20`,
+which fits the host's packet at `$4C008C00` (below). The low bits are not
+proven, though. The same keystream gives `PublicOut+$0C` (the mailbox
+address the host reads back at `image+$40C`) as `$4C007368`, where
+`HifComm` (`$4C007000`) is expected. So for `PublicOut` that keystream can be
+off by more than the `$7C` seen in the service table. Earlier notes on how this was traced:
 
 `InitPacket` takes the packet pointer from
 `[$C0() + $418]`. On the host, `gc24` reads the packet address from its
@@ -3113,19 +3117,44 @@ service; the stubs are at `$38F24`-`$39104`):
 | service | used by | reading |
 |---|---|---|
 | `$CF` | `TestInterrupts` with `(1, $00000)`, `(2, $00020)`, `(n, 0)` | set interrupt handler `n` (0 clears) |
-| `$D0` | the two interrupt handlers `$00000`, `$00020` (file 1) | acknowledge / end of interrupt |
-| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual`, the dispatcher | map memory |
-| `$CD` | `TestMMU` ("unmapmem failed"), `UnmapAll`, `MapVirtual`, the dispatcher | unmap memory |
-| `$D3`, `$D4` | `TestMMU` ("get phys size", "mmu phys access"), `CopyHostMemory`, the cursor and copy routines | physical size / address of a mapping |
+| `$D0` | the two interrupt handlers `$00000`, `$00020` (file 1) tail-jump to it | return from an interrupt handler |
+| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual` (per run), the dispatcher | map a memory range |
+| `$CD` | `TestMMU` (mostly followed by "mmu error"), `MapVirtual` and `UnmapAll` (once per page each) | set or clear one page's MMU entry |
+| `$D3`, `$D4` | `TestMMU` ("get phys size", "mmu phys access"), `CopyHostMemory`, the cursor and copy routines; `MapVirtual` brackets its work with `$D3(1)`/`$D3(0)` | physical access mode / size |
 | `$C5` | `TestCLUT` and its helpers | read the CLUT |
 | `$x11` | `TestTimer`, `CacheFindStamp`, `CacheCreate` | the clock (HIF `$111`) |
 | `$C0` | `InitPacket` and three readers of the feature flags | the comm header base |
 
+**The interrupt test's handlers** (file 1). Interrupt 1's handler (`$00000`)
+stores 42 into a global (`extern#1756`) and tail-jumps to `$D0`. Interrupt
+2's handler (`$00020`) saves `gr100`-`gr127` and `lr0`-`lr127` into file 1's
+`.data` (its 160 words are this save area). It calls `$36B08(1, 2, 3)`, which
+`malloc`s 125 bytes and calls `$36BB0(1, 2, 3)`, expecting 6. If that holds,
+it stores 42 (`.data+$1380`) into the same global, then fills and frees the
+buffer. The handler restores the registers and leaves through `$D0`. So the test checks that C
+calls and the heap work inside an interrupt handler; "locals/foreigns got
+trashed" are its register checks. File 1 also holds `$00084` (sets a CPS
+bit) and `$0009C` (sets or clears TMR's interrupt enable, `$01000000`).
+
 **System 6's strings.** Every System 7 `.lit` string is found in System 6's
-`.lit` by its plain first characters, so the messages are the same. System 6
-has more strings at `.lit $0000`-`$0178`: the names of its 16-bit
-arithmetic stubs (`StretchAverage16` …), which System 7 dropped with the
-stubs.
+`.lit` by its plain first characters, so the messages are the same. Placed
+at their System 6 offsets, System 7's 14 certain strings give 113 full key
+samples for System 6's own `.lit` key. All 113 agree with its bits 0-8
+(`antelope6_tables.lit_key`), which checks both decodes. System 6 has more
+strings at `.lit $0000`-`$0178`, the names of its arithmetic stubs. Read from
+the certain first and fourth characters of each word:
+
+* `Bogus`;
+* `RMAverage16Hack`, `RMAverage16`, `RMAddPin16`, `RMAddOver16`,
+  `RMSubPin16`, `RMTransparent16`, `RMMax16`, `RMSubOver16`, `RMMin16`;
+* `StretchAverage16`, `StretchAddPin16`, `StretchAddOver16`,
+  `StretchSubPin16`, `StretchTransparent16`, `StretchMax16`,
+  `StretchSubOver16`, `StretchMin16`;
+* `PatAverageSlab16`, `PatAddPinSlab16`, `PatAddOverSlab16`,
+  `PatSubPinSlab16`, `PatTransparentSlab16`, `PatMaxSlab16`,
+  `PatSubOverSlab16`, `PatMinSlab16`.
+
+System 7 dropped these stubs and their names.
 
 ### Antelope mask: the `.lit` jump/command tables (partial result)
 
