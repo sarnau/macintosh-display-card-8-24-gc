@@ -2711,7 +2711,7 @@ readable. It is a Unix-style C library on AMD's HIF system calls:
 
 | address | function | evidence |
 |---|---|---|
-| `$3B404` `$3B428` `$3B44C` `$3B470` `$3B494` `$3B4B8` `$3B4DC` | HIF stubs: close (`$12`), exit (`$01`), lseek (`$15`), open (`$11`), read (`$13`), `$21` (tmpnam in the HIF list), write (`$14`) | `const gr121, N` / `asneq 69` / `jmpti gr121, lr0`; on failure store `gr121` to errno and return -1 |
+| `$3B404` `$3B428` `$3B44C` `$3B470` `$3B494` `$3B4B8` `$3B4DC`, `$3C9EC` | HIF stubs from AMD's HIF library (`antelope_hif_stubs.py`): close (`$12`), exit (`$01`), lseek (`$15`), open (`$11`), read (`$13`), `$21` (tmpnam in the HIF list), write (`$14`), and remove (`$16`) at `$3C9EC` | `const gr121, N` / `asneq 69` / `jmpti gr121, lr0`; on failure store `gr121` to errno and return -1 |
 | `extern#1769` | `errno` | every stub stores to it |
 | `.data+$1580` | `_iob` (20-byte `FILE`s; `stdout` at `+$14`) | |
 | `$39284` | `printf` | spills its varargs; if bit 15 of a flag halfword of `stdout` is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0(x, stdout, fmt, ap)`, where `x` is a relocated address not read here |

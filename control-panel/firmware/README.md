@@ -386,11 +386,18 @@ the copyright, so the version and build date were also compiled into the program
   (always `$40` or `$41`) fill these into the spill and fill asserts at load
   time, so the objects were built with the trap numbers left symbolic, as
   AMD's runtime does.
-* **AMD's HIF library.** Each HIF stub (close, exit, lseek, open, read,
-  tmpnam, write) is its own object file of 36 bytes: a tag word, then
-  `const gr121,N` / `asneq 69` / `jmpti gr121,lr0`, and errno on failure.
-  That is the layout of a Unix library archive, from which the linker pulled
-  only the members referenced.
+* **AMD's HIF library, verbatim.** Each HIF stub (close, exit, lseek, open,
+  read, tmpnam, write, and remove at `$3C9EC`) is its own object file of 36
+  bytes. That is the layout of a Unix library archive, from which the linker
+  pulled only the members referenced (the first seven are in alphabetical
+  order). They match AMD's source as later published in newlib
+  (`libc/sys/a29khif/_close.s` etc., "Copyright 1990 Advanced Micro Devices",
+  SCCS stamp 1990-10-14) on every plain bit: 1,417 bits in System 7 and 1,505
+  in System 6 across the eight stubs, none different (`../antelope_hif_stubs.py`).
+  Each stub is the debugger tag word `(nargs+2) << 16`, then `const tav,N` /
+  `asneq V_SYSCALL,gr1,gr1` / `jmpti tav,lr0` / errno = `tav` / `jmpi lr0` /
+  `constn v0,-1`. In System 6 four tag words are fully plain, and they are
+  exactly the source's `$00030000` and `$00050000`.
 * **A BSD-style C library** on top: `printf`/`vprintf`, `fseek`, `_doprnt`,
   20-byte `FILE`s in `_iob`, the V7/BSD `_ctype_` bits, `exit` with a handler
   table, `memset`, plus multiply and divide millicode. It is 14,788 bytes and
@@ -422,7 +429,7 @@ for the relocations. Three kinds of file show:
 | 29 | C without debug information | `$37C10`-`$38F24`, 43 functions with ordinary prologues (`$37D68` is a fill routine); role not yet known |
 | 30 | assembly | `$38F24`-`$39114`, the card's service-call stubs: `const gr121,N` / `asneq 66` (the card's services `$B8`-`$D6`) or `asneq 69` (HIF `$111`/`$112`), no tag words |
 | 31-44, 59-66, 68 | C without debug information | the C library: `printf.o` (`$39114`), `fseek` (`$39300`), `_doprnt` (`$398B8`, with `.data1`), `_ctype_` (a `.lit`-only file at `$3AA98`), the ctype functions, `exit` (`$3AC84`), stdio (`$3B014`) |
-| 45-51, 67 | assembly | the HIF stubs, one per file |
+| 45-51, 67 | assembly | AMD's HIF stubs, one per file: close, exit, lseek, open, read, tmpnam, write; remove |
 | 52-57 | assembly | `memset` and millicode; the divide `$3BA38` is file 57 |
 
 The 768 `.text` addresses in `symbols.txt` are **709 functions and 59 file

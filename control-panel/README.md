@@ -326,7 +326,7 @@ boot-time **`INIT`**s. Remaining, on request:
   cases, DrawMultiObject and its drawers, the fills and copies and the C
   library (`firmware/disasm/text.partial.asm`). Still open: a closed form for the key,
   the `.data` key, and a disassembly of the System 6 Antelope, whose
-  separate key is now largely recovered (`antelope6_key.py`) and whose functions are matched to System 7's (`antelope6_compare.py`) and whose `.lit` key is known in bits 0-8 (`antelope6_lit.py`); `antelope6_tables.py` maps its jump tables and dispatcher and finds its Apple Video codec, and `antelope6_switches.py` fits the codec's switch targets; `antelope_modules.py` lists the object files an Antelope image was linked from, with its build header (see the "Still open"
+  separate key is now largely recovered (`antelope6_key.py`) and whose functions are matched to System 7's (`antelope6_compare.py`) and whose `.lit` key is known in bits 0-8 (`antelope6_lit.py`); `antelope6_tables.py` maps its jump tables and dispatcher and finds its Apple Video codec, and `antelope6_switches.py` fits the codec's switch targets; `antelope_modules.py` lists the object files an Antelope image was linked from, with its build header, and `antelope_hif_stubs.py` checks its HIF stubs against AMD's library source (see the "Still open"
   list in `HOST_CARD_PROTOCOL.md`).
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
