@@ -184,8 +184,8 @@ are the cursor jump vectors from `Interfaces/AIncludes/Private.a`
   `$35`/`$36`/`$37` pen, foreground and background colour state, `$2A` pen and
   pixel patterns, `$29` colour-table / device operations.
 * **Antelope's side is now largely named** (`HOST_CARD_PROTOCOL.md`): the
-  command dispatcher's table and DrawMultiObject's record tables decode
-  through the recovered `.lit` key. DrawMultiObject, DrawLine, DrawArc,
+  command dispatcher's table and DrawMultiObject's record tables are in
+  the exact `.lit` listing (`firmware/disasm/lit.asm`). DrawMultiObject, DrawLine, DrawArc,
   QuickPolys, DrawText, ColorMap, RSect, TrimRect, StretchBits, scaleBlt and
   the caches are identified there.
 

@@ -1,13 +1,12 @@
 * ==================================================================
-*  ACEF_1 "Runtime" -- Hand  (Am29000, base $2000000)   *** UNMASKED ***
+*  ACEF_1 "Runtime" -- Hand  (Am29000, base $2000000), exact
 * ==================================================================
-*  Disassembled with ../../am29k_dasm.py from Hand.unmasked.bin, which is
-*  Hand.bin with its second mask removed by ../../unmask_runtime.py (see
-*  ../README.md, "The second mask").  Before unmasking, this section decoded
-*  as noise (random SPR numbers, jumps out of the section); after it,
-*  all 351 direct jumps and calls land inside the section, every mfsr has
-*  RB = 0, every mtsr has RC = 0, every iret has zero operands, and all SPR
-*  numbers are architectural (0-14, 128-135).
+*  Disassembled with ../../am29k_dasm.py from Hand.bin, decrypted as DRVR's
+*  ACEFLoad does it (../../acef_unpack.py; the bytes are identical to the
+*  earlier Hand.unmasked.bin, whose mask tables were exact for this section).
+*  The PrivNZ service table that points into this code is listed, exact, in
+*  RuntimeData.asm.  iret has no delay slot (each service stub begins right
+*  after an iret), so the instruction after an iret is not marked as one.
 *
 *  What the code is: the Am29000 side of the 8.24 GC runtime -- trap / interrupt
 *  entry and exit paths ($2000000 ...), a mailbox poll of the host interface
@@ -769,7 +768,7 @@ L_20008e4:
   20008f8:  ce000146  mtsr     OPS, gr70               
 L_20008fc:
   20008fc:  88000000  iret                             
-  2000900:  a00700c2  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
+  2000900:  a00700c2  jmp      $2002808                   ; -> L_2002808
   2000904:  03004d9c  const    gr77, $009c                ; [delay slot]
 *  VECTOR 2 -- OUT OF RANGE: returns (iret) if gr64 bit 15 is set, else reason $93
   2000908:  81474010  sll      gr71, gr64, $10         
@@ -1025,7 +1024,8 @@ L_2000c08:
 *  it converts the window between a linear and a 4-way word-interleaved layout.
 *  Other values skip the copy.  Afterwards it waits for $4400007C/$44000080 to
 *  go idle, flushes the hardware TLB ('mttlb' over $1F pairs) and the software
-*  tables ($4C002818, $4C002CA8) and re-enters kernel init ($2001FFC).  gr96..
+*  tables ($4C002818, $4C002CA8), stores four values (gr74-gr77) to
+*  PublicOut+$1C/$24/$20/$28 and returns (jmpi gr69, $2001054).  gr96..
 *  gr103 are saved/restored through $40003400.
 * ==================================================================
 L_2000c14:
@@ -1450,10 +1450,10 @@ L_20011b0:
   20011e4:  88000000  iret                             
 * ==================================================================
 *  VECTOR 66 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
-*  $B6+$D5 index the jump table at $4C002500, which is the PrivNZ section: its 33
-*  words ($B6..$D6) decode with PublicIn's keystream to pointers into this region
-*  ($20010FC..$2001B9C; 31 of 33 are valid 4-aligned Hand addresses, exact values
-*  uncertain by up to $7C); the rest of the table is uninitialised; anything else returns gr96 = $FFFFFFD6, gr121 = 0.
+*  $D6 index the jump table at $4C002500, which is the PrivNZ section: 33
+*  handler addresses ($B6..$D6), listed exactly in RuntimeData.asm and in
+*  ../../HOST_CARD_PROTOCOL.md section 8; anything else returns
+*  gr96 = $FFFFFFD6 (-42), gr121 = 0.
 *  Arguments in lr2/lr3, result in gr96.  Service stubs that follow:
 *    (stub roles below are from reading the code at each address)
 *    $2001224  wait for / clear the INTR2 status ($44000054 <- all-ones,
@@ -1478,7 +1478,7 @@ L_2001218:
   2001218:  01ff60d6  constn   gr96, $ffd6             
   200121c:  03007900  const    gr121, $0000            
   2001220:  88000000  iret                             
-  2001224:  03004754  const    gr71, $0054                ; [delay slot]
+  2001224:  03004754  const    gr71, $0054
   2001228:  02444700  consth   gr71, $4400             
   200122c:  02ff48ff  consth   gr72, $ffff             
   2001230:  1e004847  store    0, 0, gr72, gr71        
@@ -1490,11 +1490,11 @@ L_200123c:
   2001244:  03004800  const    gr72, $0000                ; [delay slot]
   2001248:  1e004847  store    0, 0, gr72, gr71        
   200124c:  88000000  iret                             
-  2001250:  0368472c  const    gr71, $682c                ; [delay slot]
+  2001250:  0368472c  const    gr71, $682c
   2001254:  024c4700  consth   gr71, $4c00             
   2001258:  16006047  load     0, 0, gr96, gr71        
   200125c:  88000000  iret                             
-  2001260:  0364463c  const    gr70, $643c                ; [delay slot]
+  2001260:  0364463c  const    gr70, $643c
   2001264:  024c4600  consth   gr70, $4c00             
   2001268:  16006046  load     0, 0, gr96, gr70        
   200126c:  ac008209  jmpt     lr2, $2001290              ; -> L_2001290
@@ -1508,14 +1508,14 @@ L_200123c:
   200128c:  1e004746  store    0, 0, gr71, gr70        
 L_2001290:
   2001290:  88000000  iret                             
-  2001294:  81474003  sll      gr71, gr64, $03            ; [delay slot]
+  2001294:  81474003  sll      gr71, gr64, $03
   2001298:  a4004704  jmpf     gr71, $20012a8             ; -> L_20012a8
   200129c:  03006000  const    gr96, $0000                ; [delay slot]
   20012a0:  a0030057  jmp      $2001ffc                   ; -> L_2001ffc
   20012a4:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
 L_20012a8:
   20012a8:  88000000  iret                             
-  20012ac:  8145400b  sll      gr69, gr64, $0b            ; [delay slot]
+  20012ac:  8145400b  sll      gr69, gr64, $0b
   20012b0:  ac004506  jmpt     gr69, $20012c8             ; -> L_20012c8
   20012b4:  03304500  const    gr69, $3000                ; [delay slot]
   20012b8:  02004500  consth   gr69, $0000             
@@ -1531,7 +1531,7 @@ L_20012c8:
   20012dc:  24444443  sub      gr68, gr68, gr67        
   20012e0:  24604441  sub      gr96, gr68, gr65        
   20012e4:  88000000  iret                             
-  20012e8:  03004680  const    gr70, $0080                ; [delay slot]
+  20012e8:  03004680  const    gr70, $0080
   20012ec:  02444600  consth   gr70, $4400             
   20012f0:  16004646  load     0, 0, gr70, gr70        
   20012f4:  a4004604  jmpf     gr70, $2001304             ; -> L_2001304
@@ -1569,9 +1569,9 @@ L_2001358:
 L_2001364:
   2001364:  03006000  const    gr96, $0000             
   2001368:  88000000  iret                             
-  200136c:  01ff60ff  constn   gr96, $ffff                ; [delay slot]
+  200136c:  01ff60ff  constn   gr96, $ffff
   2001370:  88000000  iret                             
-  2001374:  04008500  mtsrim   BP, $0000                  ; [delay slot]
+  2001374:  04008500  mtsrim   BP, $0000
   2001378:  03004700  const    gr71, $0000             
   200137c:  024647c0  consth   gr71, $46c0             
   2001380:  0c488282  inbyte   gr72, lr2, lr2          
@@ -1585,7 +1585,7 @@ L_2001364:
   20013a0:  0c488585  inbyte   gr72, lr5, lr5          
   20013a4:  1e014847  store    0, 1, gr72, gr71        
   20013a8:  88000000  iret                             
-  20013ac:  494782ff  cpgt     gr71, lr2, $ff             ; [delay slot]
+  20013ac:  494782ff  cpgt     gr71, lr2, $ff
   20013b0:  ac004715  jmpt     gr71, $2001404             ; -> L_2001404
   20013b4:  01ff60ff  constn   gr96, $ffff                ; [delay slot]
   20013b8:  03004900  const    gr73, $0000             
@@ -1609,10 +1609,10 @@ L_2001364:
   2001400:  83606008  srl      gr96, gr96, $08         
 L_2001404:
   2001404:  88000000  iret                             
-  2001408:  03646000  const    gr96, $6400                ; [delay slot]
+  2001408:  03646000  const    gr96, $6400
   200140c:  024c6000  consth   gr96, $4c00             
   2001410:  88000000  iret                             
-  2001414:  8145400b  sll      gr69, gr64, $0b            ; [delay slot]
+  2001414:  8145400b  sll      gr69, gr64, $0b
   2001418:  a4004510  jmpf     gr69, $2001458             ; -> L_2001458
   200141c:  03006000  const    gr96, $0000                ; [delay slot]
   2001420:  03314620  const    gr70, $3120             
@@ -1631,11 +1631,11 @@ L_2001404:
   2001454:  15604700  add      gr96, gr71, $00         
 L_2001458:
   2001458:  88000000  iret                             
-  200145c:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
+  200145c:  01ff60d6  constn   gr96, $ffd6
   2001460:  88000000  iret                             
-  2001464:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
+  2001464:  01ff60d6  constn   gr96, $ffd6
   2001468:  88000000  iret                             
-  200146c:  a8004503  call     gr69, $2001478             ; -> L_2001478   ; [delay slot]
+  200146c:  a8004503  call     gr69, $2001478             ; -> L_2001478
   2001470:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   2001474:  88000000  iret                             
 * ==================================================================
@@ -1907,13 +1907,13 @@ L_20017f0:
   20017fc:  147a4748  add      gr122, gr71, gr72       
   2001800:  03006000  const    gr96, $0000             
   2001804:  88000000  iret                             
-  2001808:  81468200  sll      gr70, lr2, $00             ; [delay slot]
+  2001808:  81468200  sll      gr70, lr2, $00
   200180c:  a8014508  call     gr69, $2001c2c             ; -> L_2001c2c
   2001810:  81476000  sll      gr71, gr96, $00            ; [delay slot]
   2001814:  81604600  sll      gr96, gr70, $00         
   2001818:  817a4700  sll      gr122, gr71, $00        
   200181c:  88000000  iret                             
-  2001820:  03684a48  const    gr74, $6848                ; [delay slot]
+  2001820:  03684a48  const    gr74, $6848
   2001824:  024c4a00  consth   gr74, $4c00             
   2001828:  1e00824a  store    0, 0, lr2, gr74         
   200182c:  c6520100  mfsr     gr82, OPS               
@@ -1942,7 +1942,7 @@ L_2001874:
   200187c:  9d525240  andn     gr82, gr82, $40         
   2001880:  ce000152  mtsr     OPS, gr82               
   2001884:  88000000  iret                             
-  2001888:  03014900  const    gr73, $0100                ; [delay slot]
+  2001888:  03014900  const    gr73, $0100
   200188c:  02004900  consth   gr73, $0000             
   2001890:  9c404049  andn     gr64, gr64, gr73        
   2001894:  03084900  const    gr73, $0800             
@@ -1954,7 +1954,7 @@ L_2001874:
   20018ac:  03004c00  const    gr76, $0000             
   20018b0:  1e004c49  store    0, 0, gr76, gr73        
   20018b4:  88000000  iret                             
-  20018b8:  c6460100  mfsr     gr70, OPS                  ; [delay slot]
+  20018b8:  c6460100  mfsr     gr70, OPS
   20018bc:  91484610  and      gr72, gr70, $10         
   20018c0:  63604800  cpneq    gr96, gr72, $00         
   20018c4:  61478200  cpeq     gr71, lr2, $00          
@@ -1966,7 +1966,7 @@ L_20018d8:
   20018d8:  9d464610  andn     gr70, gr70, $10            ; [delay slot]
   20018dc:  ce000146  mtsr     OPS, gr70               
   20018e0:  88000000  iret                             
-  20018e4:  c6470900  mfsr     gr71, TMR                  ; [delay slot]
+  20018e4:  c6470900  mfsr     gr71, TMR
   20018e8:  03004600  const    gr70, $0000             
   20018ec:  02014600  consth   gr70, $0100             
   20018f0:  90484746  and      gr72, gr71, gr70        
@@ -1983,7 +1983,7 @@ L_2001918:
   2001918:  04000800  mtsrim   TMC, $0000                 ; [delay slot]
   200191c:  04000900  mtsrim   TMR, $0000              
   2001920:  88000000  iret                             
-  2001924:  c6460100  mfsr     gr70, OPS                  ; [delay slot]
+  2001924:  c6460100  mfsr     gr70, OPS
   2001928:  91484602  and      gr72, gr70, $02         
   200192c:  63604800  cpneq    gr96, gr72, $00         
   2001930:  61478200  cpeq     gr71, lr2, $00          
@@ -1995,7 +1995,7 @@ L_2001944:
   2001944:  9d464602  andn     gr70, gr70, $02            ; [delay slot]
   2001948:  ce000146  mtsr     OPS, gr70               
   200194c:  88000000  iret                             
-  2001950:  41458200  cplt     gr69, lr2, $00             ; [delay slot]
+  2001950:  41458200  cplt     gr69, lr2, $00
   2001954:  ac004518  jmpt     gr69, $20019b4             ; -> L_20019b4
   2001958:  49458203  cpgt     gr69, lr2, $03             ; [delay slot]
   200195c:  ac004516  jmpt     gr69, $20019b4             ; -> L_20019b4
@@ -2027,7 +2027,7 @@ L_20019a8:
 L_20019b4:
   20019b4:  01ff60ff  constn   gr96, $ffff                ; [delay slot]
   20019b8:  88000000  iret                             
-  20019bc:  0361468c  const    gr70, $618c                ; [delay slot]
+  20019bc:  0361468c  const    gr70, $618c
   20019c0:  024c4600  consth   gr70, $4c00             
   20019c4:  16004746  load     0, 0, gr71, gr70        
   20019c8:  a400471f  jmpf     gr71, $2001a44             ; -> L_2001a44
@@ -2063,15 +2063,15 @@ L_20019b4:
   2001a40:  ce000557  mtsr     CHD, gr87               
 L_2001a44:
   2001a44:  88000000  iret                             
-  2001a48:  03684704  const    gr71, $6804                ; [delay slot]
+  2001a48:  03684704  const    gr71, $6804
   2001a4c:  024c4700  consth   gr71, $4c00             
   2001a50:  16006047  load     0, 0, gr96, gr71        
   2001a54:  88000000  iret                             
-  2001a58:  81604000  sll      gr96, gr64, $00            ; [delay slot]
+  2001a58:  81604000  sll      gr96, gr64, $00
   2001a5c:  88000000  iret                             
-  2001a60:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
+  2001a60:  01ff60d6  constn   gr96, $ffd6
   2001a64:  88000000  iret                             
-  2001a68:  01ff60d6  constn   gr96, $ffd6                ; [delay slot]
+  2001a68:  01ff60d6  constn   gr96, $ffd6
   2001a6c:  88000000  iret                             
 * ==================================================================
 *  VECTOR 69 -- SERVICE CALL (HIF-style set; trap 69 is the usual AMD host-interface
@@ -2313,6 +2313,212 @@ L_2001cf8:
 *  PublicIn+$40 and the break at PublicIn+$10, and ends ($20025E8-$2002644) by
 *  loading PC1 from PublicIn+$04 and iretinv: it STARTS the loaded program.
 * ==================================================================
+* (the listing of $2001D08-$2001FF8 was missing from earlier versions of this file; restored from the exact disassembly)
+  2001d08:  a00200c0  jmp      $2002808                   ; -> L_2002808
+  2001d0c:  03004da3  const    gr77, $00a3                ; [delay slot]
+L_2001d10:
+  2001d10:  03284810  const    gr72, $2810             
+  2001d14:  024c4800  consth   gr72, $4c00             
+  2001d18:  16004748  load     0, 0, gr71, gr72        
+  2001d1c:  ac004739  jmpt     gr71, $2001e00             ; -> L_2001e00
+  2001d20:  03004b00  const    gr75, $0000                ; [delay slot]
+L_2001d24:
+  2001d24:  032c47a8  const    gr71, $2ca8             
+  2001d28:  024c4700  consth   gr71, $4c00             
+  2001d2c:  81484b02  sll      gr72, gr75, $02         
+  2001d30:  14484748  add      gr72, gr71, gr72        
+  2001d34:  16004748  load     0, 0, gr71, gr72        
+  2001d38:  ac00472a  jmpt     gr71, $2001de0             ; -> L_2001de0
+  2001d3c:  01ff49ff  constn   gr73, $ffff                ; [delay slot]
+  2001d40:  1e004948  store    0, 0, gr73, gr72        
+  2001d44:  03004900  const    gr73, $0000             
+  2001d48:  81484b02  sll      gr72, gr75, $02         
+  2001d4c:  1448484b  add      gr72, gr72, gr75        
+  2001d50:  81484802  sll      gr72, gr72, $02         
+  2001d54:  03284798  const    gr71, $2898             
+  2001d58:  024c4700  consth   gr71, $4c00             
+  2001d5c:  144a4748  add      gr74, gr71, gr72        
+  2001d60:  15474a0c  add      gr71, gr74, $0c         
+  2001d64:  1e004947  store    0, 0, gr73, gr71        
+  2001d68:  63474c00  cpneq    gr71, gr76, $00         
+  2001d6c:  ac004709  jmpt     gr71, $2001d90             ; -> L_2001d90
+  2001d70:  15474a10  add      gr71, gr74, $10            ; [delay slot]
+  2001d74:  1e004947  store    0, 0, gr73, gr71        
+  2001d78:  81474d02  sll      gr71, gr77, $02         
+  2001d7c:  03284818  const    gr72, $2818             
+  2001d80:  024c4800  consth   gr72, $4c00             
+  2001d84:  14474847  add      gr71, gr72, gr71        
+  2001d88:  a0000005  jmp      $2001d9c                   ; -> L_2001d9c
+  2001d8c:  1e004a47  store    0, 0, gr74, gr71           ; [delay slot]
+L_2001d90:
+  2001d90:  1e004c47  store    0, 0, gr76, gr71        
+  2001d94:  15474c0c  add      gr71, gr76, $0c         
+  2001d98:  1e004a47  store    0, 0, gr74, gr71        
+L_2001d9c:
+  2001d9c:  154c4a00  add      gr76, gr74, $00         
+  2001da0:  032e4748  const    gr71, $2e48             
+  2001da4:  024c4700  consth   gr71, $4c00             
+  2001da8:  16004747  load     0, 0, gr71, gr71        
+  2001dac:  81484b0a  sll      gr72, gr75, $0a         
+  2001db0:  14434748  add      gr67, gr71, gr72        
+  2001db4:  1e00444c  store    0, 0, gr68, gr76        
+  2001db8:  15494c04  add      gr73, gr76, $04         
+  2001dbc:  1e004349  store    0, 0, gr67, gr73        
+  2001dc0:  15474c08  add      gr71, gr76, $08         
+  2001dc4:  1e004d47  store    0, 0, gr77, gr71        
+  2001dc8:  81484b02  sll      gr72, gr75, $02         
+  2001dcc:  032d4778  const    gr71, $2d78             
+  2001dd0:  024c4700  consth   gr71, $4c00             
+  2001dd4:  14474748  add      gr71, gr71, gr72        
+  2001dd8:  a0000062  jmp      $2001f60                   ; -> L_2001f60
+  2001ddc:  1e004c47  store    0, 0, gr76, gr71           ; [delay slot]
+L_2001de0:
+  2001de0:  154b4b01  add      gr75, gr75, $01         
+  2001de4:  41474b34  cplt     gr71, gr75, $34         
+  2001de8:  acff47cf  jmpt     gr71, $2001d24             ; -> L_2001d24
+  2001dec:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
+  2001df0:  01ff47ff  constn   gr71, $ffff             
+  2001df4:  03284810  const    gr72, $2810             
+  2001df8:  024c4800  consth   gr72, $4c00             
+  2001dfc:  1e004748  store    0, 0, gr71, gr72        
+L_2001e00:
+  2001e00:  c6470800  mfsr     gr71, TMC               
+  2001e04:  94498280  xor      gr73, lr2, lr0          
+L_2001e08:
+  2001e08:  944747cc  xor      gr71, gr71, lr76        
+  2001e0c:  24474701  sub      gr71, gr71, gr1         
+  2001e10:  94474947  xor      gr71, gr73, gr71        
+  2001e14:  0300483f  const    gr72, $003f             
+  2001e18:  90484748  and      gr72, gr71, gr72        
+  2001e1c:  2547480c  sub      gr71, gr72, $0c         
+  2001e20:  acff47fa  jmpt     gr71, $2001e08             ; -> L_2001e08
+  2001e24:  15494935  add      gr73, gr73, $35            ; [delay slot]
+  2001e28:  83484801  srl      gr72, gr72, $01         
+  2001e2c:  81484702  sll      gr72, gr71, $02         
+  2001e30:  032d4778  const    gr71, $2d78             
+  2001e34:  024c4700  consth   gr71, $4c00             
+  2001e38:  14474748  add      gr71, gr71, gr72        
+  2001e3c:  16004a47  load     0, 0, gr74, gr71        
+  2001e40:  60474a4c  cpeq     gr71, gr74, gr76        
+  2001e44:  acff47f1  jmpt     gr71, $2001e08             ; -> L_2001e08
+  2001e48:  1547492a  add      gr71, gr73, $2a            ; [delay slot]
+  2001e4c:  15474a10  add      gr71, gr74, $10         
+  2001e50:  16004847  load     0, 0, gr72, gr71        
+  2001e54:  61474800  cpeq     gr71, gr72, $00         
+  2001e58:  ac004706  jmpt     gr71, $2001e70             ; -> L_2001e70
+  2001e5c:  15474a0c  add      gr71, gr74, $0c            ; [delay slot]
+  2001e60:  16004947  load     0, 0, gr73, gr71        
+  2001e64:  1547480c  add      gr71, gr72, $0c         
+  2001e68:  a000000e  jmp      $2001ea0                   ; -> L_2001ea0
+  2001e6c:  1e004947  store    0, 0, gr73, gr71           ; [delay slot]
+L_2001e70:
+  2001e70:  15474a08  add      gr71, gr74, $08         
+  2001e74:  16004747  load     0, 0, gr71, gr71        
+  2001e78:  03284818  const    gr72, $2818             
+  2001e7c:  024c4800  consth   gr72, $4c00             
+  2001e80:  81474702  sll      gr71, gr71, $02         
+  2001e84:  14484748  add      gr72, gr71, gr72        
+  2001e88:  16004748  load     0, 0, gr71, gr72        
+  2001e8c:  6247474a  cpneq    gr71, gr71, gr74        
+  2001e90:  ac004704  jmpt     gr71, $2001ea0             ; -> L_2001ea0
+  2001e94:  15474a0c  add      gr71, gr74, $0c            ; [delay slot]
+  2001e98:  16004947  load     0, 0, gr73, gr71        
+  2001e9c:  1e004948  store    0, 0, gr73, gr72        
+L_2001ea0:
+  2001ea0:  15474a0c  add      gr71, gr74, $0c         
+  2001ea4:  16004947  load     0, 0, gr73, gr71        
+  2001ea8:  61474900  cpeq     gr71, gr73, $00         
+  2001eac:  ac004705  jmpt     gr71, $2001ec0             ; -> L_2001ec0
+  2001eb0:  15474a10  add      gr71, gr74, $10            ; [delay slot]
+  2001eb4:  16004847  load     0, 0, gr72, gr71        
+  2001eb8:  15474910  add      gr71, gr73, $10         
+  2001ebc:  1e004847  store    0, 0, gr72, gr71        
+L_2001ec0:
+  2001ec0:  15474a10  add      gr71, gr74, $10         
+  2001ec4:  1e004c47  store    0, 0, gr76, gr71        
+  2001ec8:  03004900  const    gr73, $0000             
+  2001ecc:  15474a0c  add      gr71, gr74, $0c         
+  2001ed0:  1e004947  store    0, 0, gr73, gr71        
+  2001ed4:  61474c00  cpeq     gr71, gr76, $00         
+  2001ed8:  ac004704  jmpt     gr71, $2001ee8             ; -> L_2001ee8
+  2001edc:  15474c0c  add      gr71, gr76, $0c            ; [delay slot]
+  2001ee0:  a0000007  jmp      $2001efc                   ; -> L_2001efc
+  2001ee4:  1e004a47  store    0, 0, gr74, gr71           ; [delay slot]
+L_2001ee8:
+  2001ee8:  81474d02  sll      gr71, gr77, $02         
+  2001eec:  03284818  const    gr72, $2818             
+  2001ef0:  024c4800  consth   gr72, $4c00             
+  2001ef4:  14474847  add      gr71, gr72, gr71        
+  2001ef8:  1e004a47  store    0, 0, gr74, gr71        
+L_2001efc:
+  2001efc:  03804b00  const    gr75, $8000             
+  2001f00:  02ff4bff  consth   gr75, $ffff             
+  2001f04:  1600494a  load     0, 0, gr73, gr74        
+  2001f08:  9049494b  and      gr73, gr73, gr75        
+  2001f0c:  15474a08  add      gr71, gr74, $08         
+  2001f10:  16004847  load     0, 0, gr72, gr71        
+  2001f14:  81484801  sll      gr72, gr72, $01         
+  2001f18:  b6474800  mftlb    gr71, gr72              
+  2001f1c:  9047474b  and      gr71, gr71, gr75        
+  2001f20:  60474749  cpeq     gr71, gr71, gr73        
+  2001f24:  a4004703  jmpf     gr71, $2001f30             ; -> L_2001f30
+  2001f28:  03004700  const    gr71, $0000                ; [delay slot]
+  2001f2c:  be004847  mttlb    gr72, gr71              
+L_2001f30:
+  2001f30:  15484840  add      gr72, gr72, $40         
+  2001f34:  b6474800  mftlb    gr71, gr72              
+  2001f38:  9047474b  and      gr71, gr71, gr75        
+  2001f3c:  60474749  cpeq     gr71, gr71, gr73        
+  2001f40:  a4004703  jmpf     gr71, $2001f4c             ; -> L_2001f4c
+  2001f44:  03004700  const    gr71, $0000                ; [delay slot]
+  2001f48:  be004847  mttlb    gr72, gr71              
+L_2001f4c:
+  2001f4c:  1e00444a  store    0, 0, gr68, gr74        
+  2001f50:  15474a08  add      gr71, gr74, $08         
+  2001f54:  1e004d47  store    0, 0, gr77, gr71        
+  2001f58:  15494a04  add      gr73, gr74, $04         
+  2001f5c:  16004349  load     0, 0, gr67, gr73        
+L_2001f60:
+  2001f60:  03ff51ff  const    gr81, $ffff             
+  2001f64:  020f51ff  consth   gr81, $0fff             
+  2001f68:  90514451  and      gr81, gr68, gr81        
+  2001f6c:  03004900  const    gr73, $0000             
+  2001f70:  024c4900  consth   gr73, $4c00             
+  2001f74:  92495149  or       gr73, gr81, gr73        
+  2001f78:  03005100  const    gr81, $0000             
+  2001f7c:  03004c8c  const    gr76, $008c             
+  2001f80:  02444c00  consth   gr76, $4400             
+  2001f84:  1e00514c  store    0, 0, gr81, gr76        
+  2001f88:  c65a0600  mfsr     gr90, CHC               
+  2001f8c:  032e454c  const    gr69, $2e4c             
+  2001f90:  024c4500  consth   gr69, $4c00             
+  2001f94:  0400871f  mtsrim   CR, $001f               
+  2001f98:  3e008045  storem   0, 0, lr0, gr69         
+  2001f9c:  01ff51ff  constn   gr81, $ffff             
+  2001fa0:  03004c88  const    gr76, $0088             
+  2001fa4:  02444c00  consth   gr76, $4400             
+  2001fa8:  1e00514c  store    0, 0, gr81, gr76        
+  2001fac:  25514304  sub      gr81, gr67, $04         
+  2001fb0:  1e004351  store    0, 0, gr67, gr81        
+  2001fb4:  03004680  const    gr70, $0080             
+  2001fb8:  03005106  const    gr81, $0006             
+L_2001fbc:
+  2001fbc:  0400871f  mtsrim   CR, $001f               
+  2001fc0:  36008049  loadm    0, 0, lr0, gr73         
+  2001fc4:  b4ff51fe  jmpfdec  gr81, $2001fbc             ; -> L_2001fbc
+  2001fc8:  14494946  add      gr73, gr73, gr70           ; [delay slot]
+  2001fcc:  03005100  const    gr81, $0000             
+  2001fd0:  1e00514c  store    0, 0, gr81, gr76        
+  2001fd4:  0400871f  mtsrim   CR, $001f               
+  2001fd8:  36008045  loadm    0, 0, lr0, gr69         
+  2001fdc:  ce00065a  mtsr     CHC, gr90               
+  2001fe0:  81514018  sll      gr81, gr64, $18         
+  2001fe4:  9a515151  nand     gr81, gr81, gr81        
+  2001fe8:  03004c8c  const    gr76, $008c             
+  2001fec:  02444c00  consth   gr76, $4400             
+  2001ff0:  1e00514c  store    0, 0, gr81, gr76        
+  2001ff4:  a0f900be  jmp      $20006ec                   ; -> L_20006ec
+  2001ff8:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
 L_2001ffc:
   2001ffc:  040003d0  mtsrim   CFG, $00d0              
   2002000:  0404027f  mtsrim   CPS, $047f              
@@ -2753,7 +2959,7 @@ L_20025e8:
   200263c:  03004da1  const    gr77, $00a1                ; [delay slot]
   2002640:  04000600  mtsrim   CHC, $0000              
   2002644:  8c000000  iretinv                          
-  2002648:  a0000070  jmp      $2002808                   ; -> L_2002808   ; [delay slot]
+  2002648:  a0000070  jmp      $2002808                   ; -> L_2002808
   200264c:  03004d9e  const    gr77, $009e                ; [delay slot]
 * ==================================================================
 *  $2002650  REPORT TO HOST (mailbox $4C007000).  Saves PC0/PC1/OPS/CHC/CHA/CHD,

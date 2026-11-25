@@ -72,6 +72,9 @@ def make_resolver(d, symptr, nsyms, secs):
     def resolve(symndx):
         r = sym(symndx)
         if r is None: return None
+        if r[0] == -3:                      # placeholder: the symbol is the next record
+            r = sym(symndx + 1)
+            if r is None: return None
         scn, val = r
         if scn == -1: return val                                # N_ABS
         if 1 <= scn <= len(secs): return secs[scn-1]['vaddr'] + val
@@ -136,7 +139,7 @@ def ascii_hint(word_bytes):
     return ''.join(chr(c) if 0x20 <= c < 0x7f else '.' for c in word_bytes)
 
 def dump_data_section(d, KEY, sec, sym, resolve, fmt_target, obj_addrs, header_lines):
-    data = bytes(c ^ KEY for c in d[sec['scnptr']:sec['scnptr']+sec['size']])
+    data = section_data(d, KEY, sec)
     line_ann, stats = build_line_annotations(d, sec, sym, resolve, fmt_target)
     obj_set = set(obj_addrs)
     out = [f'* ' + '=' * 66,
@@ -159,6 +162,14 @@ def dump_data_section(d, KEY, sec, sym, resolve, fmt_target, obj_addrs, header_l
         out.append(line)
     return '\n'.join(out) + '\n', stats
 
+def section_data(d, KEY, sec):
+    """The section's contents, decrypted as DRVR's ACEFLoad does it."""
+    import acef_unpack
+    return acef_unpack.decrypt(d[sec['scnptr']:sec['scnptr']+sec['size']], KEY, sec['scnptr'])
+
+def get_i16(buf, off):
+    return (buf[off+1] << 8) | buf[off+3]
+
 def set_i16(buf, off, i16):
     """const/consth/call all encode their 16-bit immediate split across the
     instruction word as byte[off+1]=I16 high, byte[off+3]=I16 low (the RC and
@@ -180,7 +191,8 @@ def apply_binary_patches(d, data, sec, resolve):
     buf = bytearray(data)
     n_patched = 0
     n_skipped = 0
-    for va, symndx, rtype in get_relocs(d, sec):
+    R = get_relocs(d, sec)
+    for j, (va, symndx, rtype) in enumerate(R):
         if rtype == 28:
             continue
         off = va - sec['vaddr']
@@ -190,13 +202,17 @@ def apply_binary_patches(d, data, sec, resolve):
         r = resolve(symndx)
         if r is None:
             continue
+        # the addend is in the word (const/word) or, for consth, split
+        # between the word (high half) and the next type-28 record (low half)
         if rtype == 26:                       # const: low 16 bits
-            set_i16(buf, off, r & 0xffff); n_patched += 1
+            set_i16(buf, off, (r + get_i16(data, off)) & 0xffff); n_patched += 1
         elif rtype == 27:                      # consth: high 16 bits
-            set_i16(buf, off, (r >> 16) & 0xffff); n_patched += 1
+            lo = R[j+1][1] if j + 1 < len(R) and R[j+1][2] == 28 else 0
+            set_i16(buf, off, ((r + (get_i16(data, off) << 16 | lo)) >> 16) & 0xffff); n_patched += 1
         elif rtype in (29, 31):
             if off % 4 == 0:                   # raw 32-bit word
-                struct.pack_into('>I', buf, off, r & 0xffffffff); n_patched += 1
+                w = struct.unpack('>I', data[off:off+4])[0]
+                struct.pack_into('>I', buf, off, (r + w) & 0xffffffff); n_patched += 1
             elif off % 4 == 1 and 0 <= r <= 0xff:
                 # single-BYTE patch: every off%4==1 case in .text/Code carries
                 # a resolved value <256 (64/65), i.e. it's a byte-sized
@@ -263,7 +279,7 @@ def build_relocated_image(d, KEY, secs, resolve):
         sec = next(s for s in secs if s['name'] == name)
         if not (sec['scnptr'] and sec['size']):
             continue
-        raw = bytes(c ^ KEY for c in d[sec['scnptr']:sec['scnptr']+sec['size']])
+        raw = section_data(d, KEY, sec)
         patched, n_patched, n_skipped = apply_binary_patches(d, raw, sec, resolve)
         start = len(image)
         image += patched

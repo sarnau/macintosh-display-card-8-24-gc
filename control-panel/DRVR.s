@@ -4295,6 +4295,15 @@ PokeHardwareLong:
 * Being called from a private Control selector here (not just from
 * gc24's own loader path) means this driver can itself re-flash
 * firmware, independent of gc24.
+*
+* Unlike gc24's copy (which rejects 0x12B), this one DECRYPTS 0x12B
+* files.  Header and section headers: a running byte keystream ($31D6-
+* $3216 for the optional header).  Section data: a running 32-bit key per
+* section, set up at $3A46-$3A64 (K = KEY*$01010101 at -$4(a6), b = the
+* low byte of the section's file offset at -$9(a6)) and applied per word
+* at $3AD0-$3AE6 (relocation path) and $40FE-$4126 (plain copy):
+*     word ^= K;  K += b;  b ^= (K & $FF)
+* Only size/4 words are copied.  See SECOND_MASK.md / acef_unpack.py.
 ACEFLoad:
   030ac:  4e 56 fe ba          link.w   a6, #$feba
   030b0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)

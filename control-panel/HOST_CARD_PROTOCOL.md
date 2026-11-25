@@ -3,7 +3,8 @@
 Both sides are now readable, so the protocol can be written down from the code
 instead of inferred from one end. Everything below is cross-checked against
 `DRVR.s` (host), `../extracted-source/VideoDriver.s` (declaration ROM), and the
-unmasked firmware `firmware/disasm/Boot.asm` / `Hand.asm` (card). Addresses are
+decrypted firmware `firmware/disasm/Boot.asm` / `Hand.asm` / `RuntimeData.asm`
+(card). Addresses are
 card addresses; the host reaches `0x4Cxxxxxx` at slot base `+ 0x0Cxxxxxx` and the
 card registers `0x44xxxxxx` at `+ 0x04xxxxxx`. "Verified" means both sides were
 read and agree; "reading" means one side was read and the other inferred.
@@ -41,24 +42,20 @@ before drawing over it and asks the host to redraw it afterwards.
 | CopyBits/StretchBits | "StretchBits (command `$15`)" |
 | the cursor | "The cursor: a lock shared by host and card" |
 | the drawing stream, text and fonts, the host-object cache | "DrawMultiObject: the batched drawing stream" |
-| the encryption ("mask") of Antelope and how much of it is solved | section 6 and the "Antelope mask: …" sections, including the `.lit` key and its pins |
+| the encryption of the firmware (solved) | section 6, "Antelope: the encryption (solved)" and "`.lit` and `.data`, exact" |
 | the kernel's services | section 8 |
 | the `PupS` resource, Control calls 17-19, the feature flags | section 9 |
-| the System 6 package and its differently masked Antelope | section 10 |
+| the System 6 package and its Antelope | section 10 |
 
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
-Antelope is masked:
-* opcode bytes and the low 15-19 bits of each word are known;
-* bits 16-23 (RC and the high immediate byte, so also branch targets) are
-  estimated from neighbouring samples for 98% of the words. The key's high
-  bits are a step function, and the estimate was never wrong in held-out
-  tests (section 6, "bits 16-23 from the neighbours");
-* `.lit` has a separate key, recovered in bits 0-11 with host-confirmed
-  pins;
-* `.data` is decoded by a model that is only partly certain ("`.data` decoded", section 7).
-
-So card-side details are readings unless the text says they are checked
-against the host or against QuickDraw's sources (`System 7.1 Source Code`).
+The card firmware is encrypted with a running 32-bit XOR key per section,
+which DRVR's `ACEFLoad` removes while loading. The same decryption gives
+exact listings of every section of both builds (`firmware/disasm/`,
+`firmware/sw11/disasm/`). Earlier versions of this document worked from
+partial decodes of Antelope; the card-side claims are now checked against
+the exact listings. What the code *means* is still a reading unless the
+text says it is checked against the host or against QuickDraw's sources
+(`System 7.1 Source Code`).
 
 ## Overview: what the card does, and how the host talks to it
 
@@ -67,11 +64,14 @@ older paragraph further down disagrees, this overview and the
 DrawMultiObject section are the reference.
 
 **Three channels**, all in one shared block in card memory (the "packet",
-`[.bss]` on the card, `$C(device record)` on the host):
+`[.bss]` on the card, `$C(device record)` on the host). `InitPacket`
+(`$3299C`) takes its address from `PublicOu+$18` (`$4C008C00`, Boot fills in
+the top nibble), reached through service `$C0` (which returns `PublicIn`,
+`$4C006400`) plus `$418`:
 
 | channel | direction | where | host side | card side |
 |---|---|---|---|---|
-| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44` | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` |
+| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44` | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` in `main` `$31DAC` |
 | requests | card → host | `+$24` mailbox: `+$04` code, `+$08` reply, `+$0C` sequence, `+$14` args | `sub_6442`, called from the idle routine and from `EngineDispatch`'s wait loops | `CallBack` `$33EBC` |
 | modules | host → card code | commands `$8001`-`$8004` and request 999 | `sub_1404` (gc24 entry #105) | `sub_37B58`, `sub_379A0` |
 
@@ -84,14 +84,17 @@ video command block (section 5).
 and caches, `$80xx` for modules). A reply of 1 means "done". 0 means "not
 handled", and the host runs the original 68k QuickDraw routine. Some patches
 use 2 ("run the original without drawing"). Command `$01` resets the
-sequence numbers on both sides.
+sequence numbers on both sides; a mismatch is logged by the dispatcher
+(`$31EA0`, except for command `$01`) as `MonetMain: Sequence error %d != %d,
+func = %d, last func = %d`.
 
 **What the card accelerates (this firmware, ACEF_100 "32-Bit Antelope"):**
 
 | command | host routine | card |
 |---|---|---|
 | `$15` | `StretchBits` (trap `$AB27`; CopyBits ends here) | `$2D7B8` StretchBits, with `scaleBlt`, BitBlt and RgnBlt. Reaches host pixel maps through `MapVirtual` |
-| `$33`, `$19`, `$1A`, `$0C`, `$17`/`$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
+| `$33`, `$19`, `$1A`, `$0C`, `$2C`, `$29`/`$2B` | offscreens, colour tables, pixel patterns, GDevices changing | DisposeOffscreen, FlushOffscreen, FlushColorTable, CachePixPat, FlushPixPat, FlushGDevice: the card's caches of host objects |
+| `$17` | set-up | PQDInit (`$320C8`) |
 | `$26`, `$38`, `$0D`, … | begin / synchronise around drawing | state and bookkeeping |
 | `$20`-`$24`, `$2E`, `$2F`, `$31`, `$18` and the pen/colour/region state changes, carried by `$2D`/`$38`/`$26` | `StdLine`, `StdText`, `StdArc`, `StdRect`, `StdRRect`, `StdOval`, `StdPoly`, `StdRgn`: `EngineDispatch` does not send these one by one but appends a record to a stream in card memory | `$13770` → `DrawMultiObject`, which plays the stream back (see "DrawMultiObject: the batched drawing stream") |
 | `$8000`-`$8004` | module API: run, allocate, free, echo | `sub_37B58` |
@@ -117,31 +120,51 @@ it Antelope's exported entry table: the QuickDraw core (StretchBits,
 scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 `CallBack`, `MapVirtual` and the dispatcher.
 
-**Named card functions** (the evidence is in the sections below): the
-dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
+**Named card functions** (the evidence is in the sections below): `main`
+`$31DAC` (prints `PQDMonet: Starting up, commblock at %X`), `InitPacket`
+`$3299C` and the dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
 scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
 (likely); DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
-(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` (block write), `$17264` (two values) and `$00348` (`storem` bursts), with the burst helpers `$00294` and `$00248`; the slot burst self-test `$37000`; the own-memory test `$13F54`; the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
+(from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` (block write), `$17264` (two values) and `$00348` (`storem` bursts), with the burst helpers `$00294` (two values) and `$00248` (copy); the slot burst self-test `$37000` (part of `SelfTest` `$3404C`); the own-address test `IsOnThisCard` `$13F54` (compares an address's top nibble with service `$C4`'s); the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
 FlushColorTable `$141F8`; CacheGDevice `$14F64`; CachePixPat `$151C4`;
-FlushGDevice `$15808`; FlushPixPat `$158F4`; PRInit `$161F8`; PRAlloc
-`$16A04`; `MapVirtual` `$3373C` and its release `$33A9C`; ShieldCursor
+FlushGDevice `$15808`; FlushPixPat `$158F4`; PQDInit `$161F8`; PQDAlloc
+`$16A04` (named by their own messages, `PQDInit: Unable to allocate mega
+buffer`, `PQDAlloc: …`; earlier read as "PRInit"/"PRAlloc"); CopyHostMemory
+`$16C48`; `MapVirtual` `$3373C` and its release `UnmapAll` `$33A9C`; ShieldCursor
 `$32C10` and its after-drawing counterpart `$32EF8`; `CallBack`
 `$33EBC`; the request wrappers `$33BD0`-`$33E88`; the card heap
 `$372D0`-`$3772C`; the `storem` fill `$37D68` and its family
-`$37C10`-`$38C3C`; the reporter `$00140` and its log buffer `$00F84`; the
-C library `$39118`-`$3C340` (see "The C library"). `antelope_partial_dasm.py`
-prints these names in `text.partial.asm`.
+`$37C10`-`$38C3C`; the reporter `$00140` and its log writer `$00F84`; the kernel service
+stubs `$38F24`-`$39110` (section 6); the C library from `$39114` to the end
+of `.text` (`$3CAD4`; see "The C library"). `antelope_dasm.py` prints these
+names (from `antelope_names.py`) in `firmware/disasm/text.asm`.
+
+**Answered by the exact listings** (formerly open): the encryption (a
+running XOR key per section, see section 6); service `$C0` (returns
+`PublicIn`, `$4C006400`; `InitPacket` adds `$418` to reach the packet
+pointer); the pattern fills `$04110` and `$1C8A8` (called directly from
+BitBlt `$02B3C` and RgnBlt `$1B090`); and the kernel services, whose table
+(section 8) is exact. The ones that were unknown, read in `Hand.asm`:
+`$BB` returns the flags word `gr64` (`$2001A58`); `$D1` returns
+`PublicOu+$04`, the version `$00700D01` with bits 24-31 filled in by kernel
+init from a register probe and from `$46000000` (`$2001A48`, `$20021C4`);
+`$D4` translates an address through the memory-region table and clips a
+length to the region (`$2001808` → `$2001C2C`; address in `gr96`, length in
+`gr122`);
+`$D2` restarts the kernel (jumps to init `$2001FFC`) when flags bit 28 is
+set and otherwise returns 0 (`$2001294`); `$B8` turns the timer interrupt on
+(reload `$7530`) or off and returns its previous state (`$20018E4`); `$B9`
+and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
+(interrupts disabled) and return the previous state (`$20018B8`,
+`$2001924`).
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and why a repeated font upload refreshes only glyphs `$84`-`$9E`;
-- kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
+- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two `.data` tables, now exact but not yet read) and why a repeated font upload refreshes only glyphs `$84`-`$9E`;
 - why the status bit at `$4400007C` gates the two-colour block fill;
-- `.data` above bit 12 ("`.data` decoded": a step-function estimate, sure only near samples), the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`, and which kernel service `$C0` is (`InitPacket`'s base);
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
-- a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
-- the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants; and the dispatcher fits System 7 for 53 of 60 commands, the other seven explained. The codec's switch targets come from fitting key bits 11-15 (`antelope6_switches.py`): settled for the encoder's 18 switches and the `'rle '` pair, and for three of the decoder's four. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the first decoder table, the `.data` key, the codec routines step by step.
+- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the codec routines step by step.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -150,18 +173,23 @@ prints these names in `text.partial.asm`.
 | 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | runs from `Boot` ($2003000) |
 | 2 | waits until `PublicOu[0]` (image+$400) reads `$32100456` -- a constant of the *uploaded file* (it is the static first word of `PublicOu`), so it only proves the upload landed | - |
 | 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the top of DRAM (+$138), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
-| 4 | reads `image+$40C` (= `PublicOu+$0C`) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | kernel reads the host flags from `PublicIn+$18` into `gr64` (`$2002008`) (**verified**) |
+| 4 | reads `image+$40C` (= `PublicOu+$0C`, `$4C007000` HifComm with the top nibble set by Boot) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
 
 `PublicIn+$18` is consumed exactly as `DRVR.s` publishes it: bit 11 (`$800`,
-"mailbox not enabled") gates every call to the mailbox reporter (`$2001BC0`,
-`$2002AAC`); bit 20 (`$100000`, set when the DRAM top is above `$0D000000`)
-selects the heap-limit computation of service `$20012AC`, which uses
-`PublicIn+$08` as the end of memory (**verified**); the kernel also tests
+"mailbox not enabled") gates the reports to the host from the HIF service
+path (`$2001BC0`) and from the fatal-trap reporter (`$2002AAC`; with the bit
+set a trap restarts the kernel unreported); bit 20 (`$100000`, set when the
+DRAM top is above `$0D000000`) selects the heap-limit computation of service
+`$C1` (`$20012AC`, free heap = `[PublicIn+$08] - $1000 - break` instead of
+`gr127 - $3000 - break`), which uses `PublicIn+$08` as the end of memory
+(**verified**); the kernel also tests
 bits 0, 5, 8, 21 that `SetFeatureFlags` sets for card types `$2C`/`$7E`
 (**reading**: which feature each one switches is not worked out).
 
-`Boot` (and the video driver's present-check) also stores the signature
-`$57593160` ('WY1`') at `VidComm+$18` (`$4C007318`); `VideoDriver.s` reads that
+Kernel init (`$20020D0`) also stores the signature `$57593160` ('WY1`') at
+`VidComm+$18` (`$4C007318`). `Boot` only reads it (`$2003560`): with the
+signature present and `VidComm+$08` non-zero it takes the video parameters
+from `VidComm` instead of probing the registers. `VideoDriver.s` reads that
 word before talking to the Am29000 and falls back to "just retime the clock" if
 it is missing (**verified**, both sides).
 
@@ -170,8 +198,12 @@ it is missing (**verified**, both sides).
 `ReserveEngineRegion` publishes, in `PublicIn`: `+$20` start of the loaded
 region, `+$24` end (start + text + data + bss), `+$28`/`+$2C`/`+$30` text,
 data, bss sizes, `+$40` the region start again. The kernel init reads exactly
-`+$20/+$24/+$28/+$2C/+$30` and copies the data section ($20020F0-$200213C), and
-sets its stack from `+$40` (`gr127 = [PublicIn+$40] - $10000`, `$2002410`)
+`+$20/+$24/+$28/+$2C/+$30`: it copies `[+$2C]` bytes from `[+$24]` to
+`[+$20] + [+$28]`, the data section's place ($20020F0-$200213C), and clears
+the `[+$30]` bytes after it ($2002140-$2002160); `ReserveEngineRegion`
+leaves room for that second copy of the data (it reserves `2*data`), and
+`Boot` ($2003090) copies the same span the other way. It sets its stack from
+`+$40` (`gr125 = [PublicIn+$40]`, `gr127 = gr125 - $10000`, `$2002414`)
 (**reading**: roles inferred from the loads, addresses match).
 
 ## 3. Starting Antelope, and restart ("PostLoadPoke")
@@ -180,7 +212,7 @@ sets its stack from `+$40` (`gr127 = [PublicIn+$40] - $10000`, `$2002410`)
 `PublicIn+$04`. The kernel init `$2001FFC` ends (`$20025E8-$2002644`) by storing
 its heap pointer at `PublicIn+$10`, loading `PC1 <- [PublicIn+$04]`,
 `PC0 <- PC1 + 4`, and `iretinv`, i.e. it **jumps to that entry** (unless `gr64`
-bit 15 asks to stop with reason `$A1`) (**verified**: both ends read). Nothing on
+bit 16 asks to stop with reason `$A1`, `$2002634`) (**verified**: both ends read). Nothing on
 the 68k side kicks the program directly; the kick is the restart below, which
 `cs13`/`cs48` issue after `cs3`.
 
@@ -199,20 +231,27 @@ driver writes (`$04000050 <- $FFFFFFFF`) after each command.
 ## 4. Mailbox (`cs51`)
 
 Host (`cs51`): clear the ack word (+$13C), write the payload to `mailbox+$08`,
-then `'s337'` (`$73333337`) to `mailbox+$00`. Card (`$2002650`, the reporter
-used for both traps and mailbox service): reads `mailbox+$00`; if it is
-`$73333337` it takes the argument from `+$08`, writes `$80000000 | reason` to
-`+$04`, and writes the posted marker `$96666669` to `mailbox+$00` and to the
-host's ack address stored at `mailbox+$0C`. So the host's "ack word" becomes
-`$96666669` when the card has consumed the request (**verified**; the exact
-*meaning* of the payload is not known -- the card passes it back via `gr77`/the
-register dump).
+then `'s337'` (`$73333337`) to `mailbox+$00`. Card (`$2002650`, the one
+reporter, used by the HIF services the kernel does not handle itself and by
+fatal traps): the mailbox carries card-to-host reports, and `'s337'` is the
+host's "ready"/answer. The card posts only when `mailbox+$00` reads
+`'s337'` (bring-up step 4 arms it, each `cs51` re-arms it): it writes the
+reason (`gr77`) to `+$04`, a 16-word register dump to `+$10`, and the posted
+marker `$96666669` to `mailbox+$00` and to the host's ack address stored at
+`mailbox+$0C`. It then waits, serving video commands meanwhile, until the
+host writes `'s337'` again, writes `$80000000 | reason` to `+$04` and returns
+the host's word from `+$08`. If `+$00` reads `$96666669` (a report not yet
+answered) it waits first; any other value returns at once without posting.
+So the host's "ack word" becomes `$96666669` when the card has posted a
+report, and `cs51` answers it (**verified**). The payload is the answer: the
+HIF path (`$2001BC0`) returns it in `gr96` as the service's result (service
+1, exit, parks the CPU instead); after a fatal trap (`$2002AAC`) it is not
+used, and the kernel restarts unless flags bit 16 is set.
 
-Fatal traps use the same mechanism in the other direction: the card posts
-`reason -> +$04`, a 16-word register dump -> `+$10`, `$96666669` -> `+$00`, then
-waits for the host's `'s337'` (**verified** on the card side; the host's
-handling of a posted trap is `INIT_main.s`/`gc24.s` territory and was not
-traced).
+The reason codes are listed in `Hand.asm`'s header (traps `$8F`-`$A6`,
+report overflows `$B4`/`$B5`; for the HIF path the service number). The
+host's handling of a posted report is `INIT_main.s`/`gc24.s` territory and
+was not traced.
 
 ## 5. Video command block (`VidComm`, `$4C007300`)
 
@@ -221,13 +260,20 @@ traced).
 configuration; writes `+$00 <- $80000000` and rings the doorbell
 (`$04000050 <- $FFFFFFFF`); waits (with a timeout) for `+$04` to read 0; and
 later writes `+$04 <- $FFFFFFFF` to let the card continue. The card's service
-`$2000C14` (run from INTR2 when no handler is registered) reads exactly those
-fields (`+$08` -> `gr74`, `+$0C` -> `gr75`, `+$14` -> `gr77`, `+$1C` -> `gr68`),
-clears `+$00`, and if command bit 0 is set writes 0 to `+$04` and spins until
-the host writes a non-zero value back -- i.e. the card pauses while the host
-retimes the clock (**verified**). It computes the frame-buffer size with a
-32-step multiply, then acts on the page configuration (`+$1C`): 1 and 2
-trigger the bulk word copies ($2000DBC.. / $2000E8C..), other values skip them.
+`$2000C14` (run from INTR2 when no handler is registered, and from the
+mailbox waits, when the status register `$44000064` is set) reads exactly
+those fields (`+$08` -> `gr74`, `+$0C` -> `gr75`, `+$10` -> `gr76`, `+$14` ->
+`gr77`, `+$1C` -> `gr68`) and clears `+$00`. If command bit 0 is set it
+writes 0 to `+$04` at once and spins until the host writes a non-zero value
+back. It computes the frame-buffer size with a 32-step multiply (row bytes ×
+(rows + 4)), then acts on the page configuration (`+$1C`): 1 runs the bulk
+word copy at $2000E8C.., 2 the one at $2000DBC..; after a copy it waits for
+`$4400007C`/`$44000080` and writes 0 to `+$04` without waiting for the host
+(`$2000FEC`). With any other value and bit 0 clear (the host's
+`$80000000`), it writes 0 to `+$04` and spins until the host writes a
+non-zero value -- i.e. the card pauses while the host retimes the clock
+(**verified**). Finally it copies `+$08`/`+$0C`/`+$10`/`+$14` to
+`PublicOu+$1C`/`+$24`/`+$20`/`+$28` (`$2001024`).
 The copies convert the 2 MB window between a 4-way word-interleaved and a
 linear layout (1: interleaved to linear, 2: the reverse; see `$1701C` under
 "the rectangle case").
@@ -267,11 +313,11 @@ GFlags has `Interlaced` set and `BigScreen` clear, in which case it is 0.
 
 The same routine writes `+$7C` from the per-depth timing table, so `+$7C`
 is not simply the complement of `+$80`, although the two page conversions
-wait for them in opposite states. The card's waits after a conversion are
-for this host write: the host programs the registers after the card has
-acknowledged the command. When `savePageCfg` is
-non-zero, the driver also waits an extra delay after the card acknowledges
-(`$5F78`).
+wait for them in opposite states. The card waits for them *before* it
+acknowledges (`$2000E5C`-`$2000E78` and `$2000F2C`-`$2000F48`, then `+$04 <- 0`),
+while the host programs them only after its wait for that acknowledge
+(which has a timeout) and, when `savePageCfg` is non-zero, an extra delay
+(`$5F78`). Whether the card's waits depend on this host write is open.
 
 ## What this corrects
 
@@ -286,17 +332,16 @@ non-zero, the driver also waits an extra delay after the card acknowledges
 
 ## 6. What Antelope uses from the kernel (and what is still unknown)
 
-**Correction.** Antelope's `.text` (243 KB) is **itself masked** with the same
-kind of generator as `Hand`/`Boot`; everything earlier in this project that read
-it as plain compiled code (`disasm/text.asm`, opcode statistics, "no service
-calls", function boundaries by prologue) used the masked bytes and is
-unreliable. Tell-tales: zero `jmpi lr0` returns and zero `sub gr1,gr1,N`
-prologues in 62,134 words (compiled code would have thousands), and register
-fields that are uniformly random. Only the opcode byte is intact (and the RC byte
-in the first ~100 words).
+**Correction.** Antelope's sections are encrypted like the Runtime's: DRVR's
+`ACEFLoad` decrypts each with a running 32-bit XOR key (see "Antelope: the
+encryption (solved)"). Everything earlier in this project that read `.text`
+(243 KB, 62,134 words) as plain compiled code used the encrypted bytes (it
+found zero `jmpi lr0` returns and zero `sub gr1,gr1,N` prologues), and the
+later partial decodes are superseded. `firmware/disasm/text.asm` is the
+exact listing: 768 functions, 103 of them named.
 
-What survives from the loader's own view of it, because it lives in the
-relocation table and not in the instruction bytes:
+What the loader's relocation table showed already, and the exact code
+confirms:
 
 * **Register stack.** The loader patches the vector byte of 293 `asgeu` words
   with `64` (the spill check `asgeu 64,gr1,gr126`) and of 454 `asleu` words with
@@ -304,323 +349,86 @@ relocation table and not in the instruction bytes:
   `$2001184`/`$20011B8` (vectors 64/65) (**verified**).
 * **Externals.** 21 undefined symbols, all common (bss) variables of 4-424 bytes
   (one 152-byte block referenced 536 times); names stripped.
-* Whether Antelope calls the kernel services (`asneq 69`) or touches hardware
-  addresses is **unknown**: its operand fields cannot be read until the mask is
-  solved. The entry stub (`Code`, 38 words) also shows an `asneq trap69` and a
-  `const` with plain high byte `$01` before it (words 8-9), and a second one
-  (word 35) before the exit `jmp`, consistent with a `$1xx` service call (maybe
-  `$104`, the `InpArgs` pointer) and `exit`.
 
-**Mask status.** The 293 `asgeu 64,gr1,gr126` and 454 `asleu 65,lr1,gr127` words
-are known plaintext spread over the whole section, so key values at 747 positions
-are recoverable (`firmware/ACEF_100_Antelope/mask_samples.tsv`, key =
-file word XOR the known word, with a zero RC placeholder). They show: key bits
-0-6 are a clean table with period 48 (all 48 phases covered, no conflicts);
-bits 7 and up do **not** follow `Hand`'s `0x80*(ROW-k)` ramp with a per-phase
-table (the jitter amplitude is several hundred rows, with plateau jumps), so
-Antelope's generator has additional structure that is not yet modelled and
-`text.bin` cannot be unmasked yet.
+What the exact code adds:
 
-Further attempt (not solved). The plaintext of the neighbours extends the
-samples: the word before every `asleu 65` is `jmpi lr0` (`$C0000080`, 454 of 454;
-its delay slot holds the assert), the word before an `asgeu 64` is
-`sub gr1,gr1,N` (281 of 293) and the word after it `add lr1,gr1,N` (214), so
-`mask_samples.tsv` now holds 1,201 full 23-bit keys (`asgeu`, `asleu`,
-`jmpi lr0`). Findings: adjacent keys (`jmpi`/`asleu` pairs) differ by about
-+-1000 with no per-phase regularity (only the low 7 bits are per-phase);
-`(key>>7) + k` mod 256 is not periodic in `k mod P` for any P up to 260, and
-shows sawtooth runs (slope about +1.5 rows per word, reset every ~80 words,
-amplitude ~200 rows) in dense stretches, i.e. a multi-level counter rather
-than `Hand`'s single ramp. A closed form was not found.
+* **Kernel services.** Antelope calls them through 24 stubs in object file 30
+  (`$38F24`-`$39110`, `const gr121,N` + `asneq 66`, labelled `svc_N`) for 23
+  services: `$B8`, `$B9`, `$BB`, `$BF`, `$C0`, `$C1`, `$C4`-`$C8` and
+  `$CB`-`$D6` (`$D4` has two stubs; `$C8` and `$CE` store results through
+  pointer arguments). The table entries it does not call are exactly the ones
+  that only return -42 (`$B6`, `$B7`, `$BA`, `$BC`-`$BE`, `$C2`, `$C3`, `$C9`,
+  `$CA`). HIF services (`asneq 69`) are `$101` (sysalloc), `$111` (clock) and
+  `$112` (cycles) in the same file, and the C library's eight stubs `open`,
+  `close`, `read`, `write`, `lseek`, `remove`, `tmpnam`, `_exit` (`$11`-`$16`,
+  `$21`, `$1`), which match AMD's HIF sources. The kernel handles none of the
+  file services itself; they end in the report to the host (section 4).
+* **Entry stub** (`Code`, 38 words at `$0F000`): saves `gr96`/`gr97`, calls
+  HIF `$104` (the `InpArgs` pointer) and counts its words up to a zero
+  (argc/argv), calls an optional hook if its pointer is non-zero, then `main`
+  `$31DAC`, then `exit` `$3AC88` with `main`'s result, and loops on HIF
+  service 1 (exit).
+* **Hardware.** Antelope also addresses card registers directly: `$4400007C`
+  and `$44000080` in the long fills (`$17040`, `$172A4`), and the CLUT
+  (`$46C00000`) and registers `$44000054`-`$440000C8` in the self-test.
 
-### Antelope mask: second attempt (more plaintext, still unsolved)
+(The earlier attempts to model the `.text` key from the 747 spill/fill
+words and their neighbours are summarised in "Antelope: the encryption
+(solved)".)
+### Antelope: the encryption (solved)
 
-Counting idioms through the (unmasked) opcode byte gives far more known
-plaintext than the spill/fill words alone: **all 2,064 words with opcode `$70`
-are the NOP `aseq trap64,gr1,gr1` (`$70400101`)** -- each agrees with the
-48-entry low-bit table -- and 915 of the 997 `$C0` words are `jmpi lr0`
-(`$C0000080`). With the 747 spill/fill words that is 3,726 full key values,
-about one per 17 words, in `firmware/ACEF_100_Antelope/mask_samples.tsv`.
+All section data of a `$012B` ACEF is encrypted with a running 32-bit key,
+and the host removes it while loading. The loop is in `DRVR.s`'s
+`ACEFLoad` (`$3A46`-`$3A64` sets it up, `$3AD0`-`$3AE6` and `$40FE`-`$4126`
+run it; `gc24`'s own copy of the loader accepts only plain `$012A` files):
 
-What the denser data show (no closed form yet):
+```
+at a section's start:  K = KEY * $01010101    (KEY = header byte +7, the low byte of timdat)
+                       b = s_scnptr & $FF      (the low byte of the section's file offset)
+per word:              plain = word ^ K;  K = K + b (mod 2^32);  b = b ^ (K & $FF)
+```
 
-* Within a 100-200 word stretch the row part (`key >> 7`, plus the word index)
-  is a staircase: it rises by about **64 rows** every 20-35 words, four times,
-  then drops by about 192 (= 3 x 64); occasional jumps of +320 (5 x 64) and
-  +1336 appear at larger scale. That is a mixed-radix counter with a base-4
-  digit of weight 64 rows, not `Hand`'s single ramp.
-* Small jitter (+-6 rows) rides on top, but it is **not** a fixed function of
-  `k mod 48`: two samples in adjacent phases of the same 48-word block differ by
-  values that scatter over about +-10 rows from block to block, so the
-  jitter/staircase is indexed by something other than the word index mod 48.
-* The jump positions do not follow a fixed period (best-fit periods explain
-  under 40% of them), and `key >> 7` is not additive in a per-phase table plus a
-  per-block table.
+Only `size/4` words are copied, so a section's last 1-3 bytes never reach
+the card. `acef_unpack.py` implements this. Earlier versions of it XORed
+every byte with `KEY` alone, i.e. with the starting `K`, and what that left
+was the "second mask" that this document and `SECOND_MASK.md` modelled for a
+long time: per-section tables for the Runtime, a "T-function" with
+step-function high bits for Antelope, and separate keys fitted for `.lit`,
+`.data` and System 6. Those models, and the tools and partial listings built
+on them, are superseded; they are in the repository's history before
+November 2026.
 
-Conclusion: Antelope's 243 KB stays masked; a solution would need the real
-generator (probably the same structure as `Hand`'s, with several more levels)
-rather than more fitting of samples, or a larger known-plaintext set such as the
-`.data`/`.lit` sections' repeating constants.
+Checks of the exact decode:
+* `Hand` comes out identical to the earlier exact unmask (2,885 words);
+  `Boot`'s fitted tables were right in 362 of its 512 words;
+* in Antelope's `.text` all 555 direct calls land on a function start and
+  all 7,524 direct jumps inside the section, and all 662 relocated `.lit`
+  words (the switch and command tables) are 4-aligned `.text` addresses;
+* all strings read as plain text, and the eight HIF stubs equal AMD's
+  library source word for word (`antelope_hif_stubs.py`);
+* the spill/fill asserts carry trap number 0 in the file; their byte
+  relocations (absolute symbols 64 and 65, `V_SPILL`/`V_FILL`) fill it in.
 
-### Antelope mask: what else was tried (negative results)
+### Antelope: exact disassembly
 
-* The key's two lowest bits are **not** zero as in `Hand`/`Boot`: with period 6
-  in the word index they read `00 00 11 00 00 01` (phases 2, 8, 14, ... give
-  `$6F` in the low 7 bits, phases 5, 11, 17, 23 give `01` in the low two bits),
-  so the table `C48` (all 48 phases, no conflicts, in the samples file) has
-  entries that are not multiples of 4. Antelope's generator therefore differs
-  from `Hand`'s in the lowest bits too.
-* A regression of the 23-bit key on the bits of `k` (with or without a mod-3
-  term) leaves a residual of about half the key's spread, so the key is not a
-  weighted sum of the bits of the word index; the +64-row jump positions are
-  not periodic in `k` and are not aligned to multiples of 8, 16, 24, 32 or 48.
-* The mixed-radix look (weights 1, 8, 64, 320 rows) is reminiscent of a DRAM
-  row/column address multiplex, and the three code images sit at different
-  physical places (`Hand`/`Boot` in on-card SRAM at `$2000000`, Antelope in DRAM
-  at an address `ReserveEngineRegion` chooses), so one hypothesis is that each
-  generator is a function of the load region's address mapping; no test of it
-  was possible without a way to obtain more plaintext.
+`antelope_dasm.py` writes `firmware/disasm/text.asm`, `Code.asm`,
+`lit.asm` and `data.asm` (System 6: `firmware/sw11/disasm/`), and
+`runtime_dasm.py` the Runtime's `Boot.asm` and `RuntimeData.asm`:
 
-### Antelope mask: third attempt (a T-function, partly modelled)
-
-**Correction.** The fill-check plaintext used for the 454 `asleu` samples was
-wrong: it was taken as `asleu 65,lr2,gr127` (`$5600827F`), but the kernel's fill
-idiom is `asleu 65,lr1,gr127` (`$5600817F`). All 454 of those keys were off in
-bits 8-9, which is where the "plateau jumps" and "jitter not a function of
-`k mod 48`" in the attempts above came from. `mask_samples.tsv` now holds the
-corrected keys. The other 3,272 samples are unchanged.
-
-With the corrected samples the generator has a clean structure:
-
-* **Each key bit `b` is an exact function of `k mod 48*2^(b-6)`** (period 48
-  for bits 0-6, then 96, 192, 384, ... doubling per bit). There are no conflicts
-  for any bit 0-16. Through bit 12 almost every residue class holds several
-  samples, so this is a strong result there. From bit 13 up most classes hold one
-  sample, so the test says little. A period that doubles with each higher bit is
-  the signature of a **T-function**: bit `b` depends only on bit `b` and lower
-  bits of a counter. An example is an adder `R = J(k) + M*k`, whose carries
-  propagate upward only.
-* Bits 7-9 within each phase `p = k mod 48`, across 48-word blocks
-  `j = k div 48`, follow `a_p + j + c_p*(j & 1) (mod 8)`. The jitter part
-  therefore has period 96, not 48.
-* A linear model `R = J[k mod P] + M*k` with a free table `J` reproduces the
-  samples exactly:
-  * through bit 10 with `P = 96` (`M mod 32 = $18`);
-  * through bit 11 with `P = 192`;
-  * through bit **12** with `P = 384`, i.e.
-    `key mod 2^13 = J[k mod 384] + $400*(k div 384)` (`$400 = 384*$18 mod
-    2^13`). An exhaustive search over the block step confirms this. All 384
-    phases are covered. A fit on 3,000 random samples predicts the other 726
-    exactly. (An earlier note here said "through bit 13". That was one bit too
-    many: bit 13 has 378 conflicts at the best step.)
-
-  Each extra level seems to double the table period, so the jitter term is
-  itself a deeper counter (like `Hand`'s `ROW`/`COL` pair, but with more
-  levels).
-* Bit 13 and up resist every simple extension tried:
-  * adding quadratic or cubic terms in `k div 384` (a Hensel lift finds none
-    exact at bit 13);
-  * a separable sum or XOR `A[k mod P] + B[k div P]` for P = 48..768;
-  * removing a carry out of the 13-bit field, with or without negating the
-    upper field (Hand-style), at any carry offset.
-
-  All leave 1,200-1,600 conflicts. Bit 13 therefore comes from a different
-  mechanism than bits 0-12.
-* A constant second difference (`R` quadratic in `k`) does not fit for any
-  spacing of 48 to 480 words.
-
-**Partial unmask: `unmask_antelope_low.py`.** It rebuilds `J` from the
-samples file and XORs bits 0-12 of every word of a section. (It now goes
-further; see "deeper levels" below. Its outputs are
-`firmware/ACEF_100_Antelope/text.partial.bin` and `lit.partial.bin`.) Bits 13-22
-stay masked, and so does bit 23 (Antelope's key is 24 bits wide; see the idiom
-section below). In an Am29000 word that leaves plain the RB field or low
-immediate byte, and the low 5 bits of RA. Still masked are RA's top 3 bits
-(local versus global), all of RC, and the high immediate byte. Two independent checks,
-neither from data the fit used:
-
-* **Prologues.** The word before each `asgeu 64` decodes as `sub gr1,gr1,N` in
-  281 of 293 cases, with every N a multiple of 8 (frame sizes 24, 16, 32, 48,
-  56, 40, 64, 8, ...).
-* **`.lit` switch tables** (same generator, indexed by the word's position in
-  `.lit`). **Withdrawn as a check of bits 2-12**; see "the command dispatcher"
-  below: `.lit` has its own key above bit 1. All 662 relocated words decode 4-aligned. Within each run the
-  targets (mod 8 KB) cluster, e.g. `0858 0878 08f8 08c8 0908 097c ...`, and
-  some cases repeat a target exactly (`1378 1378`, `0128 0128`). That is the
-  shape of compiled switch tables, which random bits would not give. The hit
-  rate on decoded `sub gr1,gr1,N` prologues is at chance (13% vs 13%), so the
-  runs point at case labels, not functions.
-
-### Antelope mask: function-frame idioms (894 more full keys)
-
-With bits 0-12 plain, the neighbourhood of the known spill and fill asserts
-decodes to the standard Am29000 frame:
-
-| idiom | position | count | plaintext |
-|---|---|---|---|
-| `sub gr1,gr1,N` | word before `asgeu 64` | 281 | `$250101NN` |
-| `add lr1,gr1,N` | word after `asgeu 64` | 163 | `$158101NN` |
-| `add gr1,gr1,N` | 3 words before `asleu 65` (epilogue) | 450 | `$150101NN` |
-| tag word | word before the `sub` | 277 | `$00......`: bits 16-23 the argument count, bits 0-15 the memory-frame size in bytes (0 for most functions, e.g. `$0030` where the prologue does `msp -= 48`); not used as samples |
-
-N is read from the plain low byte. Test of the guessed upper fields: the
-implied keys' bits 13-16 were compared with existing samples in the same
-`k mod 48*2^(b-6)` class. They agree in every case (e.g. epilogue
-`add`: 177/177, 88/88, 39/39, 12/12), against 50% for a wrong guess. The tag
-word agrees through bit 15 but only 7/12 at bit 16, so its upper byte is
-not zero, and it was left out. RC's bit 23 (`lr1` vs `gr1`) cannot be tested
-this way, so those two idioms rely on the standard calling convention for
-that one bit.
-
-`mask_samples.tsv` now holds **4,620 keys, as 24-bit values** (column
-`key24`). The old column was named `key23` but already held bit 23. Two
-findings follow:
-
-* **The key is 24 bits.** In every idiom, raw bit 23 differs from the
-  plaintext in about half the words. The key's bit 23 is 0 at low indices,
-  like bit 22. Unlike `Hand`, Antelope masks the RC field's top bit too.
-* **The bit-period rule is now well tested through bit 16.** Every key bit
-  `b` from 13 to 23 is consistent with depending only on `k mod 48*2^(b-6)`.
-  The idioms land in classes already holding independent samples: 3,353
-  classes at bit 13 and 4,514 at bit 16, out of 4,620 samples. From bit 17 up
-  every class holds one sample, so those bits are untested.
-  Equivalently: bit `b` depends only on `k mod 3` and bits `0..b-3` of `k`,
-  the dependence `J[k mod 48] + 8*k` would give, but the update is not linear
-  (see above).
-
-What the high bits look like: `key >> 16` runs `00 02 1c 1e 19 1b 15 17 16 10
-12 2d 2f 2b 24 27 21 23 22 3d 39 ...` as `k` grows. The high nibble steps
-`0 1 2 3 c d e f` over the section, and the low nibble falls with small jitter
-inside each step, like `Hand`'s negated `-(r>>16)` field.
-
-### Antelope mask: deeper levels (bits 13-17)
-
-The same shape repeats at every level, with a longer table. Each line is
-exact on all 4,620 full samples. Each is also tested by fitting the table on
-about 3,700 random full samples and predicting the rest:
-
-| bits | model | held-out |
-|---|---|---|
-| 0-12 | `J13[k mod 384] + $00400*(k div 384)` | 920/920 |
-| 0-14 | `J15[k mod 1536] + $07000*(k div 1536)` | 851/851 |
-| 0-15 | `J16[k mod 6144] + $04000*(k div 6144)` | 397/397 |
-| 0-16 | `J17[k mod 12288] + $18000*(k div 12288)` | 218/218 |
-| 0-17 | `J18[k mod 24576] + $10000*(k div 24576)` | 98/98 |
-
-Each step is fixed by the level below up to one new bit, and only one of the
-two choices fits. The steps also agree with a slope of `$18` (24) per word
-mod 32. Only the per-class tables are unknown, and they grow with each bit
-(tried and failed: a 48-entry table plus linear or XOR-combined counters, and
-affine functions of the bits of `k div 48`). A closed form for the tables is
-not found, so each level is filled only where the samples reach. From bit 16
-up the period is a fifth of the section or more, so a sample there fixes only
-the two to four words at `k + n*P`.
-
-**Partial samples from register patterns.** Many instructions are fixed by
-their opcode and low 13 bits: for example `$16`/`$0060` has RA's top bits = 3
-(RA in `gr96..gr127`) in 432 of 433 words where they are plain. I took the
-121 (opcode, low 13) patterns with at least 20 such words, of which at least
-99% agree. Then I predicted bits 13-15 for the pattern's other words.
-
-* Held out: on words where bits 13-14 were already plain, the prediction was
-  right in 4,369 of 4,383 cases (99.7%).
-* That gives 5,043 **partial samples** (`pattern16` in `mask_samples.tsv`, 4th
-  column `bits` = 16; I dropped 7 that conflicted within a class). They feed
-  only the levels up to bit 15, after two rounds.
-* Result: `J13` and `J15` are complete, and `J16` covers 5,916 of 6,144
-  classes.
-
-`unmask_antelope_low.py` unmasks each word as far as its class is covered.
-For the 62,134 `.text` words:
-
-* bits 0-14 for all;
-* bits 0-15 for 59,697 (96%);
-* bits 0-16 for 20,060;
-* bits 0-17 for 11,315.
-
-It writes `text.partial.bin` / `lit.partial.bin` plus a `.known` sidecar (one
-byte per word: the number of plain low bits). Bits 13-15 are RA's top three
-bits, so **RA is complete for 96% of instructions**. Bits 16-17 are RC's low
-two bits.
-
-Independent checks, on words that are not samples of any kind:
-
-* **No impossible registers.** The Am29000 has no `gr2..gr63`. Of 34,502
-  decoded RA fields of ALU-class instructions (opcodes `$10..$9F`), **none**
-  falls in that range. Random bits would put 24% there.
-* **Plausible registers.** For `add` with an immediate, RA is `gr125` (817;
-  `msp`, the memory stack pointer in the AMD calling convention), `gr96`
-  (633), then `lr8`, `lr2`, `lr10`, `lr3`, `lr11`, `gr97`, `gr98`, `lr4`, ...:
-  the return, temporary, argument and local registers compiled 29K code uses.
-
-### Antelope mask: bits 16-23 from the neighbours (a step function)
-
-No closed form for the tables above was found, but bits 16-23 do not need
-one. **`key >> 16` is a monotone step function of the word index.**
-* Leave-one-out on the 8,508 full samples: where the samples on both sides
-  of a sample have the same bits 16-23, the middle one has them too, in
-  8,268 of 8,268 cases. Where they differ (240 cases), its value is always
-  one of the two. Bits 19-23 alone have only 16 plateaus of about 4,180
-  words. Their values 00, 03, 02, 05, 04, 07, 06, 19, 18, 1B, 1A, 1D, 1C, 1F,
-  1E, 11 follow `v ^ ((v & 8) << 1)` with `v = i + 2*(i & 1)` for plateau
-  `i`, the same kind of sign-folded count as `Hand`'s high field.
-* So between two samples with equal bits 16-23 every word has them. Between
-  two that differ, the value switches once. `high_key()` in
-  `unmask_antelope_low.py` tries every switch point, scores the decoded
-  bits 16-23 against how often each opcode carries each value in the sample
-  words, and keeps the words whose value is the same for every switch point
-  within a likelihood margin. Held out at transitions, with the statistics
-  fitted on the other half of the samples, it was right for 703 of 703
-  words. Those are idiom words, which are easier than average code.
-
-Result for `.text`: bits 16-23 for 60,857 of 62,134 words (8,508 samples,
-48,826 with agreeing neighbours, 3,523 inside a step). The other 1,277 are
-ambiguous steps or words whose bit 15 is unknown.
-
-**Independent check: the branch targets.** None of this used jump or call
-displacements, whose high byte is in bits 16-23. Of the 7,773 direct
-relative jumps and calls among the estimated words (relocated calls left
-out):
-* all 415 calls land exactly on a function start of the symbol table;
-* 7,251 jumps stay inside their own function, and 106 go to a function
-  start (tail jumps);
-* one does not: `$34F34`, a word inside a step.
-
-`antelope_partial_dasm.py` decodes these words in full (marked `~`, or `!`
-inside a step), with branch targets and names. `antelope_estimate_words.py`
-uses the same estimate. The earlier readings that rested on estimated words
-hold: the block-write registers `$4CC00000`/`$4CC00004` and the alias
-`$00400000` in `$1701C`, the status word `$4400007C` in `$17264`, and the
-`$200` test after service `$BB` in `$37D68`.
-
-One more negative result for a closed form: a constant XOR in front of a
-linear count, `(key ^ C) - M*k` depending only on `k mod 48` (Hand's shape),
-has no solution beyond bit 7.
-
-### Antelope: partial disassembly
-
-`antelope_partial_dasm.py` writes `firmware/disasm/text.partial.asm`. Every
-`.text` word is decoded with what is plain:
-
-* opcode, RA (or `?rN` where its top bit is not known), RB and the low
-  immediate byte are shown;
-* RC (the destination of ALU ops), the high byte of 16-bit immediates and so
-  all jump and call targets print as `?`;
-* words whose whole plaintext is known (the frame and padding idioms) are
-  decoded in full;
 * labels are the 768 `.text` entries of the ACEF symbol table: 709
   functions and 59 object-file starts on a tag word (`firmware/README.md`,
   "How the firmware was built"), so `sub_01a4c` is BitBlt's file start
-  and the function is `sub_01a50`.
+  and the function is `sub_01a50`; names come from `antelope_names.py`;
+* every relocated word shows its target (symbol + the addend in the word;
+  for `consth` the low half of the addend is the symbol index of the
+  following type-28 record);
+* calls to the kernel and HIF stubs show the service (`svc_CC` …).
 
-On loads the destination is RA, so loads read completely apart from their
-control fields.
-
-The listing reads as real compiled 29K code. One example is `sub_00178`. It
-sets the funnel-shift count from an argument (`mtsr FC, lr5`), loads 16 words
-into `gr96..gr111` (`mtsrim CR,$0f` + `loadm`), runs them through a chain of
-15 `extract` instructions, and stores the result with `storem`. That is the
-inner loop of a bit-aligned block copy, the core of a CopyBits-style blit.
+One example is `sub_00178`. It sets the funnel-shift count from an argument
+(`mtsr FC, lr5`), loads 16 words into `gr96..gr111` (`mtsrim CR,$0f` +
+`loadm`), runs them through a chain of 15 `extract` instructions, and
+stores the result with `storem`. That is the inner loop of a bit-aligned
+block copy, the core of a CopyBits-style blit.
 
 Instruction mix:
 
@@ -631,466 +439,203 @@ Instruction mix:
 * `sll` 2,873, `srl` 1,409, `sra` 714;
 * `calli` 1,155 against `call` 555;
 * `jmpi` 997;
-* 608 `.word` (invalid opcodes: data embedded in `.text`).
+* 608 `.word`: 586 tag words in front of functions, 22 floating-point
+  opcodes (`$E4`-`$F7`, which the 29000 emulates by trap) and one zero word.
 
 ### Antelope: the command dispatcher (`sub_31e20`)
 
-The partial listing finds the function that runs the host's QuickDraw
-commands. There are about 65 switch statements: a `cpgtu` bound check, then
-`sll 2`, `const`/`consth` of a table address, `load` and `jmpi`. Their bounds
-are plain, because they are low immediates. All but one are 4 to 30 cases. One
-is 61 cases, at `$32850`:
+The function that runs the host's commands is `sub_31e20`
+(`CommandDispatcher`, `$31E20`-`$328C4`). Antelope has 67 switch statements:
+a `cpgtu` bound check, then `sll 2`, `const`/`consth` of a `.lit` table,
+`load` and `jmpi`. Apart from the dispatcher's, the bounded ones have 4 to
+30 cases. The dispatcher's has 61, at `$32850`:
 
-    cpgtu  ?, lr8, $3c        ; command > $3C -> default
-    sll    ?, gr96, 2
-    const  gr122, $??80 / consth gr122   ; table (reloc. symbol 1135)
-    add    ?, gr122, gr96
-    load   ?, ?, gr96, gr122
+    cpgtu  gr96, lr8, $3c     ; command > $3C -> default
+    add    gr96, lr8, 0
+    sll    gr96, gr96, 2
+    const  gr122, $0080 / consth gr122   ; .lit+$0DE0
+    add    gr122, gr122, gr96
+    load   gr96, gr122
     jmpi   gr96
 
-`$3C` is the largest command the host sends (PMgrExit: `GA_PMGR` → `sub_B1BE`). The function
-is `sub_31e20` (`$31E20`-`$328C8`), in the module whose `.text` starts at
-`$31DA8` and whose `.lit` starts at `$0D60`. What it does, from the plain
-fields:
+`$3C` is the largest command the host sends (PMgrExit: `GA_PMGR` → `sub_B1BE`).
+The function is in object file 25, whose `.text` starts at `$31DA8` (with
+`main` at `$31DAC`) and whose `.lit` starts at `$0D60`. `main` calls
+`InitPacket` (which stores the packet pointer in `[.bss+0]`), clears packet
+`+$14`, prints "PQDMonet: Starting up, commblock at %X", sets the sequence
+counter `[.bss+8]` to 0 and `[.bss+4]` = packet `+$44` (`rec`), and then
+calls `sub_31e20(-1)` forever. One call:
 
-* It loads a packet pointer from a global and tests packet `+$14`. The host
-  writes `$FFFFFFFF` there when it posts a request (`gc24.s` `$604A`).
+* It spins until packet `+$14` is nonzero. The host writes `$FFFFFFFF`
+  there when it posts a request (`gc24.s` `$604A`).
 * It stores 1 in packet `+$1C`. The host reads its return code from
   `+$1C`: 1 = drawn, 2 = drawn but run the original too.
-* It loads the command number into `lr8` from `+$04` of a second record,
-  which is also reached through a global.
-* About 37 case blocks end in `jmp` to a common exit. Most store the reply
-  (`lr12`) through `+$1C` again. Many call a handler with `calli`. The
-  `calli` target is masked in the code, but the relocations name it (see
-  "Relocations name the targets" below).
+* It reads the command from `rec+$04` (packet `+$48`) into `lr8`. If the
+  sequence number `rec+$08` differs from `[.bss+8]` and the command is not
+  `$01`, it prints "MonetMain: Sequence error %d != %d, func = %d, last func
+  = %d" (counter, received number, command, `[.data+$F08]`), sets bits 0-1
+  of packet `+$00` and replies 0.
+* Otherwise it saves the command in `[.data+$F08]` ("last func") and
+  increments `[.bss+8]`.
+* `sub_31e20(n, cmd1, …, cmdn)` is varargs: `n = -1` accepts every
+  command; otherwise a command not among the `n` listed gets reply 0.
+* It calls service `$D2` (kernel `$2001294`: restart the kernel if `gr64`
+  bit 28 is set). Commands with `(cmd & $FF00) = $8000` go to `sub_37B58`
+  (below); the rest go through the switch.
+* Arguments are read through `rec+$10` (packet `+$54`), the pointer to the
+  argument longs `p[0]`, `p[1]`, … Most cases store their reply in `+$1C`.
+* The common exit (`$3287C`) calls the completion routine `sub_328C8`:
+  it clears packet `+$14` and writes 3 to packet `+$18` (and to
+  `*[packet+$20]` if that is set), or `$0B` if bits 0-1 of packet `+$00`
+  are set. With the mapping flag `[extern#1772+$90]` set, the `+$18` write
+  is bracketed by service `$D3(0)`/`$D3(1)`.
 
-The table is `.lit` `$0DE0`. That is the module's `.lit` base `$0D60` plus
-the plain `$80`, and it is exactly one of the ten relocated `.lit` runs (61
-words, `$0DE0`-`$0ED0`). So command -> case block is fixed by 61 words. They
-are still masked, and the next point is why they cannot be read yet.
+The table is `.lit` `$0DE0`-`$0ED0`, 61 relocated words. They are relocated
+against the module's `.text` symbol (`$31DA8`), so each word is the case
+block's offset from `$31DA8`; the default is `$A70` → `$32818`. (Before the
+loader's decryption was found, this table and the other `.lit` switch tables
+were fitted from a partial decode. The exact listing replaces that fit. It
+confirms the DrawMultiObject entries pinned from the host's record layout
+(`.lit $0484`-`$04BC`) and ColorMap's switches (`.lit $0128`-`$01B8`).)
 
-**`.lit` does not use the `.text` key (correction).** Decoded with the
-`.text` key at the same word index, the 61 entries hit the dispatcher's case
-blocks once in 61 (chance is about 3). Across all ten runs, 175 relocated words
-sit in modules smaller than 8 KB. Decoded the same way, 109 fall inside their
-module's code range mod 8 KB, against 123 expected by chance. So only
-bits 0-1 of the `.text` key (700 of 700 aligned) are shown to hold for `.lit`.
-The earlier "31 of 31 targets inside `.text`" check was weak: every decoded
-target was below `$5948`, including those in tables owned by modules near
-the end of `.text`. `lit.partial.bin` is therefore right only in bits 0-1.
-
-**Rechecked with the entries read as module offsets.** A relocated `.lit`
-word names the module's `.text` section symbol (for this table, symbol
-1129+1 = `.text $31DA8`). So it holds the target's *offset* from the module
-start, not the absolute address. The default case is then the known offset
-`$32818 - $31DA8 = $A70`.
-
-(A "case blocks start right after a `jmp`" test used in the previous round is
-**withdrawn**: its 19-of-19 score on the dispatcher blocks was circular,
-because those blocks had been found by splitting after `jmp`. The negative
-results below do not depend on it.)
-
-What holds:
-
-* **The `.lit` key is its own, but related.** Raw bits above the offset's
-  width are key bits. They equal the `.text` key at the same index in 431 of
-  492 words (bits 14 and up, small modules; most misses are borrows, the
-  `.lit` key one lower). Fitting per run, seven of the ten runs prefer lag 0.
-  Three prefer a lag: run `$0958` about 10 words, the dispatcher table
-  `$0DE0` 19 (the `.text` key's high bits jump at word 889, the table's at
-  908), run `$0F78` about 12.
-* **The dispatcher table repeats a plaintext.** Raw entries 24 apart agree in
-  bits 0-6 in 16 of 50 pairs, and 48 apart in 4 of 13 (chance 1.6 and 0.4).
-  At distance 12 the excess is only what the 24- and 48-pairs bring in. So
-  the `.lit` key's bits 0-6 repeat every 24 words (in `.text`, bit 6 needs
-  48), and many entries share one value, presumably the default `$A70`.
-  Rows 9-11 agree across all three of their entries (for example entries
-  9, 33 and 57 all end in `$C8`). Over all of `.lit` the distance-24 excess
-  is 29 of 300 against 9.4, most of it from this table.
-* **For comparison, the `.text` key's own periods**, measured on the bit
-  0-12 model: bit 0 repeats every 3 words, bits 0-1 every 6, bits 0-4 every
-  12, bit 5 every 24, bit 6 every 48, and each higher bit doubles it
-  (bit 12: 3,072). So the key is three interleaved streams (k mod 3), each
-  with T-function periods.
-
-What was ruled out, scored by how many dispatcher entries decode to exactly
-`$A70` (and how many small-module entries land in range):
-
-* every index shift `.lit` k -> `.text` k+δ, δ = 0..3,071 (all distinct
-  shifts of bits 0-12): at most 2 entries hit `$A70`;
-* a constant added to or XORed onto the `.text` key's bits 0-12: at most 2;
-* affine maps k -> a·k+b, a in {-2, -1, 1, 2, 3, 4}: assuming the 23 entries
-  in the repeating rows are all `$A70`, at most 1 of 23 keys reproduced;
-* a per-run unknown base for the decoded offsets: no run better than chance.
-
-Under the 19-word lag, the keys implied by the 23 presumed defaults match the
-`.text` key in bits 8-15 over long stretches. The low byte differs by an
-amount that follows no visible pattern (the lag itself drifts by a word or so).
-So the next model to try is the `.text` generator's structure with `.lit`'s
-own low tables, fitted to the repeating entries.
-
-**Fitting the dispatcher table directly (not solved).** Working assumptions:
-the table is indexed by the command itself (`cpgtu lr8, $3C`, then
-`add ?, lr8, 0`), the `.lit` key's bits 0-6 repeat every 24 words, and bits
-9-13 follow the `.text` key 19 words earlier. That lag predicts bits 9-13 for
-18 of the 23 entries in the repeating rows, but only bits 9 and up. The
-candidate decode it gives is not usable:
-
-* **The repeated value is not the unused-command default.** It sits at
-  entries 3, 8-11, 16, 28-35, 40, 52-55 and 57-59. Those include
-  commands the host does send: `$10`, `$20` StdLine, `$21` StdText, `$23`
-  StdArc, and `$35`-`$37` (pen size, colours). So the repeated value is a
-  shared path for several commands, not `$A70`.
-* **Its identity stays open.** The lag fixes only its bits 9-13. Every
-  block start from `$A30` to `$B1C` (`$327D8`-`$328C4`, the "reply 0"
-  blocks, the default, and the code right after the `jmpi`) scores the same,
-  18 of 23. Its low 7 bits are circular, because the key's low bits were
-  derived from it.
-* **The low-7-bit clustering is unreliable.** Two entries can agree in bits
-  0-6 and still differ above them: in row 3, entries 3 and 51 share bits
-  0-6 but decode to different values.
-
-**`.lit` strings: a better source of known plaintext.** The mask covers only
-bits 0-23, so the top byte of each `.lit` word is plain. Read as one
-character per word, `.lit` holds several ASCII messages, every fourth
-character visible:
-
-* `.lit $0500`-`$0760`, `$0900`-`$0A20`, `$0D60`-`$0DE0` and `$0F00`-`$0F70`
-  hold readable runs, for example `Dofr:Lfr dFhseN ...` and `Po:anpol %Mtnener
-  %f daf d`.
-* The default reporter's argument, `.lit $0DC8` (words 882-887), reads
-  `U o F t : %`, one character per word. That fits a format string like
-  "Unknown Function: 0x%x" (a guess).
-
-Each guessed string gives the full 24-bit key at each word. Two checks come
-for free: bits 0-1 must match the `.text` key at the same index, and bits
-0-6 must repeat 24 words apart. The words sit just before the dispatcher
-table (words 888-948), in the same 24-word classes, so a confirmed string
-would also fix the table's low key bits.
-
-**Solved: `.lit` key bits 0-7, and the command table.**
-`antelope_lit_key.py` does this from the strings alone, with no assumption
-about the table:
-
-* **Bits 0-6.** They repeat every 24 words, and bits 0-1 equal the `.text`
-  key's. So each class k mod 24 has 32 candidates. For every class, one
-  candidate makes the fourth character of its 15-18 string words read as
-  English. It wins by 10-30 log units, except one close call (class 8),
-  which the table confirms.
-* **Bit 7** is the raw bit 7, since ASCII bit 7 is 0. It repeats every 48
-  words, with 0 conflicts in 348 repeats. The pattern continues upward:
-  `.lit`'s key bit b repeats every 24·2^(b-6) words, half of `.text`'s.
-* **Result.** The fourth character of every string word is now plain, and
-  the strings read:
-  * `.lit $0DC8`: `U..no.. F..ct..n:..x%` ("Unknown Function: 0x%x", the
-    default case's message);
-  * `.lit $02C0`: a series of `DrawM..ti..je../o..` messages
-    ("DrawMultiObject/..."?);
-  * `.lit $0548`: `PAlloc: ...`, `Flush`, `Cache` messages.
-* **Check on data the fit never used.** With these bits, all 61 dispatcher
-  entries decode to the low byte of a case-block start. Chance is about 47%
-  per entry, so 61 of 61 is about 10^-20.
-
-**Bits 8-11, and the exact table.** `.lit`'s key bit b repeats every
-24·2^(b-6) words (96, 192, 384 and 768 for bits 8-11). Bit 15 is plain in
-string words (ASCII bit 7 of the third character). For each bit and class,
-`antelope_lit_key.py` picks the value from two sources:
-
-* the class's string words, scored by an English two-letter model of their
-  middle characters (counted over this repository's `.md` prose);
-* the class's dispatcher entries, by whether they still match a case-block
-  start.
-
-With every other bit fixed, the two sources decide independently and agree:
-bit 8 in 46 of 46 classes, bit 9 in 46 of 47. Bits 10-11 come mostly from
-the table: the strings reach only 5 of its classes there. Still, all 61
-entries find a block in bits 0-11, which a wrong bit 0-9 would make fail
-about 85% of the time. All case-block offsets are below `$1000`, so bits
-0-11 fix the block.
-
-That holds for 55 of the 61 entries. Six are uncertain, and both
-candidates are listed in the table below:
-
-* `$0D`, `$17` and `$2C` have two blocks that match their bits 0-9. (`$17`/`$2C` is settled by the handler's name; see below.)
-* `$01`/`$12` (swapped; settled by the reset in `$31FE8`, see `CallBack` below) and `$1B` come out differently when the fit also
-  uses the other `.lit` tables (`antelope_lit_key.py ACEF_100.bin`). Their
-  bit-9/10/11 classes hold no string words, so the choice rests on weak
-  evidence either way. This replaces the earlier lag-19 estimate, which had
-bits 8-11 wrong for `$01`, `$03`, `$12`, `$17`, `$1B` and `$2C`. The strings
-also read further, for example "FlushOffscreen: NULL offscreen Handle",
-"CacheDevice: NULL GDevice", "PAlloc: numBytes is not multiple of FOUR",
-"PAlloc: Unable to allocate frame buffer size = 0x%x", "malloc: allocated
-… bytes outside of the heap bounds".
-
-**All `.lit` tables.** Given the ACEF file, `antelope_lit_key.py` groups
-every relocated `.lit` word by its relocation base, the symbol after the
-relocation's index. These bases are often a function, not the module start
-(`$01A4C`, `$13F50`, `$19DA0`, `$27674`). Each word is fitted against the
-case-block starts of that base's module. 16 of the 18 groups then match far
-above chance in bits 0-11:
-
-| base | words | matching a block start in bits 0-11 | chance |
-|---|---|---|---|
-| `$075D8` | 11 | 11 | 4% |
-| `$08614` | 38 | 38 | 11% |
-| `$0E394` | 32 | 32 | 16% |
-| `$22A88` | 40 | 40 | 7% |
-| `$34048` | 14 | 14 | 14% |
-| `$174FC` | 6 | 6 | 6% |
-| `$372D0` | 4 | 4 | 2% |
-| `$31DA8` (dispatcher) | 61 | 61 | 4% |
-| `$2D7B4` | 86 | 82 | 15% |
-| `$3772C` | 23 | 21 | 19% |
-| `$25350` | 27 | 19 (partly a stride table) | 12% |
-| `$0AD14` | 29 | 29 (17 pinned, below) | 11% |
-| `$01A4C` | 50 | 42 | 17% |
-| `$19DA0` | 66 | 53 | 25% |
-| `$13F50` | 32 | 13 (a stride table; see below) | 15% |
-| `$27674` | 16 | 16 | 20% |
-
-So the `.lit` key model (bits 0-7 from the strings, bits 8-11 by class)
-holds across all of `.lit`.
-
-**Three known plaintexts from the host.** The stream writer in `gc24`'s
-`EngineDispatch` (see "DrawMultiObject: the batched drawing stream") gives the true
-targets of three DrawMultiObject table entries that the fit had decoded
-wrongly:
-
-| entry | opcode | fit alone | true target | error |
-|---|---|---|---|---|
-| `.lit $0484` | 1 (line) | `$69C` | `$09C` → `$0BDB0` | bits 9-10 |
-| `.lit $0498` | `$6A` (clip region) | `$BB0` → `$0B8C4` | `$EB0` → `$0BBC4`, the `$6C` case | bits 8, 10 |
-| `.lit $04B8` | `$72` (long pattern) | `$518` → `$0E22C` | `$A18` → `$0B72C` | bits 8-11 |
-| `.lit $0488` | 2 (arc) | `$BB0` → `$0B8C4`, inside the `$73` case | `$CB0` → `$0D9C4`, which tests for opcode 2 | bits 8-10 |
-| `.lit $049C` | `$6B` (background colour) | `$72C`, no case | `$62C` → `$0B340`, the twin of `$64` | bit 8 |
-| `.lit $04BC` | `$73` (pattern slot) | `$4C0` → `$0C1D4`, inside the line case | `$AC0` → `$0B7D4`, which reads the slot | bits 9-10 |
-
-`antelope_lit_key.py` takes these targets as constraints (`PINS`): every
-entry of DrawMultiObject's two opcode tables (1-5 and `$6A`-`$75`), each
-from the host's record layout and the case code read on the card.
-* Opcodes 2-4 share `$0D9C4`, as QuickDraw draws arcs, ovals and round
-  rects through DrawArc.
-* Pinning only the first three entries was not enough: that moved shared
-  key classes and broke opcodes 3 and `$6E` instead.
-
-The refit leaves the dispatcher table at 61 of 61. Against the unpinned
-fit:
-
-| table | unpinned | pinned |
-|---|---|---|
-| `$2D7B4` | 78 | 81 |
-| `$27674` | 13 | 16 |
-| `$01A4C` | 40 | 41 |
-| `$25350` | 22 | 23 |
-| `$13F50` | 21 | 18 |
-
-`$13F50` loses three words, `.lit $0788`, `$079C` and `$07BC`. Each shares
-its bit-9 class (period 192) with one of the last three pins (2, `$6B`,
-`$73`). Those matches were chance, because `$13F50` is mostly not a
-case-block table:
-* Its decoded values run in strides of 8: `$D5C`, `$D64`, … `$D7C`; then
-  `$ADC`, `$AD4`, `$ACC`, `$AC4`; then `$3DC`, `$3E4`, `$3EC`, … `$40C`.
-  These are offsets into unrolled code, like the excluded `$30088` group.
-* With the pins, `$0788` becomes `$D84` (after `$D7C`) and `$07BC` becomes
-  `$404` (between `$3FC` and `$40C`). Under the old key they broke their
-  runs (`$A84`, `$A04`).
-* Counting neighbouring words that differ by exactly ±8 over all tables
-  gives 23 pairs under the pinned key against 20 before. All three new pairs
-  are in `$13F50`.
-
-So the lost "matches" were chance hits on case-block starts, and the pinned
-key fits this table's real structure better. Its match count in the table
-above (18 of 32) means little: it is a stride table, not a case-block one. Bits 8-11 are weakest where a class
-holds few constraints, which is the case for these words.
-
-**A stride prior does not help.** Under the pinned key many tables step
-regularly between neighbouring words:
-
-| table | regular step | pairs |
-|---|---|---|
-| `$2D7B4` | +12 | 45 |
-| `$30088` | −16 | 24 |
-| `$19DA0` | −16 | 13 |
-| `$13F50` | ±8 | 11 |
-| `$0E394` | +12 | 18 |
-
-Many of the remaining steps are that step ± 512, 1024, 1536 or 2048, which
-looks like single wrong key classes in bits 9-11. A score that rewards
-neighbours differing by at most 64 was tried in the fit:
-* at all of bits 8-11, it wrecked the fit (dispatcher 22 of 61);
-* at bits 10-11 only, at weight 1, it kept the dispatcher (61 of 61) and the
-  DrawMultiObject pins, but lost case-block matches elsewhere (`$01A4C` 41
-  → 31, `$19DA0` 53 → 46, `$2D7B4` 81 → 79). Losing 10 matches at 17%
-  chance each is not luck. So the tables mix stride runs with ordinary case
-  jumps, and a general small-step rule is wrong for those classes.
-
-The script keeps the case-block evidence only.
-
-**`.data` has a key of its own, and it does not fall to the same method.**
-`.data` (1,596 words) holds strings from `$0F20` on: 305 words have a
-printable top byte. The tests:
-* **Another section's key.** Decoding them with `.lit`'s low key byte, at
-  any offset up to two `.lit` lengths, gives no text (mean letter
-  log-probability −5.8, against −6.1 for raw bytes). Neither does the
-  `.text` key: no offset up to 400,000 words agrees with even 80% of the
-  string words on bit 7, which is the raw bit for ASCII.
-* **A fresh fit.** Fitting a fresh low byte per class `k mod P` gives no
-  English for P = 12, 24, 48 or 96. The longer periods only overfit.
-* **Periodicity alone.** For ASCII, raw bit 7 of the fourth character is
-  key bit 7. In `.lit` that bit repeats every 48 words with no conflicts,
-  and the second character's bit 23 nearly so. In `.data` no period below
-  400 is consistent for either bit.
-
-So `.data`'s key is not periodic at the scale of `.lit`'s. 305 string words
-and 101 relocations are not enough to model a long-period key like
-`.text`'s, so `.data` stays masked. That includes the mode table at
-`.data+$3D8` and the reporter level at `.data+$284`.
-
-**ColorMap's switch tables as known plaintext.** The `$06BAC` group, left
-out of the fit as "not a case-block table", is ColorMap's four switches. Three
-of them, on `depth − 1` (16 entries each), enter an unrolled chain that
-doubles the pixel through a long: `x |= x << 1; x |= x << 2; … << 16`, 16
-bytes per step. Depth d enters at the step for d, and every other entry is
-the default:
-
-| table | chain | entries for depth 1, 2, 4, 8, 16 | default |
-|---|---|---|---|
-| `.lit $0128` | `$0710C` (`lr4`/`lr3`) | `$0710C` … `$0714C` | `$0735C` |
-| `.lit $0168` | `$071EC` | `$071EC` … `$0722C` | `$0735C` |
-| `.lit $01B8` | `$0754C` (`gr96`/`lr7`) | `$0754C` … `$0758C` | `$0759C`, the store after the chain |
-
-The fourth switch (`.lit $01A8`, on `mode & 3`) sends srcXor to `$0735C`.
-That makes 49 more pins. Under the unpinned key the default `$7B0` had
-decoded as `$BB0`, `$DB0`, `$FB0` and `$CB0`, which is the same bits 8-11
-trouble.
-
-With them, the refit gives:
-* **DrawMultiObject's table: 29 of 29.** The four sub-switch entries,
-  unpinned, now decode to case blocks: `.lit $0464` → `$0CD58`, `$0468` →
-  `$0CDB0` (or `$0BDB0`), `$047C` → `$0CF10`, `$0480` → `$0CF68`.
-* **The other tables:** `$01A4C` 41 → 42, `$2D7B4` 81 → 82, and the
-  dispatcher table stays 61 of 61.
-* **The stride tables become cleaner.**
-  * `$13F50` shows six +8 steps in a row (`$95C`, `$964`, … `$984`), then
-    `$ABC` continuing a −8 run, and `$578`, `$570`, `$568`.
-  * `$25350`'s new `$3FC`, `$408` is its usual +12 step.
-  * Over all tables, neighbouring words differing by ±8, ±12 or ±16 go
-    from 122 to 136 pairs.
-
-  The case-block "matches" those two tables lose (`$13F50` 18 → 13,
-  `$25350` 23 → 19) were chance hits in what are stride tables.
-
-Still unresolved: no `.lit` table entry is known to decode wrongly now; the
-weakest are those in tables that are neither case-block nor stride tables.
-(Earlier: four entries of the 6-way sub-switch tables (`.lit $0464`,
-`$0468`, `$047C`, `$0480`) matched no clean case entry.) Two groups are not case-block tables and are
-left out of the fit:
-
-* base `$06BAC`: one repeated value ending in `$B0`, which follows no jump;
-* base `$30088`: offsets stepping down by `$10` per entry, restarting
-  several times, which looks like computed jumps into unrolled code.
-
-Part of the `$01A4C` table (from `.lit $0094`) steps by `-$10` the same
-way, and `$075D8`'s steps by `+$8`. Their bits 8-11 rest on weak evidence,
-so only the high-scoring groups should be read entry by entry.
-
-With the handlers from the case-block table above:
+The table, exact (`lit.asm`, case code in `text.asm`):
 
 | command | case block | handler / what it does |
 |---|---|---|
-| `$00` | `$327D8` | reply 0 ("not handled") |
-| `$01` | `$31FE8` | reset: sequence counter to 0, request 100 to the host (settled by `CallBack`, below) |
-| `$02`, `$05`, `$06`, `$07` | `$3287C` | the code right after the switch's `jmpi` |
-| `$03` | `$327F8` | reply `$??00`, the twin of `$00`'s block (an earlier fit gave `$324F8`; System 6 decodes `$03` and `$33` to different blocks, `$03` to the twin, see section 10) |
-| `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen**; the host sends it from LockPixels when the pixels were purged, DisposeGWorld and DisposeScreenBuffer (`QUICKDRAW_PATCHES.md`, `_QDExtensions` selectors) |
-| `$04` | `$32040` | |
-| `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat** |
-| `$0D` | `$32600` (or `$32200`) | `handler(6, p[0])` -> `$15D28` |
-| `$0F` | `$32688` | `handler(6, p[0])` -> `$15D28` |
-| `$11` | `$3210C` | -> `$15D84`, `$16BA0` (start-up control record) |
-| `$12` | `$326E8` | system call `$??CD` |
-| `$13` | `$32740` | system call `$??CC` |
-| `$14` | `$32080` | `handler(p[0])` -> system call `$??D5` |
-| `$15` | `$32148` | -> `$2D7B8`: **StretchBits** (host: `GA_TrapAB27`), host memory via `MapVirtual` |
-| `$16` | `$3279C` | stores `p[0]`, `p[1]` in two globals |
-| `$17`, `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (`$2C` is the host's DisposPixPat, which settles the earlier `$320C8` alternative) |
+| `$00`, `$03` | `$327D8`, `$327F8` | reply 0 ("not handled"); the two blocks are identical |
+| `$01` | `$31FE8` | reset: `InitPacket(rec+$0C)`, sequence counter `[.bss+8]` = 0, then `CallBack(100, 1, 0)` (reset the host's request counter); its result is the reply |
+| `$02`, `$05`, `$06`, `$07` | `$3287C` | the common exit itself: reply 1, nothing done |
+| `$04` | `$32040` | stores `p[0]` at packet `+$04`; reply 0 |
+| `$0C` | `$32408` | six longs -> `$151C4` **CachePixPat**; reply 0 if it returns 0 |
+| `$0D` | `$32600` | `CacheFind(6, p[0])` (offscreen cache): not found, reply 0; found, entry `+$18` = `p[1] & $80` and the reply is entry `+$10` |
+| `$0F` | `$32688` | `CacheFind(6, p[0])`: not found, reply 0; found, entry `+$18` = 0 (the host's UnlockPixels) |
+| `$11` | `$3210C` | `sub_15D84(i)` for i = 0..10, then `sub_16BA0` (the first steps of PQDInit; start-up control record) |
+| `$12` | `$326E8` | service `$CD(-1)` (clear the kernel's region table), `[extern#1772+$88]` = 0, `+$8C` = `[+$08]`, service `$D3(0)`, `+$90` = 0 |
+| `$13` | `$32740` | service `$CC(p[0], p[1], p[2])` (enter a region), `[extern#1772+$88]` = 1, `+$8C` = 1 |
+| `$14` | `$32080` | service `$D5(p[0])`: clears bit `p[0]` of the kernel word `$4C00643C` (mirrored to `$46000000`); reply 0 |
+| `$15` | `$32148` | `$2D7B8` **StretchBits**(packet `+$58`, 0, 0, 0, 0) (host: `GA_TrapAB27`); reply 1 if it returns ≤ 0, else 0 |
+| `$16` | `$3279C` | stores `p[0]`, `p[1]` in `[extern#1753+$18]`, `[extern#1753+$14]` |
+| `$17` | `$320C8` | `$161F8` **PQDInit**(packet `+$604`); reply -1 if it fails (the host's reset routine `sub_6F4E` sends `$17`) |
 | `$19` | `$32570` | one long -> `$14168` **FlushOffscreen** |
 | `$1A` | `$325A0` | one long -> `$141F8` **FlushColorTable** (the host's SetEntries) |
-| `$1B` | `$323D0` (or `$325D0` -> `$14274`) | the bit-mask chain entered at its last step (bit 4 -> `$14A80`) |
-| `$26` | `$32234` | stores `[p[0]+4]` at `$..C0` |
-| `$29` | `$32468` | one long -> `$15808` **FlushGDevice** (the host's AddSearch/…/SetDeviceAttribute) |
-| `$2B` | `$32498` | one long -> `$15808` **FlushGDevice** |
-| `$2D` | `$32188` | -> `$13770` (not sent by `gc24`) |
-| `$30` | `$322D4` | the bit-mask chain (`$14B64`, `$14A80`): **font upload** from `sub_88E6` (width table, font strikes; see "Text and fonts") |
-| `$38` | `$32284` | stores `[p[0]+4]` at `$..C0` (twin of `$26`) |
-| `$3C` | `$32528` | two longs in a frame -> `$140CC` (CacheRelease): the host's PMgrExit sends the quitting application's ProcessSerialNumber |
-| all others | `$32818` | default: prints "Unknown Function: 0x%x" |
+| `$1B` | `$325D0` | one long -> `$14274`: `CacheFind(1, p[0])`, then `CacheRelease(1, entry)` (the host sends `$1B` from MakeITable) |
+| `$26`, `$38` | `$32234`, `$32284` | identical blocks. In the main loop (`n = -1`): reply 0. In a nested call: store `p[1]` at packet `+$1C0` and return without completing the request |
+| `$29`, `$2B` | `$32468`, `$32498` | one long -> `$15808` **FlushGDevice** (`$29`: the host's AddSearch/…/SetDeviceAttribute) |
+| `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (the host's DisposPixPat) |
+| `$2D` | `$32188` | `$13770`(packet `+$170`), which plays the stream with DrawMultiObject. Result 0: reply 1; -1: reply -1; 7: `PQDInit(p[0])`, reply 0 if that fails; other: reply 0 |
+| `$30` | `$322D4` | **font upload**: `p[0]` is a mask; bit 0 → `$14B64` UploadWidthTable(`p[1]`, `p[2]`), bits 1-4 → `$14A80` UploadFontStrike with the following longs; reply 0 on a failure (from `sub_88E6`: width table, font strikes; see "Text and fonts") |
+| `$33` | `$324F8` | one long -> `$14034` **DisposeOffscreen**; the host sends it from LockPixels when the pixels were purged, DisposeGWorld and DisposeScreenBuffer (`QUICKDRAW_PATCHES.md`, `_QDExtensions` selectors) |
+| `$3C` | `$32528` | copies `p[0]`, `p[1]` to the stack and calls `$140CC(&psn)`: the host's PMgrExit sends the quitting application's ProcessSerialNumber |
+| all others | `$32818` | default: prints "Unknown Function: 0x%X" and sets bits 0 and 4 of packet `+$00` |
+
+The default takes `$08`-`$0B`, `$0E`, `$10`, `$18`, `$1C`-`$25`, `$27`,
+`$28`, `$2A`, `$2E`, `$2F`, `$31`, `$32`, `$34`-`$37` and `$39`-`$3B`.
+Among them are the drawing and state selectors that EngineDispatch turns
+into stream records instead of sending (`$18`, `$20`-`$24`, `$2E`, `$2F`,
+`$31`, `$35`-`$37`; see "DrawMultiObject: the batched drawing stream").
 
 Points that fit the host side (`QUICKDRAW_PATCHES.md`):
 
-* `$26` and `$38` are the twin "store `[p[0]+4]`" blocks. The host issues
-  both around every drawing operation (`$0D ... $26 ... $38`).
-* `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute), `$33`,
-  `$17` and `$2C` (DisposPixPat) are one-long commands on the host, and all
-  go to one-long handlers.
+* `$26` and `$38` are the twin blocks. The host issues both around every
+  drawing operation (`$0D ... $26 ... $38`). Their nested form is the one
+  that matters: DrawMultiObject's wait `sub_33374` calls
+  `sub_31e20(6, $26, $38, $30, $0C, $2A, $2C)`, and `$38`'s `p[1]` is the
+  byte count it re-reads from packet `+$1C0`. DrawMultiObject completes
+  the request itself (`$0AEF4` calls `sub_328C8`). `$2A` is in that list
+  but has no case of its own.
+* `$29` (AddSearch/DelSearch/AddComp/DelComp/SetDeviceAttribute), `$33`
+  and `$2C` (DisposPixPat) are one-long commands on the host, and all go
+  to one-long handlers.
+* The host's `$8004(0x11111111, 0x22222222, 0x33333333)` check expects
+  `$66666666`; the card's `$8004` returns `p[0] + p[1] + p[2]` (below).
 
 #### Handlers named by their messages; the entry table
 
 **The handlers name themselves.** Many functions pass a `.lit` string to
-the reporter `sub_00140`. Each string's address is in the relocation comments
-of `text.partial.asm`, and with bits 0-11 of the `.lit` key the strings
-read. The functions:
+the reporter `sub_00140` (or `sub_00F78`). The strings and the functions
+that reference them (exact):
 
-| function | message (decoded, a few characters still wrong) | role |
+| function | message | role |
 |---|---|---|
-| `$0AD18` | "DrawMultiObject/…: can't get a RGBPatCacheEntry for RGB Pattern", "… font is not in cache", "DrawMultiObject: unknown opCode %d" | **the drawing engine**: an opcode interpreter (its jump table is `.lit $0454`) |
+| `$01468` | "Bogus" | |
+| `$06650` ITabMatch | "ITabMatch: Inverse Table is not up-to-date" | |
+| `$06BEC` BitsToPixMap | "BitsToPix: xm points to a portPixMap" | |
+| `$0AD18` | "DrawMultiObject/opWhicPat: can't get a PatternCacheEntry for pattern", "DrawMultiObject/opWhichPat: can't find PixPat in cache", "… can't get a RGBPatCacheEntry for RGB Pattern", "DrawMultiObject/opSwapFont: width table is not in the cache", "… width font is not in cache", "… font is not cache", "DrawMultiObject: unknown opCode %d" | **the drawing engine**: an opcode interpreter (its jump tables are `.lit $0454`, `$046C`, `$0484`, `$0498`) |
 | `$14034` | "DisposeOffscreen: NULL offscreen Handle" | command `$33` |
 | `$14168` | "FlushOffscreen: NULL offscreen Handle" | command `$19` |
-| `$141F8` | "FlushColorTable: NULL color table handle" | command `$1A` |
+| `$141F8` | "FlushColorTable: NULL color table Handle" | command `$1A` |
 | `$14F64` | "CacheGDevice: NULL GDevice" | |
-| `$151C4` | "CachePixPat: NULL pixPatHandle" | command `$0C` |
+| `$151C4` | "CachePixPat: NULL PixPatHandle" | command `$0C` |
 | `$15808` | "FlushGDevice: NULL GDevice" | commands `$29`, `$2B` |
-| `$158F4` | "FlushPixPat: NULL pixPatHandle" | commands `$17`, `$2C` |
+| `$158F4` | "FlushPixPat: NULL PixPatHandle" | command `$2C` |
 | `$15DF8` | "Cache still busy, cacheType = %d, cache = %lx" | |
-| `$161F8` | "PRInit: Unable to allocate mega buff" | initialisation |
-| `$16A04` | "PRAlloc: numBytes is not multiple of FOUR", "PRAlloc: Unable to allocate frame buffer size = 0x%x" | frame-buffer allocator |
-| `$22A8C` | "ScaleC?t/s IndexTo???: unsupported … = %d", "ScaleC?t: unknown scale… = %d" (reading uncertain) | |
-| `$31E20` | the sequence-error message, "Unknown Function: 0x%x" | the command dispatcher |
-| `$33680` | "malloc: allocated … bytes outside of the heap bounds …" | |
-| `$33EBC` | "CallBack … during interrupt …" | |
+| `$161F8` | "PQDInit: Unable to allocate mega buffer" | initialisation (commands `$17`, `$2D`) |
+| `$16A04` | "PQDAlloc: numBytes is not multiple of LONG", "PQDAlloc: illegal numBytes = %d", "PQDAlloc: maxed out on number of mega buffers authorized", "PQDAlloc: Unable to allocate extra mega buffer, size = 0x%x" | mega-buffer allocator |
+| `$22A8C` | "ScaleBlt/scIndexToAny: unsupported dstShift = %d", "ScaleBlt: unknown scaleNum = %d" | scaleBlt |
+| `$253D4` GetSeek | "GetSeek: invalid rectFlag for seekMask = %d" | |
+| `$31DAC` main | "PQDMonet: Starting up, commblock at %X" | |
+| `$31E20` | "MonetMain: Sequence error %d != %d, func = %d, last func = %d", "Unknown Function: 0x%X" | the command dispatcher |
+| `$33680` | "malloc allocated %d bytes outside of the heap bounds, pointer = %x, heapMin = %x, heapMax = %x" | |
+| `$3373C` MapVirtual | "MapVirtual: bytes == 0" | |
+| `$33EBC` CallBack | "CallBack %d during inactive request" | |
 
-This exhausts the strings. Every `.lit` string run belongs to one of
-these functions or to MapVirtual/CallBack, apart from two that name nothing
-readable: `$01468` (a short "Bogus…" message) and `$31DAC` (a partly
-readable "P?Mo?t: …" message). The run at `.lit $1020` is not text: it is
-the C library's `_ctype_` table, whose entries for tab to CR read `$28`
-(`_C|_S`) and for the other control characters `$20` (`_C`), as V7/BSD
-ctype has them.
+This exhausts the strings. The run at `.lit $1020` is not text: it is the
+C library's `_ctype_` table (257 bytes to `$1120`), whose entries for tab to
+CR read `$28` (`_C|_S`) and for the other control characters, DEL and
+128-255 `$20` (`_C`), as V7/BSD ctype has them.
 
-So the card keeps caches of the host's pixel patterns, colour tables,
-GDevices and offscreens. The one-long commands keep those caches in step:
+So the card keeps caches of the host's colour tables (cache type 0),
+GDevices (2), pixel patterns (5) and offscreens (6), plus a type 1 that
+command `$1B` releases. The one-long commands keep those caches in step:
 flush or dispose an entry when the host's object changes. Drawing itself
 is `DrawMultiObject`.
 
-**An exported entry table.** `PRInit` (`$161F8`) allocates 100 bytes,
+**An exported entry table.** `PQDInit` (`$161F8`) allocates 100 bytes,
 stores the pointer in the external `extern#1636`, and fills it with 24
 function pointers:
 
-    +$00 $2D7B8   +$04 $13770   +$08 $0AD18 DrawMultiObject   +$0C $01A50
-    +$10 $19DA4   +$14 $22A8C   +$18 $3008C   +$1C $075DC   +$20 $08618
-    +$24 $11AD8   +$28 $19270   +$2C $1701C   +$30 $17264   +$34 $153D4
-    +$38 $1553C   +$3C $32C10   +$40 $32EF8   +$44 $33EBC   +$48 $3373C
-    +$4C $33A9C   +$50 $31E20 (the dispatcher)  +$54 $00248  +$58 $00348
-    +$5C $00294   +$60 an argument of PRInit
+    +$00 $2D7B8 StretchBits  +$04 $13770  +$08 $0AD18 DrawMultiObject
+    +$0C $01A50 BitBlt  +$10 $19DA4 RgnBlt  +$14 $22A8C scaleBlt  +$18 $3008C
+    +$1C $075DC DrawArc  +$20 $08618 DrawLine  +$24 $11AD8 DrawText
+    +$28 $19270 QuickPolys  +$2C $1701C FillLongs  +$30 $17264 Fill2Longs
+    +$34 $153D4  +$38 $1553C  +$3C $32C10 ShieldCursor
+    +$40 $32EF8 ShowCursorAfterDraw  +$44 $33EBC CallBack
+    +$48 $3373C MapVirtual  +$4C $33A9C UnmapAll
+    +$50 $31E20 CommandDispatcher  +$54 $00248 CopyLongsBurst
+    +$58 $00348 FillLongsBurst  +$5C $00294 Fill2LongsBurst  +$60 0
 
-Many are module entry points (`$075DC`, `$08618`, `$11AD8`, `$3008C` are
-four bytes into their modules). `$14020` returns the table pointer, and it
-is one case of a second service switch, `sub_379A0`. That switch handles
-`$8008`-`$8019` (18 cases, `.lit $0FC0`): allocate and free (`$3779C`,
-`$377CC`), getters (`$13FCC`, `$13FE0`, `$13FF4`, `$1400C`, `$14020`),
-`$16BA0`, `$33A9C`, `$378DC(p0..p2)` and `$3791C(p0..p3)`. Command `$8001`
-passes exactly `sub_379A0` to the code it calls: `p[2](p[0], p[1],
-sub_379A0)` (the `$274` there is `$379A0` relative to the module base).
+Ten are the first function of their object file, four bytes in after the
+file's tag word (`$01A50`, `$075DC`, `$08618`, `$0AD18`, `$11AD8`,
+`$13770`, `$19DA4`, `$22A8C`, `$2D7B8`, `$3008C`).
+
+**The `$80xx` commands (`sub_37B58`).** The dispatcher sends them to
+`sub_37B58(cmd, rec+$0C, p)`, a switch on `cmd - $8000` (`.lit $1008`):
+
+| command | does |
+|---|---|
+| `$8000` | reply 0 |
+| `$8001` | `p[2](p[0], p[1], sub_379A0)` |
+| `$8002` | heap-allocate `p[0]` bytes (`sub_3779C` → `sub_37658`); the reply is the address |
+| `$8003` | free `p[0]` (`sub_377CC` → `HeapFree`) |
+| `$8004` | reply `p[0] + p[1] + p[2]` |
+| other | reply -50 |
+
+`sub_379A0(task, selector, count, argv)` is the service callback that
+`$8001` hands to the code it calls. It switches on `selector - $8008`
+(18 cases, `.lit $0FC0`):
+
+| selector | does |
+|---|---|
+| `$8008` | `$378DC(argv[0..2])`: `CopyHostMemory` |
+| `$8011` / `$8012` | allocate / free (`$3779C`, `$377CC`) |
+| `$8013` | `$3791C(argv[0..3])`: `MapVirtual` |
+| `$8014` | `UnmapAll`, then `$16BA0` |
+| `$8015` / `$8016` | return `[extern#1772+$8C]` / `[extern#1772+$90]` |
+| `$8017` | clear the mapped-range list head `[extern#1772+$00]` |
+| `$8018` | return `[extern#1651]` (a 36-byte block PQDInit fills) |
+| `$8019` | `$14020`: return the entry table `[extern#1636]` |
+| `$8009`-`$8010`, out of range | `CallBack(999, 1, 4, task, selector, count, argv)`: the request goes to the host |
+
 So code that the host uploads and starts with `$8001` gets a service
 callback into Antelope, including the entry table with `DrawMultiObject`.
 
@@ -1140,11 +685,11 @@ The selectors (`sel - 1` first, then `$3DC` for 999):
 32-bit), and posts `$8001(buffer, task.+$08, module entry point)`. The task
 is then in state 3 (running) until the card answers. So **`$8001` is "run
 this module's entry point on this message"**, and its card side is
-`p[2](p[0], p[1], sub_379A0)`: `entry(message, task data, services)`. The
-uploaded code gets Antelope's service switch, and with it the entry table
-that holds `DrawMultiObject`. Task creation (`sub_1BEE`) sends message
-`$FFFF` and kill sends `$FFFE`, so these are the module's own init and exit
-messages.
+`p[2](p[0], p[1], sub_379A0)`: `entry(message, task data, services)`
+(**verified**). The uploaded code gets Antelope's service switch, and with
+it the entry table that holds `DrawMultiObject`. Task creation (`sub_1BEE`)
+sends message `$FFFF` and kill sends `$FFFE`, so these are the module's own
+init and exit messages.
 
 **How the mailbox reaches the card.** The `$80xx` commands do not use a
 separate channel. `sub_22DA` (the idle routine, which every wait loop calls)
@@ -1169,10 +714,14 @@ count, argv}` and runs `sub_18BE`:
 | `$8000`, `$8001`, `$8008`-`$800F` | nothing, or -1 |
 | > 0 | call the host callback registered for this selector: `proc(count, argv, refcon)` (Pascal order) |
 
+On the card, `$8004`-`$8007` are sent by `$37838`, `$377FC`, `$378A8` and
+`$3786C` (get/set module field, get/set task field), and after a `$8003`
+request `sub_37730` calls `sub_32AB8(1)`.
+
 `sub_6442` is also called from six wait loops inside `EngineDispatch`
 (`$60B0`, `$612E`, `$62E8`, `$6362`, `$6EC8`, `$71A2`), so the card can make
 a request while the host waits on any command. On the card, these requests
-are made by `CallBack` (`$33EBC`, entry table `+$44`; decoded below).
+are made by `CallBack` (`$33EBC`, entry table `+$44`; below).
 
 So the card runs host-loaded modules as tasks. A task gets messages through
 `$8001`, answers with request `$8002`, and can call back to host routines
@@ -1189,9 +738,10 @@ the slot base and the low 20 bits). The handler:
 1. waits until the device is idle;
 2. reads the code and sets it to -1;
 3. checks the sequence number against its own counter. On a mismatch it
-   replies -1, takes the card's number and returns. Code 100 skips the check
-   and resets the counter to 0 (reply 1);
-4. runs the request, writes the reply to `+$08`, and counts the request.
+   replies -1, clears the code, takes the card's number and returns. Code
+   100 skips the check and resets the counter to 0 (reply 1);
+4. runs the request, writes the reply to `+$08`, counts the request and
+   clears the code (`+$04` = 0, `$6C48`), which releases the card's wait.
 
 The codes are all host services that 68k code has to perform for the card:
 
@@ -1229,23 +779,22 @@ master. That is presumably how it reaches host-side pixel maps.
 
 #### Card: `CallBack` and the request wrappers
 
-**The card side of the requests (`sub_33EBC` "CallBack", decoded).**
+**The card side of the requests (`sub_33EBC` "CallBack", exact).**
 `CallBack(code, wait, nargs, a0, …, a7)`:
 1. The mailbox is `[.bss] + $24`, the same packet base the dispatcher reads
    commands from.
-2. Code 100 first zeroes the request counter (`.data+$F0C`).
-3. If the host's packet `+$14` is set (a command is being serviced), it
-   prints the `.lit $0F4C` message ("CallBack … during interrupt") and
-   returns.
+2. Code 100 first zeroes the mailbox's `+$00` and the request counter
+   (`.data+$F0C`).
+3. If packet `+$14` is clear (no command is being serviced), it prints
+   "CallBack %d during inactive request" and returns 0.
 4. It stores three arguments (eight if `nargs > 3`) at `[mailbox+$14]`,
    the counter at `+$0C` (and increments it), and the code at `+$04`.
 5. It sets bit 2 of packet `+$18`, and of `*[packet+$20]` if that is set:
    the status bit the host's idle routine tests.
-6. If `wait` is set, it spins until the host has set `+$04` back, then
-   returns `+$08`, the reply.
+6. If `wait` is set, it spins until the host has cleared `+$04`, then
+   returns `+$08`, the reply (**verified**: the host writes 0 there last).
 
-The calls, found by relocation (const/consth) and by call displacement (the
-low byte is exact, and the candidates are near):
+The calls (every `CallBack` call site in the exact listing):
 
 | wrapper | code | args | called from |
 |---|---|---|---|
@@ -1254,65 +803,67 @@ low byte is exact, and the candidates are near):
 | `$33CFC` | 22 (`GetSystemClientProcess`) | 0, then copies the PSN out | `$1437C` |
 | `$33D58` | 17 (`Entry2Index`) | 2: entry, the current GDevice | `$06844`, **`$0AD18` DrawMultiObject** (twice) |
 | `$33D98` | 12 (`MakeITable`) | 3 | `$14D78` (next to CacheGDevice `$14F64`) |
-| `$33DD4` | 8 (copy) | 3 | `$16C48` |
-| `$33E10` | 18 (copy from a handle) | 3 | `$16C48` |
+| `$33DD4` | 8 (copy) | 3 | `$16C48` CopyHostMemory |
+| `$33E10` | 18 (copy from a handle) | 3 | `$16C48` CopyHostMemory |
 | `$33E4C` | 21 (copy into a handle) | 3 | `$14478` |
-| `$33E88` | 1, no wait, no arguments | | no caller found; the host's `sub_6442` ignores code 1 |
+| `$33E88` | 1, no wait, no arguments | | no caller; the host's `sub_6442` ignores code 1 |
 | `$3373C`, `$33A9C` | 15 (lock + physical pages) | 4 or 3 | see below |
-| `$37730` | 999 (module request) | 4: task, selector, count, argv | the `$80xx` service switch `sub_379A0` (out-of-range cases) and `$377FC`, `$37838`, `$3786C`, `$378A8` |
+| `$37730` | 999 (module request) | 4: task, selector, count, argv | the `$80xx` service switch `sub_379A0` (unhandled selectors) and `$377FC`, `$37838`, `$3786C`, `$378A8` |
 | dispatcher `$31FE8` | 100 (reset) | 0 | command `$01` |
 
-Not found on the card: codes 3-7 (handles, resources), 16 and 20. They are
+Not used on the card: codes 3-7 (handles, resources), 16 and 20. They are
 open to host-loaded modules, which get `CallBack` as entry-table `+$44`.
 
 **`$3373C` and `$33A9C` (entry table `+$48`, `+$4C`) map host memory.** They
-are the only users of code 15, and they are called from the first entry-table
-functions: `$2D7B8` (`+$00`), `$13770` (`+$04`), `$01A50` (`+$0C`),
-`$19DA4` (`+$10`), `$22A8C` (`+$14`), `$3008C` (`+$18`), and from `PRInit`.
-So those six entry points are the ones that read or write host memory
-directly: they are presumably the transfer routines (CopyBits-like) for
-pixel maps in host RAM. `DrawMultiObject` itself only asks for
-`Entry2Index`.
-
-**This settles dispatcher entry `$01`.** The case at `$31FE8` sets the
-command sequence counter `[.bss+8]` to 0 and sends request 100 (reset the
-host's request counter). Command `$01` is the one command the sequence check
-lets through, so it is the reset command and its case is `$31FE8`. That makes
-`$12` the `$326E8` case.
+are the only users of code 15. `MapVirtual` is called from the entry-table
+functions StretchBits `$2D7B8` (`+$00`), `$13770` (`+$04`), BitBlt
+`$01A50` (`+$0C`), RgnBlt `$19DA4` (`+$10`), scaleBlt `$22A8C` (`+$14`)
+and `$3008C` (`+$18`), and from service `$8013`; `UnmapAll` from
+StretchBits, `$13770` and service `$8014`. So those six entry points are
+the ones that read or write host memory directly: the transfer routines
+for pixel maps in host RAM. `DrawMultiObject` itself only asks for
+`Entry2Index`; `$13770` maps the memory before it calls it.
 
 #### Card: `MapVirtual` and host memory
 
-**`$3373C` is `MapVirtual` (its `.lit $0F34` message reads roughly
-"MapVirtual: bytes == 0").** `MapVirtual(addr, len)`:
+**`$3373C` is `MapVirtual` ("MapVirtual: bytes == 0").** `MapVirtual(addr,
+len)`, with `extern#1772` fields `+$00`/`+$04` list head/tail, `+$08` a
+flag set at init from `sub_33500`, `+$88` set by command `$13`, `+$90`
+the mapping flag:
 1. `len == 0`: print the message, return -1.
-2. Look `[addr, addr+len)` up in a list of mapped ranges
-   (`extern#1772+$00` head, `+$04` tail). The entries are
-   `{+$00 addr, +$04 len, +$08 runs, +$0C run table, +$10 next}`. A covered
-   range is reused.
-3. Otherwise build an entry. `CallBack(15, wait, 4, addr, len, max, table)`
-   has the host lock the buffer and return its physical runs.
-4. For each run, call services `$CC` (`$39018`) and `$CD` (`$39028`, once
-   per page). `$CD`'s decoded pointer lies in the kernel's region-table
-   insert/remove code, so this presumably enters the host pages into the
-   card's address map.
-5. If that fails, `CallBack(15, …, 0)` unlocks again (on the host, a run
-   count of 0 means `UnlockMemory`), and it returns -1.
-6. The entry is allocated with `PRAlloc` and linked in.
+2. If `+$88` is set, service `$D4` translates `[addr, addr+len)`. If it
+   covers all `len` bytes, return the translated address. If it covers
+   part: with `+$08` clear, call `$D3(1)`, set `+$90` and return `addr`;
+   with `+$08` set, return the `$D4` result unless `addr` lies inside an
+   entry of the list of mapped ranges, in which case go on.
+3. With `+$08` clear, return `addr` unchanged.
+4. Build an entry `{+$00 addr, +$04 len, +$08 runs, +$0C run table, +$10
+   next}` at the mega buffer's free pointer (`sub_169A0`; `sub_169D8`
+   gives the room left, which bounds the run table at `+$14`).
+   `CallBack(15, 1, 4, addr, len, max, table)` has the host lock the buffer
+   and return its physical runs. No runs: return -1.
+5. Call `$D3(1)` and set `+$90`.
+6. For each run, and each 4 KB page in it, call service `$CC(virtual
+   page, physical page, $1000)` to enter the page in the kernel's region
+   table (`Hand` `$200146C` → `$2001478`). If that fails, it removes the
+   pages already entered with `$CD(page)` (`$20015F8` → `$2001604`), calls
+   `CallBack(15, 1, 3, addr, len, 0)` to unlock (on the host, a run count
+   of 0 means `UnlockMemory`) and returns -1.
+7. `PQDAlloc(8·runs + $14)` claims the entry, which is linked in at the
+   tail; it returns `addr`.
 
-A flag at `extern#1772+$90` brackets this with service `$D3` (`$390B4`, 1 on
-entry, 0 on release).
-
-`$33A9C` is the release, `UnmapAll`: if the `+$90` flag is set it calls
-`$D3(0)`; then for every entry it calls `$CD` per page and
-`CallBack(15, 1, 3, addr, len, 0)` to unlock.
+`$33A9C` is the release, `UnmapAll`: only if `+$90` is set, it calls
+`$D3(0)` and clears `+$90`; then, if `+$08` is set, for every entry it calls
+`$CD` per page and `CallBack(15, 1, 3, addr, len, 0)` to unlock. It does
+not clear the list (selector `$8017` does).
 
 **Which commands reach host memory.** Two dispatcher cases call the
 entry-table functions:
 
 | command | case | calls | sent by the host |
 |---|---|---|---|
-| `$15` | `$32148` | `$2D7B8` (entry `+$00`) | `GA_TrapAB27` (`gc24.s` `$32BC`), one argument |
-| `$2D` | `$32188` | `$13770` (entry `+$04`) | no `gc24` code sends `$2D` |
+| `$15` | `$32148` | `$2D7B8` (entry `+$00`) with packet `+$58` | `GA_TrapAB27` (`gc24.s` `$32BC`), one argument |
+| `$2D` | `$32188` | `$13770` (entry `+$04`) with packet `+$170` | `$4F38`, when a stream starts (the block at packet `+$170`) |
 | `$11` | `$3210C` | `$15D84`, then `$16BA0` | the control record `$FFFFFFFE` (start-up) |
 
 `GA_TrapAB27` patches trap `$AB27`, which is `StretchBits` (below). It runs
@@ -1320,20 +871,22 @@ only if the device's flags have bits `$27` set and bits `$600` clear, and
 the `pat` argument is NIL.
 
 `sub_8262` then builds a parameter block in card memory (packet `+$58`), and
-the patch sends `$15` with a pointer to it. A reply of 1 means the card did
+the patch sends `$15` with a pointer to it; the card takes the block from
+packet `+$58` directly. A reply of 1 means the card did
 the transfer; the patch then sets bit 7 of `HiliteMode` (`$938`), as
 QuickDraw does after a drawing call, and skips the original. On the card,
 `$2D7B8` is a large routine that:
-- calls `MapVirtual` three times;
-- uses the GDevice cache (`$14F64`, `$14D78` `MakeITable`, `$14BD4`) and
-  the copy helper `$16C48` (codes 8 and 18);
+- calls `MapVirtual` three times and `UnmapAll` once;
+- uses the GDevice cache (`$14F64` CacheGDevice, `$14D78` `MakeITable`,
+  `$14BD4`) and `CopyHostMemory` `$16C48` (codes 8 and 18);
 - calls `$01494` RSect and `$01654` TrimRect repeatedly (named from
-  DrawMultiObject's region opcode, below) and `$3B600` twice.
+  DrawMultiObject's region opcode, below) and `$3B600` `memcpy` twice;
+- refers to BitBlt, RgnBlt, scaleBlt, `$3008C`, ColorMap, BitsToPixMap,
+  ShieldCursor and ShowCursorAfterDraw.
 
 So **command `$15` is the card's bit transfer between host pixel maps**: the
 CopyBits path for memory the card cannot address directly. The card maps the
 host pages and moves the pixels itself.
-
 #### StretchBits (command `$15`)
 
 **Trap `$AB27` is `StretchBits`, and command `$15` carries its parameter
@@ -1375,9 +928,12 @@ So the card gets StretchBits with everything QuickDraw would read from the
 port and the device, but the pixel data and the regions stay in host memory.
 The block carries host addresses: `baseAddr`, the region master pointers and
 the handles. That is what `MapVirtual` is for. `$2D7B8` is then the card's
-StretchBits: the strings of its neighbour `$22A8C` (entry `+$14`), "ScaleC…
-IndexTo…: unsupported dstDepth" and "unknown scaleNum", match Stretch.a's
-`ScaleBlt` and `Scale…toIndexed` families.
+StretchBits. The dispatcher's case for `$15` (`$32148`) calls
+`$2D7B8(packet+$58, 0, 0, 0, 0)` and leaves the reply at 1 when it returns
+0 or less, else replies 0; `$2D7B8` reads the region pointers at block
+`+$C0`/`+$C4` first (`$2D7F4`). The strings of its neighbour `$22A8C` (entry
+`+$14`), "ScaleBlt/scIndexToAny: unsupported dstShift = %d" and "ScaleBlt:
+unknown scaleNum = %d", name Stretch.a's `ScaleBlt` family.
 
 #### The entry table, named
 
@@ -1386,15 +942,16 @@ compiled C (printf-style messages, C frames), not a port of the 68k sources, so 
 strings, who calls whom, and which routines use the region seek code. The
 anchors:
 
-* `$253D4` prints a message that reads roughly "GetSeek(): invalid
-  rectType for maskmode = %d" (the string is partly masked). In `QuickDraw/SeekMask.a`, `GETSEEK` combines the clip
+* `$253D4` prints "GetSeek: invalid rectFlag for seekMask = %d". In
+  `QuickDraw/SeekMask.a`, `GETSEEK` combines the clip
   regions (and a mask) into a per-scanline seek routine. Its 68k callers are
   `Stretch.a`, `ScaleBlt.a`, `RgnBlt.a`, `DrawLine.a`, `DrawArc.a` and
   `QuickPolys.a`, but not `BitBlt.a`.
-* `$22A8C` prints "ScaleC…/…IndexTo…: unsupported dstDepth" and "…: unknown
-  scaleNum". `ScaleBlt.a`'s `scaleBlt` picks a depth-conversion loop
+* `$22A8C` prints "ScaleBlt/scIndexToAny: unsupported dstShift = %d" and
+  "ScaleBlt: unknown scaleNum = %d". `ScaleBlt.a`'s `scaleBlt` picks a depth-conversion loop
   (`scaleCase`) from a table and imports `GetSeek`. `$22A8C` calls
-  `GetSeek` and 19 workers (`$230B4`-`$25354`).
+  `GetSeek` and 17 workers (`$230B4`-`$25354`, 19 call sites), and switches
+  through `.lit` tables (`$0958`, 30 cases; `$09D0`; `$09E0`).
 * `$2D7B8` is StretchBits (command `$15`, above). It calls `GetSeek`,
   `$22A8C`, `$01A50` and `$19DA4`, as Stretch.a calls `GetSeek`, `scaleBlt`,
   and the blitters for the unscaled cases.
@@ -1403,21 +960,21 @@ anchors:
 |---|---|---|---|
 | `+$00` | `$2D7B8` | **StretchBits** | host trap `$AB27`, the parameter block |
 | `+$14` | `$22A8C` | **scaleBlt** | strings; `GetSeek` + a family of depth loops |
-| `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits and the shape drawers; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
-| `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; four mode loops `$1B33C`-`$1BDE8` |
+| `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits, DrawLine, QuickPolys and DrawMultiObject; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
+| `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; a four-way switch picks one of four mode loops `$1B33C`, `$1BAE0`, `$1BC64`, `$1BDE8` (`$1B2A0`-`$1B2DC`) |
 | `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: `$075DC` **DrawArc**, `$08618` **DrawLine**, `$19270` **QuickPolys** (settled by DrawMultiObject's polygon opcode, below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
-| `+$24` | `$11AD8` | **text** (likely) | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw), RgnBlt, BitBlt; uses `extern#1772+$60`-`$6C` |
-| `+$18` | `$3008C` | a `GetSeek` user with the `.lit` table of computed jumps into unrolled code (base `$30088`) | |
+| `+$24` | `$11AD8` | **DrawText** (see "Text and fonts") | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw) and RgnBlt, not BitBlt; uses `extern#1772+$60`-`$6C` |
+| `+$18` | `$3008C` | a `GetSeek` user. Its object file (`$30088`-`$31DA4`) holds five more routines, each entering an unrolled loop through a 15-entry `.lit` jump table (`$0C30`, `$0C6C`, `$0CA8`, `$0CE4`, `$0D20`; entries are offsets from `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
 | `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
 | `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (before drawing) and its counterpart (after drawing): the cursor lock with the host, see "The cursor" below | |
-| `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle (`$1553C` stores four words at `+$78`-`$7E`) | |
+| `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle: `$1553C(r, origin)` stores `r` minus `origin` as four 16-bit words at `extern#1772+$78`-`$7E`; `$153D4(r1, r2, origin, flag)` stores `r1`, unioned with `r2` minus `origin` when `flag` is set, and returns whether it is non-empty | |
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
 | `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers: `$1701C` the long fill, `$00348` the `storem` burst fill (called by nearly every blitter) | |
 
-**The three shape drawers (profile, not settled).** The partial disassembly
-gives each one's instruction mix, data references and callees:
+**The three shape drawers (profile).** The listing gives each one's
+instruction mix, data references and callees:
 
 | | `$075DC` (`+$1C`) | `$08618` (`+$20`) | `$19270` (`+$28`) |
 |---|---|---|---|
@@ -1431,10 +988,11 @@ gives each one's instruction mix, data references and callees:
 
 The shared helpers are runtime and support code:
 - `$00CC4` is a 32×32 multiply (31 `mul` steps);
-- `$3BA38` is a divide (31 `div` steps, `divl`, `divrem`);
-- `$3B814`/`$3B950` are small millicode helpers (called with `calli gr122`);
-- `$1114C` and `$11A34` pick a scanline loop from a table of 18 and 7
-  targets, like QuickDraw's mode-case tables;
+- `$3BA38` is an unsigned divide (31 `div` steps);
+- `$3B814`/`$3B950` are the multiply and divide millicode entries (called with `calli gr122`);
+- `$1114C` and `$11A34` return the address of a scanline loop chosen by
+  the mode (36 and 7 possible loops; `$1114C` partly through `.lit`
+  tables such as `$0508`), like QuickDraw's mode-case tables;
 - `$0E398` is a short arithmetic helper, and `$17500` an allocator.
 
 Readings:
@@ -1453,8 +1011,8 @@ polygon and line records settled the rest later: `$08618` is DrawLine and
 `$075DC` DrawArc (see "DrawMultiObject: the batched drawing stream").
 
 Two more names come from the strings: `$06650` "ITabMatch: Inverse Table is
-not up to date", and `$06BEC` "BitsToPixMap: bounds …" (called from
-StretchBits).
+not up-to-date", and `$06BEC` "BitsToPix: xm points to a portPixMap" (called
+from StretchBits and `$13770`).
 
 So the table is Antelope's QuickDraw core, handed to host-loaded modules: the
 blitters, the shape drawers, text, and the support routines for host memory
@@ -1557,14 +1115,15 @@ DrawArc `$07CAC` … `$07DE0`, and DrawMultiObject's line case `$0BFBC`,
 `$0BFCC` … `$0C070`. Both are in the entry table (`+$3C`, `+$40`).
 
 Both start the same way:
-1. if `extern#1772+$90` is set, call service `$D3` (`$390B4`) with 0, and
-   with 1 on the way out;
+1. if `extern#1772+$90` is set, call service `$D3` (`$390B4`, host access
+   mode) with 0, and with 1 on the way out;
 2. take the lock: wait until packet `+$1D4` (host claim) is 0, set `+$1D8`
-   = 1, and back off and retry if the host claimed it meanwhile;
-3. copy `CrsrRect` through the pointer at `+$5F8` (`$3B600`, 8 bytes);
-4. look up `CrsrDevice` (`+$600`) with `$15D28(2, gdevice)`. If the cursor
-   is not on a device this card drives, skip to the end. Otherwise take
-   the device's offset from the result (`+$32`);
+   = 1; if the host claimed it meanwhile, clear `+$1D8`, wait again and set
+   it (one retry, not checked again);
+3. copy `CrsrRect` through the pointer at `+$5F8` (`memcpy` `$3B600`, 8 bytes);
+4. look up `CrsrDevice` (`+$600`) in the card's GDevice cache with
+   `CacheFind(2, gdevice)` (`$15D28`). If it is not there, skip to the end.
+   Otherwise take the device's origin from the entry (`+$32`);
 5. test the drawing rectangle (`extern#1772+$78`-`$7E`, global) against
    `CrsrRect`, after subtracting the device's origin (the cached entry's
    `+$32`, v then h). The four exits are `bottom < crsr.top`,
@@ -1573,7 +1132,8 @@ Both start the same way:
    counts as overlapping. No overlap: skip to the end.
 
 **`$32C10`, before drawing: remove the cursor.** It publishes the drawing
-rectangle at `+$1DC` (`loadm`/`storem` from `extern#1772+$78`). If `CrsrVis`
+rectangle at `+$1DC` right after taking the lock (`loadm`/`storem` from
+`extern#1772+$78`, `$32CB4`). If `CrsrVis`
 (through `+$5FC`) is set and `+$5F0` is not already raised, it does
 `UnblitCursor` from `CCrsrCore.a`:
 * it reads `CCSTATEREGS` from the save area (`+$1E4` → `+$3E` ROWCNT, `+$40`
@@ -1601,7 +1161,8 @@ Then it releases `+$1D8`. The rectangle at `+$1DC` stays published.
 * It stores the number of longs minus 1, `(ROWCNT+1)*(LONGCNT+1) - 1`
   (multiply millicode `$3B814`), at `+$1EC`, which marks the card's copy as
   valid.
-* Then it raises `+$5F4` ("redraw", `$33148`). It clears both the published
+* Then it raises `+$5F4` ("redraw", `$33148`). On every path, overlap or
+  not, it clears both the published
   rectangle (`+$1DC`-`+$1E2`) and the drawing rectangle
   (`extern#1772+$78`-`$7E`), and releases `+$1D8`.
 
@@ -1626,12 +1187,9 @@ host's save area directly is not stated anywhere. Its save area is host
 memory reached through a mapping, the packet is local, and a reset is the
 point where the host takes over the cursor again; those may be the reasons.
 
-These readings now rest on fully decoded words (key bits 16-23 estimated
-from the neighbours, see section 6): the offsets `$5F0`/`$5F4`/`$1EC`/`$1F0`
-and the branch structure are no longer matched from the host side only.
-Still inferred: the argument order of `$38218` (destination first), from
-the two calls being mirror images.
-
+These readings are from the exact listing. `$38218` is
+`(destination, source, longs)`: it `loadm`s from its second argument and
+`storem`s to its first (`$383C4`/`$383D0`).
 #### DrawMultiObject: the batched drawing stream
 
 **In short.** The QuickDraw bottlenecks (StdLine, StdText, StdArc, StdRect,
@@ -1647,9 +1205,9 @@ with command `$2D` and fed with `$38`. Fonts reach the card by a separate
 upload (`$30`) into a cache of host objects.
 
 The 68K side below is read from `gc24.s`, which is plain code. The card side
-rests on estimated words (`antelope_estimate_words.py`, "=" in its output)
-and on the `.lit` key with host-confirmed pins. Treat each card-side detail
-as a reading.
+is read from the exact listings (`firmware/disasm/text.asm`, `lit.asm`,
+`data.asm`); addresses, values and control flow are exact, and a role
+inferred from use is marked as a reading.
 
 ##### The host side: EngineDispatch writes the stream
 
@@ -1680,8 +1238,10 @@ path (`L5E6C`), but the drawing commands go to `L4AAC`, which:
 2. write a 4-byte `$6F` header record;
 3. set the length to 4 (at `+$50` of a block at packet `+$170`, whose `+$4C`
    holds the card address);
-4. send `$2D` with that block. On the card, `$2D` is handled by `$13770`,
-   the only caller of DrawMultiObject. It runs until the first wait.
+4. send `$2D` with that block. On the card, `$2D` (`$32188`) calls
+   `$13770(packet+$170)`, the only caller of DrawMultiObject (PQDInit also
+   stores DrawMultiObject's address at `+8` of its module descriptor). It
+   runs until the first wait.
 
 **After each drawing call** (`$38`, `L5DE0`), if the buffer holds more than
 the header:
@@ -1689,8 +1249,9 @@ the header:
 2. send `$38` with (card address, byte count).
 
 On the card, the nested wait inside DrawMultiObject services `$38`. Its case
-stores the count (`[p[0]+4]`) in the length word that DrawMultiObject
-re-reads.
+(`$32284`) stores the count (`[p[0]+4]`) at packet `+$1C0` (the `+$50`
+word above); the wait copies it into DrawMultiObject's length word once it
+has grown. The card's `$26` case (`$32234`) is the same code.
 
 **Flushing and ending.**
 * When a record would not fit (`$BC − size − $24 ≤ $C0`), EngineDispatch
@@ -1735,8 +1296,8 @@ call. That is the meaning of reply 2.
 A record is a 2-byte opcode, a 2-byte word at `+2`, then the data, padded to
 a multiple of 4. The host writes these layouts (the chain at `$555C`, and
 the command names from the patch table in `QUICKDRAW_PATCHES.md`). The card
-cases are the pinned `.lit` entries (see "Three known plaintexts from the
-host") and the compare chain.
+cases come from the two opcode tables in `.lit` (`$0484`, `$0498`) and the
+compare chain.
 
 | record | written for (command) | size: layout | card case |
 |---|---|---|---|
@@ -1745,27 +1306,27 @@ host") and the compare chain.
 | **3** oval | StdOval (`$2F`) | 12: frame, rect | `$0D9C4` (DrawArc) |
 | **4** round rect | StdRRect (`$2E`) | 16: frame, rect, `+$C` ovalWidth, `+$E` ovalHeight | `$0D9C4` (DrawArc) |
 | **5** rect | StdRect (`$24`) | 12: frame, rect | `$0C754` |
-| **6** text | StdText (`$21`) | `(n + $13) & ~3`: `+2` count n, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text | `$0E018`, then DrawText `$11AD8` |
+| **6** text | StdText (`$21`) | `(n + $13) & ~3`: `+2` count n, `+4` the space character's width (width table entry 32), `+8` `fixTxWid` (the unscaled width, Fixed), `+$0C` the width scaled by `numer.h/denom.h` (the pen advance), `+$10` the text | `$0E018`: writes `+4` into the cached width table's entry for the space (`+$80`), calls DrawText `$11AD8` per device, then advances the pen by `+$0C` |
 | **7** poly | StdPoly (`$31`) | `(polySize + 7) & ~3`: frame, the Polygon | `$0C398` |
 | **8** region | StdRgn (`$18`) | `(rgnSize + 7) & ~3`: frame, the Region | `$0D6E8` |
 | `$64`, `$66` foreground colour | ForeColor, RGBForeColor, PmForeColor (`$36`) | `$64`, 12: `+2` the RGB colour (port `+$24`; for an old port `sub_917E(fgColor)`), `+8` `fgColor` (`+$50`). `$66`, 16, when the port's colour came from the Palette Manager (bit 2 of `$CE(a4)`): the same plus `+$C` grafVars `pmFgIndex` | `$0B230`, `$0B458` |
 | `$6B`, `$6D` background colour | BackColor, PmBackColor (`$37`) | the same from `+$2A`/`+$54`; `$6D` adds `pmBkIndex` (bit 4 of `$CE(a4)`) | `$0B584` for `$6D`, `$0B340` for `$6B` (the twin of `$64`, storing to the background global) |
-| `$67` font | StdText, when the font changed | 32: `+2` the 26-byte `FMOutput` (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle` | `$0DE00` |
+| `$67` font | StdText, when the font changed | 32: `+2` the 26-byte `FMOutput` (its `fontHandle` replaced by the strike actually used), `+$1C` `WidthTabHandle` | `$0DE00`: `+2` to `extern#1772+$60`, then looks up the width table (kind `$0A`) and the strikes (kind 8) in the cache |
 | `$68` MoveTo | the pen location changed (`sub_8DA4`) | 8: `+2` `pnLocHFrac` (`$8000` for an old port), `+4` `pnLoc` | `$0BD7C` |
 | `$69` mode | the transfer mode changed (`sub_8E38`) | 4: `+2` the mode | `$0B214`: the mode into `lr24` |
 | `$6A` clip region | SetClip, ClipRect (`$32`) | `(rgnSize + 5) & ~3`: the Region at `+2` | `$0BBC4`, into `lr19` |
 | `$6C` visible region | visRgn changed (`$10`, also from the port check at `$51A4`) | the same | `$0BBC4`, into `lr54` |
 | `$6E` pen size | PenSize, SetPenState, PenNormal (`$35`) | 8: `+4` pnSize | `$0BD98` |
 | `$6F` header | start of the stream | 4: `+2` flags, rewritten before each `$38` | `$0B228`: skipped |
-| `$70` hilite/op colour | OpColor or HiliteColor changed (`sub_8DF2`) | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` | `$0BB7C` |
+| `$70` hilite/op colour | OpColor or HiliteColor changed (`sub_8DF2`) | 16: `+4` the hilite colour (`grafVars^.rgbHiliteColor`, or `HiliteRGB` `$DA0` for an old port), `+$0A` `rgbOpColor` | `$0BB7C`: the hilite colour to `extern#1772+$40`, the op colour to `+$38` |
 | `$71` bit pattern | a pattern slot changed (`sub_8F04` result 1) | 12: `+2` slot, `+4` an 8-byte Pattern | `$0B6D8`: kind 0 |
 | `$72` pixel pattern | `sub_8F04` result 2 or 4 | 8: `+2` slot, `+4` a long (a PixPat) | `$0B72C`: kind 1 |
-| `$73` slot | the verb's pattern slot changed | 4: `+2` slot (1 pen, 2 background, 3 fill) | `$0B7D4`: skipped if the slot is current and no pattern changed; otherwise it makes the slot current (`lr20`) and builds its pattern by kind |
+| `$73` slot | the verb's pattern slot changed | 4: `+2` slot (1 pen, 2 background, 3 fill) | `$0B7D4`: skipped if the slot is current and no pattern changed; otherwise it makes the slot current (`lr20`) and fetches its pattern from the cache by kind (bit pattern kind 3, PixPat kind 5, RGB pattern kind 4) |
 | `$74` RGB pattern | `sub_8F04` result 3 | 12: `+4` slot, `+6` an RGB colour | `$0B788`: kind 2, the "RGB Pattern" of the cache message |
-| `$75` patAlign | `patAlign` changed (QuickDraw global −168) | 8: `+4` `patAlign` | `$0B7B8`: stored to a global |
+| `$75` patAlign | `patAlign` changed (QuickDraw global −168) | 8: `+4` `patAlign` | `$0B7B8`: stored to `extern#1772+$48` |
 
-The card handles 24 opcodes (`$65` is the only gap in `$64`-`$75`). The
-numbering does not follow PICT,
+The card handles 25 opcodes: 1-8 and `$64`-`$75` without `$65` (9 is
+rejected like any other unknown opcode). The numbering does not follow PICT,
 but the split into drawing records (1-8) and state records (`$64`-`$75`)
 is the one a QuickDraw picture makes.
 
@@ -1780,13 +1341,19 @@ into the port, so the 68K's pen stays right although the 68K drew nothing.
 ##### The card side: the interpreter
 
 **Prologue (`$0AD18`-`$0AEC4`).** It first runs a per-device set-up loop
-over 44-byte device records (`lr111`, `lr76` up to `lr105`), then calls
-`$169A0`. It clears:
+over 44-byte device records (`lr111`, `lr76` up to `lr105`). For each
+device it stores the record's `+$14` word (the pixel size) in a per-device
+slot (`+$3C4`) and its log2, from the byte table at `.data+$2C8` (1, 2, 4,
+8, 16, 32 → 0-5), in `+$3C0`. Then `$169A0` returns the current PQDAlloc
+mark (`lr41`); the loop head resets the allocator to it (`$169BC(lr41)`)
+before every record, and the drawing cases after every device, so a
+case's buffers last one record. It clears:
 * both region pointers (`lr54`, `lr19`);
 * `lr20`;
 * `lr27`, the "pattern changed" flag that the pattern records set;
 * `lr28`, the chunk status;
-* `lr50`, `lr70`-`lr72`, `lr75` and `lr32`-`lr34`.
+* `lr50`, `lr70`-`lr72`, `lr75` and `lr32`-`lr34`;
+* the strike pointers `extern#1772+$64` and `+$6C`.
 
 The pen (`lr25`, `lr36`) and the pattern slots are **not** set, so a stream
 has to begin with MoveTo and its patterns. The host does that, because its
@@ -1794,22 +1361,35 @@ cached state starts out empty.
 
 **Loop head (`$0AEC8`).**
 * **Before each record** it calls `$33304(record pointer)`. That adds 1 to
-  packet `+$1C4` (the heartbeat the host watches) and stores the pointer in
-  packet `+$1C8`, so the host can see how far the card has got.
-* **The stream** runs from `lr102` to `lr102 + [lr53]`. The opcode is read
-  as a signed half at `lr38+0` (`$0AF90`).
+  packet `+$1C4` (the heartbeat the host watches; the wait loop also adds 1
+  on every poll) and stores the pointer in packet `+$1C8`, so the host can
+  see how far the card has got. If a record follows, it resets the
+  PQDAlloc mark (`$169BC(lr41)`) and calls service `$D2` (Hand `$2001294`,
+  which restarts the kernel when `gr64` bit 28 is set).
+* **The stream** runs from `lr102` to `lr102 + [lr53]` (`lr102` is packet
+  `+$1BC`, `[lr53]` starts as packet `+$1C0`). The opcode is read as a
+  signed half at `lr38+0` (`$0AF90`).
 * **At the end of the bytes**, if the last status was `$C9`, it leaves
-  (`$0DF28`). Otherwise it waits in `sub_33374`, the nested wait loop. That
-  loop services only `$0C` (CachePixPat), `$26`, `$2A`, `$2C`, `$30` (the
-  font upload) and `$38`, and returns `$C8` or `$C9` after `$26`/`$30`.
-  * The wait is timed: service `$11` (stub `$38FE8`) is called before and
-    after it.
-  * `$3328C` counts the waits (`.bss+$10`), adds up their time
-    (`.bss+$0C`) and keeps a maximum in packet `+$1CC`/`+$1D0`.
+  (`$0DF28`). If it was `$C8`, it first completes the pending `$38`
+  (`$328C8`: clears packet `+$14`, writes the reply word `+$18`). Then it
+  waits in `sub_33374`, the nested wait loop. That loop polls until the
+  host's length word (packet `+$1C0`) has grown or a command arrives, and
+  services only `$0C` (CachePixPat), `$26`, `$2A`, `$2C`, `$30` (the font
+  upload) and `$38` (through `CommandDispatcher(6, …)`). It returns `$C8`
+  after `$38`, `$C9` after `$26`, 0 when only the length grew, and −7 or
+  −5 when the dispatcher returns `$17` or a command outside the list;
+  DrawMultiObject leaves on a negative status and returns its negation.
+  * The wait is timed: HIF service `$111` (clock, stub `$38FE8`) is called
+    before and after it.
+  * `$33238(t)` counts the waits (`.bss+$10`), adds up their time
+    (`.bss+$0C`), and keeps the average in packet `+$1CC` and the maximum
+    in `+$1D0`.
   * The prologue's call `$33238(-1)` resets these statistics.
 * **After the wait** it re-reads `[lr53]` and sets the end to `lr102 +
   [lr53]` without resetting `lr38`. It goes on with the records the host
-  appended. Most likely `$C8` means "more records" and `$C9` "last batch".
+  appended. `$C8` means "more records" (a `$38` came); after `$C9` (the
+  `$26`) it completes the command at once (`$32AB8(1)`), plays any records
+  still unread and leaves at the next end of the bytes.
 
 **Dispatch.** The opcode is in `lr81`. The loop head (`$0AF94`) sends
 opcodes above 9 straight to `$0B204`. For the drawing opcodes (1-9) it
@@ -1820,10 +1400,10 @@ first checks the dirty flags (below), then also continues at `$0B204`:
 | above `$69` | `$0B204` → `$0E2CC` |
 | `$69` | `$0B204` → `$0B214` |
 | 1-5 | table `.lit $0484` (`opcode − 1`); the delay slot (`$0E268`) sets the data pointer `gr96 = lr38 + 4` |
-| 6 | compare chain (`$0E22C`-`$0E23C`, read from the known low bits); its delay slot sets the pointer to `lr38 + $0C` |
+| 6 | compare chain (`$0E22C`-`$0E23C`) → `$0E018`; its delay slot sets the pointer to `lr38 + $0C` |
 | 7, 8, `$64`, `$66`, `$67`, `$68` | compare chain: 7 → `$0C398`, 8 → `$0D6E8`, `$64` → `$0B230`, `$66` → `$0B458`, `$67` → `$0DE00`, `$68` → `$0BD7C` |
 | `$6A`-`$75` | table `.lit $0498` (`opcode − $6A`) |
-| anything else | `$0E20C`: "DrawMultiObject: unknown opCode %d" (`.lit $0430`) |
+| anything else | `$0E20C`: reports "DrawMultiObject: unknown opCode %d" (`.lit $0430`) and leaves the stream |
 
 **State is applied lazily.** The state records only store their values and
 set a dirty flag:
@@ -1838,32 +1418,42 @@ set a dirty flag:
 Before a drawing record, if any flag is set, the loop head runs a
 per-device refresh (`$0AFC0`-`$0B1F0`) and clears them all (`$0B1F4`).
 
-**The refresh**, read in outline (about a third of its words are not
-estimated). For each device (`lr76` up to `lr105`):
+**The refresh.** For each device (`lr76` up to `lr105`):
 1. it loads that device's values into the drawing-context globals,
    `extern#1772` `+$0C`, `+$10`, `+$14`, `+$18`, `+$20`, `+$24` and `+$74`.
    These are the same stores every drawing case makes before it draws;
-2. it calls **`$06F1C`, ColorMap**, which follows `ColorMap` in
-   `QDUtil.a` step for step (estimated words):
+2. it calls **`$06F1C`, ColorMap**(pixel size from slot `+$3C4`, mode
+   `lr24`, …), which follows `ColorMap` in `QDUtil.a` step for step. It
+   returns the mapped mode and leaves the replicated foreground and
+   background longs in the per-device slots `+$3B8` and `+$3BC`:
 
    | `ColorMap` (68K) | `$06F1C` |
    |---|---|
    | split the mode into the pattern bit and the rest | `gr99 = mode & 8`, `lr17 = mode & ~8` (`lr17` mode, `lr16` depth) |
-   | an arithmetic mode (bit 5) at 1 bit per pixel goes through `arithMode`, 8 bytes | the same test, and `mode & 7` indexes an 8-byte table at `.data+$2EC` |
+   | an arithmetic mode (bit 5) at 1 bit per pixel goes through `arithMode`, 8 bytes | the same test, and `mode & 7` indexes the 8-byte table at `.data+$2EC`: `00 03 02 01 01 03 02 01`, exactly `arithMode` |
    | old port or new (`portBits.rowBytes` sign) | tests `extern#1772+$3E` |
    | fore- and background RGB from the port | loads the RGBs at `extern#1772+$28` and `+$30`, and tests for black on white |
    | at depth ≤ 2, if fore- and background map to the same index although their RGBs differ, invert the foreground and map it again (`@goOnAndFlip`) | the same comparisons, then `$06B1C` (invert) and `$0688C` (colour → index, request 13) |
    | replicate the pixel through a long, by depth | a switch on `depth − 1` through `.lit+$128` |
 
-   The `.lit` group at base `$06BAC`, which the key fit leaves out as "not
-   a case-block table", is ColorMap's switch tables (`.lit+$128`, `$168`,
-   `$1A8`, `$1B8`). Their targets are the per-depth replication blocks.
-3. it looks up a byte in an 8-entry table at `.data+$3D8`, indexed by
-   `(mode xor lr42) & 7`, or takes −1, and stores it in a per-device slot
-   (`+$B4`). That is a per-device choice of blit loop by mode, as
-   QuickDraw's mode tables do. Decoded (`.data` decoded, below), the eight
-   bytes are `00 00 01 02 02 64 64 64`;
-4. it sets a per-device flag (`+$1CC` slot) unless the byte is `$64`.
+   ColorMap's switch tables are `.lit+$128`, `$168` and `$1B8` (16
+   entries each, indexed by depth − 1; their targets are the per-depth
+   replication blocks) and `.lit+$1A8` (4 entries, by `mode & 3`).
+3. it reduces the mapped mode to a **mode byte** in the per-device slot
+   `+$B4`. When the mode is a pattern mode (bit 3), not arithmetic (bit 5
+   clear), and the current pattern is a solid bit pattern (pattern kind
+   `+$3A0` = 0 and the 8 bytes of its cache entry all ones, `lr42` = 0, or
+   all zeros, `lr42` = 4), the byte is `.data+$3D8[(mode xor lr42) & 7]`,
+   from `00 00 01 02 02 64 64 64`; otherwise it is −1. The values, as the
+   column fill `$09578` uses them: 0 fills with the foreground long, 1
+   inverts, 2 fills with the background long, `$64` leaves the
+   destination unchanged. With an all-ones pattern, patCopy and patOr give
+   0, patXor 1, patBic and notPatCopy 2, the other `not` modes `$64`; an
+   all-zeros pattern shifts the index by 4, so patCopy gives 2 and patOr,
+   patXor, patBic `$64`;
+4. it sets the per-device draw flag (`+$1A4`) when the byte is not `$64`
+   and the device's clipped rectangle is not empty (`+$1CC`, set by the
+   region case).
 
 So colours and mode are mapped per device once per change, not once per
 drawing record. A stream that draws many shapes in one colour pays for the
@@ -1871,12 +1461,11 @@ mapping once.
 
 Each case ends by advancing `lr38`, usually in the delay slot of its `jmp
 $0B450` back to the loop. The sizes found that way match the host's layouts
-for every case that has been read.
+for every case.
 
 The two 6-entry tables `.lit $0454` and `$046C` are not opcode tables. They
 are sub-switches on `lr94` (0-5) inside the rectangle case (`$0CD30`,
-`$0CEE4`), right after `$1553C` and `$32C10`. With the pinned key all twelve
-entries decode:
+`$0CEE4`), right after `$1553C` and `$32C10`:
 
 | `lr94` | `.lit $0454` | `.lit $046C` | routine called |
 |---|---|---|---|
@@ -1884,97 +1473,102 @@ entries decode:
 | 3 | `$0CD8C` | `$0CF44` | `$09578` |
 | 5 | `$0CDB0` | `$0CF68` | `$09660` |
 
-`$09578` (estimated words) fills a one-pixel-wide column:
+`$09578` fills a one-pixel-wide column:
 * the x offset is `rect.left − bounds.left` and the row count is
   `rect.bottom − rect.top`;
 * it stores one byte per row, stepping by `rowBytes`, unrolled by two;
-* mode 1 inverts each byte (NOR); otherwise it stores the foreground or
-  background long (`+$1C`/`+$20`).
+* the mode byte selects the store: 1 inverts each byte (NOR), 0 stores the
+  foreground long (`+$1C`), 2 the background long (`+$20`).
 
 `$09660` does the same with long stores, and `$09430` with masked long
-read-modify-writes (AND, ANDN, OR, XOR) and `lr94` as an argument. So `lr94`
-is `log2(pixel depth)`:
+read-modify-writes (AND, ANDN, OR, XOR) and `lr94` as an argument. `lr94`
+is the per-device slot `+$3C0`, `log2(pixel depth)` from the prologue:
 * 3 is 8 bits, handled with bytes;
 * 5 is 32 bits, handled with longs;
 * 0, 1, 2 and 4 (1, 2, 4 and 16 bits) share the masked routine.
 
-These are the narrow-rectangle (vertical strip) fast paths. The general
-rows go through `$09020` and `$09270`, which mask the edge longs and store
-whole longs between them, as BitBlt-style fill loops do.
+These draw the left and right edges of a one-pixel frame (see the
+rectangle case below; DrawLine `$08618` calls the same three). The top and
+bottom edges go through `$09020` and `$09270`, which mask the edge longs and
+store whole longs between them, as BitBlt-style fill loops do.
 
-**What each case calls.** A trace from each case through the estimated words
-follows both branches and stops at the jump back to the loop:
+**What each case calls** (every call between the case's entry and its jump
+back to the loop):
 
-| record | case | words traced (not estimated) | routines reached |
-|---|---|---|---|
-| 1 line | `$0BDB0` | 395 (8) | DrawLine `$08618`, ShieldCursor pair, `$13F54`, `$1701C` |
-| 2/3/4 arc, oval, round rect | `$0D9C4` | 271 (79) | DrawArc `$075DC`, ShieldCursor pair |
-| 5 rect | `$0C754` | 908 (55) | RSect, TrimRect, `$13F54`, alloc, `$37D68` (`storem` fill), ShieldCursor pair, `$1701C`, BitBlt |
-| 6 text | `$0E018` | 98 (0) | none before its unestimated jump; DrawText `$11AD8` follows at `$0E1B0` |
-| 7 poly | `$0C398` | 239 (0) | ShieldCursor pair, DrawLine, QuickPolys |
-| 8 region | `$0D6E8` | 183 (0) | RSect, TrimRect, alloc (then RgnBlt) |
-| `$64`, `$66`, `$6B`, `$6D` | `$0B230`, `$0B458`, `$0B340`, `$0B584` | 68-76 | request 13 (colour → index); `$66`/`$6D` also `Entry2Index` |
-| `$67` | `$0DE00` | 134 | `$15E8C`, the cache lookup with time stamp |
-| `$6A`/`$6C` | `$0BBC4` | 110 | RSect, TrimRect |
-| `$68`, `$69`, `$6E`, `$6F`, `$70`-`$72`, `$74`, `$75` | | 2-23 | none: they only store state |
-| `$73` | `$0B7D4` | 295 (23) | the pattern cache (`$1610C`, `$15E8C`, `$15FF4`, `$15154`, `$1518C`) |
+| record | case | routines reached |
+|---|---|---|
+| 1 line | `$0BDB0` | DrawLine `$08618`, `$1553C`, ShieldCursor pair, IsOnThisCard `$13F54`, FillLongs `$1701C` |
+| 2/3/4 arc, oval, round rect | `$0D9C4` | DrawArc `$075DC`, `$1553C`, ShieldCursor pair |
+| 5 rect | `$0C754` | RSect, TrimRect, IsOnThisCard, FillLongs `$1701C`, FillLongsBurst `$00348`, FillLongsStorem `$37D68`, `$1553C`, ShieldCursor pair, the column fills `$09430`/`$09578`/`$09660`, the row fills `$09020`/`$09270`, `$17500`, BitBlt, RgnBlt |
+| 6 text | `$0E018` | DrawText `$11AD8`, once per device |
+| 7 poly | `$0C398` | `$1553C`, ShieldCursor pair, DrawLine, QuickPolys |
+| 8 region | `$0D6E8` | RSect, TrimRect, `$1553C`, `$17500`, RgnBlt |
+| `$64`, `$66`, `$6B`, `$6D` | `$0B230`, `$0B458`, `$0B340`, `$0B584` | `$0688C` (colour → index, CallBack request 13); `$66`/`$6D` also `$33D58` (CallBack request 17, `Entry2Index`) |
+| `$67` | `$0DE00` | CacheFindStamp `$15E8C` (up to three lookups), `$15AE4` (releases the entries of the previous font) |
+| `$6A`/`$6C` | `$0BBC4` | RSect, TrimRect |
+| `$68`, `$69`, `$6E`, `$6F`, `$70`-`$72`, `$74`, `$75` | | none (`$70` uses `memcpy`): they only store state |
+| `$73` | `$0B7D4` | the pattern cache: `$1610C` (find or create a kind-3 bit pattern), CacheFindStamp (kind 5), CacheFindOrCreate `$15FF4` (kind 4), `$15154`, `$1518C`, `$15AE4` |
 
-Every drawing case brackets its drawing with the cursor hand-off described
-in "The cursor".
+`$1553C(rect, …)` stores the shield rectangle (`extern#1772+$78`-`+$7E`).
+Each drawing case then either takes the ShieldCursor pair itself or
+leaves it to BitBlt or RgnBlt, which call the pair; the cursor hand-off is
+described in "The cursor". `$15AE4(kind, entry)` clears bit 31 of an
+entry's first word and releases the entry when bit 30 is set; the exit
+path (`$0DF28`, also reached from the cache errors at `$0DF18`) runs it for
+the pattern, width-table and font entries the stream still holds.
 
-**The rectangle case** (`$0C754`-`$0D050`), per device (`lr76`):
-1. **Skip** the device if its per-device flag (`+$1A4` slot) is clear.
+**The rectangle case** (`$0C754`-`$0D6E4`), per device (`lr76`):
+1. **Skip** the device if its draw flag (`+$1A4` slot) is clear.
 2. **Choose the fast path** only if all of these hold:
-   * the device's type word (`+$3C0` in its 44-byte record) is 5;
+   * the device is at 32 bits per pixel (per-device slot `+$3C0`, the log2
+     of the pixel size, is 5);
    * neither the visible nor the clip region is non-rectangular (the
      per-device slots `+$17C` and `+$154` that the region case fills are 0);
    * the record's frame flag (`lr82`) is 0, so it is a paint, erase,
      invert or fill rather than a frame;
    * the per-device mode byte from the refresh (`+$B4` slot, the
-     `.data+$3D8` lookup) is 0 or 2.
+     `.data+$3D8` lookup) is 0 or 2, a fill with the foreground (`+$3B8`)
+     or background long (`+$3BC`).
 3. **Fast path** (`$0C80C`-`$0CA50`):
    * clip the rectangle against the device's `minRect` (the `+$14` table
      the region case filled with RSect);
    * set the shield rectangle (`$1553C`) and take ShieldCursor;
-   * fill through the long-fill helpers (estimated words):
-     * **`$13F54(addr)`** asks "is this address on this card?". It calls
-       kernel service `$C4` (stub `$38F34`: `const gr121, $??C4` /
-       `asneq`; the high byte and the trap number are masked, and `$C4`
-       lies in the vector-66 range), takes the result's top nibble `s`, and returns 1 when
-       `addr` is `$s.......` or `$Fs......`, else 0. Those are the card's
-       NuBus super-slot and standard-slot spaces, so `s` is the card's slot
-       number. The kernel has a matching stub. Boot stores a value shifted
-       left by 28 at `$4C00682C` (`PublicOu+$2C`), and Hand's stub
-       `$2001250` returns that word (`gr96 = [$4C00682C]`). The service
-       table's pointers are too approximate to prove that `$C4` lands on
-       `$2001250` (section 8), but no other stub returns such a value.
-       Pixmap base addresses arrive as host addresses, so this is how the
-       card tells its own frame buffer from host or other-slot memory;
-     * **`$1701C(dst, value, count)`**, a long fill (`lr8`-`lr10`). The
-       branches below are plain bits:
-       * `count` < 8 goes to a small path (`$171D0`);
+   * fill row by row: if IsOnThisCard says the first address is on the
+     card, with FillLongsBurst `$00348` when the end address (first row
+     plus rows × `rowBytes`) has a bit of `$01200000` set and with FillLongs
+     `$1701C` otherwise; off the
+     card with FillLongsStorem `$37D68`. The helpers:
+     * **`$13F54(addr)`**, IsOnThisCard, asks "is this address on this
+       card?". It calls kernel service `$C4` (stub `$38F34`: `const gr121,
+       $00C4` / `asneq trap66`), takes the result's top nibble `s`, and
+       returns 1 when `addr` is `$s.......` or `$Fs......`, else 0. Those
+       are the card's NuBus super-slot and standard-slot spaces, so `s` is
+       the card's slot number. PrivNZ sends `$C4` to Hand's `$2001250`,
+       which returns `gr96 = [$4C00682C]` (`PublicOu+$2C`), where Boot
+       stores a value shifted left by 28. Pixmap base addresses arrive as
+       host addresses, so this is how the card tells its own frame buffer
+       from host or other-slot memory;
+     * **`$1701C(dst, value, count)`**, FillLongs (`lr8`-`lr10`):
+       * `count` < 8 goes to a small path (`$171D0`: 1-7 single stores
+         through `.lit+$078C`);
        * `dst & 3` ≠ 0 goes straight to `$00348`;
-       * otherwise it tests bit 31 of the absolute word `$??000080`. There
-         is no relocation on the pair, so this is a hardware register, not
-         a variable. The key estimate gives `$44000080`, a status register
-         that Hand also tests (see below);
+       * otherwise it tests bit 31 of the absolute word `$44000080`
+         (`consth $4400`, no relocation: a hardware status register that
+         Hand also tests, see below);
        * bit 31 clear: call `$00348`;
-       * bit 31 set: a **hardware block fill** (estimated words,
-         `$17078`-`$171CC`):
+       * bit 31 set: a **hardware block fill** (`$17078`-`$171CC`):
          1. align `dst` to 32 bytes with 1-7 single stores of the value
-            (`dst>>2 & 7`, through `.lit+$548`);
-         2. store the value to two registers at `$??C00000` and
-            `$??C00004` (the masked byte estimates as `$4C`, so
-            `$4CC00000`/`$4CC00004`);
+            (`dst>>2 & 7`, through `.lit+$0770`);
+         2. store the value to two registers at `$4CC00000` and
+            `$4CC00004`;
          3. set bit 22 of the destination (`gr99 = dst | $00400000`), an
             alias of the frame buffer;
          4. store `$FFFFFFFF` through two pointers 4 bytes apart (`gr99`,
             `gr98`), each stepping 32 bytes. Eight stores cover 32 longs, so
             each store fills 4 longs (16 bytes);
-         5. handle the 1-3 remaining blocks the same way, with a store
-            value derived from the remaining count (presumably a partial
-            mask), then clear bit 22 again (`and $FFBFFFFF`) and finish the
-            tail with single stores.
+         5. handle the 1-3 remaining 32-byte blocks the same way (again
+            stores of `$FFFFFFFF`), then clear bit 22 again (`and
+            $FFBFFFFF`) and finish the tail with single stores.
 
          `$17264` (the two-value fill) loads the same two registers with
          *different* values, `a` to `+$00` and `b` to `+$04`. Its pointers are
@@ -1987,10 +1581,7 @@ in "The cursor".
          This is the shape of a VRAM block write: colour registers loaded
          once, then each store to the alias writes the colour into the
          bytes its mask enables. That explains why this path needs no
-         `storem`: one store already does four longs. The register and
-         alias addresses rest on estimated high bytes; the low bytes
-         (`$00`, `$04`, `$40` in `consth`) and the structure are plain or
-         estimated consistently.
+         `storem`: one store already does four longs.
 
        **What the bit means, from Hand.** The video command service
        (`$2000C14`) converts the 2 MB window at `$4C000000` between two
@@ -2015,23 +1606,23 @@ in "The cursor".
        24 bpp. So `$1701C` uses the block write almost everywhere, and
        `$00348` only for 1-8 bpp NTSC/PAL frame buffers.
 
-       `$17264(dst, a, b, count)` (entry-table `+$30`) is the two-value
-       version. With `a` = `b` it calls `$1701C`. Otherwise it tests bit 31
-       of `$??00007C` (estimated `$4400007C`) the same way, before its own
-       aligned paths. So the second status register gates the two-colour
+       `$17264(dst, a, b, count)` (Fill2Longs, PQDInit's descriptor `+$30`)
+       is the two-value version. With `a` = `b` it calls `$1701C`. Otherwise
+       it tests bit 31 of `$4400007C` the same way, before its own aligned
+       paths. So the second status register gates the two-colour
        case. The matching burst helpers are `$00294`, which loads two
        alternating values into the burst registers, and `$00248` (`+$54`),
        a copy that moves 29 longs per `loadm`/`storem` pair;
-     * **`$00348(dst, value, count)`**, a burst fill. It loads the value
+     * **`$00348(dst, value, count)`**, FillLongsBurst. It loads the value
        into 24 global registers (`gr96`-`gr119`) and writes them with
        `storem`, 96 bytes per instruction. The remainder goes through a
-       `.lit` jump into the unrolled register loads and one final `storem`.
-       Nearly every blitter calls it for solid runs;
-     * **`$37D68(dst, value, count)`**, a `storem` fill for any memory.
-       The "call to the next instruction" at its start is a direct `call`
-       with an R_IREL relocation (type 24): the file stores displacement 0
-       and the loader fills it in (see "Relocations name the targets"). Its
-       calls all go to kernel service stubs:
+       computed jump (`$003D0`) into the unrolled register loads and one
+       final `storem`. Nearly every blitter calls it for solid runs (18
+       call sites);
+     * **`$37D68(dst, value, count)`**, FillLongsStorem, a `storem` fill for
+       any memory. Its calls are direct `call`s with R_IREL relocations
+       (type 24; the file stores displacement 0 and the loader fills it in,
+       see "Relocations name the targets"), all to kernel service stubs:
        1. `$C4` (`$38F34`): the card's slot nibble, as in `$13F54`, kept in
           `gr120`;
        2. `$D1` (`$390F4`): if the result's top nibble is 0, take the
@@ -2044,23 +1635,39 @@ in "The cursor".
           first rewrites to `$s` plus the low 28 bits);
        6. otherwise (host or another slot) it saves state and sets it:
           `$B9(1)`, clears `CFG` bit 5, `$B8(0)`, `$BF(1)`, `$D3(0)`. If
-          `$D3` returned non-zero, `$D4(dst, bytes)` translates `dst` and the
-          result becomes the destination. When `count * 4` overflows, it
-          instead restores `$D3` and fills untranslated. A misaligned
-          destination skips the alignment step. Otherwise it stores up to
-          64-byte alignment, writes 64 bytes per
-          `storem` (`CR = $F`), stores the rest, and restores everything
+          `$D3` returned non-zero, `$D4(dst, bytes)` translates `dst`; if
+          the translation covers all the bytes, the result becomes the
+          destination, otherwise it restores `$D3` and fills the
+          untranslated address with plain `storem`s (`$38180`). A
+          misaligned destination takes the same plain path. Otherwise it
+          stores up to 64-byte alignment, writes 64 bytes per `storem`
+          (`CR = $F`, control field `$43`) with `CPS` bit 9 (`LK`, `$200`)
+          set around each one, stores the rest, and restores everything
           with the saved values (`$38114`-`$38138`);
        7. the direct path (`$381CC`) is the same 64-byte `storem` loop
-          without the services.
+          without the services, the lock or the control field.
 
-       `$D3` is the service that brackets the host-memory mapping (1 on
-       entry, 0 on release; see "Card: `MapVirtual` and host memory"). So step 6 is a
-       fill into host memory through the kernel's mapping, presumably
-       with NuBus block transfers set up by `$B8`/`$B9`/`$BF`. What
-       `$D1`, `$BB`, `$B8`, `$B9`, `$BF` and `$D4` do in the kernel is not
-       shown, because the service table's pointers are approximate. **`$D5`
-       is settled by its use:** Hand's stub `$2001260` returns
+       The services, from the PrivNZ table and Hand:
+
+       | service | Hand | does |
+       |---|---|---|
+       | `$B9` | `$20018B8` | sets (1) or clears (0) `OPS` bit 4 (`SM`, supervisor mode); returns the old bit |
+       | `$B8` | `$20018E4` | 0 stops the timer (`TMC` = `TMR` = 0); otherwise reloads `$7530` with `TMR` bit 24 (`IE`); returns the old `IE` |
+       | `$BF` | `$2001924` | sets or clears `OPS` bit 1 (`DI`, interrupts off); returns the old bit |
+       | `$D3` | `$2001820` | stores its argument at `$4C006848`; 0 sets `OPS` bit 6 (`PD`, data addresses untranslated), non-zero clears some TLB entries and `PD`; returns 1 if translation was on |
+       | `$D4` | `$2001808` | translates an address through the range table at `$4C00316C` (below) |
+       | `$D1` | `$2001A48` | `gr96 = [$4C006804]` (`PublicOu+$04`) |
+       | `$BB` | `$2001A58` | `gr96 = gr64`, the feature flags the host wrote to `PublicIn+$18` |
+       | `$D5` | `$2001260` | the slot mask (below) |
+
+       So step 6 runs in supervisor mode with the timer and interrupts off
+       and data translation off, and writes host memory at the physical
+       address from `$D4`. The locked `storem` with control field `$43`
+       (the address-space bit and option 3) is presumably the cycle the
+       card's bus logic turns into a NuBus block write; `$D3` is the
+       service that brackets the host-memory mapping (1 on entry, 0 on
+       release; see "Card: `MapVirtual` and host memory"). **`$D5`:**
+       Hand's `$2001260` returns
        `[$4C00643C]` (`PublicIn+$3C`) when its argument is negative, and
        otherwise clears bit `lr2` of that word and mirrors the result to
        `$46000000`. `$37000` calls `$D5(-1)` to read the mask and
@@ -2071,38 +1678,37 @@ in "The cursor".
 
        `.data+$280`, read by every caller of the fills (`$03838`, `$03A28`,
        `$04110`, `$09020`, `$09270`, `$0E4CC`, `$0E804`, `$11460`-`$11918`,
-       `$1C298`, `$1C8A8`), is a shared flag. PRInit stores its *address*
-       in the descriptor it builds for modules (`$16748`), so code outside
-       Antelope can change it. Its meaning and initial value are in masked
-       `.data`; decoded, it is 1 (see "`.data` decoded"). The pattern fills
+       `$1C298`, `$1C8A8`), is a shared switch for the block write: those
+       callers use FillLongs only when it is non-zero and the run is on the
+       card with neither address bit of `$01200000` set at its end; other
+       runs go to FillLongsStorem (in the row fills `$09020`/`$09270`, runs
+       on the card go to single stores). PQDInit stores its *address* in the descriptor it
+       builds for modules (`$16748`), so code outside Antelope can change
+       it. Its initial value is 1. The pattern fills
        have no const references, but direct calls within their file reach
        them: `$04110` from BitBlt (`$02B3C`), `$1C8A8` from RgnBlt (`$1B090`),
        `$0E804` from `$1114C`. So they are BitBlt's and RgnBlt's own
-       pattern paths. One candidate for `$BB`: Hand has a stub (`$2001A58`) that returns
-       `gr64`, the feature flags the host wrote to `PublicIn+$18`. In those
-       flags, `$200` is set by `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the
-       unit's config word `+$128` has bit `$40`. The config word comes from
-       Control call 17 (cs50 is the same plus `$100`, "mailbox allowed").
-       Whether the host sets `$200` is described in section 9: it does,
-       by default. If `$BB` is the flags stub, the host-memory `storem`
-       path is **on by default**. That `$BB` is the flags stub is not
-       confirmed.
+       pattern paths. `$BB` returns `gr64`, the feature flags the host
+       wrote to `PublicIn+$18`. In those flags, `$200` is set by
+       `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the unit's config word
+       `+$128` has bit `$40`. The config word comes from Control call 17
+       (cs50 is the same plus `$100`, "mailbox allowed"). Whether the host
+       sets `$200` is described in section 9: it does, by default. So the
+       host-memory `storem` path is **on by default**, provided the top
+       nibble of `PublicOu+$04` (`$D1`) is not 0.
 
-       A neighbouring stub `$2001A48` returns `[$4C006804]`
-       (`PublicOu+$04`), a candidate for `$D1`.
-
-       **`$D4` and `gr122`.** Antelope has two `$D4` stubs, and both use
-       `gr122` as a second result. `$39064` sets `gr96 = lr3` before the
-       trap and returns at once if `gr122` is 0. `$39050` loads `gr96` from
-       `*lr3` and stores `gr122` back there. Hand has a region-table
-       translator of that shape: `$2001774` requires a 1 KB-aligned
-       `lr2`, looks it up in the table at `$4C003168`, and returns
-       `gr96 = 0` and `gr122 = aux + (lr2 - base)`. `$2001808` is a second
-       stub that returns its input in `gr96` and a computed value in
-       `gr122`. These fit `$D4` as "translate a host address through the
-       mapping table", but the service table cannot say which stub is
-       `$D4`, and the estimated stub words are not exact enough to settle
-       how the two results are combined.
+       **`$D4` and `gr122`.** Hand's `$2001808` passes the address (`lr2`)
+       and a byte count (`gr96`) to the range lookup `$2001C2C`, which
+       searches the table at `$4C00316C` (12-byte entries: base, length,
+       target) and returns the target address plus the offset, with the
+       count cut to the bytes left in that range (0 when no range holds
+       the address, which then stays as it was). `$D4` returns the address
+       in `gr96` and the count in `gr122`. Antelope has two `$D4` stubs:
+       `$39064` takes the count in `lr3` (`gr96 = lr3` before the trap) and
+       replaces `lr3` by `gr122` when that is non-zero; `$39050` takes a
+       pointer to the count in `lr3`, reads it before the trap and writes
+       `gr122` back. (`$2001774`, a similar 1 KB-aligned lookup in the
+       table at `$4C003168`, is service `$CE`.)
        The same service sequence appears in three more entry points (the
        others with services are shared restore tails: `$38574`, `$385C8`,
        `$38C3C`). Together they are one family:
@@ -2112,24 +1718,28 @@ in "The cursor".
        | `$37C10` | pattern fill: a 1-, 2-, 4-, 8- or 16-long pattern (`lr19` = period) loaded into `gr96`-`gr111`, then `$37D68`'s body (`$37DF0`) | `$04110`, `$0E804` (3), `$1C8A8` |
        | `$37D68` | fill with one long | the row fills `$09020`/`$09270`, DrawMultiObject, `$11460`-`$11918` (text), `$03838`, `$03A28`, `$0E4CC`, `$1C298` |
        | `$37000` (not in the family) | **burst self-test of a slot** (`addr`): takes the slot nibble, reads the slot mask with `$D5(-1)` and returns `$100` if the slot's bit is clear. It then reserves `$200` bytes on the memory stack and checks `CopyLongsStorem` against single loads and stores: burst-read 64 and 60 longs, invert the target with single stores, and burst-write it back. On any mismatch it restores the memory, calls `$D5(slot)` to clear the slot's bit, and returns -1 | CacheGDevice `$14F64` (once per device, between `$D3` calls) |
-       | `$16C48` (not in the family) | the copy helper behind CallBack requests 8 and 18 | uses `$38218` twice |
-       | `$38218` | forward copy (`dst`, `src`, `count`): `loadm`/`storem` 64 bytes at a time; calls `$D4` for both pointers | ShieldCursor `$32C10` and `$32EF8` (saving and restoring the pixels under the cursor), `$02DE0`, `$16C48` (2), `$1B61C`, `$37000` (4) |
-       | `$388D0` | backward copy: the same with both pointers counting down, for overlapping moves | through the jump table at `.lit $0FFC` (base `$3772C`) |
+       | `$16C48` (not in the family) | CopyHostMemory, the copy helper behind CallBack requests 8 and 18 | uses `$38218` twice |
+       | `$38218` | CopyLongsStorem, forward copy (`dst`, `src`, `count`): `loadm`/`storem` 64 bytes at a time; calls `$D4` for both pointers | ShieldCursor `$32C10` and `$32EF8` (saving and restoring the pixels under the cursor), `$02DE0`, `$16C48` (2), `$1B61C`, `$37000` (4) |
+       | `$388D0` | CopyLongsBackStorem, backward copy: the same with both pointers counting down, for overlapping moves | none: no relocation in Antelope points to it |
 
        All four rewrite a `$4.......` card address to the slot form and
        take the kernel-service path only for memory off the card;
    * release the cursor (`$32EF8`).
-4. **General path** (`$0CA64`-`$0D050`):
-   * RSect (`$01494`), then TrimRect (`$01654`) for each region;
-   * set the shield rectangle and take ShieldCursor (`$0CCA0`);
-   * then twice, a per-depth column switch (`$0CD30`, `$0CEE4`, below)
-     and a row-fill pair (`$09270`, `$09020`);
-   * release the cursor at `$0D050`.
-
-Two columns and two rows is the shape of a framed rectangle (left and right
-edge, top and bottom edge). That fits frames being sent this way, but it is
-a reading. How this path handles a non-rectangular clip is not read; no
-direct call to RgnBlt appears in the case.
+4. **General path** (`$0CA64`-`$0D6C8`): RSect (`$01494`), then TrimRect
+   (`$01654`) for each non-rectangular region, then one of three ways:
+   * **a one-pixel frame** (`$0CC94`-`$0D05C`): frame flag set, pen
+     1×1, both regions rectangular and a mode byte of 0-2. It sets the
+     shield rectangle, takes ShieldCursor (`$0CCA0`), and then twice runs a
+     per-depth column switch (`$0CD30`, `$0CEE4`, above) and a row fill
+     (`$09270`, `$09020`): the left and right edge, the top and bottom
+     edge. It releases the cursor at `$0D050`;
+   * **any other frame** (`$0D064`-`$0D54C`): the four edges one by one,
+     each with `$17500` and then BitBlt, or RgnBlt when a region is not
+     rectangular; shield rectangle and ShieldCursor as above;
+   * **a filled rectangle**, or a frame whose pen covers the whole
+     rectangle (`$0D550`-`$0D6C4`): shield rectangle, `$17500`, then one
+     BitBlt (both regions rectangular) or RgnBlt with the visible and
+     clip regions. BitBlt and RgnBlt take the cursor themselves.
 
 **The polygon case** (`$0C398`) reads the Polygon in place:
 
@@ -2162,10 +1772,14 @@ quit if the intersection is empty              an empty result clears lr11
 ```
 
 `rgnSize = 10` is a rectangular region, and `+2` in a Region is `rgnBBox`.
-That names two helpers every drawing routine calls:
+The per-device slot (`+$17C` for `lr54`, `+$154` for `lr19`) keeps the
+region only when it is not rectangular. `lr11` goes to the per-device slot
+`+$1CC`, and the draw flag `+$1A4` is set from it and the mode byte, as in
+the refresh. That names two helpers every drawing routine calls:
 * `$01494` is **RSect**: DrawArc, DrawLine, QuickPolys and DrawText call it
   once each, StretchBits four times;
-* `$01654` is **TrimRect**: each drawer calls it twice, once per region.
+* `$01654` is **TrimRect**: DrawArc, DrawLine, QuickPolys and DrawText call
+  it twice, once per region, StretchBits three times.
 
 ##### Text and fonts
 
@@ -2215,9 +1829,16 @@ mask's bits in turn:
     first word and release it (`$15B3C(8, entry)` unlinks it and calls
     the kind's destructor from its descriptor, `+$14`).
 
-So the card's "font is not in cache" and "width table is not in the cache"
-messages are about this upload: DrawMultiObject looks up the `$67` record's
-`WidthTabHandle` and the `FMOutput` strike in what `$30` delivered.
+So the card's three `opSwapFont` messages are about this upload. The `$67`
+case (`$0DE00`) looks up, in what `$30` delivered:
+* the record's `WidthTabHandle` (kind `$0A`), whose data goes to
+  `extern#1772+$68`, else "width table is not in the cache";
+* the width table's `WidTabFont` strike (kind 8, `extern#1772+$6C`), else
+  "width font is not in cache";
+* the `FMOutput`'s `fontHandle` strike (kind 8, `extern#1772+$64`; the same
+  entry when the two handles agree), else "font is not cache".
+
+Each error is reported and ends the stream.
 
 **The cache of host objects.** One cache serves fonts, GDevices and more,
 organised per kind and keyed by the host handle:
@@ -2227,8 +1848,8 @@ organised per kind and keyed by the host handle:
 * Each entry is: `+$00` a time stamp, `+$04`/`+$08` prev/next, `+$0C` the
   host handle (the key), `+$10` the data.
 * **`$15D28(kind, key)` finds** an entry by walking the list.
-* **`$15E8C`** finds and stamps a hit with the clock (service `$11`) for
-  LRU replacement.
+* **`$15E8C`** finds and stamps a hit with the clock (HIF service `$111`)
+  for LRU replacement.
 * **`$15EE4` creates** an entry:
   1. `$15A7C` makes room, evicting if needed;
   2. `$15958` allocates the entry;
@@ -2242,6 +1863,9 @@ The kinds seen so far:
 | kind | holds |
 |---|---|
 | 2 | GDevice (the cursor code looks up `CrsrDevice` with `$15D28(2, …)`) |
+| 3 | bit pattern (record `$73`, created by `$1610C`) |
+| 4 | RGB pattern (record `$73`, keyed by the 24-bit colour) |
+| 5 | PixPat (CachePixPat, command `$0C`) |
 | 6 | used by commands `$0D`/`$0F` |
 | 8 | font strike |
 | `$0A` | width table |
@@ -2249,7 +1873,7 @@ The kinds seen so far:
 **On the card: drawing the text.** `$11AD8`, called from the text case, is a
 7 KB routine with the shape of QuickDraw's `DrawText.a`:
 * the clipping set-up (RSect, TrimRect twice) and the ShieldCursor pair;
-* one buffer from PRAlloc `$16A04`, or two when a flag (`lr58`) is set,
+* one buffer from PQDAlloc `$16A04`, or two when a flag (`lr58`) is set,
   presumably for a shadow mask. Each is cleared, with a leading zero long.
   The left edge is rounded down to 32 pixels, and the width is counted in
   longs plus 2;
@@ -2276,12 +1900,13 @@ The style comes from the `FMOutput` of the `$67` record. One pointer
 
 So bold, italic, underline, shadow and scaling are applied on the card.
 
-**The glyph loop** (`$122F4`-`$123A8`, read from fully decoded words). Its
+**The glyph loop** (`$122F4`-`$123A8`). Its
 inputs come from three pointers in the drawing globals:
 * `lr60 = [extern#1772+$60]`, the `FMOutput` (above);
 * `lr46 = [extern#1772+$68]`, the width table (256 Fixed entries indexed
-  by character code). `lr70` is its entry for the space (`+$80`), which the
-  text record also carries;
+  by character code). `lr70` is its entry for the space (`+$80`,
+  `$1228C`), which the text case has just overwritten with the record's
+  `+4`;
 * `lr41 = [extern#1772+$64]`, the card's record for the cached strike. This
   is not `FontRec` but the card's own layout, with longs where `FontRec`
   has words:
@@ -2316,19 +1941,19 @@ if lr48: height = half[lr48 + 2c]
 ```
 
 After the glyphs are built into the buffer, a row loop (`$12E8C`-`$12EB8`)
-ORs each long with itself shifted left by one, with a NOR term on the
-carried-out bit. That is the smear that bold (and, with the NOR, outline)
-applies in `DrawText.a`.
+walks a row from right to left, forms each long OR'd with itself shifted
+left by one, plus the top bit carried from the long to its right, and ORs
+the complement of that into a second buffer (pointer in `lr70` there):
+`dst |= ~(x | x<<1 | carry)`. That is a one-pixel smear of the glyph image, as bold, outline
+and shadow use it in `DrawText.a`; which style takes this loop is not read.
 
-An earlier reading of this loop, made from estimated words, had the width
-table indexed by `c` and `lr48` as the location table. The full decode
-shows the width table indexed by the character code (as QuickDraw's is),
-`lr48` as the optional height table, and the space fast path. The roles of
-the `+$18`/`+$1C` tables, first inferred from their use, are confirmed by
-the conversion that builds them.
+The width table is indexed by the character code (as QuickDraw's is),
+`lr48` is the optional height table, and the space has a fast path. The
+roles of the `+$18`/`+$1C` tables, first inferred from their use, are
+confirmed by the conversion that builds them.
 
-**The strike conversion** (`$14564(entry, new, hostFont)`, read from fully
-decoded words). It turns the uploaded `FontRec` (card copy at entry `+$10`)
+**The strike conversion** (`$14564(entry, new, hostFont)`,
+ConvertFontStrike). It turns the uploaded `FontRec` (card copy at entry `+$10`)
 into a per-glyph cache, so DrawText never extracts bits from the strike:
 
 | entry offset | set to |
@@ -2382,39 +2007,48 @@ the handle and its `FontRec` copy.
 
 ##### Open points
 
-* **The per-device state refresh** is read only in outline: the mode table
-  at `.data+$3D8` and ColorMap's `arithMode` copy at `.data+$2EC` are
-  masked, and ColorMap's alpha-channel part is not checked.
+* **ColorMap's alpha-channel part** (`$06F1C`) is not checked against
+  `QDUtil.a`.
+* **`$17500`**, called before every BitBlt and RgnBlt of the rectangle and
+  region cases (and by DrawArc, DrawLine and QuickPolys), is not read.
+* **The address bits `$01200000`** that send a run to FillLongsBurst
+  instead of the block write: what they select in the card's memory map is
+  not read.
 * **Why a repeated font upload re-converts only glyphs `$84`-`$9E`** (`$14564`, the `new = 0` path).
 
 #### The dispatcher prologue and packet layout
 
-**What happens before the switch (decoded).** The prologue of
-`sub_31e20` can be read in full: `antelope_estimate_words.py` takes key bits
-16-23 from the full samples on both sides of a word where they agree. It
-checks out: every compare writes the register its conditional jump tests,
-the wait loop jumps back to its own start, and the exits land on the common
-epilogue. Annotated (`rec` = packet `+$44`, see below):
+**What happens before the switch.** Annotated (`rec` = packet `+$44`, see
+below; `main` stores it at `.bss+4` and prints "PQDMonet: Starting up,
+commblock at %X" with the packet address, `$31DD8`-`$31E08`):
 
     $31E0C  call sub_31e20 with lr2 = -1, in an endless loop  (the main loop)
     $31E3C  wait until packet+$14 != 0;  packet+$1C = 1
     $31E64  rec = [.bss+4];  lr8 = cmd = [rec+4];  seq = [rec+8]
             if seq != [.bss+8] and cmd != 1:
-                print(.lit $0D88, [.data+$F08], cmd)   "M..et..in..Se..en.. e..or..d .. %.. f..c ..%d"
-                packet[0] |= 3; reply 0; return          (sequence error)
-    $31EEC  [.data+$F08] = cmd  (last command);  [.bss+8] += 1
+                print(.lit $0D88, [.bss+8], seq, cmd, [.data+$F08])
+                  "MonetMain: Sequence error %d != %d, func = %d, last func = %d"
+                packet[0] |= 3; reply 0; complete; return   (sequence error)
+    $31EEC  [.data+$F08] = cmd  (last command, initially -1);  [.bss+8] += 1
     $31F0C  n = first argument:  -1 -> accept;  <= 0 -> reject;
             else accept if cmd is among the next n arguments
-            rejected: reply 0 ("not handled"), return
-    $31F7C  call system-call stub $38F64 (service $??D2)
+            rejected: reply 0 ("not handled"), return without completing
+    $31F7C  call service $D2 (stub $38F64: restart the kernel if gr64 bit 28 is set)
             if (cmd & $FF00) != $8000: goto switch ($32850)
             else reply = sub_37B58(cmd, [rec+$0C], [rec+$10])
+    $32850  cmd > $3C (unsigned) -> default; else jmpi [.lit $0DE0 + 4*cmd]
+    $3287C  common exit: complete unless lr9 = 0; return cmd
+
+"Complete" is `sub_328C8`: it clears packet `+$14` and posts a completion
+code to packet `+$18` and, if that pointer is non-zero, to `*[packet+$20]`
+(with `$D3(0)`/`$D3(1)` around the store when `extern#1772+$90` is set). The
+code is 3, or `$0B` when bit 0 or 1 of packet word 0 is set.
 
 * **The packet layout matches the host exactly.** The host (`gc24.s`
   `$5F54`-`$5F78`) writes the selector to `+$48`, a running sequence number
   to `+$4C`, the argument count to `+$50`, and `$FFFFFFFF` to `+$14`. So the
   card's `rec` is packet `+$44`, and the switch index is the host's
-  selector itself (`$0C`-`$38`). The host rewrites some selectors only to
+  selector itself (`$0C`-`$38`; the table covers `$00`-`$3C`). The host rewrites some selectors only to
   `$24` StdRect: a rounded rectangle with zero radius, or a rectangular
   region.
 * **`sub_31e20(n, cmd1, …, cmdn)` is varargs.** The frame is 10 registers,
@@ -2422,7 +2056,8 @@ epilogue. Annotated (`rec` = packet `+$44`, see below):
   spills them to the memory stack. The main loop passes `-1` (every command).
   A second caller, at `$33404`, passes `(6, $26, $38, $30, $0C, $2A, $2C)`.
   So while some operation is in progress, only those six commands are
-  serviced, and the caller then checks the result for `$17` and `$38`.
+  serviced. Every exit returns the command number, and that caller checks
+  it for `$17`, `$38` and `$26` (see the wait loop below).
 * **The constants:** `const gr96, $FF00` / `and gr97, lr8, gr96` /
   `const gr96, $8000` / `cpneq`. Commands `$80xx` go to `sub_37B58`, and
   everything else goes to the switch.
@@ -2434,26 +2069,25 @@ into DrawMultiObject records instead of sending them. See "DrawMultiObject:
 the batched drawing stream". What follows is what the card's dispatcher
 would do with them, and how the host reacts to each reply.)
 
-**So the drawing selectors reach the default.** `$20` StdLine, `$21`
-StdText, `$23` StdArc, `$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`,
-`$32` and `$35`-`$37` decode to low byte `$70`. Inside `sub_31e20`
-(`$31E20`-`$328C8`), the only block starting at an offset `$x70` is the
-default `$32818`. The low byte comes from the strings and is exact. So in
-this switch they would print "Unknown Function". They are accelerated
-before they get here, by the host writing them into the drawing stream.
+**So the drawing selectors reach the default.** The table entries
+(`.lit $0DE0` + 4·command) of `$20` StdLine, `$21` StdText, `$23` StdArc,
+`$24` StdRect, `$2E`, `$2F`, `$31`, `$18`, `$2A`, `$32` and `$35`-`$37` all
+name the default block `$32818`. So in this switch they would print
+"Unknown Function". They are accelerated before they get here, by the host
+writing them into the drawing stream.
 
 **What the default does, and what the host does with it.** The default
 block `$32818`:
-1. calls the reporter `$00140` with "Unknown Function: 0x%x" and the
+1. calls the reporter `$00140` with "Unknown Function: 0x%X" and the
    command;
 2. ORs `$11` into packet word 0;
-3. jumps to the common exit at `$328A4`, which stores reply 0 at packet
-   `+$1C`.
+3. jumps to the common exit `$3287C`. It stores no reply, so `+$1C` keeps
+   the 1 stored on entry; because word 0 now has bit 0 set, the completion
+   code is `$0B` instead of 3. How the host handles `$0B` is not traced here.
 
 The reporter is gated by a level word at `.data+$284`: 0 returns at once,
-1 goes to `$39284`, anything else to `$00F84`. Its initial value cannot be
-read, because `.data` is masked too. So the message is probably silent in
-normal use.
+1 goes to `printf` `$39284`, anything else to the log buffer `$00F84`. It
+starts at 1, so the message is sent to the host (see the C library below).
 
 On the host, `GA_StdLine` (`$3682`) is typical. It calls
 `EngineDispatch($20, …)` with one argument (a pointer to its own
@@ -2479,85 +2113,63 @@ buffer over NuBus.
 - the cache commands, including the font upload `$30`;
 - the `$80xx` module interface.
 
-The card's dispatcher itself has no case for the Std\* selectors. That
-holds without the uncertain key bits: the next paragraph checks it.
+The card's dispatcher itself has no case for the Std\* selectors.
 
-The reply protocol (0 = do it yourself) also lets one `gc24` work with a
-firmware that handles fewer calls.
+Reply 0 (do it yourself) comes only from the cases that store it (table
+below) and from a command rejected by the accept list; an unknown command
+keeps reply 1 and is flagged in word 0 instead.
 
-**The condition checked without bits 8-11.** The low byte `$70` of the
-Std* entries is exact. All case blocks lie below module offset `$1000`, so
-the only possible targets are the sixteen words at module offset `$x70`.
-None of them except the default can start a case:
-
-| offset | word | the word before | can it start a case? |
-|---|---|---|---|
-| `$070` | `$31E18` | a `jmp` (this is its delay slot) | no: outside the dispatcher (the main loop) |
-| `$170` | `$31F18` | `cpeq` on the `load` just before | no |
-| `$270` | `$32018` | `const lr3` after `const lr2` (argument set-up) | no |
-| `$370` | `$32118` | `calli` right after its `const`/`consth` | no |
-| `$470` | `$32218` | `jmp` after a `store` | no |
-| `$570` | `$32318` | `jmpf` on the `cpneq` just before | no |
-| `$670` | `$32418` | `load` through the address just computed | no |
-| `$770` | `$32518` | `calli` right after its `const`/`consth` | no |
-| `$870` | `$32618` | `load` after its address `const` | no |
-| `$970` | `$32718` | the `consth` half of a `const`/`consth` pair | no |
-| **`$A70`** | **`$32818`** | **`jmp` + delay slot** | **yes: the default** |
-| `$B70`-`$F70` | `$32918`-`$32D18` | | no: past the end of `sub_31e20` (`$328C8`) |
-
-Every alternative is the middle of an instruction sequence: it uses a
-register or a condition that the word before it sets. So whatever bits 8-11
-are, the selectors whose entry has low byte `$70` (`$18`, `$20`-`$25`, `$27`, `$28`, `$2A`, `$2E`,
-`$2F`, `$31`, `$32`, `$34`-`$37`, `$39`-`$3B`) go to the default. The
-conclusion no longer depends on the fit, only on the exact low byte and on
-the block layout.
+The table has 31 default entries: `$08`-`$0B`, `$0E`, `$10`, `$18`,
+`$1C`-`$25`, `$27`, `$28`, `$2A`, `$2E`, `$2F`, `$31`, `$32`, `$34`-`$37`
+and `$39`-`$3B`. (Before the `.lit` key was known, this was argued from the
+low byte `$70` of these entries and the block layout; the exact table
+agrees.)
 
 One oddity remains. `$2A` is sent by the patches of `PicItem1` (`$AB9A`)
 and `OldPatToNew` (`$AB11`), two internal QuickDraw traps (see
 `QUICKDRAW_PATCHES.md`). `PicItem1` plays back one picture opcode, and
 `OldPatToNew` turns an old 8x8 pattern into a pixel pattern. `$2A` is in the
 accept list of the nested wait (`$33404`: `$26`, `$38`, `$30`, `$0C`, `$2A`,
-`$2C`), although its case is the default. An unhandled command gets reply 0
-whether it is accepted or rejected, so this changes nothing visible. It is
-probably left over from a version that handled `$2A`.
+`$2C`), although its case is the default, so during the wait it is reported
+as an unknown function and the wait goes on. System 6's table sends `$2A`
+to its default too.
 
 #### The `$80xx` commands, the card heap, the wait loop
 
-**The `$80xx` commands (`sub_37B58`, decoded).** The function's arguments
+**The `$80xx` commands (`sub_37B58`).** The function's arguments
 start at `lr8` (frame of 6 registers): `lr8` = command, `lr9` = `[rec+$0C]`
 (count), `lr10` = `[rec+$10]` = `p`. It switches on `cmd - $8000` (0-4,
 anything else returns `-$32`) through `.lit $1008`, the module's `.lit` base
-`$0FC0` plus `$48`. The five case blocks have different low bytes, and the
-string-derived `.lit` key decodes all five entries to exactly one of them:
+`$0FC0` plus `$48`:
 
 | command | case | does |
 |---|---|---|
 | `$8000` | `$37B94` | return 0 |
-| `$8001` | `$37B9C` | return `p[2](p[0], p[1], $274)`: call code at a host-given address |
-| `$8002` | `$37BC4` | return `sub_37658(p[0])`: allocate `p[0]` bytes from the card heap |
-| `$8003` | `$37BD4` | `sub_376A0(p[0])`: free a block |
+| `$8001` | `$37B9C` | return `p[2](p[0], p[1], sub_379A0)`: call code at a host-given address |
+| `$8002` | `$37BC4` | return `sub_3779C(p[0])` = `sub_37658(p[0])`: allocate `p[0]` bytes from the card heap |
+| `$8003` | `$37BD4` | `sub_377CC(p[0])` = `HeapFree` `$376A0(p[0])`: free a block; return 0 |
 | `$8004` | `$37BE4` | return `p[0] + p[1] + p[2]` (an echo/arithmetic test) |
 
 The allocator is the module `$372D0`-`$3772C`:
 
-* Its heap descriptor sits at `.data+$1388`.
+* Its heap descriptor sits at `.data+$1388` (0 in the file).
 * It is created on first use by `sub_372D4`:
   1. call service `$C1` (stub `$38F24`);
   2. subtract `$1000`;
-  3. call service `$01` (stub `$39008`) with that size, retrying 1,000 bytes
+  3. call service `$101` (stub `$39008`, HIF `sysalloc`) with that size, retrying 1,000 bytes
      smaller until it returns non-zero;
   4. store the block and build a free list in it (`sub_373A0`).
 * `sub_37470(heap, n)` and `sub_3754C(heap, ptr)` are allocate and free.
 
 This also names two services by use. `$C1` is "free memory": its `PrivNZ`
-pointer `$20012E0` lies inside `Hand`'s "free stack/heap space" routine
-`$20012AC`-`$20012E4`. `$01` (masked high byte, so probably `$101`) is the
-program break (`sbrk`), as `Hand`'s register notes say (`gr65`, service
-`$101`).
+entry is `$20012AC`, `Hand`'s "free stack/heap space" routine
+`$20012AC`-`$20012E4`. `$101` is the program break (`sbrk`), as `Hand`'s
+register notes say (`gr65`, service `$101`).
 
 **The wait loop (`sub_33374`, the nested dispatcher caller).** It waits
-until packet `+$1C0` reaches `*target` (argument `lr13`), counting spins
-in packet `+$1C4`. The host side:
+while packet `+$1C0` is at most `*target` (its pointer argument, `lr13`),
+counting spins in packet `+$1C4`, and on the way out stores the new `+$1C0`
+in `*target`. The host side:
 
 * it writes its own counter `$C0(a4)` into `+$1C0` (`gc24.s` `$5962`, right
   after sending command `$38`);
@@ -2566,22 +2178,20 @@ in packet `+$1C4`. The host side:
 
 So `+$1C4` is the card's heartbeat. While waiting, whenever the host posts a
 request, the card services only commands `$0C`, `$26`, `$2A`, `$2C`, `$30`
-and `$38` (through `sub_31e20(6, …)`). Depending on the result, it either
-goes on waiting or returns early: -7 after `$17`, -5 otherwise, `$C8`/`$C9`
-after `$26`/`$30`. The exact branch structure is less certain than the rest,
-because several of these words are estimates.
+and `$38` (through `sub_31e20(6, …)`). By the command returned:
+* `$38`: return `$C8`; `$26`: return `$C9`;
+* `$0C`, `$2A`, `$2C`, `$30`: go on waiting;
+* `$17` (rejected by the list): return -7; any other rejected command: -5.
 
-The constraint for a future solution is clear: every relocated `.lit` word
-is a code offset inside its own module (module ranges come from the symbol
-table's per-module `.text`/`.lit` entries). For the dispatcher table the
-targets are, in addition, among the about 37 case-block starts in
-`$31E20`-`$328C8`.
+Inside the wait, `$26` and `$38` store `p[1]` in `+$1C0` and skip the
+completion, leaving the request open for the caller; from the main loop
+(`n` = -1) both reply 0.
 
 #### The case blocks
 
-**The case blocks.** I split `$31E20`-`$328C8` at the word after each
-unconditional `jmp` and its delay slot. This gives 37 blocks. Most read
-their arguments the same way:
+**The case blocks.** The table has 28 distinct targets: the default
+`$32818`, the common exit `$3287C` (commands `$02`, `$05`-`$07`: reply 1,
+nothing done) and 26 case blocks. Most read their arguments the same way:
 
 1. `rec = [global+4]`;
 2. `p = [rec+$10]`, a pointer to the longs the host copied after the header;
@@ -2589,54 +2199,58 @@ their arguments the same way:
 4. the block calls a handler with `calli`.
 
 The packet sets the reply to 1 on entry, so a block that stores nothing
-answers "drawn". The blocks, by shape:
+answers "drawn". The blocks, by command:
 
-The handler column comes from the relocations (next subsection), so it is
-exact. The pointer to `rec` is at `.bss+$0004` of this module, and the
-packet pointer is at `.bss+$0000`.
+The handler column comes from the relocations (next subsection). The
+pointer to `rec` is at `.bss+$0004` of this module, and the packet pointer
+is at `.bss+$0000`.
 
-| block(s) | what it does | handler |
-|---|---|---|
-| `$32468`, `$32498` | `handler(p[0])`, no reply stored | both `$15808` |
-| `$324C8` | the same | `$158F4` |
-| `$324F8`, `$32570`, `$325A0`, `$325D0` | the same | `$14034`, `$14168`, `$141F8`, `$14274` |
-| `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command | `$140CC` |
-| `$32080` | `handler(p[0])`, then reply `lr12` (`$??00`, probably 0) | `$39104` (system call `$??D5`) |
-| `$32408` | `handler(p[0..5])`: six longs | `$151C4` |
-| `$322D4`-`$323D0` | `p[0]` is a bit mask. Bits 0, 1, 3, 2 and 4, tested in that order, each take two or three more longs and call their own handler. A zero result ends the chain. | bit 0: `$14B64`; bits 1, 3, 2, 4: all `$14A80` |
-| `$32600`, `$32688` | `handler(6, p[0])`, and the reply depends on the result | both `$15D28` |
-| `$3279C` | stores `p[0]` and `p[1]` in two globals; no call | - |
-| `$32234`, `$32284` | unless `[msp+8] = -1`, stores `[p[0]+4]` at offset `$..C0` of a global block (two near-identical cases) | - |
-| `$31F7C` | after a mask test on the command: `reply = handler(cmd, [rec+$0C], [rec+$10])`, a generic forwarder | `$38F64` (system call `$??D2`) |
-| `$31FE8` | command `$01`: a local call with `[rec+$0C]`, sequence counter `[.bss+8]` = 0, then `CallBack(100, 1, 0)` | (local `call`) |
-| `$320A8`-`$32230` | blocks not split out above | `$161F8` (twice), `$15D84`, `$16BA0`, `$2D7B8`, `$13770` |
-| `$326BC`-`$32798` | blocks that go through system calls and an external data block (`extern#1772+$88`..`$90`) | `$39028` (`$??CD`), `$390B4` (`$??D3`), `$39018` (`$??CC`) |
-| `$327D8`, `$327F8` | only store reply `lr12` (`$??00`): "not handled", so the host runs the original | - |
-| **`$32818`** | **default**. The `cpgtu` branch lands one word in, because its delay slot holds the block's first word. It calls a reporter with `(.lit $0DC8, cmd)`, so it is probably a "bad command" message with its format string in `.lit`. | `$00140` |
+| command | block | what it does | handler |
+|---|---|---|---|
+| `$29`, `$2B` | `$32468`, `$32498` | `handler(p[0])`, no reply stored | both `$15808` FlushGDevice |
+| `$2C` | `$324C8` | the same | `$158F4` FlushPixPat |
+| `$33`, `$19`, `$1A`, `$1B` | `$324F8`, `$32570`, `$325A0`, `$325D0` | the same | `$14034` DisposeOffscreen, `$14168` FlushOffscreen, `$141F8` FlushColorTable, `$14274` |
+| `$3C` | `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command | `$140CC` |
+| `$14` | `$32080` | `handler(p[0])`, then reply 0 | `$39104` (service `$D5`: clear bit `p[0]` of `[$4C00643C]`, mirrored to `$46000000`) |
+| `$0C` | `$32408` | `handler(p[0..5])`: six longs; reply 0 if it returns 0 | `$151C4` CachePixPat |
+| `$30` | `$322D4` | `p[0]` is a bit mask. Bit 0 takes two more longs; then bit 1 (three longs) or, if clear, bit 3 (two); then bit 2 (three) or, if clear, bit 4 (two). A zero result ends the chain with reply 0. | bit 0: `$14B64` UploadWidthTable; bits 1-4: `$14A80` UploadFontStrike |
+| `$0D` | `$32600` | `e = CacheFind(6, p[0])`; none: reply 0; else `e+$18 = p[1] & $80`, reply `[e+$10]` | `$15D28` CacheFind |
+| `$0F` | `$32688` | `e = CacheFind(6, p[0])`; none: reply 0; else `e+$18 = 0` | `$15D28` CacheFind |
+| `$16` | `$3279C` | stores `p[0]` and `p[1]` in `extern#1753+$18` and `+$14`; no call | - |
+| `$26`, `$38` | `$32234`, `$32284` | from the main loop (`n` = -1) reply 0; inside the wait, `packet+$1C0 = p[1]` without completing | - |
+| `$80xx` | `$31F7C` | `reply = handler(cmd, [rec+$0C], [rec+$10])` | `$37B58` |
+| `$01` | `$31FE8` | `InitPacket([rec+$0C])` (`$3299C`), sequence counter `[.bss+8]` = 0, then reply `CallBack(100, 1, 0)` | (local `call`s) |
+| `$04` | `$32040` | `packet+$04 = p[0]`, reply 0 | - |
+| `$11` | `$3210C` | `sub_15D84(i)` for i = 0..10, then `sub_16BA0()` | `$15D84`, `$16BA0` |
+| `$17` | `$320C8` | `PQDInit(packet+$604)`; reply 1 if it returns 0, else -1 | `$161F8` |
+| `$15` | `$32148` | `StretchBits(packet+$58, 0, 0, 0, 0)`; reply 0 if it returns more than 0 | `$2D7B8` |
+| `$2D` | `$32188` | `r = sub_13770(packet+$170)`; reply 1 if `r` = 0, -1 if `r` = -1, else 0; for `r` = 7 it first calls `PQDInit(p[0])` (reply 1 if that returns 0) | `$13770`, `$161F8` |
+| `$12` | `$326E8` | `$CD(-1)` (clear all page entries), `extern#1772+$88` = 0, `+$8C` = `[extern#1772+$8]`, `$D3(0)`, `+$90` = 0 | `$39028` (`$CD`), `$390B4` (`$D3`) |
+| `$13` | `$32740` | `$CC(p[0], p[1], p[2])` (map a range), then `extern#1772+$88` = `+$8C` = 1 | `$39018` (`$CC`) |
+| `$00`, `$03` | `$327D8`, `$327F8` | only store reply 0: "not handled", so the host runs the original | - |
+| others | **`$32818`** | **default**. The `cpgtu` branch lands one word in, because its delay slot holds the block's first word. Reports "Unknown Function: 0x%X" and flags word 0 (above). | `$00140` |
 
-The `$38xxx`/`$39xxx` handlers are 16-byte system-call stubs:
-`const gr121, N` / `asneq trap, gr1, gr1` / `jmpi lr0` (the 29K OS
-convention: the service number goes in `gr121`). Only N's low byte is plain.
-35 such stubs exist. The others (`$13770`-`$16BA0`) sit in two object files
+The `$38xxx`/`$39xxx` handlers are system-call stubs in object
+file 30 (`$38F24`-`$39114`), most of them 16 bytes: `const gr121, N` / `asneq 66, gr1, gr1` /
+`jmpi lr0` (the 29K OS convention: the service number goes in `gr121`).
+There are 27: 24 for the vector-66 kernel services (23 numbers, `$D4`
+twice), and three trap-69 HIF calls (`$101` sysalloc, `$111` clock, `$112`
+cycles). The others (`$13770`-`$16BA0`) sit in two object files
 next to each other, `$1376C`-`$13F50` and `$13F50`-`$174FC` (files 14 and 15
 of `antelope_modules.py`; an earlier reading took `$11AD4`-`$174FC` for one
 module). Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
 `$14274`) are consecutive functions of `$50`-`$9C` bytes, each called by one
-one- or two-long block. That fits small state setters (pen, colours,
-patterns) better than drawing routines.
+one- or two-long block. They are cache flushes: three name themselves by
+their messages, `$14274` releases a type-1 cache entry (`CacheFind(1,
+p[0])`, then `CacheRelease`), and `$140CC` releases the type-6 (offscreen)
+entry whose `+$20`/`+$24` match the two longs.
 
 On the host side (`QUICKDRAW_PATCHES.md`) the commands with one long are
 `$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37`.
 Those with two longs are `$18` `$24` `$2A` `$2F` `$31` `$3C`, and those with four
-are `$21` `$23` `$2E`. So the block shapes fit the host's commands in
-number: many one-long handlers, a few two-long ones. But the shapes alone do
-not say which block is which command. That still needs the 61 table words.
-
-The default label should be the known plaintext for every unused entry. But
-with `.text`'s key, `$32818` appears in none of the 61 entries, not even in
-bits 0-6 (2 hits, both chance). With the same key, raw `.lit` words 48
-apart agree in bits 2-6 at chance rate (10 of 402). So `.lit` does not
-repeat `.text`'s period-48 low table above bit 1 either.
+are `$21` `$23` `$2E`. Against the table: `$0F`, `$29`, `$2C` and `$33` have
+one-long cases and `$3C` a two-long case; `$15` and `$17` take their data
+from fixed packet offsets (`+$58`, `+$604`) instead; the rest are defaults.
 
 **Relocations name the targets.** `.text` loads every address with a
 `const`/`consth` pair. The pair carries three relocation records:
@@ -2656,59 +2270,23 @@ details make this usable:
   `consth` relocations resolve to `.text` (970, of which 969 are function entries in the
   symbol table), `.data` (254), `.bss` (175), `.lit` (116) and undefined
   externals (384).
-* **The plaintext is known.** The `const`'s plain low byte equals the
-  addend's low byte in 1,889 of 1,898 pairs. So `const` holds the addend's
-  low 16 bits and `consth` holds 0, because every addend is below `$10000`.
-
-The masked high byte of each of these words is RC, which is key bits 16-23.
-So each relocated word gives those bits exactly. Where the low key level
-knows bits 16-17, the derived bits agree in all 972 cases.
-`antelope_reloc_samples.py ACEF_100.bin` writes 3,755 such words to
-`mask_samples.tsv` as `ihconst` rows. It takes bit 15 from the pair's other
-word where only that one knows it: both words name the same register. The
-levels stay exact, and their coverage grows:
-
-| bits | table | classes covered |
-|---|---|---|
-| 0-15 | `J16[k mod 6144]` | 96% -> 98% |
-| 0-16 | `J17[k mod 12288]` | 32% -> 52% |
-| 0-17 | `J18[k mod 24576]` | 18% -> 30% |
-| 0-18 | **new:** `J19[k mod 49152] + $60000 * (k div 49152)` | 16% |
-
-The bit-18 level holds for all 328 sample pairs 49,152 words apart. Bits
-19-23 change with periods longer than `.text` (62,134 words), so no table of
-this kind predicts them. They need the generator's closed form, as for
-`Hand` (`SECOND_MASK.md` section 3). The new samples show bits 20-23
-behaving like Hand's high field: a slow 3-bit count, sign-extended
-(`$0x`, `$1x`, `$2x`, `$3x`, then `$Cx`, `$Dx`, `$Ex`, `$Fx` from word
-about 27,000). `text.partial.asm` now decodes these words in full and
-comments each pair with its target.
+* **The addend is in the `const`.** Every `consth` holds 0 and every
+  `const` the addend's low 16 bits, because every addend is below `$10000`.
 
 **Direct calls have relocations too.** Besides the const/consth types,
 `.text` has 133 relocations of type 24 (R_IREL). Each one sits on a `call`
-(opcode `$A8`) whose displacement low byte is 0: the file holds
-displacement 0, and the loader fills in the PC-relative distance. The symbol
+(opcode `$A8`) whose file displacement is 0: the loader fills in the
+PC-relative distance. The symbol
 is the entry itself (`.text`, value = target), or the next one when the
-entry is `(-3, 0)`, as for const/consth (4 cases). So these 133 calls have
-known targets although their displacement's high byte is masked:
-* the calls in `$37C10`-`$38C3C` go to kernel service stubs (`$B8` `$B9`
-  `$BB` `$BF` `$C4` `$D1` `$D3` `$D4`): a family of `storem` fill/copy
+entry is `(-3, 0)`, as for const/consth (4 cases). 128 are `call lr0`, and
+5 are transfer calls through `gr122`:
+* the calls in object file 29 (`$37C10`-`$38F20`, call sites `$37C1C`-`$38C58`)
+  go to kernel service stubs (`$B8` `$B9` `$BB` `$BF` `$C4` `$D1` `$D3` `$D4`): a family of `storem` fill/copy
   routines (see `$37D68` under "the rectangle case");
-* the rest are in `$39118`-`$3C340`, calling each other and the
-  low-numbered services `$01`, `$14` and `$15` (HIF-style exit, write and
-  so on). This looks like the C library.
+* the rest are in `$39130`-`$3CAB4`, calling each other and the
+  HIF stubs (`exit` `$01`, `write` `$14`, `lseek` `$15` and so on). This is the C library.
 
-`antelope_partial_dasm.py` now prints these targets
-(`call lr0, $38f34   ; R_IREL call -> .text $38f34 (service $??c4)`).
-The displacement's masked high byte is plaintext 0 in all 133 words, so
-they are also full key samples. `antelope_reloc_samples.py` now adds them
-to `mask_samples.tsv` as `irel` rows. 128 calls are `call lr0`, and 5 are
-transfer calls through `gr122` (RA read from the known low key bits). The
-32 words whose key was already known above bit 15 all agree. The gain is
-modest: 406 words gain key bits (words with 19 known bits: 11,801 to
-12,043; 18: 7,667 to 7,770; 17: 13,062 to 13,123).
-
-**The C library (`$39118`-`$3C340`).** The R_IREL targets make it
+**The C library (`$39118`-`$3CAD8`).** The R_IREL targets make it
 readable. It is a Unix-style C library on AMD's HIF system calls:
 
 | address | function | evidence |
@@ -2716,15 +2294,15 @@ readable. It is a Unix-style C library on AMD's HIF system calls:
 | `$3B404` `$3B428` `$3B44C` `$3B470` `$3B494` `$3B4B8` `$3B4DC`, `$3C9EC` | HIF stubs from AMD's HIF library (`antelope_hif_stubs.py`): close (`$12`), exit (`$01`), lseek (`$15`), open (`$11`), read (`$13`), `$21` (tmpnam in the HIF list), write (`$14`), and remove (`$16`) at `$3C9EC` | `const gr121, N` / `asneq 69` / `jmpti gr121, lr0`; on failure store `gr121` to errno and return -1 |
 | `extern#1769` | `errno` | every stub stores to it |
 | `.data+$1580` | `_iob` (20-byte `FILE`s; `stdout` at `+$14`) | |
-| `$39284` | `printf` | spills its varargs; if bit 15 of a flag halfword of `stdout` is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0(x, stdout, fmt, ap)`, where `x` is a relocated address not read here |
+| `$39284` | `printf` | spills its varargs; if bit 15 of the flag halfword of `stdout` (`.data+$15A4`) is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0($39118, stdout, fmt, ap)`, where `$39118` is the output routine handed to the formatter |
 | `$39214` | `vprintf` | the same without the spill |
-| `$399E0` | `_doprnt` (the formatting core) | calls memchr (4 times; `%s` with a precision), the `_ctype_` table, and the number converters `$3A5A4`-`$3AC24` |
+| `$399E0` | `_doprnt` (the formatting core) | calls memchr (4 times; `%s` with a precision), the `_ctype_` table, and the number converters `$3A5A4`-`$3A768` |
 | `$39304` | `fseek` | calls lseek; `(fp, 0, 2)` is `SEEK_END` |
 | `$3B500` | `memchr(s, c, n)` (earlier read as memset) | returns 0 if `n` = 0; replicates `c` into a word and scans with `cpbyte`; returns the address of the match or 0 |
-| `$3B600` | `memcpy(dst, src, n)` | returns `dst`; byte, halfword or word loops by alignment, forward only; 30 calls from Apple's code |
+| `$3B600` | `memcpy(dst, src, n)` | returns `dst`; byte, halfword or word loops by alignment, forward only; 30 call sites, 26 of them in Apple's code |
 | `$3B748` | `memset(dst, c, n)` | returns `dst`; replicates `c`, stores words, masks the partial words at both ends; one caller (`$3B300`) |
 | `.lit+$1021` | `_ctype_` (+1 for EOF) | |
-| `$3AA9C`-`$3ABB4` | isupper, islower, isalpha, isdigit, isxdigit, isspace, ispunct, isalnum, isgraph, isprint, iscntrl | `_ctype_[c]` masked with 1, 2, 3, 4, `$44`, 8, `$10`, 7, `$17`, `$97`, `$20`: the V7/BSD bits `_U _L _N _S _P _C _X _B` (the masks are bits 0-7, plain) |
+| `$3AA9C`-`$3ABB4` | isupper, islower, isalpha, isdigit, isxdigit, isspace, ispunct, isalnum, isgraph, isprint, iscntrl | `_ctype_[c]` masked with 1, 2, 3, 4, `$44`, 8, `$10`, 7, `$17`, `$97`, `$20`: the V7/BSD bits `_U _L _N _S _P _C _X _B` |
 | `$3ABD0` `$3ABE0` `$3ABEC` `$3ABF8` `$3AC24` | isascii (c ≤ `$7F`), `_toupper`, `_tolower`, toupper, tolower | `c - $20` / `c + $20`, the last two only if `_L` / `_U` |
 | `$3AC88` | `exit` | walks a handler table (`.data+$1560`-`$1580`), calls `$3C1D4` (presumably the stdio cleanup), then HIF exit |
 | `$3B16C` `$3B294` `$3B300` `$3B390` | wrappers around open, close, read, write | each calls one stub |
@@ -2751,155 +2329,36 @@ pointer. The reporter level starts at 1 (`.data+$284`) and the log size at `$400
 
 These are names by role: the library's own names and version are not in
 the file.
+### `.lit` and `.data`, exact
 
-**First attempt at `.lit`'s own key (not solved).** Test set: 236 relocated
-`.lit` words whose target range is under 8 KB (175 in small modules, plus
-the 61 dispatcher entries, whose range is the dispatcher function). A
-decode "hits" when the target lands in its range, mod 8 KB. Chance is
-143 hits.
+**`.lit`'s strings**, and the function that passes each to the reporter
+(`firmware/disasm/lit.asm`):
 
-* **Index shift** (`.lit` word k uses the `.text` key at k+δ): every
-  δ that keeps bits 0-1 aligned (multiples of 48, 64 distinct values mod
-  3072) scores 150-170, which is noise. Unaligned shifts do no better and
-  break the 662/662 alignment.
-* **Constant offset**, added or XORed onto the `.text` key: the best is
-  143-149 of 236. On the dispatcher table alone the best is 31 of 61
-  (chance about 20).
-* **Per 384-word block** with the plain `.text` key: block 0 scores 3 of 63
-  where 22 are expected. That is far *below* chance, so the `.text` key is
-  systematically wrong there and not merely noisy. Blocks 1 and 2 sit in
-  modules close to 8 KB, so they say little.
-* The symbol table's module ranges are not tight enough for some groups:
-  `.lit` words 74-125 never fit all together for any constant. So either
-  those tables belong to more than one module, or the range heuristic
-  needs the function-level ranges that the dispatcher test used.
+| `.lit` | function | string |
+|---|---|---|
+| `$0000` | `$01468` | `Bogus` |
+| `$00D0` | ITabMatch | `ITabMatch: Inverse Table is not up-to-date` |
+| `$0100` | BitsToPixMap | `BitsToPix: xm points to a portPixMap` |
+| `$02C0`-`$0430` | DrawMultiObject | `DrawMultiObject/opWhicPat: can't get a PatternCacheEntry for pattern` (sic), `…/opWhichPat: can't find PixPat in cache`, `…/opWhichPat: can't get a RGBPatCacheEntry for RGB Pattern`, `…/opSwapFont: width table is not in the cache`, `…/opSwapFont: width font is not in cache`, `…/opSwapFont: font is not cache`, `DrawMultiObject: unknown opCode %d` |
+| `$0548`-`$061C` | DisposeOffscreen … FlushPixPat | `DisposeOffscreen: NULL offscreen Handle`, `FlushOffscreen: NULL offscreen Handle`, `FlushColorTable: NULL color table Handle`, `CacheGDevice: NULL GDevice`, `CachePixPat: NULL PixPatHandle`, `FlushGDevice: NULL GDevice`, `FlushPixPat: NULL PixPatHandle` |
+| `$063C` | `$15DF8` | `Cache still busy, cacheType = %d, cache = %lx` |
+| `$066C` | `$161F8` PQDInit | `PQDInit: Unable to allocate mega buffer` |
+| `$0694`-`$0720` | `$16A04` PQDAlloc | `PQDAlloc: numBytes is not multiple of LONG`, `PQDAlloc: illegal numBytes = %d`, `PQDAlloc: maxed out on number of mega buffers authorized`, `PQDAlloc: Unable to allocate extra mega buffer, size = 0x%x` |
+| `$0900`, `$0934` | scaleBlt | `ScaleBlt/scIndexToAny: unsupported dstShift = %d`, `ScaleBlt: unknown scaleNum = %d` |
+| `$09F8` | GetSeek | `GetSeek: invalid rectFlag for seekMask = %d` |
+| `$0D60` | main | `PQDMonet: Starting up, commblock at %X` |
+| `$0D88`, `$0DC8` | the dispatcher `$31E20` | `MonetMain: Sequence error %d != %d, func = %d, last func = %d`, `Unknown Function: 0x%X` |
+| `$0ED4` | `$33680` malloc | `malloc allocated %d bytes outside of the heap bounds, pointer = %x, heapMin = %x, heapMax = %x` |
+| `$0F34` | MapVirtual | `MapVirtual: bytes == 0` |
+| `$0F4C` | CallBack | `CallBack %d during inactive request` |
 
-So `.lit`'s key shares bits 0-1 with `.text` (and the `asgeu`/`asleu`
-vector patching shows it is the same family), but bits 2-12 follow a
-different table. Recovering it needs known plaintext inside `.lit`, for
-example a switch whose case labels are all identifiable in `.text`.
+So the accelerator's own names are **PQD** ("PQDInit", "PQDAlloc", its
+"mega buffers") and **Monet** ("PQDMonet" is `main`, "MonetMain" the command
+loop). The rest of `.lit` is the switch and command tables (662 relocated
+words, all 4-aligned `.text` addresses) and the C library's character-class
+table at `$1020`.
 
-### Antelope mask: `.lit` bits 11-23 (`antelope_lit_high.py`)
-
-* **Bits 18-23 of `.lit`'s key are 0.** Every relocated `.lit` word has raw
-  bits 18-23 = 0, and its plaintext is a `.text` offset below `$40000`. All
-  1,097 `.lit` words lie inside the key's first plateau, as the first 1,389
-  words of `.text` do.
-* **Bits 11-17 step like `.text`'s high bits.** In the dispatcher table,
-  whose offsets are all below `$1000`, raw bits 12-17 are the key: `$3B` ×20,
-  `$24` ×34, `$25` ×7. Over the other tables, each entry's bits 0-10 select
-  the case-block candidates with the same low 11 bits, and each candidate
-  implies a key value. The entries with one implied value step the same way
-  (`$0C`→`$0D`→`$0E`, `$3C`→`$3D`→`$3E`→`$3F`→`$38`, `$3B`→`$24`→`$25`→`$26`→`$27`).
-  Bit 11 is part of the step: within each plateau of bits 12-17 it is 1
-  first and then 0. `antelope_lit_key.py` models bit 11 as periodic (every
-  768 words), and that was the cause of most of the misfits.
-* **Bits 0-10 stay periodic** (bit *b* every 24, 48, 96, 192, 384 words for
-  *b* ≤ 6, 7, 8, 9, 10). That holds without a conflict at every resolved
-  entry. Some classes are pinned by no resolved entry, and there the fitted
-  value can be wrong.
-
-`antelope_lit_high.py` resolves an entry in four ways, in this order:
-1. **agree:** one candidate, whose value is that of the nearest sample on one
-   side or the other;
-2. **resolved:** several candidates, exactly one with such a value;
-3. **joint:** the unpinned class bits are left free; an entry with exactly
-   one candidate under them pins them, repeated until nothing changes;
-4. **function:** several candidates left, exactly one in the function of
-   the nearest resolved entry.
-
-Of the 535 table entries, 350 agree, 88 are resolved, 12 are joint, 1 is
-resolved by function, and 84 stay open: 451 targets, against 398 with bit 11
-taken as periodic. Eight entries that "agreed" under the old rule now get
-another target. Each change is in bit 11, and in each the new target is the
-better one. For example, `.lit $0BB4`-`$0BC8` move from `$3002C`… to
-`$2F82C`, `$2F85C`, `$2F868`, which continue their table's run of blocks
-`$C` apart (`$2F7A0`, …, `$2F838`, `$2F844`, `$2F850`, …, `$2F874`). And
-`.lit $0008`/`$0010`/`$0FD4`-`$0FE0` move back into their switch function.
-
-Independent check (not used in the fit): 442 of the 451 targets lie in the
-same function as a neighbouring target. The 9 exceptions are isolated:
-`.lit $0098`/`$00A4`/`$00CC`, `$0770`/`$0774`/`$07DC` and `$1004`-`$100C`.
-They and the open entries are concentrated in the tail of base `$01A4C`
-(after `.lit $0094`), the `$13F50` stride table and parts of `$19DA0`. In
-those places no candidate fits at all, even under free bits. For about 30
-of the open entries every key bit is pinned, so their targets are fully
-determined. Either the words are not case-block offsets (most direct decodes
-of the `$01A4C` tail land outside its switch function), or the blocks are
-fall-through labels that the "word after an unconditional jump" rule misses.
-
-The command table itself needed none of this: bits 0-11 already pick each
-of its 61 blocks uniquely.
-
-### Antelope mask: the `.lit` switch tables as an upper-bit source
-
-**Withdrawn.** The first bullet below is wrong; see "the command dispatcher"
-below. The 31 decoded targets fall inside `.text` only because they are all
-small (below `$5948`), including those in tables owned by modules near the
-end of `.text`. Only bits 0-1 of the `.text` key are shown to hold for `.lit`.
-
-* **`.lit` uses the full `.text` key at the same word index**, all 23 bits, not
-  just the low ones. 31 relocated `.lit` words have a `.text` sample at the same
-  index. `raw XOR key` gives a full target for each, and all 31 land inside
-  `.text` (`$0F0`..`$5948`, versus 1 in 33 by chance each). Adjacent entries
-  agree with the decoded low 13 bits of their neighbours.
-* **Extending this to whole tables works only partly.** I fixed one table entry
-  from a sample and walked outward, choosing for each word the value that
-  matches its low 13 bits and is nearest its neighbour's target. This
-  reproduces 21 of 23 other anchors. Four tables drift into negative targets
-  (their case labels jump more than 4 KB). Three tables (`.lit` words 2-51,
-  138-175, 990-1030) are clean and give about 129 consecutive full keys. Their
-  bits 13 and up change only slowly: `key >> 13` is `0` for words 2-38, then
-  `1`; around `6`/`7` near word 140; `$13` near word 1000.
-* Against the existing samples in the same `k mod 6144` class, those
-  reconstructions agree on bit 13 in 35 of 44 cases (chance: about 22). The 9
-  misses cluster where a table's targets cross an 8 KB boundary, which the
-  nearest-neighbour rule cannot resolve. So the reconstructed keys are right
-  inside an 8 KB block and unreliable at crossings. They are not added to
-  `mask_samples.tsv`.
-* **`.data`, `.data1`, `Apple` and `Code` do not share this keystream.** None
-  matches the `.text` key at the same index. No offset from 0 to 70,000 words
-  makes even 5% of `.data`'s low 13 bits decode to zero, although 919 of its
-  1,596 words have a zero top byte. Restarting the `.text` key at each object
-  file's `.data` start (23 files have `.data`) fails too: 1 of 919.
-* **But `.data` is masked by the same kind of generator, with its own
-  tables** (`antelope_data_key.py`). Over the zero-top-byte words, bits 0-4
-  are equal at distance 24 in 76% of pairs, and bits 0-7 at distance 48 in
-  68%, against 0-5% at other distances. That is the `.text` key's column
-  structure (period 24 for bits 0-4, 48 for bits 5-6, and so on). A majority
-  fit per class, assuming those words are mostly zero, decodes 288 of them to
-  0 in bits 0-8 (chance about 2) and 257 in bits 0-10 (chance under 1). Bits
-  9-10 have only 2-4 samples per class and are often wrong. In `_iob`
-  (`.data+$1580`, file 44) the 20-byte `FILE` stride shows, and word 4 of each
-  of the first three entries has the plaintext top byte `$50`. That doesn't fit
-  BSD's `_flag<<16 | _file<<8`, so the library's `FILE` layout is not BSD's
-  in that word.
-
-### `.data` decoded (`antelope_data_key.py`)
-
-`.data`'s key has the `.text` key's form with its own constants:
-`key mod 2^13 = J13[k mod 48] + $800·(k div 48)`. Word pairs 48 apart
-differ by `$800` in 145 of 149 cases; 96 apart by `$1000`, 192 apart by 0
-mod `$2000`. `J13` is fitted on words with a zero top byte (assumed zero).
-Bits 13-23 are a step function of `k`, as in `.text`. They come from the
-nearest of two kinds of sample: words that decode to 0 in bits 0-12 (394),
-and the 101 relocated words. Those are type 31 against a file's `.text` or
-`.data1` start, so their plaintext is an offset inside a file smaller than
-8 KB and bits 13-23 are 0. The result is `firmware/ACEF_100_Antelope/data.partial.bin` with a
-flag per word (`z`/`r` sample, `=` both neighbouring samples agree, `~` they
-differ).
-
-Checks:
-* held out, 98 of the 101 relocated words decode to a 4-aligned offset
-  inside their target file;
-* ColorMap's `arithMode` copy at `.data+$2EC` decodes to
-  `00 03 02 01 01 03 02 01`. That is exactly 68k QuickDraw's `arithMode`
-  table (`QDUtil.a`: `srcCopy, srcBic, srcXor, srcOr, srcOr, srcBic,
-  srcXor, srcOr`), 8 bytes through bit 23;
-* `.data+$1380`/`$1384` hold 42 and 123456 (`$1E240`), the classic test
-  constants.
-
-Values the analysis was waiting for:
+**`.data`** (`firmware/disasm/data.asm`):
 
 | address | value | meaning |
 |---|---|---|
@@ -2907,47 +2366,26 @@ Values the analysis was waiting for:
 | `.data+$284` | 1 | the reporter level: messages go straight to `printf` (level 1) |
 | `.data+$288`, `$28C` | 0, 0 | log buffer and write pointer (allocated on first use) |
 | `.data+$298` | `$400` | log buffer size |
+| `.data+$2EC` | `00 03 02 01 01 03 02 01` | ColorMap's copy of 68k QuickDraw's `arithMode` table (`QDUtil.a`: srcCopy, srcBic, srcXor, srcOr, srcOr, srcBic, srcXor, srcOr) |
 | `.data+$3D8` | `00 00 01 02 02 64 64 64` | the per-device blit-loop choice by `(mode xor lr42) & 7`; `$64` is the "no fast loop" value the code tests |
 | `.data+$F08` | -1 | the last command (no command yet) |
+| `.data+$1380`, `$1384` | 42, 123456 | the self-test's constants |
 | `.data+$1560`-`$157C` | 0 | the `exit` handler table, empty |
 
-`J13` rests on the assumption that most zero-top-byte words are 0. The
-high bits are sure only next to samples (flag `z`, `r` or `=`, 726 of 1,596
-words); elsewhere they can be off by a step.
+File 20's `.data` holds pixel-expansion tables: a bit interleave at `$440`
+(256 bytes; bits 0-3 of i go to bits 0, 4, 1, 5 and bits 4-7 to 2, 6, 3, 7),
+1-to-2-bit (`$550`) and 1-to-4-bit (`$970`) expansions of a byte, 3 bits to
+fields of 4/6/6 (`$D70`) and 6/6/4 bits (`$DD0`), and 3 bits to bytes
+(`$DF0`-`$E0F`, 8 longs).
 
-**System 6 confirms the decode independently.** Its `.data` key has the same
-form with other constants, `J13[k mod 96] + $1000·(k div 96)`. The tool picks
-the period from the data, and 98 of 101 relocated words pass. Compared file
-by file with System 7 (files 0-27 directly, the library shifted by two),
-**all 1,282 words where both decodes are sure are equal**, although the two
-keys share nothing. System 6 has `arithMode` at the same `.data+$2EC`. The
-library's `.data` is identical.
-
-Nearly all 101 relocated words are switch tables of the C library: `_doprnt`
-(`$399E0`) and the number converters `$3A5A4` and `$3A90C` (plus 3 pointers
-into `.data1`). So the library's compiler puts switch tables in `.data`,
-while Apple's code keeps them in `.lit`: one more sign of two different
-compilers. `firmware/disasm/data.partial.asm` (`antelope_data_dump.py`) lists
-`.data` with file and symbol labels, flags and relocation targets.
-
-**Known tables and the two builds together** (`antelope_data_key.py --merge`).
-File 20's `.data` holds three pixel tables whose values follow from their
-index: a bit interleave at `$440` (256 bytes; bits 0-3 of i go to bits 0, 4,
-1, 5 and bits 4-7 to 2, 6, 3, 7), a bit-doubling table at `$550`
-(1-to-2-bit expansion) and a bit-to-nibble table at `$970` (1-to-4-bit). All
-576 entries agree with the model's bits 0-12, so they serve as known
-plaintext (flag `k`). Each build's sure words are then offered to the other
-as samples (flag `x`). Result for System 7: 1,331 of 1,596 words sure, 265
-uncertain; System 6 likewise. Where both builds are sure they agree on all
-1,321 words.
-
-Two limits found on the way:
-* a value whose bits 0-12 are zero (`$C000`, `$000F0000`) passes as a zero
-  sample and decodes to 0, and then both builds agree on the wrong value.
-  The known tables showed this and now override such samples;
-* pairing the builds' *uncertain* words by a shared candidate value fails.
-  In the doubling table it was right for 2 of 76 words, because both keys'
-  steps can be equal (`$E000`). It is not used.
+Of `.data`'s 101 relocated words, 96 are switch tables of the C library:
+`_doprnt` (`$399E0`) and the number converters `$3A5A4` and `$3A90C`; the
+others point into `.data1`. So the library's compiler puts switch tables in
+`.data`, while Apple's code keeps them in `.lit`: one more sign of two
+different compilers. `.data1` holds `"Interrupt Handler"`, two blank-padded
+fields, a run of `'0'`s, and `"NAN()"`/`"INF"` for `printf`. System 6's
+`.data` is the same apart from 200 bytes (`arithMode` and the pixel tables
+are at the same offsets).
 
 File 26's `.data` (the self-test file, with `TestSlotBurst` `$37000`) holds
 its messages as strings: "branch failed", "add failed", "sub failed", "mul
@@ -2972,85 +2410,32 @@ self-test on the card.
 relocated reference. So it is either unused in this build or reached from
 outside, for example by a host-loaded module.
 
-Other small tables in file 20 (`$D70` and `$DD0` map 3 bits to fields of
-4/6/6 and 6/6/4 bits; `$DF0`, `$E00`) are not exact enough to serve as known
-plaintext. `$E00`'s plain top bytes are `$FF` from entry 4 on, which rules out
-a byte expansion.
-
-### `.lit` strings in full (`antelope_lit_strings.py`)
-
-The same idea reads the middle characters of `.lit`'s strings. Relocated
-`.lit` words whose fitted 12-bit offset picks exactly one case block give
-the full plaintext and so the full key (482 samples, all agreeing with
-`antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from one of
-the nearest samples, the one that reads best. Bits 8-11 are then refitted
-per class on whole words, never at the cost of a table match or a full
-sample. Fourteen strings whose text is certain add 113 full samples. Where
-the character before a string's NUL is masked (`\n` or `.`), only the part
-before it is used. Each string is located by its plain bytes, and the script
-checks the plain first and fourth characters of every word. Characters
-outside printable ASCII drop from 35 to 14. Single-bit errors remain in the
-middle characters. Read with those corrected (`?` = masked and not
-readable):
-
-* `P??Mo?et: Starting up, comm block at %X` (main's message) and
-  `Mo?etMain: Sequence error %d != %d, func = %d, last func = %d`. The first
-  and fourth characters of each word are plain; the `?` after `Mo` is a
-  masked middle character, so "Monet" is likely but not certain;
-* `Unknown Function: 0x%X`;
-* `ITabMatch: Inverse Table is not up-to-date`;
-* `DrawMultiObject/opWhichPat: can't get a PatternCacheEntry for pattern`,
-  `… can't find PixPat in cache`, `… can't get a RGBPatCacheEntry for RGB
-  Pattern`; `DrawMultiObject/opSwapFont: width table is not in the cache`,
-  `… font is not in cache`;
-* `DisposeOffscreen: NULL offscreen Handle`, `FlushOffscreen: NULL
-  offscreen Handle`, `FlushColorTable: NULL color table Handle`,
-  `CacheGDevice: NULL GDevice`, `CachePixPat: NULL PixPatHandle`,
-  `FlushGDevice: NULL GDevice`, `FlushPixPat: NULL PixPatHandle`,
-  `Cache…: still busy, cacheType = %d, cache = %lx`, `PRInit: unable to
-  allocate …`;
-* `ScaleBlt/scIndexToAny: unsupported dstShift = %d`, `ScaleBlt: unknown
-  scaleNum = %d`;
-* `GetSeek: invalid rectFlag for seekMask = %d`;
-* `malloc allocated %d bytes outside of the heap bounds, pointer = %x,
-  heapMin = %x, heapMax = %x`, `MapVirtual: bytes == 0`, `CallBack %X
-  during inactive request`.
-
-**Service `$C0`: the comm header; the packet pointer is in `PublicOut+$18`.**
-Besides `InitPacket`, three functions in file 25 call `$C0`. They read
-`+$18 & $10000` (the feature flags that `LoadFirmware` writes to
-`image+$18`) and copy `+$10`/`+$14`. So `$C0` returns the comm header at
-`$4C006400` (`PublicIn`), and `InitPacket` reads `[$4C006818]` =
-`PublicOut+$18`. The kernel's handler is `Hand` `$2001408`:
-`const gr96,$6400` / `consth gr96,$4c00` / `iret` (**verified**).
-
-**`PublicOut`'s header, decoded (`runtime_publicout.py`).** `PublicOut`
-has its own keystream; `PublicIn`'s does not fit it (an earlier version
-of this section used it and got `$4C007368` for the mailbox). Most of the
-section is zero, so its raw words are its keystream, and that keystream
-repeats in bits 0-10 every 192 words up to a constant: `key(k) =
-key(k+192) + $100` holds for 122 of the 125 pairs of zero words (the three
-others hold small nonzero values). That gives bits 0-10 of the header
-words. Bits 15-31 are plain at a section's start, and bits 11-14 of the key
-are 0 there until its falling counter crosses zero (between `+$1C` and
-`+$20`, where they turn to `$F`). Read that way, the header is:
+**Service `$C0` and the packet.** Besides `InitPacket`, three functions in
+file 25 call `$C0`. They read `+$18 & $10000` (the feature flags that
+`LoadFirmware` writes to `image+$18`) and copy `+$10`/`+$14`. So `$C0`
+returns the comm header at `$4C006400` (`PublicIn`; handler `Hand`
+`$2001408`), and `InitPacket` reads `[$4C006818]` = `PublicOut+$18`.
+`PublicOut`'s header (`firmware/disasm/RuntimeData.asm`):
 
 | offset | value | meaning |
 |---|---|---|
-| `+$00` | `$32100456` | handshake / version word |
-| `+$04` | `$00700D01` | (bits 11-14 assumed 0) |
-| `+$08` | `$00000000` | |
+| `+$00` | `$32100456` | |
+| `+$04` | `$00700D01` | |
 | `+$0C` | `$4C007000` | `HifComm`, the mailbox the host reads at `image+$40C` |
 | `+$10` | `$4C007800` | `InpArgs` |
 | `+$14` | `$4C007300` | `VidComm` |
 | `+$18` | `$4C008C00` | the packet, `InitPacket`'s pointer |
-| `+$1C` | `$00010000` | |
+| `+$1C` | `$00010000` | (Boot overwrites it) |
 
-With bits 11-14 = `$F` or `$E` instead, none of the four pointers is a
-known address. With 0, all four are, and `+$18` is exactly the host's
-packet at slot offset `$s08C00` (below). So **`PublicOut+$18` =
-`$4C008C00`**: the card and the host agree on the packet address. Earlier
-notes on how this was traced:
+Boot replaces the top nibble of the four pointers with the value it probes
+at `$4400000C` (see `Boot.asm`). `PublicOut` also holds, at `+$510`, the
+text "(c) 1989 Apple Computer, Inc. All Rights Reserved", then the credits
+"Special Projects Group - SEG", "Hardware: Tony Masterson, Rob Pugh, Dean
+Drako", "Software: Jean-Charles Mourey, Mark Krueger, Rekha Sh…", cut off by
+the section's end (the same in System 6). **`PublicOut+$18` = `$4C008C00`** is exactly
+the host's packet at slot offset `$s08C00`, so card and host agree on it.
+How the host side was traced:
+
 
 `InitPacket` takes the packet pointer from
 `[$C0() + $418]`. On the host, `gc24` reads the packet address from its
@@ -3058,106 +2443,56 @@ device record `+$0C`, and `LoadFirmware` writes `image+$0C` = the card address
 `ACEFLoad` returned for the program. The device record `gc24` uses is the
 driver's unit record, and `BuildUnitRecords` sets its `+$0C` to
 `$F0000000 | slot<<24 | slot<<20` + `$8C00` (`DRVR.s` `$1FD0`-`$1FF0`). So the
-host's packet is at offset `$s08C00` of the slot space, presumably card SRAM
-`$4C008C00`, right after `InpArgs`. No host program writes a field at
+host's packet is at offset `$s08C00` of the slot space, card SRAM
+`$4C008C00` (`PublicOut+$18`), right after `InpArgs`. No host program writes a field at
 `+$418`, the kernel never touches `$4C006818` and never builds `$8C00`, and
 neither host program writes into `InpArgs` (`$4C007800`, which only the
-kernel's getargs uses). That question is answered above. The
-`PublicIn`-unmasked `PrivNZ` pointer for `$C0` is `$20017DC`, `$3D4` away
-from the real handler `$2001408` (see the next section).
+kernel's getargs uses).
 
 ## 8. The kernel's service table (vector 66)
 
 `Hand`'s service dispatcher (`$20011E8`) takes the service number in `gr121`,
 subtracts `$B6` and jumps through the word table at `$4C002500` (up to `$D6`
 entries). `$4C002500` is exactly the **`PrivNZ`** section (`$84` bytes = 33
-words, services `$B6`..`$D6`); the rest of the range is uninitialised. The
-section's words use `PublicIn`'s keystream (the all-zero section's own contents)
-as their mask: unmasking with it gives 33 pointers `$0200xxxx`, **31 of which are
-valid 4-aligned addresses inside `Hand`** in the stub area `$20010FC..$2001B9C`
-(a chance rate of about 0.7% each); two entries (services `$BC`, `$C5`) come out
-invalid. The pointers are only reliable up to the key's low bits (a few look
-like the middle of a stub, e.g. services `$C1` and `$D2` -> `$20012E0` where
-`$20012AC` is the stub start), so the table gives the *set* and rough placement
-of the services, not exact entry points. Stubs recognisable from the code at those
-addresses: an `iret` no-op, "free memory" (`gr96 = heap end - break`), a 10-bit
-serial shift-out of `lr4` to `$440000A0` (the pixel-clock chip, same shape as the
-video driver's `SerialShiftOut`), writing three bytes from `lr3..lr5` to a port
-at `$460004C0`, region-table add (`$200147C`) and remove (`$2001604`), and
-register-dump helpers.
+words, services `$B6`..`$D6`). Decrypted, it lists one handler per service
+(`firmware/disasm/RuntimeData.asm`; an earlier version of this section had
+only approximate pointers). Antelope calls the services through 16-byte stubs
+`const gr121, N` / `asneq 66` / `jmpi lr0` at `$38F24`-`$39104`
+(`svc_N` in `text.asm`); the HIF stubs at `$3B404`-`$3B4DC` and `$3C9EC` use
+`asneq 69` and the second dispatcher `$2001AE8` (`$101` sysalloc, `$103`, `$104`
+getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 
-**Correction: the `PublicIn` keystream does not fit `PrivNZ` either.** Two
-handlers are now known from their use: `$C0` (the comm header) is
-`$2001408`, and `$CF` (set interrupt handler `n`, `fn`) is `$2001950`. That
-stub checks `0 <= n <= 3`, stores `fn` at `$4C00617C + 4n` (the INTR handler
-words the interrupt entries call), and returns 0, else -1. The `PublicIn`
-decode gives `$20017DC` and `$200182C` for them, off by `$3D4` and `$124`.
-Like `PublicOut` (previous section), `PrivNZ` has its own keystream, and with
-only 33 words it cannot be fitted. So the decoded pointers below give
-roughly where the services lie, not which stub each one is. The
-"nearby stubs" table and the earlier `$D2`/`$D5`/`$C4` readings from it are
-unreliable.
-
-**Correction: Antelope does call the services.** The partial disassembly
-shows 35 stubs of the form `const gr121, N` / `asneq 66` (69 in the HIF stubs) / `jmpi lr0` at
-`$38F24`-`$39104`, `$3B404`-`$3B4DC` and `$3C9EC`. The low bytes of N are
-plain:
-
-* `$B8 $B9 $BB $BF $C0 $C1 $C4 $C5 $C6 $C7 $C8 $CB $CC $CD $CE $CF $D0 $D1 $D2
-  $D3 $D5 $D6`: the vector-66 table range above;
-* `$01 $11 $12 $13 $14 $15 $16 $21`: low numbers, probably the `$1`/`$1xx`
-  services that the second dispatcher at `$2001B74` handles (`$111`/`$112`
-  time, `$121` set globals, `$1` exit). Their high byte is masked.
-
-The rectangle fast path's own-memory test `$13F54` uses `$C4` through stub
-`$38F34`. It needs a value whose top nibble is the card's slot. That matches
-the stub `$2001250` (`gr96 = [$4C00682C]`, a word Boot fills with a value
-shifted left by 28). See "the rectangle case".
-
-The command dispatcher uses `$D2` (for every accepted command, before the
-`$8000` test), `$D5` (command `$14`, with `p[0]`), and `$CC`, `$CD`, `$D3`
-(the `$326BC`-`$32798` blocks).
-
-**Naming them from the `PrivNZ` table failed.** The `PublicIn`-unmasked
-pointers are only approximate:
-
-* `$B7`, `$B8`, `$BA` and `$CC` all decode to `$2001B94`-`$2001B9C`, which
-  is inside the second dispatcher.
-* No other keystream or offset gives more than 3 exact stub starts out of 33:
-  `PublicIn`, `PublicOu`, `Vec`, `Apple`, or the `Hand`/`Boot` generator at
-  any of 20,000 offsets.
-* `PublicIn`'s low 7 bits repeat every 48 words (1 conflict in 201), so a
-  `PrivNZ` table of the same kind has no repeats among its 33 words to fit.
-
-What the approximate pointers allow, for the dispatcher's services:
-
-| service | decoded pointer | nearby stubs (role) | fits Antelope's use? |
+| service | handler | what the handler does | Antelope stub, use |
 |---|---|---|---|
-| `$D2` | `$20012E0` | `$20012AC`/`$20012C8` free stack/heap space; `$20012E8` pixel-clock serial write (`lr2`, `lr4`); `$2001294` restart if `gr64` bit 28 | called with no arguments, result discarded: the restart check fits best, not shown |
-| `$D5` | `$200123C` | `$2001224` wait/clear INTR2; `$2001250` read `[$4C00682C]`; `$2001260` clear bit `lr2` of `[$4C00643C]`, mirror to `$46000000` | called with one argument (`p[0]` of command `$14`): `$2001260` fits |
-| `$CC` | `$2001B98` | inside the second dispatcher | - |
-| `$CD` | `$2001504` | inside the region-table code `$2001478`-`$2001604` (insert/remove a range) | - |
-| `$D3` | `$20019CC` | `$20019B4` (returns -1), `$20019BC` | - |
+| `$B6 $B7 $BA $BC $BD $BE $C2 $C3` | `$2001A60` | returns -42: not implemented (also `$C9` `$200145C` and `$CA` `$2001464`, the same two words) | - |
+| `$B8` | `$20018E4` | timer interrupt enable (TMR bit 24): returns the old state, sets or clears it by `lr2` | `$39094` |
+| `$B9` | `$20018B8` | OPS bit 4 (`$10`): returns the old state, sets or clears it by `lr2` | `$39084` |
+| `$BB` | `$2001A58` | returns `gr64`, the host's feature flags (`PublicIn+$18`) | `$38F44` |
+| `$BF` | `$2001924` | OPS bit 1 (`$02`), as `$B9` | `$390A4` |
+| `$C0` | `$2001408` | returns `$4C006400` (`PublicIn`, the comm header) | `$38FC8`, `InitPacket` and the feature-flag readers |
+| `$C1` | `$20012AC` | free memory: `gr127 - $3000 - gr65` (stack limit minus break) | `$38F24` |
+| `$C4` | `$2001250` | returns `[$4C00682C]`, the value Boot probed, shifted left by 28 | `$38F34`, the own-memory test `$13F54` |
+| `$C5` | `$2001224` | waits for the video interrupt: enables it at `$44000054`, polls `$44000068`, disables it | `$38F54`, `TestCLUT` |
+| `$C6` | `$20012E8` | serial write to the pixel-clock chip (`$44000080`/`$440000A0`) | `$38F74` |
+| `$C7` | `$2001374` | writes three bytes (`lr2`-`lr4`) to the RAMDAC at `$46C00000` | `$38F84` |
+| `$C8` | `$20013AC` | reads CLUT entry `lr2` (0-255, else -1) from the RAMDAC | `$38F94` |
+| `$CB` | `$2001414` | adds `lr2` to `[$4C003120]` when `gr64` bit 20 is set, else returns 0 | `$38FF8` |
+| `$CC` | `$200146C` | region-table add (`$2001478`): map a memory range | `$39018`; `TestMMU`, `MapVirtual`, the dispatcher |
+| `$CD` | `$20015F8` | region-table remove (`$2001604`; -1 = all) | `$39028`; `TestMMU`, `MapVirtual`, `UnmapAll`, the dispatcher |
+| `$CE` | `$2001774` | checks that `lr2` is 1 KB-aligned, then works on the region table at `$4C003168` (not read further) | `$39038` |
+| `$CF` | `$2001950` | set interrupt handler `n` (0-3) to `fn` (`$4C00617C + 4n`); 0, else -1 | `$390D4`; `TestInterrupts` |
+| `$D0` | `$20019BC` | return from an interrupt handler (the flag and saved registers at `$4C00618C`) | `$390E4`; the interrupt handlers |
+| `$D1` | `$2001A48` | returns `[$4C006804]` (`PublicOut+$04`) | `$390F4` |
+| `$D2` | `$2001294` | restarts the kernel (`jmp $2001FFC`) when `gr64` bit 28 is set, else returns 0 | `$38F64`; every accepted command |
+| `$D3` | `$2001820` | host access mode: stores `lr2` at `$4C006848`, switches OPS bit 6, returns the old mode | `$390B4`; `TestMMU`, `CopyHostMemory`, `MapVirtual`, the dispatcher |
+| `$D4` | `$2001808` | translates `lr2` through the table walker `$2001C2C`: physical address in `gr96`, length in `gr122` (the stub stores it to `*lr3`) | `$39050`, `$39064`; `TestMMU`, `CopyHostMemory` |
+| `$D5` | `$2001260` | slot burst mask: `lr2 < 0` returns it, else clears bit `lr2` of `[$4C00643C]` and writes the mask to `$46000000` | `$39104`; command `$14` |
+| `$D6` | `$2001888` | clears `gr64` bit 8 and sets OPS bit 11 (not read further) | `$390C4` |
 
-So `$D2` is not where drawing happens: it is not one of the stubs near its
-pointer, which all return at once and touch no command data. The drawing
-selectors have no case in the dispatcher; they reach the card as stream
-records instead (see "DrawMultiObject: the batched drawing stream").
-
-**Services named by the self-test's use** (call sites listed by
-service; the stubs are at `$38F24`-`$39104`):
-
-| service | used by | reading |
-|---|---|---|
-| `$CF` | `TestInterrupts` with `(1, $00000)`, `(2, $00020)`, `(n, 0)` | set interrupt handler `n` (0 clears) |
-| `$D0` | the two interrupt handlers `$00000`, `$00020` (file 1) tail-jump to it | return from an interrupt handler |
-| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual` (per run), the dispatcher (three words from a host-given block; then `extern#1772+$88` = 1) | map a memory range |
-| `$CD` | `TestMMU` (mostly followed by "mmu error"), `MapVirtual` and `UnmapAll` (once per page each), the dispatcher (`$CD(-1)`, then `+$88` = 0) | set or clear one page's MMU entry (-1: all) |
-| `$D3` | `TestMMU` ("mmu phys access"), `CopyHostMemory`, `MapVirtual` (`$D3(1)` … `$D3(0)`), the dispatcher | set the host access mode, return the old one (1 = through the host's logical mapping, 0 = physical) |
-| `$D4` | `TestMMU` ("get phys size"), `CopyHostMemory` | `$D4(addr, &bytes)`: the physical address of `addr`; `bytes` is cut to the contiguous length |
-| `$C5` | `TestCLUT` and its helpers | read the CLUT |
-| `$x11` | `TestTimer`, `CacheFindStamp`, `CacheCreate` | the clock (HIF `$111`) |
-| `$C0` | `InitPacket` and three readers of the feature flags | the comm header base |
+The self-test's use of them agrees with the handlers: `TestMMU` reports
+"mapmem failed" after `$CC`, "mmu error" after `$CD`, "get phys size" and
+"mmu phys access" around `$D4`/`$D3`; `TestTimer`, `CacheFindStamp` and
+`CacheCreate` read the clock (HIF `$111`).
 
 **The interrupt test's handlers** (file 1). Interrupt 1's handler (`$00000`)
 stores 42 into a global (`extern#1756`) and tail-jumps to `$D0`. Interrupt
@@ -3173,10 +2508,9 @@ bit) and `$0009C` (sets or clears TMR's interrupt enable, `$01000000`).
 **`CopyHostMemory` (`$16C48`): copy a host block into card memory.** The
 arguments are `(src, bytes, isHandle, mode, buf)`. It rounds `bytes` up to
 words and takes the destination from a switch on `mode` (`.lit+$760`):
-0 `malloc` (`$33680`), 1 `PRAlloc`, 2 the caller's `buf`, 3 `CacheAlloc`.
-Mode 2's table word decodes to `$144C8`. That is a bit-11 error of the
-`.lit` key, since `$16CC8` (`lr7 = buf`) is the only fitting case block.
-Without a buffer it returns 0. Then there are three ways to copy:
+0 `malloc` (`$33680`), 1 `PQDAlloc`, 2 the caller's `buf`, 3 `CacheAlloc`
+(`.lit+$760`-`$76C`: `$16C88`, `$16CA0`, `$16CC8`, `$16CD0`). Without a
+buffer it returns 0. Then there are three ways to copy:
 
 * `extern#1772+$08` = 0: the card cannot read host memory itself (the
   flag is bit 3 of a host flags word, `[[.bss]+4]`, set at init). A handle
@@ -3199,55 +2533,6 @@ Without a buffer it returns 0. Then there are three ways to copy:
 $F0000000`, which is `$F0800000` in both cases: slot 0's NuBus space.
 Mode 2 returns the (dereferenced) source instead of the buffer. The
 callers are the dispatcher's case blocks `$14318`-`$14EF0`.
-
-**System 6's strings.** Every System 7 `.lit` string is found in System 6's
-`.lit` by its plain first characters, so the messages are the same. Placed
-at their System 6 offsets, System 7's 14 certain strings give 113 full key
-samples for System 6's own `.lit` key. All 113 agree with its bits 0-8
-(`antelope6_tables.lit_key`), which checks both decodes. System 6 has more
-strings at `.lit $0000`-`$0178`, the names of its arithmetic stubs. Read from
-the certain first and fourth characters of each word:
-
-* `Bogus`;
-* `RBAverage16Half`, `RBAverage16`, `RBAddPin16`, `RBAddOver16`,
-  `RBSubPin16`, `RBTransparent16`, `RBMax16`, `RBSubOver16`, `RBMin16`
-  (RgnBlt's loops; an earlier version of this list read `RM…` and
-  `…16Hack`, but the second character is plain at `.lit`'s start and is
-  `$42` = `B`, and the last word of the first name is `alf`);
-* `StretchAverage16`, `StretchAddPin16`, `StretchAddOver16`,
-  `StretchSubPin16`, `StretchTransparent16`, `StretchMax16`,
-  `StretchSubOver16`, `StretchMin16`;
-* `PatAverageSlab16`, `PatAddPinSlab16`, `PatAddOverSlab16`,
-  `PatSubPinSlab16`, `PatTransparentSlab16`, `PatMaxSlab16`,
-  `PatSubOverSlab16`, `PatMinSlab16`.
-
-System 7 dropped these stubs and their names.
-
-### Antelope mask: the `.lit` jump/command tables (partial result)
-
-The relocation table lists ten runs of consecutive word relocations in `.lit`
-(50, 63, 38, 61, 104, 40, 27, 177, 61, 41 words: switch tables and, among them,
-the card's command table). All of them point at one placeholder symbol, so the
-targets are the *masked* word contents. Their plaintext is a 4-aligned `.text`
-offset, which predicts that the key's two low bits equal the word's. Checked
-against the 48-entry low-bit table `C48` recovered from `.text`
-(`mask_samples.tsv`), indexing the table by the word's position in `.lit`:
-
-* **all 700-odd words of all ten runs agree on bits 0-1** (50/50, 63/63, 38/38,
-  61/61, 104/104, 40/40, 27/27, 177/177, 61/61, 41/41), against a 1-in-4 chance
-  each. So `.lit` and `.text` share one generator (per ACEF, indexed by the word
-  index within each section), and `.lit`'s runs really are tables of aligned
-  code offsets.
-* The words' high bits cluster in short stretches (for example `0x34xxx` for 28
-  entries, then `0x37`, `0x30`, `0x31`, `0x33`), i.e. the entries are grouped by
-  target region but the mixture of key ramp and target addresses could not be
-  separated without the key's high-bit structure, so no command -> function
-  mapping was recovered.
-
-So the command table cannot be read yet, but the two data points that matter for
-a future solution are now fixed: the generator is shared across Antelope's
-sections, and about 700 further words carry known constraints (bits 0-1, and
-bits 18-22 zero when the target is below `$3CAD8`).
 
 ## 9. Configuration: `PupS` and Control calls 17-19
 
@@ -3323,142 +2608,141 @@ like a "never give up" debug setting. The other callers pass reasons 4,
 ## 10. The System 6 package ("8•24 GC SW 1.1")
 
 The System 6 package has the same resource set as the System 7 one,
-with its own `ACEF` 100 (357,228 bytes against 323 KB), `ACEF` 1,
+with its own `ACEF` 100 (357,228 bytes against 330,316), `ACEF` 1,
 driver and INIT. Its 68k clients send the same csCodes: control panel
 2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5, 13, 14, 17,
 18, 19, 20; INIT 13, 14, 20, 21, 99.
 
-**The System 6 Antelope is masked differently.** Unpacked with
-`acef_unpack.py` it is also "32-Bit Antelope" (`.text` `$42AD8`,
-`.lit` `$1494`, `.data` `$1830`; 1,838 symbols, 998 addresses).
-* Its words share almost nothing with the System 7 file at the same
-  index (1 equal word in 62,134), and the System 7 low key decodes
-  only 2 of 80 System 6 entries that could be `sub gr1, gr1, N`
-  (System 7 on itself: 291 of 307).
-* Its **opcode byte is masked too**. (An earlier version of this section
-  read the top-byte field off assumed function prologues and got values
-  `$26`, `$30`, `$60`; that assumption was wrong, see below.)
-* Its `.lit` strings are not plain either. Its `.data` matches the
-  System 7 `.data` in 22% of bytes at the same offset, but that comes
-  from the mostly zero top bytes. The low 24 bits differ randomly,
-  which gives no handle on the `.data` key.
 
-### The System 6 key (`antelope6_key.py`)
+**The System 6 Antelope is a different build.** Unpacked with
+`acef_unpack.py` it is also "32-Bit Antelope", version `$00110000`
+(System 7: `$00700D01`): `.text` `$42AD8`, `.lit` `$1494`, `.data`
+`$1830`, `.bss` `$AD8`; 1,838 symbols, 998 addresses. Its exact listings
+are in `firmware/sw11/disasm/`. Their names come only from functions that
+are identical to named System 7 ones (76 of them).
 
-The relocations give the key directly, because in System 6 the opcode is
-masked too:
-* a relocated `const` is `$03 | addend<15:8> | RA | addend<7:0>`, and its
-  `consth` is `$02 | 00 | RA | 00`. With the `R_IHCONST` addend, each gives
-  key bits 0-7 and 16-31 (3,850 words, pairs matched by symbol and
-  proximity);
-* a direct call with an `R_IREL` relocation is `call lr0` with
-  displacement 0, `$A8008000`: all 32 bits (133 words).
+**The System 6 Runtime kernel is a different build too.** Its `ACEF` 1
+(17,548 bytes against 17,968) has the same sections at the same
+addresses, but `Hand` is `$2B74` bytes against `$2D14` (`Boot` is `$800`
+in both). Its vector-66 service table `PrivNZ` (`sw11` `RuntimeData.asm`)
+has 32 entries, services `$B6`-`$D5`, against System 7's 33 (`$B6`-`$D6`).
+The handlers are in the same order, each `$140`-`$17C` bytes lower
+(`$C0` at `$20012B8` against `$2001408`, `$CF` at `$20017D4` against
+`$2001950`; the unused services share `$20018E4`, System 7 `$2001A60`).
+System 7's extra service `$D6` (`$2001888`: clears `gr64` bit 8, sets
+`OPS` bit 11, stores 0 to `$4400005C`) has one caller, PQDInit
+(`$163DC`). System 6's Antelope has no stub for it. The System 6 `Hand`
+and `Boot` listings are plain generated ones, not annotated.
 
-From these samples:
+### The System 6 key
 
-| key bits | structure | coverage of the 68,278 `.text` words |
-|---|---|---|
-| 24-31 | **two values**: `$00` up to word 20,557, `$0F` from about 20,558 on. The switch point is fixed to within 4 words by counting invalid opcodes; the other value would make 27% of the opcodes invalid | all |
-| 16-23 | a step function of the word index, like System 7's bits 16-23: neighbouring samples that agree were right in 3,738 of 3,741 leave-one-out tests | where the neighbours agree |
-| 0-7 | period 24 (9 of the 3,983 samples disagree and are dropped: bad pairings) | all |
-| 8-15 | bit `b` has period 24 for `b` ≤ 9 and `24 * 2^(b-9)` above, with **no drift term** (zero conflicts at every level; bit 15: 294 repeats). Sampled from 1,086 frame idioms (`asgeu`, `asleu`, `jmpi lr0`), which can be found once the opcode is plain | bits 0-12 all, 13: 96%, 14: 78%, 15: 52% |
+The System 6 ACEFs decrypt exactly with the same `ACEFLoad` scheme as
+System 7's (`acef_unpack.py`). The KEY byte is `$D7` for `ACEF` 100
+(System 7: `$4D`) and `$18` for `ACEF` 1 (System 7: `$BC`). (An earlier
+version of this section fitted a key per word from relocation and idiom
+samples with `antelope6_key.py`. That tool is removed.)
 
-So the System 6 key is the same kind of generator as System 7's with a
-simpler low part (pure tables, no step per block) and a wider output (an
-opcode field). With the opcode plain, System 6's instruction mix matches
-System 7's line by line: `add` 18.0% against 18.6%, `load` 8.1/8.9,
-`const` 7.9/8.4, `jmpt` 7.8/8.3, and 0.86% invalid opcodes against 0.98%.
+### System 6 against System 7, function by function (`antelope_compare.py`)
 
-Independent check: the word before each `asgeu` frame check, where its low
-16 bits are known, decodes as `sub gr1, gr1, N` in 110 of 119 cases. Every
-N is a multiple of 8, with the frame sizes System 7 uses (16, 24, 48, 40,
-32, 64, …).
-
-`antelope6_key.py SYS6_ACEF_100.bin OUTDIR` unpacks the file and writes
-`text.partial.bin` with a `.known` sidecar. The full 24 low bits are known
-for 20,858 words, bits 0-15 for 14,377 more, bits 0-12 for the rest. Not
-done: more idiom samples for bits 13-15 (System 7's register-pattern
-samples), the `.lit` and `.data` keys, and a disassembly.
-
-### System 6 against System 7, function by function (`antelope6_compare.py`)
-
-Neither symbol table names its functions, but in both versions the opcode
-byte of every word is now plain. So every function (from one `.text`
-symbol to the next) has a known opcode sequence in both. The tool aligns
-the two function lists in order (a pair matches with a difflib ratio
-of at least 0.6 over the opcode bytes) and then pairs the leftovers in any
-order (moved code):
+A function runs from one `.text` symbol to the next. The tool compares
+each function's words with relocated words reduced to their opcode byte
+and call displacements dropped, aligns the two function lists in order on
+that, and pairs the leftovers of a replaced stretch in order when their
+opcode sequences have a difflib ratio of at least 0.6:
 
 | | functions | words |
 |---|---|---|
 | System 7 / System 6 | 768 / 769 | 62,134 / 68,278 |
-| same opcode sequence | 645 | |
-| changed (ratio ≥ 0.6) | 51 | |
-| moved | 7 | |
-| only in System 7 | 65 | 5,909 |
-| only in System 6 | 66 | 11,647 |
+| identical | 620 | |
+| changed (ratio ≥ 0.6) | 66 | |
+| only in System 7 | 82 | 6,298 |
+| only in System 6 | 83 | 12,020 |
 
-In the functions with the same opcodes, 8,810 words are known in full in
-both. Of these, 8,749 are bit-identical, 23 are pc-relative jumps or calls
-whose targets moved, and 38 differ otherwise (33 of them `const`). So
-those 645 functions are the same code, relinked.
+So the 620 identical functions are the same code, relinked. Five changed
+pairs have ratio 1.00: the same opcodes with a different operand (for
+example one load's option field in TrimRect, `$019B8`, and three
+constants 4 higher in InitPacket). The tool does not pair code that moved
+out of order, so some "only" entries have a counterpart elsewhere (below).
 
-**Every named function has a System 6 counterpart.** 60 of the 83 names in
-`antelope_partial_dasm.py` match with the same opcodes. Among them are
-Report, the burst fills and copies, RSect, TrimRect, ITabMatch, the whole
-cache (`CacheFind` … `CacheRelease`, `UploadFontStrike`,
-`UploadWidthTable`), PRAlloc, FillLongs, GetSeek, CallBack, TestSlotBurst,
-the storem fills and the C library. 23 have changed; by size and ratio the
-largest changes are:
+**Every named function has a System 6 counterpart.** Of the 103 names in
+`antelope_names.py`, 76 are on identical functions. Among them are Report,
+the burst fills and copies, RSect, ITabMatch, the whole cache
+(`CacheFind` … `CacheRelease`, `UploadFontStrike`, `UploadWidthTable`,
+`ConvertFontStrike`), PQDAlloc, FillLongs, GetSeek, CallBack, HeapFree,
+SelfTest and its tests, the storem fills and the C library. 25 have
+changed; by size and ratio the largest changes are:
 
 | function | System 7 | System 6 | words 7 → 6 | ratio |
 |---|---|---|---|---|
 | CommandDispatcher | `$31E20` | `$2D614` | 682 → 934 | 0.77 |
-| StretchBits | `$2D7B8` | `$28C14` | 2,612 → 2,798 | 0.64 |
+| StretchBits | `$2D7B8` | `$28C14` | 2,612 → 2,798 | 0.65 |
 | DrawMultiObject | `$0AD18` | `$0AF74` | 3,487 → 3,726 | 0.88 |
-| PRInit | `$161F8` | `$15B5C` | 479 → 332 | 0.78 |
+| PQDInit | `$161F8` | `$15B5C` | 479 → 332 | 0.78 |
 | MapVirtual | `$3373C` | `$2F2D4` | 216 → 186 | 0.64 |
-| UnmapAll | `$33A9C` | `$2F5BC` | 69 → 67 | 0.78 |
+| UnmapAll | `$33A9C` | `$2F5BC` | 69 → 67 | 0.79 |
 | CopyHostMemory | `$16C48` | `$16360` | 197 → 198 | 0.86 |
 
-The rest (BitBlt, BitsToPixMap, ColorMap, DrawArc, DrawLine, DrawText,
-FlushOffscreen, ConvertFontStrike, CacheGDevice, CachePixPat, QuickPolys,
-RgnBlt, scaleBlt, ShieldCursor, ShowCursorAfterDraw, CopyLongsStorem) have
-a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
+The rest (TrimRect, BitBlt, BitsToPixMap, ColorMap, DrawArc, DrawLine,
+DrawText, IsOnThisCard, CacheGDevice, CachePixPat, QuickPolys, RgnBlt,
+scaleBlt, main, InitPacket, ShieldCursor, ShowCursorAfterDraw,
+CopyLongsStorem) have a ratio of 0.90 or more. The last two names moved,
+so the tool lists them as only in System 7: FlushOffscreen (`$14168`)
+matches System 6's `$13ACC` with ratio 0.93, and FillPatternStorem
+(`$37C10`) has the same opcodes as System 6's `$3DC84`.
+`antelope_compare.py SYS6_ACEF_100.bin SYS7_ACEF_100.bin` prints the full
+map.
 
-**Only in System 7** (by their callers in the System 7 decode):
-* `$1E508`-`$200E0`, nine helpers of about 200 words, all called only by
-  RgnBlt: by their number, the nine 16-bit arithmetic loops whose System 6
-  counterparts are stubs (`RBAverage16Half` … `RBMin16`, see below);
+**Only in System 7** (by their callers):
+* `$1E508`-`$200E0`, nine helpers of 186-271 words, each called once by
+  RgnBlt: the nine 16-bit arithmetic loops whose System 6 counterparts are
+  stubs (`RBAverage16Half` … `RBMin16`, see below). System 7's RgnBlt
+  calls them directly at the places where System 6's (`$1A30C`-`$1A52C`)
+  calls the stubs through a pointer, in the same order: `$1F9A0`
+  (Average16Half), `$1FCA4` (Average16), `$1EB08` (AddPin), `$1E508`
+  (AddOver), `$1EECC` (SubPin), `$200E0` (Transparent), `$1F290` (Max),
+  `$1E804` (SubOver), `$1F618` (Min). The Pin, Over and Max/Min pairs
+  have matching sizes (241/241, 191/193, 226/226);
 * `$0F730`-`$10140`, eight helpers of the switch function at `$1114C`: the
   pattern-slab loops for the eight 16-bit arithmetic modes. Where System 6's
-  `$10C3C` loads the addresses of the stubs `PatAverageSlab16` …
-  `PatMinSlab16`, System 7's `$1114C` loads `$0FF60`, `$0F978`, `$0F730`,
-  `$0FB08`, `$10140`, `$0FC98`, `$0F850`, `$0FDFC` (`antelope6_tables.py`);
-* `$37730`-`$37B58`, the module support: request 999 (`$37730`) and the
-  `$80xx` service switch `sub_379A0`, called from the dispatcher through
-  `$37B58` (see "The `$80xx` commands"). It calls UnmapAll, CallBack and
-  five 5-word functions at `$13FCC`-`$14020`. System 6 has no word
-  `const …, $8000` in or near its dispatcher, so the host-loaded modules
-  (`$8001`, "call code at a host-given address") are new in System 7;
-* `$140CC`, a dispatcher case that calls CacheRelease;
+  `$10C3C` returns the addresses of the stubs `PatAverageSlab16` …
+  `PatMinSlab16` (cases `$10DBC`-`$10E10`, table `.lit $06B8`), System 7's
+  `$1114C` returns, in the same case order, `$0FF60`, `$0F978`, `$0F730`,
+  `$0FB08`, `$10140`, `$0FC98`, `$0F850`, `$0FDFC` (`$112CC`-`$11320`,
+  `.lit $0508`);
+* `$37730`-`$37B58`, the module support: `$37730` sends host request 999
+  (`$3E7`) through CallBack, and the `$80xx` service switch `sub_379A0` is
+  called from the dispatcher through `$37B58` (see "The `$80xx`
+  commands"). `sub_379A0` calls UnmapAll, `$16BA0`, `$37730` and five
+  small accessors at `$13FCC`-`$14020`. System 7's dispatcher tests
+  `(command & $FF00) == $8000` (`$31F8C`-`$31F9C`); System 6's has no
+  `$8000` constant at all, so the host-loaded modules (`$8001`, "call code
+  at a host-given address") are new in System 7;
+* `$140CC`, a dispatcher case (loaded at `$32558`) that calls CacheRelease;
 * `$18278` (389 words, called by `$17C60` and StretchBits) and a run of
   StretchBits helpers at `$27944`-`$2CFD4`. They include the Stretch
-  16-bit arithmetic loops: where System 6's StretchBits loads the stubs
-  `StretchAverage16` …, System 7's loads `$27944`, `$27ACC`, `$27B48`,
-  `$27BBC` (the other four sites do not map).
+  16-bit arithmetic loops: where System 6's StretchBits selects the stubs
+  `StretchAverage16` … `StretchMin16` with an 8-way switch (`.lit $0CF0`,
+  `jmpi` at `$2A614`), System 7's has the same switch (`.lit $0BB0`,
+  `$2F8A0`) over `$27EF4` (AddPin), `$27D44` (AddOver), `$28040` (SubPin),
+  `$28654` (Transparent), `$28190` (Max), `$27E18` (SubOver) and `$282B0`
+  (Min); its case 0 picks `$283D0` or `$284D4` after comparing a 16-bit
+  value with `$7FFF` and `$8000`. (An earlier version of this section named
+  `$27944`, `$27ACC`, `$27B48`, `$27BBC` as these loops. They are the
+  four-way set at `$2F97C`-`$2F9A0` that System 6 has as `$25090`,
+  `$25120`, `$2519C`, `$25210`; `$27ACC` and `$27B48` have the same
+  opcodes as `$25120` and `$2519C`.)
 
 **Only in System 6:**
-* a block of 43 functions, 10,928 words, between HeapFree and the storem
-  functions (`$331C4`-`$3DC84`): **a QuickTime codec on the card** (see
-  below). It is led by `$33218` (4,259 words: mostly
-  `add`/`sub`/shifts, 315 `aseq`, few loads), `$374A4` (2,579), `$3B27C`
+* a block of 43 functions, 10,928 words, between HeapFree and
+  FillPatternStorem (`$331C4`-`$3DC84`, object files 28-30): **a QuickTime
+  codec on the card** (see below). It is led by `$33218` (4,259 words:
+  mostly `add`/`sub`/shifts, few loads: 94), `$374A4` (2,579), `$3B27C`
   (1,274, called by `$33218`) and `$3CA64` (1,001 words with six inline
-  divisions, 186 `div` steps);
+  divisions, 186 `div` steps, and no reference in the listing);
 * 26 functions of 11 words at `$01378`-`$017C4`, each of which only
   passes a `.lit` string to `$00E88` and returns. `$00E88` is an empty
   function (`jmpi lr0`, as System 7's `$00F78`). The strings are the stubs'
-  names (see the next subsection): `Bogus`, then QuickDraw's 16-bit
+  names (`.lit $0000`-`$018C`): `Bogus`, then QuickDraw's 16-bit
   arithmetic-mode loops for RgnBlt, Stretch and the pattern slab:
   `RBAverage16Half`, `RBAverage16`, `RBAddPin16`, … `RBMin16`;
   `StretchAverage16` … `StretchMin16`; `PatAverageSlab16` …
@@ -3467,113 +2751,106 @@ a ratio of 0.90 or more. `antelope6_compare.py` prints the full map.
   `rAvg16Half` is its case `$28`). So System 6's card had placeholders for
   the 16-bit arithmetic modes. RgnBlt (`$193C8`), StretchBits (`$28C14`)
   and the slab setup (`$10C3C`) load the stubs' addresses as their loop
-  pointers, and `$11524` loads `Bogus` where System 7 loads `$01468` (the
-  "Bogus…" message). Six of the stubs match, by opcodes, System 7's
-  11-16-word functions at `$3779C`-`$3814C` (the "moved" pairs); those are
-  module-support code, so the match is only the common frame idiom.
+  pointers, and `$11524` loads the `Bogus` stub `$01378`, as System 7's
+  `$11A34` loads its `$01468` (which also passes `Bogus`, to `$00F78`).
+  The tool pairs that one with System 6's last stub `$017C4` (same shape),
+  so 25 of the 26 are listed as only in System 6.
 
 **The block is the card side of a QuickTime codec, commands `$39`-`$3B`.**
 (An earlier version of this section called the block and the stubs
 unreferenced. That was wrong: a relocation whose symbol has section -3 names
 the *next* symbol, and the first scan missed those.) The address loads into
 the block from outside it are all in the dispatcher `$2D614`, in the case
-blocks of three commands that System 7 sends to the default:
+blocks of three commands that System 7 sends to the default (its
+`.lit $0EC4`-`$0ECC` all point to `$32818`). System 6's table is
+`.lit $0F18` (`cpgtu $3B` at `$2D77C`), entries `$0FFC`-`$1004`:
 
-| command | case block | loads | alternative path |
+| command | case block | loads | alternative path (`'rle '`) |
 |---|---|---|---|
 | `$39` | `$2DF60` | `$374A4` | `$2E024`: `$3A964` |
 | `$3A` | `$2E0F0` | `$33218` | `$2E1A0`: `$3A254` |
 | `$3B` | `$2E258` | `$33218` | `$2E340`: `$33218` |
 
-Each case reads its argument record (`rec = [.bss+4]`, `[rec+$10]`), loads
-eight fields of it (`+$04`-`+$2C`) and compares the first word with
-`$72707A61`. The `const` half reads `$xx61`, and its masked high byte `$9E`
-with the plateau key `$E4` gives `$7A`. So the word is `'rpza'`, the
-four-character code of Apple Video ("Road Pizza"). If the word matches,
-the case calls the block, otherwise it takes the alternative path. System 6's
+Each case reads its argument record (`rec = [.bss+4]`, `[rec+$10]`) and
+compares the first word with `$72707A61` (`const $7A61`, `consth $7270`):
+`'rpza'`, the four-character code of Apple Video ("Road Pizza"). If it
+matches, the case loads the rest of the record (`+$04`-`+$2C` for `$39`,
+`+$04`-`+$28` for `$3A`, `+$04`-`+$3C` for `$3B`: the 11, 10 and 15 longs
+after the type that the host sends) and calls the block. Otherwise it
+compares with `$726C6520`, `'rle '` (Animation), and takes the
+alternative path; any other type stores 0. The result goes to
+`[.bss+0]+$1C`. System 6's
 host driver (`gc24` ID -4048) holds the component name "8·24GC Road Pizza"
-and five comparisons with `'rpza'`, three of them next to one with `'rle '`
-(Animation). So SW 1.1 shipped a QuickTime image codec component that
+and five comparisons with `'rpza'`, three of them next to one with `'rle '`.
+So SW 1.1 shipped a QuickTime image codec component that
 ran Apple Video on the Am29000. System 7's card dropped the codec, and its
 commands `$39`-`$3B` fall to the default.
 
-**Which routine does what.** The immediates (bits 0-7, plain in every System
-6 word) tell the two `'rpza'` routines apart:
+**Which routine does what.** The immediates tell the two `'rpza'`
+routines apart:
 * `$374A4` is the **decoder**. It masks with `$E0` and compares with `$80`,
   `$A0`, `$C0`, `$E0` (the four opcode classes of an `'rpza'` block
   stream: skip, one colour, four colours, sixteen colours) and once with
   `$E1` (the chunk header byte). It is entered by command `$39`.
 * `$33218` is the **encoder**. It ORs `$80`, `$A0` and `$C0` into opcode
   bytes, and it is the larger one: 4,259 words of colour arithmetic (`and
-  $1F` with shifts by 5 and 10, the fields of a 16-bit pixel), with
-  `$3CA64`'s divisions. It is entered by commands `$3A` and `$3B`.
-* For other types, `$39` calls `$3A964` and `$3A254` is the encoder path of
-  `$3A`.
+  $1F` with shifts by 5 and 10, the fields of a 16-bit pixel), dividing
+  through `div_millicode`. It is entered by commands `$3A` and `$3B`.
+* For `'rle '`, `$39` calls `$3A964` and `$3A` calls `$3A254`; `$3B` calls
+  `$33218` for both types.
 
-**The decoder's layout.** `$374A4` (2,579 words) checks the `$E1` header
-and then splits on a local holding the destination depth (`cpneq` with
-`$20`, `$10` and `$08`) into one copy of the block loop per depth, each
-with its `and $E0`/`$80`/`$A0`/`$C0`/`$E0` tests. The 8-bit copy adds `and
-1/2/3` and `cplt 4` steps. This happens twice: `$375DC`-`$38BB0` uses
-compare chains, and `$38BB0`-`$39CF0` uses four 8-way jump tables on the
-top bits of a word (`srl $1C`, `cpgtu 7`; `.lit $1248`, `$1268`, `$1288`,
-`$12A8`). Helpers `$3DA5C` (7 calls, after the one-colour test) and
-`$3DAAC` (8 calls) are next to the block's end. Note that the host's
-`$9BBA` sends `$39` only for a 16-bit PixMap, so the 8- and 32-bit copies
-are not used through it.
+**The decoder's layout.** `$374A4` (2,579 words) first calls MapVirtual
+(`$2F2D4`). It reads the first byte (byte reader `$3DA34`) and
+compares it with `$E1` (`$375D4`): with `$E1` it runs `$375DC`-`$38BB0`, which uses compare
+chains, otherwise `$38BB0`-`$39CF0`, which uses four 8-way jump tables on
+the top bits of a word (`srl $1C`, `sub 8`, `cpgtu 7`; `.lit $1248`,
+`$1268`, `$1288`, `$12A8`). Each half splits on a local holding the
+destination depth (`cpneq` with `$20`, `$10` and `$08`; any other depth
+exits) into a 32-bit, a 16-bit and two 8-bit copies of the block loop
+(the two chosen by a flag bit, `sll …, $19`). In the first half each copy
+has its `and $E0`/`$80`/`$A0`/`$C0`/`$E0` tests, and the 8-bit copies add
+`and 1/2/3` and `cplt 4` steps. The stream readers `$3DA5C` (16 bits at
+any alignment, loaded at 7 places) and `$3DAAC` (32 bits, 11 places) are
+in object file 30. Note that the host's `$9BBA` sends `$39` only for a
+16-bit PixMap, so the 8- and 32-bit copies are not used through it.
 
-**The codec's switch tables (`antelope6_switches.py`).** All 167 entries
-of the `.lit` group with base `$331C0` are the codec's, in 25 switches.
-Their low bits decode with the periodic key (bits 0-8 from the strings,
-bits 9-10 from the table samples where their class is sampled). Bits 16-23
-follow from the targets: all lie in the block, so the offset is below
-`$10000`. Bits 11-15 are not sampled this late in `.lit` (the last table
-sample is at `.lit $10EC`). They follow the sampled plateaus of bits
-11-19, though. Within a group of eight values the low three bits run
-2 3 0 1 6 7 4 5 (complete for `$1D0`-`$1D7` at `.lit $0B08`-`$0CB8`),
-then the group drops by 8. The last plateau is `$1BA` at `.lit $10E4`, so
-the codec tables should step through `$1A $1B $18 $19 $1E $1F $1C $1D $12
-$13 $10 $11 $16 $17 $14 $15`. The script gives each entry one of these values,
-never one earlier than the previous entry's, and keeps the assignment that
-puts the most targets on a case-block start (the word two back is a jump)
-in the `jmpi`'s function. It places 154 of the 167 entries that way, 12 more
-on a target that a known jump lands on, and leaves one open. All 16
-four-way tables fit their shape.
+**The codec's switch tables (`sw11` `lit.asm`).** All 167 entries of the
+`.lit` group with base `$331C0` (`.lit $10F0`-`$1388`) are the codec's,
+in 25 switches:
 
 | `.lit` | switch at | cases | targets |
 |---|---|---|---|
 | `$10F0` | `$33414` (encoder) | 5 (`cpgtu 4`) | `$3339C`, `$333A4`, `$333AC`, `$333C8`, `$333D4`: all before the `jmpi`, so the switch sits at the bottom of a loop |
 | `$1104` | `$34EE8` (encoder) | 17 (`cpgtu $10`), on a pixel count `n` | cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$34EF0` (right after the `jmpi`), `$34F2C`, `$34F58`, `$34F8C`, `$34FC0`, `$34FDC`, `$35010`, `$35044`, `$35070`; the other eight at `$350AC` |
 | `$1148`-`$1238` | `$35B54`-`$36DD4` (encoder) | 16 switches of 4 | case `i` at `jmpi + 8 + $3C·i`, in all 16 |
-| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | in each: case 0 right after the `jmpi`, case 4 and the shared cases 6/7 further on (`$39220`/`$39244`, `$39630`/`$39660`, `$39B00`/`$39B30`); cases 1, 2, 3 and 5 go to the switch's default, the same place as an index above 7. That is `$38E4C` in the first table (its `cpgtu`/`jmpt` at `$38D50`) and `$39CAC`, the decoder's exit, in the other three. The first table is `$38D74`, `$38E4C` ×2, case 3 open, `$38E20`, `$38E4C`, `$38E44` ×2 |
+| `$1248`-`$12A8` | `$38D6C`, `$3919C`, `$39580`, `$39A74` (`'rpza'` decoder) | 4 switches of 8 | in each: case 0 right after the `jmpi`, case 4 and the shared cases 6/7 further on (`$38E20`/`$38E44`, `$39220`/`$39244`, `$39630`/`$39660`, `$39B00`/`$39B30`); cases 1, 2, 3 and 5 go to the switch's default, the same place as an index above 7. That is `$38E4C` in the first table (its `cpgtu`/`jmpt` at `$38D4C`/`$38D50`) and `$39CAC`, the decoder's exit, in the other three |
 | `$12C8` | `$3ACD8` (`$3A964`, the `'rle '` path) | 16 (`cpgtu $0F`), index `(a << 2) \| (lr5 & 3)` | four targets `T0`-`T3` = `$3ABC8`, `$3AC14`, `$3AC60`, `$3B250`; case `4a+b` goes to `T[(b - a + 3) mod 4]`: a 4×4 ordered dither |
 | `$1308` | `$3AF28` (the same) | 16 | the same rotation over `$3AE18`, `$3AE64`, `$3AEB0`, `$3B264` |
 | `$1348` | `$3BEBC` (in `$3B27C`, called only by the encoder, `$3338C`) | 17 | the same shape as `$1104`: cases 0, 1, 2, 4, 8, 12, 14, 15, 16 at `$3BEC4` (right after the `jmpi`), `$3BF00`, `$3BF2C`, `$3BF60`, `$3BF94`, `$3BFB0`, `$3BFE4`, `$3C018`, `$3C044`; the rest at `$3C080` |
 
-How far this can be trusted:
-* **The four-way switches are settled by their shape.** Case `i` lies at
+What the tables show:
+* **The four-way switches are unrolled per pixel.** Case `i` lies at
   `jmpi + 8 + $3C·i`, so case 0 starts right after the delay slot and each
-  case is 15 words. Where the open key bits allow two places, one of them is
-  this one. There is one switch per pixel of the 4×4 block, each writing one
-  of the four 2-bit colour indices, unrolled.
+  case is 15 words. There is one switch per pixel of the 4×4 block, each
+  writing one of the four 2-bit colour indices.
 * **The two 17-way switches split a 4×4 block's pixels into two groups and
-  average each.** Before `$34EE8`, a loop tests the sign of a difference
-  per pixel (`sub`, then `cpgt …, 0`; presumably the pixel against a
-  threshold). One branch adds the pixel's fields to one set of sums
-  and increments `lr80`, the other adds them to a second set. The switch
-  index is `lr80`, the number `n` of the 16 pixels in the first group, so
-  the second group has `16 - n`. The own cases are exactly the `n` where
-  `n` or `16 - n` is a power of two (or 0): there the average is a shift
-  (`sra` by 4, 3, 2 or 1, plain immediates), and the other group's sums go
-  through a divide helper (`calli` to `$41950`). The shared default divides
-  both. The averages are packed as 5-5-5 colours (`sra 3`, `sll 10`,
-  `sll 5`): the two colours of an `'rpza'` four-colour block. `$3BEBC` (in
-  `$3B27C`) is a second copy with the same cases.
+  average each.** Before `$34EE8`, an unrolled sequence tests, for each of
+  the 16 pixels, the sign of a difference (`sub`, then `cpgt …, 0`;
+  presumably the pixel against a threshold). One branch adds the pixel's
+  fields to one set of sums and increments `lr80`, the other adds them to
+  a second set. The switch index is `lr80`, the number `n` of the 16
+  pixels in the first group, so the second group has `16 - n`. The own
+  cases are exactly the `n` where `n` or `16 - n` is a power of two (or
+  0): there the average is a shift (`sra` by 4, 3, 2 or 1), and the other
+  group's sums go through `div_millicode` (`calli` to `$41950`). The
+  shared default divides both. The averages are packed as 5-5-5 colours
+  (`sra 3`, `sll 10`, `sll 5`): the two colours of an `'rpza'` four-colour
+  block. `$3BEBC` (in `$3B27C`) is a second copy with the same cases.
 * **The `'rle '` rotation is an ordered dither.** The four targets add a
   constant to each of three 8-bit channels, saturating at `$FF`: `T0`
   (`$3ABC8`) adds 4 (`cpge $FC`), `T1` (`$3AC14`) adds 2 (`cpge $FE`), `T2`
   (`$3AC60`) adds 6 (`cpge $FA`), and `T3` (`$3B250`, where the others join)
-  adds nothing. The immediates are plain. The index is `(a << 2) | (lr5 &
+  adds nothing. The index is `(a << 2) | (lr5 &
   3)`. `lr5` is the pixel's x: it gains each line's skip count and is
   incremented in the delay slot of the per-pixel loop (`$3AD98`). So `b` is
   the column mod 4, and `a` (not traced) presumably the row mod 4. The loop
@@ -3588,37 +2865,22 @@ How far this can be trusted:
   a 4×4 pattern of 0-6 added before the channels are cut to 5 bits. So
   `$3A964` converts 24-bit pixels to 16 bits with dithering. The second
   table (`$3AF28`) is the same with its own four loops.
-* **Bits 11-15 step inside tables, in the predicted order.** The assignment
-  changes value ten times: `$1A`→`$1B` between cases 6 and 7 of `$1104`,
-  `$18` and `$19` inside two four-way tables, `$1E` at `$11E8`, `$1F` at
-  case 3 of `$1218`, `$1C` at case 4 of `$1248`, `$1D` at case 5 of
-  `$1288`, `$12` at case 3 of `$12C8`, `$13` at case 4 of `$1308`, and `$10`
-  at case 6 of `$1348`. A per-table fit had to guess these. The order gives
-  them, and it moves `$1348`'s cases 1 and 2 to `$3BF00` and `$3BF2C`:
-  `jmpi + 8 + $3C` and `+ $2C` more, exactly as in `$1104`.
 * **The decoder's index is the top nibble of a stream word, minus 8.** Before
   each `jmpi` the decoder loads `lr8` from `lr21` (then `lr21 += 4`),
   computes `(lr8 >> 28) - 8`, and sends anything above 7 (unsigned) to the
   default. So the word's top bit must be set, and only nibbles `$8`
   (case 0), `$C` (case 4) and `$E`/`$F` (cases 6/7, shared) have their own
-  code. Case 0 of the 8-bit copy (`$39A7C`, all bits known) takes a count
-  from bits 16-25 (`srl $10`, `and $3FF`, plus 1) and stores one byte four
-  times per row for four rows: it fills 4×4 blocks with one colour. In
-  `'rpza'` itself, fill is `$A0` with a 5-bit count, so this second half of
-  `$374A4` presumably reads an intermediate list, not the raw stream.
-* **The decoder's default starts at a jump target, not after a jump.**
-  In the last three tables, cases 1, 2, 3 and 5 decode, with bits 0-10
-  known and their `h`, to `$39CAC`. The 8-bit copy's out-of-range branch
-  (`$39564`) goes there too. That block follows no jump, but
-  two direct jumps (`$393B4`, `$39B44`, all bits known) land on it. It
-  calls `$2F5BC` (System 7's `$33A9C`, the release half of MapVirtual) and
-  returns. So these four index values end the decode. The script accepts a
-  target that a known jump lands on only as a fallback: used for every
-  entry, that test admits wrong targets, and two four-way tables stop
-  fitting. In the first table, cases 1, 2 and 5 go to `$38E4C`, that
-  table's default. Case 3 decodes to `$3904C` or `$3784C` (`h = $1F` or
-  `$1C`), neither a case start. By the other three tables it should be the
-  default as well.
+  code. Case 0 of the last 8-bit copy (`$39A7C`) takes a count from bits
+  16-25 (`srl $10`, `and $3FF`, plus 1), loads one byte from `lr4` plus
+  the word's low 15 bits (`and $7FFF`), and stores it four times per row
+  for four rows: it fills 4×4 blocks with one colour. In `'rpza'` itself,
+  fill is `$A0` with a 5-bit count; this half runs only when the first
+  byte is not `$E1`, so it reads another format, not traced.
+* **The decoder's exit.** `$39CAC` calls UnmapAll (`$2F5BC`, System 7's
+  `$33A9C`) and returns 1. 23 jumps (among them the out-of-range branches
+  and the unknown-depth exits) and 12 table entries land on it. In the
+  first table cases 1, 2, 3 and 5 instead go to `$38E4C`, that table's
+  default, which returns -1 without unmapping.
 
 **The host side** (System 6 `gc24`, 68020 code at `$8580`-`$A1D0`). `$8580`
 passes (codec type, parameter block, selector, instance) to `$9510`.
@@ -3646,42 +2908,23 @@ and depth to the card, then wait for the reply.
 The direction comes from the card's opcode tests. The host side does not
 name it.
 
-Of System 6's 618 direct calls, none goes into the block from outside, so
-the dispatcher's address loads (and `calli`) are its only entries. Inside
-it, `$33218` calls `$3B27C`, `$374A4` calls `$39CF0`, and `$3C668`,
-`$3C7C4` and `$3DA08`-`$3DB68` are passed around as callbacks.
+Of System 6's 618 direct calls, none goes into the block from outside, and
+`.lit`/`.data` hold no pointers into it apart from its own switch tables,
+so the dispatcher's six address loads (and `calli`) are its only entries.
+Inside it, `$33218` calls `$3B27C`, `$374A4` calls `$39CF0`, and `$3C668`,
+`$3C7C4`, `$3DA08`, `$3DA34`, `$3DA5C` and `$3DAAC` are loaded as function
+pointers. Nine functions in it have no reference at all: `$39E50`,
+`$39EB4`, `$3A0CC`, `$3C810`, `$3C904`, `$3C94C`, `$3CA3C`, `$3CA64` and
+`$3DBC4`.
 
 There are no floating-point instructions in either version, so the block is
 not a floating-point trap emulator.
 
-### System 6 `.lit`: the low key bits from System 7 (`antelope6_lit.py`)
+### System 6 `.lit`, exact
 
-System 6's `.lit` has its own key (not System 6's `.text` key, and not
-System 7's `.lit` key at either index). Its top byte is plain, as in System
-7, and most strings are the same, so the two sections line up by their top
-bytes. There are five runs, at shifts of +77 to +220 words, and 394 string
-words lie in them. For such a pair the plaintexts are equal, so
-`key6 = W6 ^ W7 ^ key7` wherever System 7's key is known (bits 0-11 from
-`antelope_lit_key.py`). Without a single conflict:
-
-| key6 bits | period (words) | classes sampled |
-|---|---|---|
-| 0-4 | 24 | all |
-| 5-6 | 48 | all |
-| 7 | 96 | all |
-| 8 | 192 | 136 of 192 |
-
-Bit 9 fits period 384 with 11 conflicts; bits 10-11 fit no period, but
-System 7's own bits 9-11 are weak in string words. Bits 12-19 of
-`key6 ^ key7` are a step function of the index, as in System 7. The jump
-tables give the rest (below): bit 9 repeats every 384 words and bit 10
-every 768, and bits 12-19 are a slowly falling step function. At the
-start of `.lit`, bits 16-19 of key6 are 0, so the second character there is
-plain. Bits 0-8 decode every fourth character.
-
-The 26 name strings come before the first shared string
-(`.lit $0000`-`$019F`). With characters 1, 2 and 4 plain and the third
-supplied, each name also fits the gap to the next stub's string exactly:
+System 6's `.lit` starts with 26 strings that System 7 does not have, the
+names of its arithmetic stubs (`.lit $0000`-`$019F`). Each stub passes its
+name to the empty reporter `$00E88`:
 
 | `.lit` | stubs | names |
 |---|---|---|
@@ -3690,68 +2933,23 @@ supplied, each name also fits the gap to the next stub's string exactly:
 | `$074`-`$0F8` | `$01530`-`$01664` | `StretchAverage16`, `StretchAddPin16`, `StretchAddOver16`, `StretchSubPin16`, `StretchTransparent16`, `StretchMax16`, `StretchSubOver16`, `StretchMin16` |
 | `$108`-`$18C` | `$01690`-`$017C4` | `PatAverageSlab16`, `PatAddPinSlab16`, `PatAddOverSlab16`, `PatSubPinSlab16`, `PatTransparentSlab16`, `PatMaxSlab16`, `PatSubOverSlab16`, `PatMinSlab16` |
 
-The `.lit` tables of System 6 follow (base `$01DA8` at `.lit $01A0` is
-System 7's `$01A4C` at `.lit $0008`). The added group, base `$331C0`, `.lit
-$10F0`-`$1388`, 167 entries, is not one switch but all of the codec's (see
-"The codec's switch tables" above).
+**The dispatcher table** (`.lit $0F18`, 60 entries, commands `$00`-`$3B`;
+System 7's is at `.lit $0DE0` with 61 entries, up to `$3C`). Unknown commands
+go to `$2E430` ("Unknown Function", System 7 `$32818`), commands without a
+case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
+* 24 commands have a case in both builds (`$00 $01 $03 $04 $0C $0D $0F
+  $11`-`$15 $17 $19`-`$1B $26 $29 $2B`-`$2D $30 $33 $38`);
+* `$39`-`$3B` are the codec's in System 6 (`$2DF60`, `$2E0F0`, `$2E258`) and
+  unknown in System 7;
+* `$00` (`$2DF20`) and `$03` (`$2DF40`) are System 7's `$327D8` and `$327F8`
+  word for word: load `[.bss+0]`, store a reply at `+$1C` (0 for `$00`);
+* `$16` is unknown in System 6 (System 7: `$3279C`), and `$3C` (System 7
+  `$32528`) does not exist;
+* `$02`, `$05`, `$06` and `$07` go to the epilogue in both; `$08`-`$0B` and
+  `$10` to "Unknown Function" in both.
 
-**The tables from System 7's targets (`antelope6_tables.py`).** The
-function map gives a System 7 → System 6 address map for 54,077 words: word
-by word in identical functions, and along the matching opcode runs in
-changed ones. System 7's tables are paired with System 6's by mapped
-relocation base and entry index. Fifteen pair up, and System 7's `$27674`
-and `$3772C` (module support) have none. For each System 7 entry with a
-resolved target, the mapped target minus the System 6 base is the System 6
-plaintext, so `W6 ^ plaintext` is a full key sample. Where the string key
-covers bits 0-8, 153 samples agree and 15 differ: 11 in StretchBits (86
-entries against 72, so the index pairing breaks), 3 in the dispatcher and 1
-in `$01DA8`. With the 343 samples that are not contradicted, bits 8-10 are
-periodic (192/384/768; at 768 no conflict), bits 17-19 are a plateau
-function, and bits 11-16 are a step function with some noise.
-
-**The dispatcher table** (base `$2D59C`, 60 entries, commands `$00`-`$3B`)
-decodes from bits 0-10 (offsets below `$1000`). Bit 11 is not sampled
-there, so each entry fixes its block only modulo `$800`. A System 7
-handler's mapped block "fits" if it agrees with the sampled bits. It fits
-for 53 commands. The other seven are all explained:
-* `$39`-`$3B` have their own cases in System 6 (the codec above);
-* `$00` decodes to `$2DF20` and `$03` to `$2DF40`, two blocks of eight
-  words that load `[.bss+0]` and store a reply at `+$1C`: `lr3 = 0` in
-  `$2DF20` (all 24 bits known), `$??00` in `$2DF40`. They are System 7's
-  `$327D8` and `$327F8` (`$00` and `$03` there too) word for word. The map
-  places those two blocks wrongly, at `$2E0D0` and `$2E410`, because the
-  codec's cases `$39`-`$3B` follow them in System 6 and the default follows
-  them in System 7. It also pairs System 7's `$3279C` (command `$16`) with
-  `$2DF20` for three words, and that pairing is wrong too;
-* `$16` decodes to `$2DC30` (FlushGDevice, the `$29` block) or `$2E430`
-  (the default, "Unknown Function"); bit 8 is open there. System 6 has no
-  block for System 7's `$3279C`: its `$13` block (`$2DEC4`, `$5C` bytes as
-  in System 7) runs straight into `$2DF20`. The System 6 host never sends
-  `$16`, so it is the default, as `$10` is;
-* `$19` decodes to `$2DCF0` (or `$2E0F0`, `$800` higher, the `$3A` case).
-  `$2DCF0` is a one-long block that calls `$13ACC`, System 7's
-  FlushOffscreen `$14168` mapped. System 7 has the two-long `$3C` block
-  (`$32528`) before its FlushOffscreen block; System 6 has no `$3C`, so
-  the map runs one block off there.
-
-**The bit-8 errors.** Before this, `$04`, `$06` and `$10` looked
-unsampled or different. Their key bit 8 (period 192) has no string sample,
-and the value came from one table sample each in the table at `$0AF70`.
-Those samples disagree with the string key in bits 0-7, so their pairing
-with System 7 is wrong. The script now rejects a table sample whose known
-string bits disagree, also when bit 8's class has no string sample (it used
-to skip the check then). That leaves 318 samples instead of 343. Bit 8 then
-has no conflict at period 192 (8 before), and bit 9 has 1 at period 384
-(8 before). With the corrected bit 8, `$04` is `$2D7FC`, and `$06` and
-`$10` are the epilogue `$2E460` and the default `$2E430`, as in System 7.
-
-`$02`, `$05` and `$07` (and in System 7 `$06`) go to `$2E460`, the code
-right after the switch's `jmpi` (System 7's `$3287C`). These commands have
-no case, and the card stores no reply. An earlier version of the script
-only accepted blocks that follow a jump, which excluded `$2E460` and made
-these three look different.
-
-System 7's table has one more entry (61, up to `$3C`).
+(Earlier versions of this section fitted System 6's `.lit` key from System
+7's strings and tables; the exact table confirms what that fit concluded.)
 
 **The System 6-only probe: `$00`, then `$02`.** System 6's host does send
 `$02`, although no Antelope of either version handles it:
@@ -3785,8 +2983,7 @@ System 7's table has one more entry (61, up to `$3C`).
   (`$7A96`). The host never writes `+$1C` itself.
 * The System 6 dispatcher, like System 7's, stores 1 in packet `+$1C`
   as soon as it takes a command (`$2D648`-`$2D650`: `const gr99, 1`,
-  `add gr98, gr98, $1C`, `store`; all 24 bits known, the same words as
-  System 7 `$31E58`).
+  `add gr98, gr98, $1C`, `store`; the same words as System 7 `$31E58`).
 * `$00` then overwrites the reply with 0. `$02` has no case and goes
   straight to the epilogue `$2E460`, so its reply stays 1.
 

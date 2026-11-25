@@ -186,10 +186,10 @@ data tables decoded). Structure:
   format**: a magic number, sections (incl. `.BSS`), a symbol table, and
   absolute/relative branch-target relocations ("Loading %d sections", "Not in
   ACEF format!", "…Branch Target … Out of Range…", "Load Complete."). So the
-  high-entropy `ACEF` resources are *relocatable Am29000 object code*, not
-  encrypted by the loader — and the code that parses them is right here. (The
-  unpacked bytes carry a further position-dependent mask on top; see
-  `firmware/README.md`.)
+  high-entropy `ACEF` resources are *relocatable Am29000 object code*, and the
+  code that parses them is right here. This copy accepts only plain (`$012A`)
+  files; `DRVR.s`'s copy also decrypts the `$012B` ones (a running 32-bit
+  key per section, see `firmware/README.md` and `SECOND_MASK.md`).
 
 ### Labels
 
@@ -319,15 +319,16 @@ firmware, the fully-disassembled **`.GraphAccel`** (`DRVR`), and both
 boot-time **`INIT`**s. Remaining, on request:
 
 * **Am29000 side** — see [`firmware/`](firmware/) and
-  [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md): the kernel (`Boot`, `Hand`) is
-  unmasked and disassembled and the host/card protocol is cross-checked. The
-  accelerator (`ACEF 100`) is partly unmasked: the low 15-19 bits of each code
-  word exactly, bits 16-23 estimated for 98% of the words, `.lit` bits 0-11. That is enough to name its dispatcher, the command
-  cases, DrawMultiObject and its drawers, the fills and copies and the C
-  library (`firmware/disasm/text.partial.asm`). Still open: a closed form for the key,
-  the `.data` key, and a disassembly of the System 6 Antelope, whose
-  separate key is now largely recovered (`antelope6_key.py`) and whose functions are matched to System 7's (`antelope6_compare.py`) and whose `.lit` key is known in bits 0-8 (`antelope6_lit.py`); `antelope6_tables.py` maps its jump tables and dispatcher and finds its Apple Video codec, and `antelope6_switches.py` fits the codec's switch targets; `antelope_modules.py` lists the object files an Antelope image was linked from, with its build header, `antelope_hif_stubs.py` checks its HIF stubs against AMD's library source, and `antelope_data_key.py` decodes `.data` (data.partial.bin), `antelope_lit_strings.py` reads `.lit`'s strings in full, and `antelope_data_dump.py` lists the decoded `.data`, and `runtime_publicout.py` decodes the Runtime's `PublicOu` header with that section's own keystream (see the "Still open"
-  list in `HOST_CARD_PROTOCOL.md`).
+  [`HOST_CARD_PROTOCOL.md`](HOST_CARD_PROTOCOL.md): both firmware programs
+  are decrypted exactly (`acef_unpack.py`) and disassembled: the kernel
+  (`Boot`, `Hand`, its data and service table; `runtime_dasm.py`) and the
+  accelerator (`ACEF 100`: `text.asm`, `lit.asm`, `data.asm`, `Code.asm`;
+  `antelope_dasm.py`, with names from `antelope_names.py`), for System 7 in
+  `firmware/disasm/` and System 6 in `firmware/sw11/disasm/`.
+  `antelope_modules.py` lists the object files an Antelope image was linked
+  from, `antelope_compare.py` compares the two releases function by function,
+  and `antelope_hif_stubs.py` checks the HIF stubs against AMD's library
+  source. Open points are in the "Still open" list in `HOST_CARD_PROTOCOL.md`.
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
   be: an embedded credit block right after the function (previously

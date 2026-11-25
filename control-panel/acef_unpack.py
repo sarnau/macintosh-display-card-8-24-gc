@@ -17,12 +17,37 @@ the DRVR/gc24 loaders (ACEFLoad) in the 8*24 GC control-panel software:
       program name ("32-Bit Antelope") at +0x1C, sizes, version, date
   [0x12B only] 64-byte copyright signature (plaintext) @ 0x58
   section headers (40 bytes each)     XOR keystream  key(i)=(offset + KEY*i)&0xFF
-  section raw data (@ s_scnptr)       XOR constant   KEY
-  relocations / symbols               (not needed for the code image)
+  section raw data (@ s_scnptr)       running 32-bit key, per word (0x12B only):
+        K = KEY * 0x01010101,  b = s_scnptr & 0xFF       at the section start
+        plain = word ^ K;  K = (K + b) mod 2^32;  b ^= K & 0xFF   per word
+  relocations / symbols               plaintext
+
+The section-data key is DRVR's ACEFLoad ($3A46-$3A64 sets K and b, $3AD0-
+$3AE6 and $40FE-$4126 run it); it copies only size/4 words, so a section's
+trailing 1-3 bytes never reach the card (they are written here XORed with
+KEY only).  Versions of this script before November 2026 XORed every byte
+with KEY alone, i.e. they used the starting K for every word; the
+remainder is the "second mask" that SECOND_MASK.md and the *_key / unmask_*
+tools model approximately.  gc24's own ACEFLoad accepts plain 0x12A files
+only.
 
 Usage:  python3 acef_unpack.py ACEF_100.bin  [outdir]
 """
 import sys, struct, os
+
+def decrypt(raw, KEY, scnptr):
+    """Section data of a 0x12B file, as DRVR's ACEFLoad decodes it."""
+    n = len(raw) // 4
+    K, b = KEY * 0x01010101, scnptr & 0xFF
+    out = bytearray(raw)
+    for i in range(n):
+        w = int.from_bytes(raw[4*i:4*i+4], 'big') ^ K
+        out[4*i:4*i+4] = w.to_bytes(4, 'big')
+        K = (K + b) & 0xFFFFFFFF
+        b ^= K & 0xFF
+    for i in range(4*n, len(raw)):         # not loaded by ACEFLoad
+        out[i] = raw[i] ^ KEY
+    return bytes(out)
 
 def unpack(path, outdir):
     d = open(path, 'rb').read()
@@ -58,7 +83,9 @@ def unpack(path, outdir):
     print('  sec        vaddr      size      scnptr   nrel  flags   file')
     extracted = []
     for name, vaddr, size, scnptr, relptr, nrel, fl in secs:
-        data = bytes(c ^ KEY for c in d[scnptr:scnptr+size]) if (scnptr and size and fl & 0x80 == 0) else b''
+        data = decrypt(d[scnptr:scnptr+size], KEY, scnptr) if (scnptr and size and fl & 0x80 == 0) else b''
+        if data and magic == 0x12a:
+            data = d[scnptr:scnptr+size]
         fn = ''
         if data:
             fn = os.path.join(outdir, (name.strip('.') or 'sec') + '.bin')

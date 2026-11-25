@@ -1,38 +1,42 @@
-  0f000:  25010118  sub      gr1, gr1, $18           
-  0f004:  5e000156  asgeu    trap0, gr1, gr86  ; RELOC(word): -> $00000040 (.text+0x40) [byte +1 of word]
-  0f008:  158101b7  add      lr1, gr1, $b7           
-  0f00c:  030061cc  const    gr97, $00cc  ; RELOC: unresolved external (symndx 1676 scn=0) -- not defined in this ACEF image
-  0f010:  020061d2  consth   gr97, $00d2  ; RELOC: unresolved external (symndx 1676 scn=0) -- not defined in this ACEF image
-  0f014:  1e00620f  store    0, 0, gr98, gr15        
-  0f018:  15626088  add      gr98, gr96, $88         
-  0f01c:  1e007c0e  store    0, 0, gr124, gr14       
-  0f020:  0301642b  const    gr100, $012b            
-  0f024:  72451cc9  asneq    trap69, gr28, lr73      
-  0f028:  15837c66  add      lr3, gr124, $66         
-  0f02c:  15847cf5  add      lr4, gr124, $f5         
-  0f030:  01ff9e5f  constn   lr30, $ff5f             
-  0f034:  16007e0c  load     0, 0, gr126, gr12       
-  0f038:  15849bab  add      lr4, lr27, $ab          
-  0f03c:  61617fac  cpeq     gr97, gr127, $ac        
-  0f040:  a53c7fbf  jmpf     gr127, $0f2fc           
-  0f044:  15829bac  add      lr2, lr27, $ac             ; [delay slot]
-  0f048:  030099ac  const    lr25, $00ac  ; RELOC: unresolved external (symndx 1731 scn=0) -- not defined in this ACEF image
-  0f04c:  0200988c  consth   lr24, $008c  ; RELOC: unresolved external (symndx 1731 scn=0) -- not defined in this ACEF image
-  0f050:  1600982f  load     0, 0, lr24, gr47        
-  0f054:  61609be8  cpeq     gr96, lr27, $e8         
-  0f058:  ad3c7a5c  jmpt     gr122, $0f170           
-  0f05c:  70401b34  aseq     trap64, gr27, gr52         ; [delay slot]
-  0f060:  c8009a40  calli    lr26, gr64              
-  0f064:  70401469  aseq     trap64, gr20, gr105        ; [delay slot]
-  0f068:  030095af  const    lr21, $00af  ; RELOC: unresolved external (symndx 1048 scn=-3) -- not defined in this ACEF image
-  0f06c:  0200940c  consth   lr20, $000c  ; RELOC: unresolved external (symndx 1048 scn=-3) -- not defined in this ACEF image
-  0f070:  c8009492  calli    lr20, lr18              
-  0f074:  704015ec  aseq     trap64, gr21, lr108        ; [delay slot]
-  0f078:  030097cc  const    lr23, $00cc  ; RELOC(lo16): -> $0003ac88 (.text+0x3ac88)
-  0f07c:  020097ac  consth   lr23, $00ac  ; RELOC(hi16): -> $0003ac88 (.text+0x3ac88)
-  0f080:  c80096af  calli    lr22, lr47              
-  0f084:  15827108  add      lr2, gr113, $08            ; [delay slot]
-  0f088:  030068a7  const    gr104, $00a7            
-  0f08c:  72451174  asneq    trap69, gr17, gr116     
-  0f090:  a13c10c2  jmp      $0f308                  
-  0f094:  704012c9  aseq     trap64, gr18, lr73         ; [delay slot]
+* ACEF "32-Bit Antelope" version $00700D01 -- Code (the entry stub), exact
+  0f000:  25010118  sub      gr1, gr1, $18
+  0f004:  5e00017e  asgeu    trap64, gr1, gr126
+  0f008:  15810118  add      lr1, gr1, $18
+  0f00c:  03006200  const    gr98, $0000   ; lo of extern#1676+$0
+  0f010:  02006200  consth   gr98, $0000   ; hi of extern#1676+$0
+  0f014:  1e006062  store    0, 0, gr96, gr98
+  0f018:  15626204  add      gr98, gr98, $04
+  0f01c:  1e006162  store    0, 0, gr97, gr98
+  0f020:  03017904  const    gr121, $0104
+  0f024:  72450101  asneq    trap69, gr1, gr1
+  0f028:  15836000  add      lr3, gr96, $00
+  0f02c:  15846000  add      lr4, gr96, $00
+  0f030:  01ff82ff  constn   lr2, $ffff
+L_0f034:
+  0f034:  16006184  load     0, 0, gr97, lr4
+  0f038:  15848404  add      lr4, lr4, $04
+  0f03c:  61616100  cpeq     gr97, gr97, $00
+  0f040:  a53c610d  jmpf     gr97, $0f034   ; -> L_0f034
+  0f044:  15828201  add      lr2, lr2, $01   ; [delay slot]
+  0f048:  03008000  const    lr0, $0000   ; lo of extern#1731+$0
+  0f04c:  02008000  consth   lr0, $0000   ; hi of extern#1731+$0
+  0f050:  16008080  load     0, 0, lr0, lr0
+  0f054:  61608000  cpeq     gr96, lr0, $00
+  0f058:  ad3c601a  jmpt     gr96, $0f068   ; -> L_0f068
+  0f05c:  70400101  nop         ; [delay slot]
+  0f060:  c8008080  calli    lr0, lr0
+  0f064:  70400101  nop         ; [delay slot]
+L_0f068:
+  0f068:  03008000  const    lr0, $0000   ; lo of .text $31dac (main)
+  0f06c:  02008000  consth   lr0, $0000   ; hi of .text $31dac (main)
+  0f070:  c8008080  calli    lr0, lr0
+  0f074:  70400101  nop         ; [delay slot]
+  0f078:  03008000  const    lr0, $0000   ; lo of .text $3ac88 (exit)
+  0f07c:  02008000  consth   lr0, $0000   ; hi of .text $3ac88 (exit)
+  0f080:  c8008080  calli    lr0, lr0
+  0f084:  15826000  add      lr2, gr96, $00   ; [delay slot]
+L_0f088:
+  0f088:  03007901  const    gr121, $0001
+  0f08c:  72450101  asneq    trap69, gr1, gr1
+  0f090:  a13c0022  jmp      $0f088   ; -> L_0f088
+  0f094:  70400101  nop         ; [delay slot]

@@ -1,26 +1,28 @@
 # Am29000 firmware -- unpacked from the ACEF resources
 
 The `ACEF` resources in the 8*24 GC control-panel software are the on-card
-**Am29000 firmware**, stored in an obfuscated Am29000 **COFF** format, with a
-**second, much harder mask** on the code and data bytes. This folder holds the
-unpacked firmware (`../acef_unpack.py`, from the `ACEFLoad` loaders in `gc24`
-and the DRVR) and what could be recovered from it.
+**Am29000 firmware**, stored in an encrypted Am29000 **COFF** format. The
+host's video driver decrypts it while loading (`DRVR.s` `ACEFLoad`), and
+`../acef_unpack.py` does the same. This folder holds the decrypted firmware
+of both packages (System 7 here, System 6 "8•24 GC SW 1.1" in `sw11/`) and
+exact disassemblies of it.
 
 ## Status at a glance
 
 | part | state |
 |---|---|
-| ACEF container, relocations, symbol table | fully decoded (`../acef_unpack.py`, `../apply_reloc.py`) |
-| `Runtime` / `Hand` (the kernel, 2,885 words) | **fully unmasked and disassembled** (`disasm/Hand.asm`) |
-| `Runtime` / `Boot` (512 words) | unmasked with *fitted* tables (`disasm/Boot.asm`); a few register fields may be wrong |
-| `Runtime` data sections | their "noise" is the mask applied to zero/constant data; `Apple`, `PublicIn`, parts of `PublicOu` decoded |
-| `Antelope` (the 243 KB accelerator) | **partly unmasked** (`text.partial.bin` + `.known` sidecar; `lit.partial.bin` is valid in bits 0-1 only; `.lit` has its own key, whose bits 0-11 `../antelope_lit_key.py` recovers from the `.lit` strings and host-confirmed pins): bits 0-14 of every word, bit 15 for 98% (RA complete), bits 16-18 for some; bits 16-23 (RC, high immediate byte) estimated for 98% of words from the neighbouring samples, because the key's high bits are a step function (`HOST_CARD_PROTOCOL.md` section 6; every estimated direct call lands on a function start), and exact at the 3,755 relocated `const`/`consth` words and the 133 relocated direct `call`s (R_IREL), whose plaintext the relocations give (`../antelope_reloc_samples.py`); `disasm/text.asm` is *not* real code (opcode byte only) |
+| ACEF container, encryption, relocations, symbol table | fully decoded (`../acef_unpack.py`, `../apply_reloc.py`) |
+| `Runtime` (`ACEF_1`: `Hand` kernel 2,885 words, `Boot` 512 words, data sections) | exact; `disasm/Hand.asm` (annotated), `disasm/Boot.asm`, `disasm/RuntimeData.asm` (service table, `PublicIn`/`PublicOu`, `Vec`) |
+| `Antelope` (`ACEF_100`, the 243 KB accelerator) | exact; `disasm/text.asm` (functions labelled and partly named), `lit.asm`, `data.asm`, `Code.asm` (`../antelope_dasm.py`) |
+| System 6 (`sw11/`) | exact, same layout; its `Runtime` is a different kernel build (2,781 words of `Hand`) |
 | host <-> card protocol | documented and cross-checked in `../HOST_CARD_PROTOCOL.md` |
 
-Tools: `../acef_unpack.py` (unpack), `../apply_reloc.py` (relocations),
-`../am29k_dasm.py` (Am29000 disassembler), `../unmask_runtime.py` (second mask,
-`Hand`/`Boot`), `../unmask_antelope_low.py` (the known low bits of Antelope's mask),
-`../extract_resources.py` (resource fork).
+Tools: `../extract_resources.py` (resource fork), `../acef_unpack.py`
+(decrypt and unpack), `../apply_reloc.py` (relocations, flat image),
+`../am29k_dasm.py` (Am29000 disassembler), `../runtime_dasm.py` (Runtime
+listings), `../antelope_dasm.py` (Antelope listings), `../antelope_modules.py`
+(object files), `../antelope_compare.py` (System 6 against System 7),
+`../antelope_hif_stubs.py` (HIF stubs against AMD's source).
 
 ## The ACEF format (reverse-engineered)
 
@@ -34,65 +36,29 @@ optional header (68 bytes @ 0x14)   XOR keystream  key(i) = (0x14 + KEY*i) & 0xF
    program name (e.g. "32-Bit Antelope") @ +0x1C, text/data/bss sizes, version, date
 [0x12B only] 64-byte copyright signature (plaintext) @ 0x58   (loader verifies it)
 section headers (40 bytes each)     XOR keystream  key(i) = (fileOffset + KEY*i) & 0xFF
-section raw data (@ s_scnptr)       XOR CONSTANT   KEY
+section raw data (@ s_scnptr)       running 32-bit key (below)
 relocations / symbols               plaintext
 ```
 
-The first layer is a single key byte (`timdat`'s low byte): the metadata gets a
-running keystream, the section data a constant XOR. That layer is undone by
-`acef_unpack.py`. **It is not the whole story**: the unpacked code and data
-words of both ACEFs carry a *second* mask (below), which is why the unpacked
-bytes look plausible at the opcode level but not above it.
-
-## The second mask
-
-(A narrative of how it was found and how to reproduce it: [`../SECOND_MASK.md`](../SECOND_MASK.md).)
-
-The low 23 bits of every 32-bit word of the code sections are XORed with a key
-that depends on the word index `k` (counted from the start of the section):
+The header layer uses the key byte (`timdat`'s low byte) as a running
+keystream. The section data is encrypted per word with a running 32-bit key
+that restarts at every section:
 
 ```
-r   = 0x4000 + 0x80*(ROW[k mod 48] - k) + COL[k mod 24]
-key = signext19( ((-(r >> 16)) & 7) << 16  |  ((r & 0xFFFF) ^ 0x4000) ) & 0x7FFFFF
+K = KEY * $01010101,  b = s_scnptr & $FF          (section start)
+plain = word ^ K;  K = (K + b) mod 2^32;  b ^= K & $FF   (per word)
 ```
 
-(`ROW`, `COL` tables per section; `../unmask_runtime.py`.) It was found by
-solving for the key at words whose plaintext is known: operand-free `iret`
-words, `mtsr` words (RC = 0), `mfsr` (RB = 0), and later `Apple`'s copyright
-text. The opcode byte (bits 24-31) is never masked, which is why opcode
-histograms looked right. For small `k` the key has no bits above 14, so the
-RC byte is plain at the start of a section.
+(`DRVR.s` `ACEFLoad` `$3A46`-`$3AE6`; only `size/4` words are loaded.)
 
-* **`Hand`**: tables solved exactly (80 `iret` + 120 `mtsr` words fixed them; ten
-  `ROW` entries came from weaker signals). Checks not used in the fit all pass:
-  every `mfsr` has RB = 0, every `mtsr` RC = 0 and an architectural SPR number
-  (0-14, 128-135), every `iret` has zero operands, and **all 351 direct jumps and
-  calls land inside the section**.
-* **`Boot`**: only 5 SPR instructions to anchor on, so `COL`/`ROW` were *fitted*
-  (maximum likelihood against field statistics of the unmasked `Hand`, plus
-  constraints). 58 of 58 direct jumps land in the code and 89 of 99
-  `const`/`consth` pairs share a register; some fields are probably still wrong.
-* **Data sections** carry the same mask on *constant* data, which is why they
-  look like noise: `Vec` is the keystream itself (an all-zero section),
-  `PublicIn` too; `Apple` decodes with `Vec`'s keystream to the copyright string
-  "Copyright (c) 1989, Apple Computer, Inc. All Rights Reserved" (every other
-  two-character chunk lives in the masked low half); `PublicOu` has its own
-  keystream (its zero words; bits 0-10 repeat every 192 words), which
-  decodes its header to `$32100456 $00700D01 0 $4C007000 $4C007800
-  $4C007300 $4C008C00 $00010000`: `HifComm`, `InpArgs`, `VidComm` and the
-  host's packet (`runtime_publicout.py`; bits 11-14 of the header's key
-  are taken as 0), and it holds another copy of the copyright text in its
-  high halves.
-* **`Antelope`** is masked the same way (`.text`, `.lit`, `.data`, the `Code`
-  stub), with its own tables. Its 3,726 known-plaintext key values (spill/fill
-  asserts `asgeu 64`/`asleu 65`, the NOP `aseq 64,gr1,gr1` = 2,064 words,
-  `jmpi lr0`) show a mixed-radix structure (a base-4 digit of weight 64 rows).
-  Its low bits are now modelled (bits 0-14 everywhere, more in places; see the
-  table above), bits 19-23 are **not solved**; see `ACEF_100_Antelope/mask_samples.tsv` and
-  `../HOST_CARD_PROTOCOL.md` section 6. Everything earlier that treated
-  Antelope's `.text` as plain code (`disasm/text.asm`, prologue/`gr0` statistics,
-  the "function naming" analysis) used masked bytes and is unreliable beyond the
-  opcode byte.
+## The "second mask"
+
+Earlier versions of `acef_unpack.py` XORed the section data with `KEY`
+alone, the starting value of `K`. The rest of the key looked like a second,
+much harder mask, and was modelled from known plaintext for months: exact
+tables for `Hand`, fitted ones for `Boot`, a partial model for Antelope.
+[`../SECOND_MASK.md`](../SECOND_MASK.md) records the solution, why the
+leftover looked the way it did, and what the earlier approach produced.
 
 ## `ACEF_1_Runtime/` -- "Runtime" (the Am29000 kernel)
 
@@ -104,31 +70,35 @@ KEY `0xBC`. 13 sections; header `symptr=0`/`nsyms=0` and every section has
 | `Boot` | `0x2003000` | boot code (512 words) |
 | `Hand` | `0x2000000` | trap/interrupt/service kernel (2,885 words) |
 | `Cache` | `0x2003800` | bss (nothing is missing: the earlier "second stage" theory was a decode artefact) |
-| `Vec` | `0x4C000000` | trap vector table (`VAB`); the file holds the keystream, `Boot` fills the table |
+| `Vec` | `0x4C000000` | trap vector table (`VAB`); 0 in the file apart from 4 words, `Boot` fills the table |
 | `PublicIn` / `PublicOu` | `0x4C006400/6800` | host -> card / card -> host fields |
 | `HifComm` | `0x4C007000` | mailbox (`'s337'` / `$96666669`) |
 | `VidComm` | `0x4C007300` | video command block (= ROM's `$0C007300`) |
 | `InitMap` / `InpArgs` | `0x4C007400/7800` | init map / program arguments |
-| `Private`, `PrivNZ`, `Apple` | `0x4C0025xx` | service jump table, private state, copyright |
+| `Private`, `PrivNZ`, `Apple` | `0x4C0025xx` | private state, the vector-66 service table (`PrivNZ`, 33 handlers), copyright |
 
 ### What `Boot` does
 
-1. Touches a block of card registers from `$4400000C` and sets `CPS` to
-   `$0000` then `$047F` (the same `CPS` constants `Hand` uses).
+(`disasm/Boot.asm`, whose header has the details.)
+
+1. Probes the two words at `$4400000C`/`$44000010` into a 2-bit value and
+   stores it, shifted left by 28, at `$4C00682C` (`PublicOu+$2C`); sets
+   `CFG = 0`, `CPS = $047F`; loads the host's flags from `PublicIn+$18` into
+   `gr64`.
 2. **Polls `$4C006400` (`PublicIn` word 0) until it reads `$42005300`** -- the
    value `DRVR.s`'s `Init29K` pokes to `image+$00` after uploading `Runtime` --
    then writes 0 back.
-3. Copies a parameter block from `PublicIn` (the flags and sizes `DRVR.s`
-   publishes at `+$18`, `+$20`...`+$2C`).
+3. Copies a block described by `PublicIn+$20`-`$2C`, and puts the probed
+   value into the top nibble of the four pointers at `PublicOu+$0C`-`$18`.
 4. Sets `VAB = $4C000000` (the `Vec` section) and `CFG |= $10`, and **fills the
    trap vector table** with handler addresses `$0200xxxx` (`$2000000`,
-   `$2000008`, `$2000908`, ... and `$2001D08` for the unused entries). So the
-   "noise" the host sees in `Vec` and the pointer-looking `PrivNZ` words are
-   this table's initial image.
+   `$2000008`, `$2000908`, ... and `$2001D08` for the unused entries).
 5. Reads the three hardware-ID bits at `$44000044/48/4C` (the host's
-   `$0400004C/48/44`, the readiness bits `BuildUnitRecords` reads), picks a
-   board configuration value (`$1E0`, `$366`, `$1E6`, `$180`, `$240`, `$270`)
-   and stores it to `$4C006828` (`PublicOu+$28`).
+   `$0400004C/48/44`, the readiness bits `BuildUnitRecords` reads). It takes
+   the board parameters from `VidComm` when that holds `'WY1`'`, or else
+   probes the card registers, and stores them at `PublicOu+$1C`-`$28` (a
+   configuration value `$1E0`, `$366`, `$1E6`, `$180`, `$240`, `$270` by board
+   at `+$28`).
 6. `jmp $2001FFC` into `Hand`'s reset/initialisation routine.
 
 ### What `Hand` contains
@@ -179,27 +149,23 @@ inferred from loads and compares and not confirmed against a caller.
 
 Am29000, big-endian, 32-bit instructions. `../am29k_dasm.py` (opcode table
 ported from MAME's `am29dasm.cpp`) handles all six operand formats and marks
-delay slots; registers 0-127 print `grN`, 128-255 `lrN`. The files:
+delay slots (`iret` has none); registers 0-127 print `grN`, 128-255 `lrN`.
+The files (System 6: the same names in `sw11/disasm/`):
 
-* `disasm/Hand.asm`, `disasm/Boot.asm` -- the **real** kernel and boot code
-  (from `ACEF_1_Runtime/*.unmasked.bin`), with a reading guide, the vector table,
-  reason codes and routine banners in `Hand.asm`.
-* `disasm/text.asm`, `Code.asm`, `lit.asm`, `data.asm` -- Antelope, made from the
-  **masked** bytes: only the opcode byte and the relocation annotations are
-  meaningful. The 768 `.text` addresses from the symbol table are real: 709
-  function entries and 59 object-file starts, which sit on the tag word 4 bytes
-  before a file's first function (see "How the firmware was built").
-* `disasm/text.partial.asm` -- Antelope's `.text` decoded as far as the mask is
-  known (`../antelope_partial_dasm.py`). Opcode, RA, RB and low immediates are
-  plain. For 98% of the words RC, the high immediate byte and branch
-  targets are estimated from neighbouring key samples and decoded in full
-  (marked `~`, or `!` inside a step of the key); the rest print as `?`.
-  Direct calls with an R_IREL relocation print their exact target, and about
-  80 identified functions print with their names.
-  Run with `ACEF_100.bin` as argument, it comments every relocated
-  `const`/`consth` pair with its target (`-> .text $15808 (sub_15808)`), so
-  `calli` targets and global data addresses are exact.
-  This is the first readable view of the accelerator code.
+* `disasm/Hand.asm` -- the kernel, with a reading guide, the vector table,
+  reason codes and routine banners; `disasm/Boot.asm`; `disasm/RuntimeData.asm`
+  -- the data sections, including the service table with its handlers
+  (`../runtime_dasm.py`).
+* `disasm/text.asm` -- Antelope's `.text` (`../antelope_dasm.py`). Labels are
+  the 768 `.text` addresses of the symbol table: 709 function entries and 59
+  object-file starts, which sit on the tag word 4 bytes before a file's
+  first function (see "How the firmware was built"). Functions named in
+  `../HOST_CARD_PROTOCOL.md` carry their names (`../antelope_names.py`), the
+  service stubs `svc_N`, and every relocated word its target.
+* `disasm/lit.asm`, `data.asm` -- `.lit` (its strings, then the switch and
+  command tables with their targets) and `.data`/`.data1` (object-file and
+  symbol labels, ASCII, relocation targets); `disasm/Code.asm` -- the entry
+  stub at `$F000`.
 
 ## COFF relocations — reverse-engineered and applied
 
@@ -235,72 +201,38 @@ one against the instruction it points at:
 | 31 | raw 32-bit word replace | only seen in `.lit`/`.data` — same idea as 29, apparently a separate type code reserved for pure-data sections |
 
 A symbol resolves to a real address when its `scnum` is a normal section
-(section base + `value`) or `-1` (`N_ABS`, `value` already absolute);
-`scnum` 0/-2/-3 mean the symbol is external to this ACEF image (most likely
-defined in the separate `ACEF_1_Runtime` firmware, or patched in by the
-on-card loader at boot) and can't be resolved from this file alone.
+(section base + `value`) or `-1` (`N_ABS`, `value` already absolute). `scnum`
+-3 is a placeholder: the symbol is the next record (the converter wrote a
+symbol that had an aux entry into the aux slot). `scnum` 0 is an undefined
+symbol, here always a `.comm` variable (its `value` is the size), which the
+loader allocates. The target is the symbol plus the addend in the word: the
+16-bit immediate for `const`, the word itself for types 29/31, and for
+`consth` the immediate (high half) with the low half in the `symndx` field of
+the type-28 record that follows.
 
-Applied to [`disasm/text.asm`](disasm/) and [`disasm/Code.asm`](disasm/) as
-inline `; RELOC ...` comments (original placeholder bytes/immediates left
-untouched — byte-exact verification still passes 0 missing/0 mismatched):
-**1,684 of 4,714 symbol-bearing `.text` relocations resolve (35.7%)**; the
-rest are marked "unresolved external" rather than guessed at.
+Counted for the System 7 Antelope: `Code` 13 records, `.text` 6,613 (1,935
+type 26, 1,899 each of 27 and 28, 747 type 29, 133 type 24), `.lit` 662 and
+`.data` 101 (type 31). All resolve except the 784 that name a `.comm`
+variable. The 747 type-29 records in `.text` (and one in `Code`) sit at byte
+1 of a word: they fill in the trap number (64 or 65, the absolute symbols
+`V_SPILL`/`V_FILL`) of the spill/fill asserts, which the file has as 0.
 
 This offline pass has a live counterpart: `ACEFLoad` (`../gc24.s`, and
-`../DRVR.s`'s own copy) performs this exact same relocation job at load
-time, patching branch targets in place and logging
+`../DRVR.s`'s own copy) performs the same relocation job at load time,
+patching branch targets in place and logging
 `"Absolute/Relative Branch Target (0x%08x) Out of Range at 0x%08X"` if one
-doesn't fit — and it can resolve the *external* symbols this static
-analysis can't, since it runs with the real, current load address rather
-than a symbol table with no string names.
-
-`.lit` (literal pool, 662 relocations) and `.data` (initialised data, 101
-relocations) aren't Am29000 code, so there's nothing to disassemble — instead
-[`disasm/lit.asm`](disasm/) and [`disasm/data.asm`](disasm/) are plain word
-dumps (`obj_XXXXX:` labels from the symbol table, an ASCII-hint column, and
-the same `; RELOC ...` annotations). Notably **0 of the 662+101 relocations
-in these two sections resolve** — every one references an external symbol,
-unlike `.text` where over a third do. The ASCII column also shows `.lit`
-isn't pure numeric literals: e.g. offset `$0` reads `"Bogu"`/`"s\x00\x03\x60"`
-— a literal string constant sitting right next to the pointer-table entries.
-
-**Not every type-29 hit is a whole word.** 748 of them (747 in `.text`, 1 in
-`Code`) land at `offset % 4 == 1` — one byte into a word, not the start of
-one. Every one of those resolves to a value ≤ 255 (only 0x40/0x41 show up
-across the whole table), which is the tell: these are single-**byte**
-constant patches (e.g. a small flag/enum byte living mid-word next to an
-unrelated instruction), not misaligned 32-bit fixups. Treating them as a
-naive 4-byte overwrite was tried first and quietly corrupted the start of
-the *next* word — caught by re-diffing the patched output against the
-original bytes outside every touched relocation site and finding 725
-unexplained differences, all one byte past a type-29 hit. `apply_reloc.py`
-now special-cases `offset % 4 != 0` as a single-byte patch.
+doesn't fit.
 
 ### `firmware_image.bin` — relocated flat image
 
-The original `firmware_image.bin` (built by `acef_unpack.py`, which sums
-each section at its raw `vaddr` field) was silently **corrupt**: `Code` is
-the only section with a distinct `vaddr` (`0xF000`) — `.text`, `.lit`,
-`.data`, `Apple`, and `.data1` all report `vaddr=0`, because this is a
-*relocatable* object file and real load addresses are assigned by the
-on-card loader at boot, not baked into the section header. Summing them at
-face value made every zero-`vaddr` section after `.text` overwrite `.text`'s
-first few KB.
-
-`apply_reloc.py` now builds a corrected image instead: sections laid out
-**sequentially** (`Code`, `.text`, `.lit`, `.data`, `Apple`, `.data1` — `.bss`
-has no file data) at the offsets recorded in the companion
-`firmware_image.map.txt`. This is a synthetic, documented concatenation for
-inspection purposes — **not** a claim about the real runtime memory layout,
-which the relocation evidence says is loader-assigned. Every *resolved*
-relocation is applied as a genuine byte-level patch (a raw binary has no
-comment channel): **1,687 of 4,723 total relocations patched** (`Code` 3,
-`.text` 1,684; `.lit`/`.data`/`Apple`/`.data1` 0, matching their 0%
-resolution rate above), **0 skipped**. Verified by re-diffing every patched
-section against its original bytes outside the touched relocation sites (0
-unexplained differences) and by round-tripping a sample of patched
-`const`/`consth` pairs back through `am29k_dasm.py` to confirm they decode
-to the intended resolved address.
+`acef_unpack.py` writes `firmware_image.bin` by placing each section at its
+`vaddr`, which is wrong for a relocatable file (every section but `Code`
+has `vaddr` 0). `apply_reloc.py` rebuilds it with the sections laid out
+**sequentially** (`Code`, `.text`, `.lit`, `.data`, `Apple`, `.data1`; offsets
+in `firmware_image.map.txt`) and every resolved relocation applied as a byte
+patch: 4,702 patched, 0 skipped (System 6: 4,881). This is a synthetic
+layout for inspection, not the card's memory layout, which the loader
+assigns.
 
 ## Symbol table → function boundaries (`symbols.txt`)
 
@@ -361,7 +293,7 @@ Mac, presumably as an MPW tool. Each release was built on one day:
 `Runtime`, then `Antelope` half an hour later. The gap between a program's
 two dates is the same in both years for the same program (about 5 minutes for
 the 243 KB `Antelope`, half a minute for `Runtime`), so it is probably the
-duration of one build step after the link, such as packing and masking. The
+duration of one build step after the link, such as packing and encrypting. The
 System 6 version `$00110000` matches its package ("8•24 GC SW 1.1"). In System
 7's `$00700D01`, the high half matches 7.0 (the package is 7.0.1); the low half
 `$0D01` is unexplained, perhaps a development stage and build number. Both
@@ -369,7 +301,7 @@ System 6 version `$00110000` matches its package ("8•24 GC SW 1.1"). In System
 `tart.ACEF`, so the packer's files had the extension `.ACEF`. The copyright
 years are 1989 (`Runtime`'s `Apple` section), 1990 (`Antelope`'s `Apple`
 section and the ACEF signature block). `Antelope`'s `Apple` section repeats the version
-record: `$00700D01`, a date (`$A61B1A0C`, low half masked), "32-Bit Antelope" and
+record: `$00700D01`, a date (`$A61B1A28`), "32-Bit Antelope" and
 the copyright, so the version and build date were also compiled into the program.
 
 ### The AMD 29K tool conventions
@@ -378,7 +310,7 @@ the copyright, so the version and build date were also compiled into the program
   (`STYP_LIT`, AMD's read-only literal section), the fixed sections `$4000`
   (`STYP_ABS`), and the file flag `F_AR32W`. ACEF (magic `$012A`/`$012B`
   instead of AMD's `$017A`/`$017B`) is this COFF repacked: 6-byte symbols
-  without names, metadata XORed, sections masked.
+  without names, metadata XORed, section data encrypted.
 * **AMD's calling convention**, in full: register-stack frames
   (`sub gr1,gr1,N` / `asgeu V_SPILL,gr1,gr126` / `add lr1,gr1,M` and the fill
   `asleu V_FILL,lr1,gr127`), a **tag word** before every function (opcode
@@ -474,7 +406,7 @@ for the relocations. Three kinds of file show:
 
 The 768 `.text` addresses in `symbols.txt` are **709 functions and 59 file
 starts**. In C files and most assembly files a file starts 4 bytes before its
-first function, on the tag word; `disasm/text.partial.asm` labels those words as
+first function, on the tag word; `disasm/text.asm` labels those words as
 `sub_` too (`sub_01a4c` is the file start, BitBlt is `sub_01a50`). Every
 file's `.data`, `.bss` and `.lit` start is known as well. This explains the
 bases of the `.lit` switch tables: each table is relocated against its own
@@ -503,24 +435,15 @@ The differences:
   and System 7 can be compared file by file.
 * About 15 KB is vendor library code with known behaviour. It needs no
   reverse engineering and can be named from the standard library.
-* Each file's `.data` start bounds its data objects. As a key hypothesis
-  (the mask restarting per file) it failed, but it led to the finding that
-  `.data` uses the `.text` generator with its own tables, and its bits 0-8
-  now fit (`../antelope_data_key.py`).
+* Each file's `.data` start bounds its data objects.
 * Earlier "module" readings based on `.lit` bases or guesses can be checked
   against real file boundaries. One correction so far: `$11AD4`-`$174FC` is
   three files, not one.
 
 ## What is open
 
-* A closed form for `Antelope`'s key (bits 16-23 are only estimated, and
-  1,277 words stay undecoded), its `.data` key, and the rest of the System 6
-  Antelope's separate key (`../antelope6_key.py` recovers the opcode byte,
-  bits 0-12 and most of bits 13-23; `../antelope6_compare.py` matches its
-  functions to System 7's; `../antelope6_lit.py` gets its `.lit` key bits
-  0-8 from System 7's strings, `../antelope6_tables.py` its jump tables and
-  dispatcher).
-* `Boot`'s fitted tables and `Hand`'s ten indirectly derived `ROW` entries.
-* In `Hand`: most services behind vector 66 (`$D5`, the slot burst mask, is
-  settled; `$BB`, `$D1`, `$D4` have candidates) and which feature each
-  host-flag bit switches.
+* Which feature each host-flag bit (`gr64`, `PublicIn+$18`) switches, and the
+  roles of the few services not read in detail (`$CE`, `$D6`;
+  `../HOST_CARD_PROTOCOL.md` section 8).
+* The System 6 `Runtime`, a different kernel build, is disassembled but not
+  annotated (`sw11/disasm/Hand.asm`).

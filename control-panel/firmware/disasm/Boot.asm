@@ -1,31 +1,35 @@
 * ==================================================================
-*  ACEF_1 "Runtime" -- Boot  (Am29000, base $2003000)   *** UNMASKED (fitted) ***
+*  ACEF_1 "Runtime" -- Boot  (Am29000, base $2003000), exact
 * ==================================================================
-*  Disassembled from Boot.unmasked.bin = Boot.bin with its second mask
-*  removed by ../../unmask_runtime.py (tables COL_BOOT/ROW_BOOT).  Unlike
-*  Hand's tables, which are exact, Boot's were FITTED: maximum likelihood
-*  against field statistics of the unmasked Hand plus hard constraints.  Checks
-*  that hold: all 58 direct jumps land inside the code ($2000000-$20037FF), the
-*  five SPR instructions decode to VAB/CFG/CPS with mfsr RB = 0 and mtsr
-*  RC = 0, 89 of 99 adjacent const/consth pairs share their register, and the
-*  host-handshake constant below matches DRVR.s.  Some register fields (an
-*  occasional gr70/gr71 swap) are probably still wrong.
+*  Made by ../../runtime_dasm.py: the section decrypted as DRVR's ACEFLoad
+*  does it, disassembled by am29k_dasm.py.  (An earlier listing used fitted
+*  mask tables and was wrong in 150 of the 512 words.)
 *
-*  What Boot does (in order):
-*    $2003000  clears/touches a block of card registers from $4400000C
-*    $2003030  mtsrim CPS,$0000 / CPS,$047F  (same CPS values Hand uses)
-*    $2003078  POLLS $4C006400 (= PublicIn word 0) until it reads $42005300 --
-*              the value DRVR.s pokes to image+$00 -- then writes 0 back
-*    $20030CC  copies a parameter block, builds masks from the host's fields
-*    $2003140  VAB <- $4C000000 (the Vec section), CFG |= $10, and fills the
-*              trap vector table with handler addresses $0200xxxx (default
-*              $2001D08 repeated; the host-visible 'noise' of Vec/PrivNZ is
-*              this table before Boot overwrites it)
-*    $2003368  reads the card's hardware-ID bits at $44000044/48/4C (= the
-*              $0400004C/48/44 registers BuildUnitRecords reads), selects a
-*              board configuration value ($1E0/$366/$1E6/$180/$240/$270) and
-*              stores it to $4C006828 (PublicOu+$28)
-*    $20037D4  jmp $2001FFC -- into Hand's reset/initialisation routine
+*  What Boot does (read from this listing):
+*    $2003000  reads and writes back the two words at $4400000C/$44000010
+*              and builds a 2-bit value gr66 from their sign bits; stores
+*              gr66 << 28 at $4C00682C (PublicOut+$2C)
+*    $2003030  mtsrim CFG,$0000 / CPS,$047F
+*    $2003048  gr64 <- [PublicIn+$18] (the host's feature flags);
+*              [$4C006A5C] <- $94
+*    $2003078  POLLS $4C006400 (PublicIn+0) until it reads $42005300 (the
+*              value DRVR.s pokes to image+$00), then clears it and $4C006A5C
+*    $2003090  copies [PublicIn+$2C]/4 - 1 words from [PublicIn+$20] +
+*              [PublicIn+$28] to [PublicIn+$24]
+*    $20030E0  replaces the top nibble of the four pointers PublicOut+$0C..
+*              +$18 (HifComm, InpArgs, VidComm, the packet) with gr66
+*    $200313C  VAB <- $4C000000 (Vec), CFG |= $10, and fills the vector
+*              table with handler addresses $0200xxxx (default $2001D08)
+*    $2003368  reads three ID bits from $44000044/48/4C (gr81).  With all
+*              three set it initialises card registers from $44000038 on;
+*              if VidComm+$18 holds 'WY1`' ($57593160) and VidComm+$08 is
+*              not 0, it copies VidComm+$08..$14 to PublicOut+$1C/$24/$20/
+*              $28 and jumps to Hand's init $2001FFC
+*    $20035DC  otherwise probes the registers from $44000000 and
+*              $4400007C/80 into PublicOut+$1C, decodes [$44000008] >> 24
+*              into 1/2/4/8 at PublicOut+$20, picks a configuration value
+*              by gr81 ($1E0, ...) for PublicOut+$28, sets PublicOut+$24
+*              ($A00 ...) and jumps to $2001FFC
 * ==================================================================
   2003000:  0300460c  const    gr70, $000c             
   2003004:  02444600  consth   gr70, $4400             
@@ -37,22 +41,22 @@ L_2003010:
   2003018:  1e004946  store    0, 0, gr73, gr70           ; [delay slot]
   200301c:  93424201  or       gr66, gr66, $01         
 L_2003020:
-  2003020:  15464704  add      gr70, gr71, $04         
-  2003024:  b4ff46fb  jmpfdec  gr70, $2003010             ; -> L_2003010
-  2003028:  81424301  sll      gr66, gr67, $01            ; [delay slot]
-  200302c:  83424301  srl      gr66, gr67, $01         
-  2003030:  04000200  mtsrim   CPS, $0000              
-  2003034:  8142431c  sll      gr66, gr67, $1c         
-  2003038:  0404037f  mtsrim   CFG, $047f              
+  2003020:  15464604  add      gr70, gr70, $04         
+  2003024:  b4ff47fb  jmpfdec  gr71, $2003010             ; -> L_2003010
+  2003028:  81424201  sll      gr66, gr66, $01            ; [delay slot]
+  200302c:  83424201  srl      gr66, gr66, $01         
+  2003030:  04000300  mtsrim   CFG, $0000              
+  2003034:  8142421c  sll      gr66, gr66, $1c         
+  2003038:  0404027f  mtsrim   CPS, $047f              
   200303c:  0368472c  const    gr71, $682c             
   2003040:  024c4700  consth   gr71, $4c00             
   2003044:  1e004247  store    0, 0, gr66, gr71        
   2003048:  03644318  const    gr67, $6418             
   200304c:  024c4300  consth   gr67, $4c00             
   2003050:  16004043  load     0, 0, gr64, gr67        
-  2003054:  036a485c  const    gr72, $6a5c             
-  2003058:  024c4800  consth   gr72, $4c00             
-  200305c:  03004694  const    gr70, $0094             
+  2003054:  036a495c  const    gr73, $6a5c             
+  2003058:  024c4900  consth   gr73, $4c00             
+  200305c:  03004794  const    gr71, $0094             
   2003060:  02004700  consth   gr71, $0000             
   2003064:  1e004749  store    0, 0, gr71, gr73        
   2003068:  03534700  const    gr71, $5300             
@@ -74,10 +78,10 @@ L_2003078:
   20030a4:  16004848  load     0, 0, gr72, gr72        
   20030a8:  03644928  const    gr73, $6428             
   20030ac:  024c4900  consth   gr73, $4c00             
-  20030b0:  16004849  load     0, 0, gr72, gr73        
-  20030b4:  14484949  add      gr72, gr73, gr73        
-  20030b8:  0364482c  const    gr72, $642c             
-  20030bc:  024c4800  consth   gr72, $4c00             
+  20030b0:  16004949  load     0, 0, gr73, gr73        
+  20030b4:  14484849  add      gr72, gr72, gr73        
+  20030b8:  0364492c  const    gr73, $642c             
+  20030bc:  024c4900  consth   gr73, $4c00             
   20030c0:  16004949  load     0, 0, gr73, gr73        
   20030c4:  83494902  srl      gr73, gr73, $02         
   20030c8:  25494902  sub      gr73, gr73, $02         
@@ -87,22 +91,22 @@ L_20030cc:
   20030d4:  1e004a47  store    0, 0, gr74, gr71        
   20030d8:  b4ff49fd  jmpfdec  gr73, $20030cc             ; -> L_20030cc
   20030dc:  15474704  add      gr71, gr71, $04            ; [delay slot]
-  20030e0:  03ff48ff  const    gr72, $ffff             
-  20030e4:  020f48ff  consth   gr72, $0fff             
-  20030e8:  0368460c  const    gr70, $680c             
-  20030ec:  024c4600  consth   gr70, $4c00             
-  20030f0:  16004947  load     0, 0, gr73, gr71        
-  20030f4:  90484949  and      gr72, gr73, gr73        
-  20030f8:  92484942  or       gr72, gr73, gr66        
+  20030e0:  03ff49ff  const    gr73, $ffff             
+  20030e4:  020f49ff  consth   gr73, $0fff             
+  20030e8:  0368470c  const    gr71, $680c             
+  20030ec:  024c4700  consth   gr71, $4c00             
+  20030f0:  16004847  load     0, 0, gr72, gr71        
+  20030f4:  90484849  and      gr72, gr72, gr73        
+  20030f8:  92484842  or       gr72, gr72, gr66        
   20030fc:  1e004847  store    0, 0, gr72, gr71        
   2003100:  15474704  add      gr71, gr71, $04         
   2003104:  16004847  load     0, 0, gr72, gr71        
   2003108:  90484849  and      gr72, gr72, gr73        
   200310c:  92484842  or       gr72, gr72, gr66        
   2003110:  1e004847  store    0, 0, gr72, gr71        
-  2003114:  15474604  add      gr71, gr70, $04         
-  2003118:  16004947  load     0, 0, gr73, gr71        
-  200311c:  90484949  and      gr72, gr73, gr73        
+  2003114:  15474704  add      gr71, gr71, $04         
+  2003118:  16004847  load     0, 0, gr72, gr71        
+  200311c:  90484849  and      gr72, gr72, gr73        
   2003120:  92484842  or       gr72, gr72, gr66        
   2003124:  1e004847  store    0, 0, gr72, gr71        
   2003128:  15474704  add      gr71, gr71, $04         
@@ -123,10 +127,10 @@ L_20030cc:
   2003164:  03004608  const    gr70, $0008             
   2003168:  02024600  consth   gr70, $0200             
   200316c:  1e004647  store    0, 0, gr70, gr71        
-  2003170:  15474604  add      gr71, gr70, $04         
-  2003174:  03094708  const    gr71, $0908             
-  2003178:  02024700  consth   gr71, $0200             
-  200317c:  1e004747  store    0, 0, gr71, gr71        
+  2003170:  15474704  add      gr71, gr71, $04         
+  2003174:  03094608  const    gr70, $0908             
+  2003178:  02024600  consth   gr70, $0200             
+  200317c:  1e004647  store    0, 0, gr70, gr71        
   2003180:  15474704  add      gr71, gr71, $04         
   2003184:  03094620  const    gr70, $0920             
   2003188:  02024600  consth   gr70, $0200             
@@ -135,22 +139,22 @@ L_20030cc:
   2003194:  03094628  const    gr70, $0928             
   2003198:  02024600  consth   gr70, $0200             
   200319c:  1e004647  store    0, 0, gr70, gr71        
-  20031a0:  15474604  add      gr71, gr70, $04         
-  20031a4:  03094740  const    gr71, $0940             
-  20031a8:  02024700  consth   gr71, $0200             
-  20031ac:  1e004747  store    0, 0, gr71, gr71        
-  20031b0:  15474604  add      gr71, gr70, $04         
-  20031b4:  03064744  const    gr71, $0644             
-  20031b8:  02024700  consth   gr71, $0200             
+  20031a0:  15474704  add      gr71, gr71, $04         
+  20031a4:  03094640  const    gr70, $0940             
+  20031a8:  02024600  consth   gr70, $0200             
+  20031ac:  1e004647  store    0, 0, gr70, gr71        
+  20031b0:  15474704  add      gr71, gr71, $04         
+  20031b4:  03064644  const    gr70, $0644             
+  20031b8:  02024600  consth   gr70, $0200             
   20031bc:  1e004647  store    0, 0, gr70, gr71        
   20031c0:  15474704  add      gr71, gr71, $04         
   20031c4:  03034658  const    gr70, $0358             
   20031c8:  02024600  consth   gr70, $0200             
   20031cc:  1e004647  store    0, 0, gr70, gr71        
   20031d0:  15474704  add      gr71, gr71, $04         
-  20031d4:  03064770  const    gr71, $0670             
-  20031d8:  02024700  consth   gr71, $0200             
-  20031dc:  1e004747  store    0, 0, gr71, gr71        
+  20031d4:  03064670  const    gr70, $0670             
+  20031d8:  02024600  consth   gr70, $0200             
+  20031dc:  1e004647  store    0, 0, gr70, gr71        
   20031e0:  15474704  add      gr71, gr71, $04         
   20031e4:  03074614  const    gr70, $0714             
   20031e8:  02024600  consth   gr70, $0200             
@@ -171,10 +175,10 @@ L_20030cc:
   2003224:  030846a8  const    gr70, $08a8             
   2003228:  02024600  consth   gr70, $0200             
   200322c:  1e004647  store    0, 0, gr70, gr71        
-  2003230:  15474604  add      gr71, gr70, $04         
-  2003234:  03094760  const    gr71, $0960             
-  2003238:  02024700  consth   gr71, $0200             
-  200323c:  1e004747  store    0, 0, gr71, gr71        
+  2003230:  15474704  add      gr71, gr71, $04         
+  2003234:  03094660  const    gr70, $0960             
+  2003238:  02024600  consth   gr70, $0200             
+  200323c:  1e004647  store    0, 0, gr70, gr71        
   2003240:  15474704  add      gr71, gr71, $04         
   2003244:  030a4624  const    gr70, $0a24             
   2003248:  02024600  consth   gr70, $0200             
@@ -183,22 +187,22 @@ L_20030cc:
   2003254:  030b4608  const    gr70, $0b08             
   2003258:  02024600  consth   gr70, $0200             
   200325c:  1e004647  store    0, 0, gr70, gr71        
-  2003260:  15474604  add      gr71, gr70, $04         
-  2003264:  030b4748  const    gr71, $0b48             
-  2003268:  02024700  consth   gr71, $0200             
-  200326c:  1e004747  store    0, 0, gr71, gr71        
-  2003270:  15474604  add      gr71, gr70, $04         
-  2003274:  030b4798  const    gr71, $0b98             
-  2003278:  02024700  consth   gr71, $0200             
+  2003260:  15474704  add      gr71, gr71, $04         
+  2003264:  030b4648  const    gr70, $0b48             
+  2003268:  02024600  consth   gr70, $0200             
+  200326c:  1e004647  store    0, 0, gr70, gr71        
+  2003270:  15474704  add      gr71, gr71, $04         
+  2003274:  030b4698  const    gr70, $0b98             
+  2003278:  02024600  consth   gr70, $0200             
   200327c:  1e004647  store    0, 0, gr70, gr71        
   2003280:  15474704  add      gr71, gr71, $04         
   2003284:  03104664  const    gr70, $1064             
   2003288:  02024600  consth   gr70, $0200             
   200328c:  1e004647  store    0, 0, gr70, gr71        
   2003290:  15474704  add      gr71, gr71, $04         
-  2003294:  03114744  const    gr71, $1144             
-  2003298:  02024700  consth   gr71, $0200             
-  200329c:  1e004747  store    0, 0, gr71, gr71        
+  2003294:  03114644  const    gr70, $1144             
+  2003298:  02024600  consth   gr70, $0200             
+  200329c:  1e004647  store    0, 0, gr70, gr71        
   20032a0:  15474704  add      gr71, gr71, $04         
   20032a4:  03114664  const    gr70, $1164             
   20032a8:  02024600  consth   gr70, $0200             
@@ -222,10 +226,10 @@ L_20032d4:
   20032e8:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   20032ec:  03004306  const    gr67, $0006             
 L_20032f0:
-  20032f0:  031d4708  const    gr71, $1d08             
-  20032f4:  02024700  consth   gr71, $0200             
-  20032f8:  1e004747  store    0, 0, gr71, gr71        
-  20032fc:  15474604  add      gr71, gr70, $04         
+  20032f0:  031d4608  const    gr70, $1d08             
+  20032f4:  02024600  consth   gr70, $0200             
+  20032f8:  1e004647  store    0, 0, gr70, gr71        
+  20032fc:  15474704  add      gr71, gr71, $04         
   2003300:  b4ff43fc  jmpfdec  gr67, $20032f0             ; -> L_20032f0
   2003304:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   2003308:  03114684  const    gr70, $1184             
@@ -234,22 +238,22 @@ L_20032f0:
   2003314:  15474704  add      gr71, gr71, $04         
   2003318:  031146b8  const    gr70, $11b8             
   200331c:  02024600  consth   gr70, $0200             
-  2003320:  1e004747  store    0, 0, gr71, gr71        
-  2003324:  15474604  add      gr71, gr70, $04         
-  2003328:  031147e8  const    gr71, $11e8             
-  200332c:  02024700  consth   gr71, $0200             
-  2003330:  1e004747  store    0, 0, gr71, gr71        
-  2003334:  15474604  add      gr71, gr70, $04         
-  2003338:  031d4708  const    gr71, $1d08             
+  2003320:  1e004647  store    0, 0, gr70, gr71        
+  2003324:  15474704  add      gr71, gr71, $04         
+  2003328:  031146e8  const    gr70, $11e8             
+  200332c:  02024600  consth   gr70, $0200             
+  2003330:  1e004647  store    0, 0, gr70, gr71        
+  2003334:  15474704  add      gr71, gr71, $04         
+  2003338:  031d4608  const    gr70, $1d08             
   200333c:  02024600  consth   gr70, $0200             
   2003340:  1e004647  store    0, 0, gr70, gr71        
   2003344:  15474704  add      gr71, gr71, $04         
   2003348:  030a46e8  const    gr70, $0ae8             
   200334c:  02024600  consth   gr70, $0200             
   2003350:  1e004647  store    0, 0, gr70, gr71        
-  2003354:  15474604  add      gr71, gr70, $04         
-  2003358:  031a4770  const    gr71, $1a70             
-  200335c:  02024700  consth   gr71, $0200             
+  2003354:  15474704  add      gr71, gr71, $04         
+  2003358:  031a4670  const    gr70, $1a70             
+  200335c:  02024600  consth   gr70, $0200             
   2003360:  1e004647  store    0, 0, gr70, gr71        
   2003364:  15474704  add      gr71, gr71, $04         
   2003368:  03005100  const    gr81, $0000             
@@ -272,11 +276,11 @@ L_20033a0:
   20033a4:  0300484c  const    gr72, $004c             
   20033a8:  02444800  consth   gr72, $4400             
   20033ac:  16004748  load     0, 0, gr71, gr72        
-  20033b0:  a4004603  jmpf     gr70, $20033bc             ; -> L_20033bc
-  20033b4:  70400001  aseq     trap64, gr0, gr1           ; [delay slot]
-  20033b8:  93515001  or       gr81, gr80, $01         
+  20033b0:  a4004703  jmpf     gr71, $20033bc             ; -> L_20033bc
+  20033b4:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
+  20033b8:  93515101  or       gr81, gr81, $01         
 L_20033bc:
-  20033bc:  61475007  cpeq     gr71, gr80, $07         
+  20033bc:  61475107  cpeq     gr71, gr81, $07         
   20033c0:  a4004765  jmpf     gr71, $2003554             ; -> L_2003554
   20033c4:  03004600  const    gr70, $0000                ; [delay slot]
   20033c8:  01ff47ff  constn   gr71, $ffff             
@@ -285,23 +289,23 @@ L_20033bc:
   20033d4:  1e004649  store    0, 0, gr70, gr73        
   20033d8:  0300493c  const    gr73, $003c             
   20033dc:  02444900  consth   gr73, $4400             
-  20033e0:  1e004749  store    0, 0, gr71, gr73        
-  20033e4:  03004840  const    gr72, $0040             
-  20033e8:  02444800  consth   gr72, $4400             
-  20033ec:  1e004749  store    0, 0, gr71, gr73        
-  20033f0:  0300482c  const    gr72, $002c             
-  20033f4:  02444800  consth   gr72, $4400             
-  20033f8:  1e004649  store    0, 0, gr70, gr73        
+  20033e0:  1e004649  store    0, 0, gr70, gr73        
+  20033e4:  03004940  const    gr73, $0040             
+  20033e8:  02444900  consth   gr73, $4400             
+  20033ec:  1e004649  store    0, 0, gr70, gr73        
+  20033f0:  0300492c  const    gr73, $002c             
+  20033f4:  02444900  consth   gr73, $4400             
+  20033f8:  1e004749  store    0, 0, gr71, gr73        
   20033fc:  03004930  const    gr73, $0030             
   2003400:  02444900  consth   gr73, $4400             
   2003404:  1e004649  store    0, 0, gr70, gr73        
   2003408:  03004934  const    gr73, $0034             
   200340c:  02444900  consth   gr73, $4400             
   2003410:  1e004649  store    0, 0, gr70, gr73        
-  2003414:  03004808  const    gr72, $0008             
-  2003418:  02004800  consth   gr72, $0000             
+  2003414:  03004908  const    gr73, $0008             
+  2003418:  02004900  consth   gr73, $0000             
 L_200341c:
-  200341c:  70400001  aseq     trap64, gr0, gr1        
+  200341c:  70400101  aseq     trap64, gr1, gr1        
   2003420:  b4ff49ff  jmpfdec  gr73, $200341c             ; -> L_200341c
   2003424:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   2003428:  03004948  const    gr73, $0048             
@@ -324,10 +328,10 @@ L_2003458:
   2003464:  03004930  const    gr73, $0030             
   2003468:  02444900  consth   gr73, $4400             
   200346c:  1e004749  store    0, 0, gr71, gr73        
-  2003470:  03004834  const    gr72, $0034             
-  2003474:  02444800  consth   gr72, $4400             
-  2003478:  1e004749  store    0, 0, gr71, gr73        
-  200347c:  03004808  const    gr72, $0008             
+  2003470:  03004934  const    gr73, $0034             
+  2003474:  02444900  consth   gr73, $4400             
+  2003478:  1e004649  store    0, 0, gr70, gr73        
+  200347c:  03004908  const    gr73, $0008             
   2003480:  02004900  consth   gr73, $0000             
 L_2003484:
   2003484:  70400101  aseq     trap64, gr1, gr1        
@@ -337,14 +341,14 @@ L_2003484:
   2003494:  02444900  consth   gr73, $4400             
   2003498:  16004a49  load     0, 0, gr74, gr73        
   200349c:  a4004a03  jmpf     gr74, $20034a8             ; -> L_20034a8
-  20034a0:  81515001  sll      gr81, gr80, $01            ; [delay slot]
-  20034a4:  93515001  or       gr81, gr80, $01         
+  20034a0:  81515101  sll      gr81, gr81, $01            ; [delay slot]
+  20034a4:  93515101  or       gr81, gr81, $01         
 L_20034a8:
-  20034a8:  0300484c  const    gr72, $004c             
-  20034ac:  02444800  consth   gr72, $4400             
-  20034b0:  16004b49  load     0, 0, gr75, gr73        
-  20034b4:  a4004b03  jmpf     gr75, $20034c0             ; -> L_20034c0
-  20034b8:  81515001  sll      gr81, gr80, $01            ; [delay slot]
+  20034a8:  0300494c  const    gr73, $004c             
+  20034ac:  02444900  consth   gr73, $4400             
+  20034b0:  16004a49  load     0, 0, gr74, gr73        
+  20034b4:  a4004a03  jmpf     gr74, $20034c0             ; -> L_20034c0
+  20034b8:  81515101  sll      gr81, gr81, $01            ; [delay slot]
   20034bc:  93515101  or       gr81, gr81, $01         
 L_20034c0:
   20034c0:  0300492c  const    gr73, $002c             
@@ -352,9 +356,9 @@ L_20034c0:
   20034c8:  1e004649  store    0, 0, gr70, gr73        
   20034cc:  03004930  const    gr73, $0030             
   20034d0:  02444900  consth   gr73, $4400             
-  20034d4:  1e004749  store    0, 0, gr71, gr73        
-  20034d8:  03004834  const    gr72, $0034             
-  20034dc:  02444800  consth   gr72, $4400             
+  20034d4:  1e004649  store    0, 0, gr70, gr73        
+  20034d8:  03004934  const    gr73, $0034             
+  20034dc:  02444900  consth   gr73, $4400             
   20034e0:  1e004749  store    0, 0, gr71, gr73        
   20034e4:  03004908  const    gr73, $0008             
   20034e8:  02004900  consth   gr73, $0000             
@@ -378,10 +382,10 @@ L_2003510:
 L_2003528:
   2003528:  0300492c  const    gr73, $002c             
   200352c:  02444900  consth   gr73, $4400             
-  2003530:  1e004749  store    0, 0, gr71, gr73        
-  2003534:  03004830  const    gr72, $0030             
-  2003538:  02444800  consth   gr72, $4400             
-  200353c:  1e004749  store    0, 0, gr71, gr73        
+  2003530:  1e004649  store    0, 0, gr70, gr73        
+  2003534:  03004930  const    gr73, $0030             
+  2003538:  02444900  consth   gr73, $4400             
+  200353c:  1e004649  store    0, 0, gr70, gr73        
   2003540:  03004934  const    gr73, $0034             
   2003544:  02444900  consth   gr73, $4400             
   2003548:  1e004649  store    0, 0, gr70, gr73        
@@ -391,22 +395,22 @@ L_2003554:
   2003554:  036d4808  const    gr72, $6d08             
   2003558:  024c4800  consth   gr72, $4c00             
   200355c:  1e005148  store    0, 0, gr81, gr72        
-  2003560:  03734918  const    gr73, $7318             
-  2003564:  024c4900  consth   gr73, $4c00             
-  2003568:  16004848  load     0, 0, gr72, gr72        
-  200356c:  03314b60  const    gr75, $3160             
-  2003570:  02574b59  consth   gr75, $5759             
-  2003574:  604a484a  cpeq     gr74, gr72, gr74        
-  2003578:  a4004b19  jmpf     gr75, $20035dc             ; -> L_20035dc
+  2003560:  03734818  const    gr72, $7318             
+  2003564:  024c4800  consth   gr72, $4c00             
+  2003568:  16004948  load     0, 0, gr73, gr72        
+  200356c:  03314a60  const    gr74, $3160             
+  2003570:  02574a59  consth   gr74, $5759             
+  2003574:  604a494a  cpeq     gr74, gr73, gr74        
+  2003578:  a4004a19  jmpf     gr74, $20035dc             ; -> L_20035dc
   200357c:  03734908  const    gr73, $7308                ; [delay slot]
   2003580:  024c4900  consth   gr73, $4c00             
   2003584:  16004749  load     0, 0, gr71, gr73        
   2003588:  61454700  cpeq     gr69, gr71, $00         
   200358c:  ac004514  jmpt     gr69, $20035dc             ; -> L_20035dc
   2003590:  03684a1c  const    gr74, $681c                ; [delay slot]
-  2003594:  024c4b00  consth   gr75, $4c00             
-  2003598:  1e00464a  store    0, 0, gr70, gr74        
-  200359c:  15494804  add      gr73, gr72, $04         
+  2003594:  024c4a00  consth   gr74, $4c00             
+  2003598:  1e00474a  store    0, 0, gr71, gr74        
+  200359c:  15494904  add      gr73, gr73, $04         
   20035a0:  16004749  load     0, 0, gr71, gr73        
   20035a4:  03684a24  const    gr74, $6824             
   20035a8:  024c4a00  consth   gr74, $4c00             
@@ -429,11 +433,11 @@ L_20035dc:
   20035e8:  03004712  const    gr71, $0012             
 L_20035ec:
   20035ec:  16004946  load     0, 0, gr73, gr70        
-  20035f0:  a4004803  jmpf     gr72, $20035fc             ; -> L_20035fc
-  20035f4:  1e004846  store    0, 0, gr72, gr70           ; [delay slot]
-  20035f8:  93484901  or       gr72, gr73, $01         
+  20035f0:  a4004903  jmpf     gr73, $20035fc             ; -> L_20035fc
+  20035f4:  1e004946  store    0, 0, gr73, gr70           ; [delay slot]
+  20035f8:  93484801  or       gr72, gr72, $01         
 L_20035fc:
-  20035fc:  b4ff46fc  jmpfdec  gr70, $20035ec             ; -> L_20035ec
+  20035fc:  b4ff47fc  jmpfdec  gr71, $20035ec             ; -> L_20035ec
   2003600:  81484801  sll      gr72, gr72, $01            ; [delay slot]
   2003604:  81484801  sll      gr72, gr72, $01         
   2003608:  0300467c  const    gr70, $007c             
@@ -443,23 +447,23 @@ L_20035fc:
   2003618:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
   200361c:  81484801  sll      gr72, gr72, $01         
 L_2003620:
-  2003620:  03004780  const    gr71, $0080             
-  2003624:  02444700  consth   gr71, $4400             
-  2003628:  16004746  load     0, 0, gr71, gr70        
-  200362c:  a4004703  jmpf     gr71, $2003638             ; -> L_2003638
-  2003630:  70400001  aseq     trap64, gr0, gr1           ; [delay slot]
-  2003634:  81484901  sll      gr72, gr73, $01         
+  2003620:  03004680  const    gr70, $0080             
+  2003624:  02444600  consth   gr70, $4400             
+  2003628:  16004646  load     0, 0, gr70, gr70        
+  200362c:  a4004603  jmpf     gr70, $2003638             ; -> L_2003638
+  2003630:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
+  2003634:  81484801  sll      gr72, gr72, $01         
 L_2003638:
-  2003638:  92484942  or       gr72, gr73, gr66        
+  2003638:  92484842  or       gr72, gr72, gr66        
   200363c:  03004900  const    gr73, $0000             
   2003640:  020c4900  consth   gr73, $0c00             
   2003644:  92484849  or       gr72, gr72, gr73        
   2003648:  0368461c  const    gr70, $681c             
   200364c:  024c4600  consth   gr70, $4c00             
   2003650:  1e004846  store    0, 0, gr72, gr70        
-  2003654:  03004608  const    gr70, $0008             
-  2003658:  024646c0  consth   gr70, $46c0             
-  200365c:  16004947  load     0, 0, gr73, gr71        
+  2003654:  03004708  const    gr71, $0008             
+  2003658:  024647c0  consth   gr71, $46c0             
+  200365c:  16004847  load     0, 0, gr72, gr71        
   2003660:  83484818  srl      gr72, gr72, $18         
   2003664:  91494806  and      gr73, gr72, $06         
   2003668:  61494900  cpeq     gr73, gr73, $00         
@@ -484,10 +488,10 @@ L_2003698:
 L_20036ac:
   20036ac:  03004901  const    gr73, $0001             
 L_20036b0:
-  20036b0:  03684b20  const    gr75, $6820             
-  20036b4:  024c4b00  consth   gr75, $4c00             
-  20036b8:  1e00484a  store    0, 0, gr72, gr74        
-  20036bc:  61455003  cpeq     gr69, gr80, $03         
+  20036b0:  03684a20  const    gr74, $6820             
+  20036b4:  024c4a00  consth   gr74, $4c00             
+  20036b8:  1e00494a  store    0, 0, gr73, gr74        
+  20036bc:  61455103  cpeq     gr69, gr81, $03         
   20036c0:  ac00451c  jmpt     gr69, $2003730             ; -> L_2003730
   20036c4:  61455100  cpeq     gr69, gr81, $00            ; [delay slot]
   20036c8:  ac00451a  jmpt     gr69, $2003730             ; -> L_2003730
@@ -496,22 +500,22 @@ L_20036b0:
   20036d4:  61455105  cpeq     gr69, gr81, $05            ; [delay slot]
   20036d8:  ac004518  jmpt     gr69, $2003738             ; -> L_2003738
   20036dc:  61455104  cpeq     gr69, gr81, $04            ; [delay slot]
-  20036e0:  ac004418  jmpt     gr68, $2003740             ; -> L_2003740
-  20036e4:  61455002  cpeq     gr69, gr80, $02            ; [delay slot]
-  20036e8:  ac004418  jmpt     gr68, $2003748             ; -> L_2003748
-  20036ec:  61455006  cpeq     gr69, gr80, $06            ; [delay slot]
-  20036f0:  ac00440e  jmpt     gr68, $2003728             ; -> L_2003728
-  20036f4:  030246df  const    gr70, $02df                ; [delay slot]
-  20036f8:  60455047  cpeq     gr69, gr80, gr71        
+  20036e0:  ac004518  jmpt     gr69, $2003740             ; -> L_2003740
+  20036e4:  61455102  cpeq     gr69, gr81, $02            ; [delay slot]
+  20036e8:  ac004518  jmpt     gr69, $2003748             ; -> L_2003748
+  20036ec:  61455106  cpeq     gr69, gr81, $06            ; [delay slot]
+  20036f0:  ac00450e  jmpt     gr69, $2003728             ; -> L_2003728
+  20036f4:  030247df  const    gr71, $02df                ; [delay slot]
+  20036f8:  60455147  cpeq     gr69, gr81, gr71        
   20036fc:  ac004517  jmpt     gr69, $2003758             ; -> L_2003758
   2003700:  0303470f  const    gr71, $030f                ; [delay slot]
   2003704:  60455147  cpeq     gr69, gr81, gr71        
   2003708:  ac004512  jmpt     gr69, $2003750             ; -> L_2003750
   200370c:  0301474f  const    gr71, $014f                ; [delay slot]
   2003710:  60455147  cpeq     gr69, gr81, gr71        
-  2003714:  ac00440b  jmpt     gr68, $2003740             ; -> L_2003740
-  2003718:  0300460f  const    gr70, $000f                ; [delay slot]
-  200371c:  60455047  cpeq     gr69, gr80, gr71        
+  2003714:  ac00450b  jmpt     gr69, $2003740             ; -> L_2003740
+  2003718:  0300470f  const    gr71, $000f                ; [delay slot]
+  200371c:  60455147  cpeq     gr69, gr81, gr71        
   2003720:  ac00450c  jmpt     gr69, $2003750             ; -> L_2003750
   2003724:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
 L_2003728:
@@ -540,10 +544,10 @@ L_200375c:
   2003764:  1e004b4c  store    0, 0, gr75, gr76        
   2003768:  0300467c  const    gr70, $007c             
   200376c:  02444600  consth   gr70, $4400             
-  2003770:  16004746  load     0, 0, gr71, gr70        
-  2003774:  ac00471a  jmpt     gr71, $20037dc             ; -> L_20037dc
-  2003778:  030047a0  const    gr71, $00a0                ; [delay slot]
-  200377c:  02444700  consth   gr71, $4400             
+  2003770:  16004646  load     0, 0, gr70, gr70        
+  2003774:  ac00461a  jmpt     gr70, $20037dc             ; -> L_20037dc
+  2003778:  030046a0  const    gr70, $00a0                ; [delay slot]
+  200377c:  02444600  consth   gr70, $4400             
   2003780:  03004800  const    gr72, $0000             
   2003784:  0300470a  const    gr71, $000a             
 L_2003788:
@@ -554,14 +558,14 @@ L_2003788:
 L_2003798:
   2003798:  b4ff47fc  jmpfdec  gr71, $2003788             ; -> L_2003788
   200379c:  81484801  sll      gr72, gr72, $01            ; [delay slot]
-  20037a0:  03004780  const    gr71, $0080             
-  20037a4:  02444700  consth   gr71, $4400             
-  20037a8:  16004746  load     0, 0, gr71, gr70        
-  20037ac:  a4004703  jmpf     gr71, $20037b8             ; -> L_20037b8
-  20037b0:  81484901  sll      gr72, gr73, $01            ; [delay slot]
-  20037b4:  81484901  sll      gr72, gr73, $01         
+  20037a0:  03004680  const    gr70, $0080             
+  20037a4:  02444600  consth   gr70, $4400             
+  20037a8:  16004646  load     0, 0, gr70, gr70        
+  20037ac:  a4004603  jmpf     gr70, $20037b8             ; -> L_20037b8
+  20037b0:  81484801  sll      gr72, gr72, $01            ; [delay slot]
+  20037b4:  81484801  sll      gr72, gr72, $01         
 L_20037b8:
-  20037b8:  030a4b00  const    gr75, $0a00             
+  20037b8:  030a4a00  const    gr74, $0a00             
   20037bc:  4846484a  cpgt     gr70, gr72, gr74        
   20037c0:  a4004603  jmpf     gr70, $20037cc             ; -> L_20037cc
   20037c4:  70400101  aseq     trap64, gr1, gr1           ; [delay slot]
@@ -569,10 +573,10 @@ L_20037b8:
 L_20037cc:
   20037cc:  03684a24  const    gr74, $6824             
   20037d0:  024c4a00  consth   gr74, $4c00             
-  20037d4:  a0fa010a  jmp      $2001ffc                
-  20037d8:  1e00494a  store    0, 0, gr73, gr74           ; [delay slot]
+  20037d4:  a0fa000a  jmp      $2001ffc                
+  20037d8:  1e00484a  store    0, 0, gr72, gr74           ; [delay slot]
 L_20037dc:
-  20037dc:  030a4900  const    gr73, $0a00             
+  20037dc:  030a4800  const    gr72, $0a00             
   20037e0:  03684a24  const    gr74, $6824             
   20037e4:  024c4a00  consth   gr74, $4c00             
   20037e8:  a0fa0005  jmp      $2001ffc                

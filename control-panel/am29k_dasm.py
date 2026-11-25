@@ -132,7 +132,9 @@ def disasm(data, base=0, labels=False, syms=None, flag_data=True):
             mn,ops,tgt=decode(op, base+i*4)
             if tgt is not None and 0<=tgt-base<n*4 and (tgt&3)==0:
                 lab.setdefault(tgt, 'L_%05x'%tgt)
-    BR={'jmp','jmpf','jmpt','jmpfdec','call','jmpi','jmpfi','calli','jmpti','iret','iretinv'}
+    # iret/iretinv restart from PC0/PC1 and have no delay slot (a Runtime
+    # service stub starts right after each iret)
+    BR={'jmp','jmpf','jmpt','jmpfdec','call','jmpi','jmpfi','calli','jmpti'}
     out=[]; delay=False
     for i in range(n):
         a=base+i*4

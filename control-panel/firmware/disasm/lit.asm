@@ -1,1130 +1,1135 @@
 * ==================================================================
-*  ACEF_100 "32-Bit Antelope" -- .lit  (4388 bytes, 0/662 relocations resolved)
+*  ACEF "32-Bit Antelope" version $00700D01 -- .lit (4388 bytes, 662 relocations)
 * ==================================================================
-* Not Am29000 code -- a plain word dump of the section's raw content.
-* `obj_XXXXX:` labels come from the ACEF symbol table (symbols.txt) at
-* this section's object boundaries; RELOC lines are decoded the same
-* way as text.asm/Code.asm (see apply_reloc.py / firmware/README.md).
-* The trailing |....| column is the 4 bytes read as ASCII (unprintable
-* bytes shown as '.') -- several entries are plainly literal strings,
-* not addresses, confirming '.lit' holds a mix of numeric and string
-* constants, not just floats.
+*  Strings (NUL-terminated, 4 characters or more):
+*    $0000  'Bogus'
+*    $00d0  'ITabMatch: Inverse Table is not up-to-date'
+*    $0100  'BitsToPix: xm points to a portPixMap'
+*    $02c0  "DrawMultiObject/opWhicPat: can't get a PatternCacheEntry for pattern"
+*    $0308  "DrawMultiObject/opWhichPat: can't find PixPat in cache"
+*    $0340  "DrawMultiObject/opWhichPat: can't get a RGBPatCacheEntry for RGB Pattern"
+*    $038c  'DrawMultiObject/opSwapFont: width table is not in the cache'
+*    $03c8  'DrawMultiObject/opSwapFont: width font is not in cache'
+*    $0400  'DrawMultiObject/opSwapFont: font is not cache'
+*    $0430  'DrawMultiObject: unknown opCode %d\n'
+*    $0548  'DisposeOffscreen: NULL offscreen Handle'
+*    $0570  'FlushOffscreen: NULL offscreen Handle'
+*    $0598  'FlushColorTable: NULL color table Handle'
+*    $05c4  'CacheGDevice: NULL GDevice'
+*    $05e0  'CachePixPat: NULL PixPatHandle'
+*    $0600  'FlushGDevice: NULL GDevice'
+*    $061c  'FlushPixPat: NULL PixPatHandle'
+*    $063c  'Cache still busy, cacheType = %d, cache = %lx\n'
+*    $066c  'PQDInit: Unable to allocate mega buffer'
+*    $0694  'PQDAlloc: numBytes is not multiple of LONG'
+*    $06c0  'PQDAlloc: illegal numBytes = %d\n'
+*    $06e4  'PQDAlloc: maxed out on number of mega buffers authorized'
+*    $0720  'PQDAlloc: Unable to allocate extra mega buffer, size = 0x%x\n'
+*    $0900  'ScaleBlt/scIndexToAny: unsupported dstShift = %d\n'
+*    $0934  'ScaleBlt: unknown scaleNum = %d\n'
+*    $09f8  'GetSeek: invalid rectFlag for seekMask = %d\n'
+*    $0d60  'PQDMonet: Starting up, commblock at %X\n'
+*    $0d88  'MonetMain: Sequence error %d != %d, func = %d, last func = %d\n'
+*    $0dc8  'Unknown Function: 0x%X\n'
+*    $0ed4  'malloc allocated %d bytes outside of the heap bounds, pointer = %x, heapMin = %x, heapMax = %x\n'
+*    $0f34  'MapVirtual: bytes == 0'
+*    $0f4c  'CallBack %d during inactive request\n'
+*    $10a0  '                                                                                                                                 '
 *
-obj_00000:
-  00000:  426f6775  .long    $426f6775             |Bogu|
-  00004:  73000360  .long    $73000360             |s..`|
-obj_00008:
-  00008:  00000bb7  .long    $00000bb7             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0000c:  00000a34  .long    $00000a34             |...4|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00010:  00000aea  .long    $00000aea             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00014:  00000ae5  .long    $00000ae5             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00018:  00000b84  .long    $00000b84             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0001c:  00001450  .long    $00001450             |...P|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00020:  00001523  .long    $00001523             |...#|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00024:  0000151c  .long    $0000151c             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00028:  000015ea  .long    $000015ea             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0002c:  00001459  .long    $00001459             |...Y|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00030:  000014e4  .long    $000014e4             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00034:  000013c8  .long    $000013c8             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00038:  0000123f  .long    $0000123f             |...?|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0003c:  000013e0  .long    $000013e0             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00040:  0000143a  .long    $0000143a             |...:|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00044:  000017b1  .long    $000017b1             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00048:  00001718  .long    $00001718             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0004c:  000014e0  .long    $000014e0             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00050:  000015ab  .long    $000015ab             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00054:  00000a84  .long    $00000a84             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00058:  000005fa  .long    $000005fa             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0005c:  0000046d  .long    $0000046d             |...m|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00060:  00000430  .long    $00000430             |...0|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00064:  0000046c  .long    $0000046c             |...l|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00068:  000006cf  .long    $000006cf             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0006c:  00000478  .long    $00000478             |...x|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00070:  000004ea  .long    $000004ea             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00074:  000004b9  .long    $000004b9             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00078:  00000138  .long    $00000138             |...8|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0007c:  00000100  .long    $00000100             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00080:  000006a3  .long    $000006a3             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00084:  000006ec  .long    $000006ec             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00088:  000007da  .long    $000007da             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0008c:  000007e9  .long    $000007e9             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00090:  000005d4  .long    $000005d4             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00094:  00003110  .long    $00003110             |..1.|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  00098:  00000e37  .long    $00000e37             |...7|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  0009c:  00000efc  .long    $00000efc             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000a0:  00000f5a  .long    $00000f5a             |...Z|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000a4:  00000f55  .long    $00000f55             |...U|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000a8:  00000f3c  .long    $00000f3c             |...<|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000ac:  00000fe4  .long    $00000fe4             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000b0:  00000d37  .long    $00000d37             |...7|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000b4:  00000d58  .long    $00000d58             |...X|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000b8:  00000c0e  .long    $00000c0e             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000bc:  00000c2d  .long    $00000c2d             |...-|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000c0:  00000bb0  .long    $00000bb0             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000c4:  00000ac0  .long    $00000ac0             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000c8:  00000a27  .long    $00000a27             |...'|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-  000cc:  000009fc  .long    $000009fc             |....|  ; RELOC: unresolved external (symndx 146 scn=-3) -- not defined in this ACEF image
-obj_000d0:
-  000d0:  49544a18  .long    $49544a18             |ITJ.|
-  000d4:  4d615f46  .long    $4d615f46             |Ma_F|
-  000d8:  683a0bc5  .long    $683a0bc5             |h:..|
-  000dc:  6e764f66  .long    $6e764f66             |nvOf|
-  000e0:  73650503  .long    $73650503             |se..|
-  000e4:  616249dd  .long    $616249dd             |abI.|
-  000e8:  2069574e  .long    $2069574e             | iWN|
-  000ec:  6e6f505d  .long    $6e6f505d             |noP]|
-  000f0:  75700954  .long    $75700954             |up.T|
-  000f4:  6f2d4091  .long    $6f2d4091             |o-@.|
-  000f8:  746527e7  .long    $746527e7             |te'.|
-  000fc:  000027bc  .long    $000027bc             |..'.|
-obj_00100:
-  00100:  42695299  .long    $42695299             |BiR.|
-  00104:  546f769c  .long    $546f769c             |Tov.|
-  00108:  783a0154  .long    $783a0154             |x:.T|
-  0010c:  6d20500b  .long    $6d20500b             |m P.|
-  00110:  696e5734  .long    $696e5734             |inW4|
-  00114:  20744c98  .long    $20744c98             | tL.|
-  00118:  61205231  .long    $61205231             |a R1|
-  0011c:  72747204  .long    $72747204             |rtr.|
-  00120:  784d4370  .long    $784d4370             |xMCp|
-  00124:  000022e0  .long    $000022e0             |..".|
-  00128:  00003857  .long    $00003857             |..8W|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0012c:  0000390c  .long    $0000390c             |..9.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00130:  00003b4a  .long    $00003b4a             |..;J|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00134:  00003925  .long    $00003925             |..9%|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00138:  0000383c  .long    $0000383c             |..8<|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0013c:  00003824  .long    $00003824             |..8$|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00140:  00003967  .long    $00003967             |..9g|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00144:  00003b28  .long    $00003b28             |..;(|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00148:  00003e5e  .long    $00003e5e             |..>^|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0014c:  00003e4d  .long    $00003e4d             |..>M|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00150:  00003f90  .long    $00003f90             |..?.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00154:  00003cc0  .long    $00003cc0             |..<.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00158:  00003dd7  .long    $00003dd7             |..=.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0015c:  00003d0c  .long    $00003d0c             |..=.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00160:  000032da  .long    $000032da             |..2.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00164:  000030d5  .long    $000030d5             |..0.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00168:  0000336c  .long    $0000336c             |..3l|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0016c:  000033b4  .long    $000033b4             |..3.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00170:  00003377  .long    $00003377             |..3w|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00174:  000032d8  .long    $000032d8             |..2.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00178:  0000306e  .long    $0000306e             |..0n|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0017c:  0000305d  .long    $0000305d             |..0]|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00180:  000031b0  .long    $000031b0             |..1.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00184:  00003710  .long    $00003710             |..7.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00188:  00003607  .long    $00003607             |..6.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0018c:  000037cc  .long    $000037cc             |..7.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00190:  000037ca  .long    $000037ca             |..7.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00194:  00003795  .long    $00003795             |..7.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  00198:  0000373c  .long    $0000373c             |..7<|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  0019c:  000034a4  .long    $000034a4             |..4.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001a0:  000035e7  .long    $000035e7             |..5.|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001a4:  00003438  .long    $00003438             |..48|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001a8:  0000c74e  .long    $0000c74e             |...N|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001ac:  0000ca65  .long    $0000ca65             |...e|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001b0:  0000ca90  .long    $0000ca90             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001b4:  0000cac0  .long    $0000cac0             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001b8:  0000c547  .long    $0000c547             |...G|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001bc:  0000c50c  .long    $0000c50c             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001c0:  0000c61a  .long    $0000c61a             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001c4:  0000c635  .long    $0000c635             |...5|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001c8:  0000c7dc  .long    $0000c7dc             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001cc:  0000c094  .long    $0000c094             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001d0:  0000c1b7  .long    $0000c1b7             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001d4:  0000c168  .long    $0000c168             |...h|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001d8:  0000c2ae  .long    $0000c2ae             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001dc:  0000c29d  .long    $0000c29d             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001e0:  0000c2f0  .long    $0000c2f0             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001e4:  0000c210  .long    $0000c210             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001e8:  0000c3c7  .long    $0000c3c7             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001ec:  0000cc8c  .long    $0000cc8c             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001f0:  0000cc0a  .long    $0000cc0a             |....|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-  001f4:  0000cc45  .long    $0000cc45             |...E|  ; RELOC: unresolved external (symndx 182 scn=-3) -- not defined in this ACEF image
-obj_001f8:
-  001f8:  0000c844  .long    $0000c844             |...D|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  001fc:  0000c85c  .long    $0000c85c             |...\|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00200:  0000cb07  .long    $0000cb07             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00204:  0000cb60  .long    $0000cb60             |...`|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00208:  0000ca0e  .long    $0000ca0e             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  0020c:  0000ca15  .long    $0000ca15             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00210:  0000cdd0  .long    $0000cdd0             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00214:  0000cc88  .long    $0000cc88             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00218:  0000ce67  .long    $0000ce67             |...g|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  0021c:  0000ceb4  .long    $0000ceb4             |....|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00220:  0000cf7a  .long    $0000cf7a             |...z|  ; RELOC: unresolved external (symndx 200 scn=-3) -- not defined in this ACEF image
-  00224:  0000c275  .long    $0000c275             |...u|
-obj_00228:
-  00228:  0000c058  .long    $0000c058             |...X|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0022c:  0000c090  .long    $0000c090             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00230:  0000dfb3  .long    $0000dfb3             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00234:  0000df1c  .long    $0000df1c             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00238:  0000deaa  .long    $0000deaa             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0023c:  0000de25  .long    $0000de25             |...%|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00240:  0000cb2c  .long    $0000cb2c             |...,|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00244:  0000ca4c  .long    $0000ca4c             |...L|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00248:  0000ca9b  .long    $0000ca9b             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0024c:  0000cd30  .long    $0000cd30             |...0|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00250:  0000cd56  .long    $0000cd56             |...V|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00254:  0000cd49  .long    $0000cd49             |...I|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00258:  0000cc54  .long    $0000cc54             |...T|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0025c:  0000cdcc  .long    $0000cdcc             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00260:  0000ce8f  .long    $0000ce8f             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00264:  0000ce60  .long    $0000ce60             |...`|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00268:  0000cee6  .long    $0000cee6             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0026c:  0000cef5  .long    $0000cef5             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00270:  0000cea8  .long    $0000cea8             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00274:  0000ce58  .long    $0000ce58             |...X|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00278:  0000c16f  .long    $0000c16f             |...o|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0027c:  0000c174  .long    $0000c174             |...t|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00280:  0000c00e  .long    $0000c00e             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00284:  0000c011  .long    $0000c011             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00288:  0000c3c8  .long    $0000c3c8             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0028c:  0000c36c  .long    $0000c36c             |...l|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00290:  0000c5a3  .long    $0000c5a3             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00294:  0000c494  .long    $0000c494             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  00298:  0000c586  .long    $0000c586             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  0029c:  0000c5b5  .long    $0000c5b5             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002a0:  0000c5d8  .long    $0000c5d8             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002a4:  0000c538  .long    $0000c538             |...8|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002a8:  0000c67b  .long    $0000c67b             |...{|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002ac:  0000c730  .long    $0000c730             |...0|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002b0:  0000c7b6  .long    $0000c7b6             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002b4:  0000c7d5  .long    $0000c7d5             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002b8:  0000f8c0  .long    $0000f8c0             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-  002bc:  0000f800  .long    $0000f800             |....|  ; RELOC: unresolved external (symndx 268 scn=-3) -- not defined in this ACEF image
-obj_002c0:
-  002c0:  44728da0  .long    $44728da0             |Dr..|
-  002c4:  4d7580cc  .long    $4d7580cc             |Mu..|
-  002c8:  694f8d84  .long    $694f8d84             |iO..|
-  002cc:  65639bd2  .long    $65639bd2             |ec..|
-  002d0:  6f70b948  .long    $6f70b948             |op.H|
-  002d4:  6963b911  .long    $6963b911             |ic..|
-  002d8:  743ac804  .long    $743ac804             |t:..|
-  002dc:  616ecfc8  .long    $616ecfc8             |an..|
-  002e0:  20678e1e  .long    $20678e1e             | g..|
-  002e4:  2061cb25  .long    $2061cb25             | a.%|
-  002e8:  61749f49  .long    $61749f49             |at.I|
-  002ec:  726ea885  .long    $726ea885             |rn..|
-  002f0:  63688f82  .long    $63688f82             |ch..|
-  002f4:  6e7498c1  .long    $6e7498c1             |nt..|
-  002f8:  20668aac  .long    $20668aac             | f..|
-  002fc:  20708499  .long    $20708499             | p..|
-  00300:  7465966e  .long    $7465966e             |te.n|
-  00304:  0000e760  .long    $0000e760             |...`|
-  00308:  447286c0  .long    $447286c0             |Dr..|
-  0030c:  4d758a08  .long    $4d758a08             |Mu..|
-  00310:  694f8410  .long    $694f8410             |iO..|
-  00314:  6563920a  .long    $6563920a             |ec..|
-  00318:  6f70b1e4  .long    $6f70b1e4             |op..|
-  0031c:  69638944  .long    $69638944             |ic.D|
-  00320:  6174da77  .long    $6174da77             |at.w|
-  00324:  63618e9f  .long    $63618e9f             |ca..|
-  00328:  74208507  .long    $74208507             |t ..|
-  0032c:  6e64c32d  .long    $6e64c32d             |nd.-|
-  00330:  6978b341  .long    $6978b341             |ix.A|
-  00334:  74208a9e  .long    $74208a9e             |t ..|
-  00338:  20638384  .long    $20638384             | c..|
-  0033c:  6865e2bc  .long    $6865e2bc             |he..|
-  00340:  44729c9d  .long    $44729c9d             |Dr..|
-  00344:  4d759181  .long    $4d759181             |Mu..|
-  00348:  694f9e46  .long    $694f9e46             |iO.F|
-  0034c:  65638b4b  .long    $65638b4b             |ec.K|
-  00350:  6f70a92f  .long    $6f70a92f             |op./|
-  00354:  696396e8  .long    $696396e8             |ic..|
-  00358:  6174c37e  .long    $6174c37e             |at.~|
-  0035c:  6361974a  .long    $6361974a             |ca.J|
-  00360:  74209e65  .long    $74209e65             |t .e|
-  00364:  742098c0  .long    $742098c0             |t ..|
-  00368:  5247ba67  .long    $5247ba67             |RG.g|
-  0036c:  6174b81d  .long    $6174b81d             |at..|
-  00370:  63689ebf  .long    $63689ebf             |ch..|
-  00374:  6e7489dc  .long    $6e7489dc             |nt..|
-  00378:  206695fe  .long    $206695fe             | f..|
-  0037c:  2052bdd6  .long    $2052bdd6             | R..|
-  00380:  205094a3  .long    $205094a3             | P..|
-  00384:  746587d6  .long    $746587d6             |te..|
-  00388:  0000f4ee  .long    $0000f4ee             |....|
-  0038c:  4472958a  .long    $4472958a             |Dr..|
-  00390:  4d759b54  .long    $4d759b54             |Mu.T|
-  00394:  694f941a  .long    $694f941a             |iO..|
-  00398:  65638548  .long    $65638548             |ec.H|
-  0039c:  6f70a2cb  .long    $6f70a2cb             |op..|
-  003a0:  6170b605  .long    $6170b605             |ap..|
-  003a4:  6e74ca55  .long    $6e74ca55             |nt.U|
-  003a8:  77699458  .long    $77699458             |wi.X|
-  003ac:  68208485  .long    $68208485             |h ..|
-  003b0:  626c96e7  .long    $626c96e7             |bl..|
-  003b4:  6973d3d6  .long    $6973d3d6             |is..|
-  003b8:  6f74d2b7  .long    $6f74d2b7             |ot..|
-  003bc:  6e208685  .long    $6e208685             |n ..|
-  003c0:  6520ee61  .long    $6520ee61             |e .a|
-  003c4:  6368e960  .long    $6368e960             |ch.`|
-  003c8:  4472edc0  .long    $4472edc0             |Dr..|
-  003cc:  4d75e308  .long    $4d75e308             |Mu..|
-  003d0:  694fed10  .long    $694fed10             |iO..|
-  003d4:  6563fb0a  .long    $6563fb0a             |ec..|
-  003d8:  6f70dcfb  .long    $6f70dcfb             |op..|
-  003dc:  6170c87b  .long    $6170c87b             |ap.{|
-  003e0:  6e74b377  .long    $6e74b377             |nt.w|
-  003e4:  7769edcc  .long    $7769edcc             |wi..|
-  003e8:  6820ee01  .long    $6820ee01             |h ..|
-  003ec:  6e74a814  .long    $6e74a814             |nt..|
-  003f0:  7320e64f  .long    $7320e64f             |s .O|
-  003f4:  7420e19e  .long    $7420e19e             |t ..|
-  003f8:  2063ea84  .long    $2063ea84             | c..|
-  003fc:  68658bbc  .long    $68658bbc             |he..|
-  00400:  4472eb9d  .long    $4472eb9d             |Dr..|
-  00404:  4d75e681  .long    $4d75e681             |Mu..|
-  00408:  694fe746  .long    $694fe746             |iO.F|
-  0040c:  6563f04b  .long    $6563f04b             |ec.K|
-  00410:  6f70d430  .long    $6f70d430             |op.0|
-  00414:  6170c1d7  .long    $6170c1d7             |ap..|
-  00418:  6e74bc7e  .long    $6e74bc7e             |nt.~|
-  0041c:  666fe819  .long    $666fe819             |fo..|
-  00420:  2069f520  .long    $2069f520             | i. |
-  00424:  6e6ff2c0  .long    $6e6ff2c0             |no..|
-  00428:  6361e25f  .long    $6361e25f             |ca._|
-  0042c:  6500807c  .long    $6500807c             |e..||
-  00430:  4472e18d  .long    $4472e18d             |Dr..|
-  00434:  4d75ecd1  .long    $4d75ecd1             |Mu..|
-  00438:  694fe1e6  .long    $694fe1e6             |iO..|
-  0043c:  6563f7ae  .long    $6563f7ae             |ec..|
-  00440:  2075ecbc  .long    $2075ecbc             | u..|
-  00444:  6e6ff5d6  .long    $6e6ff5d6             |no..|
-  00448:  206fedad  .long    $206fedad             | o..|
-  0044c:  6f64f8dd  .long    $6f64f8dd             |od..|
-  00450:  25649620  .long    $25649620             |%d. |
-  00454:  0000bf34  .long    $0000bf34             |...4|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00458:  0000be23  .long    $0000be23             |...#|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  0045c:  0000bef8  .long    $0000bef8             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00460:  0000b912  .long    $0000b912             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00464:  0000b931  .long    $0000b931             |...1|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00468:  0000b9b0  .long    $0000b9b0             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  0046c:  0000b818  .long    $0000b818             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00470:  0000b93b  .long    $0000b93b             |...;|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00474:  0000b944  .long    $0000b944             |...D|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00478:  0000b9ee  .long    $0000b9ee             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  0047c:  0000ba11  .long    $0000ba11             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00480:  0000b854  .long    $0000b854             |...T|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00484:  000085fc  .long    $000085fc             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00488:  0000b907  .long    $0000b907             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  0048c:  0000b8cc  .long    $0000b8cc             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00490:  0000b8ca  .long    $0000b8ca             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00494:  00008e65  .long    $00008e65             |...e|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  00498:  00009a3c  .long    $00009a3c             |...<|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  0049c:  00009138  .long    $00009138             |...8|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004a0:  000098e7  .long    $000098e7             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004a4:  00009ec8  .long    $00009ec8             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004a8:  000081ea  .long    $000081ea             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004ac:  00009469  .long    $00009469             |...i|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004b0:  00009f48  .long    $00009f48             |...H|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004b4:  00009834  .long    $00009834             |...4|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004b8:  00009aff  .long    $00009aff             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004bc:  00009a7c  .long    $00009a7c             |...||  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004c0:  0000999e  .long    $0000999e             |....|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-  004c4:  00009951  .long    $00009951             |...Q|  ; RELOC: unresolved external (symndx 280 scn=-3) -- not defined in this ACEF image
-obj_004c8:
-  004c8:  0000bc04  .long    $0000bc04             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004cc:  00008350  .long    $00008350             |...P|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004d0:  00008207  .long    $00008207             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004d4:  000082f4  .long    $000082f4             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004d8:  00008106  .long    $00008106             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004dc:  00008109  .long    $00008109             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004e0:  00008170  .long    $00008170             |...p|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004e4:  0000819c  .long    $0000819c             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004e8:  000080f7  .long    $000080f7             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004ec:  000087b0  .long    $000087b0             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004f0:  00008722  .long    $00008722             |..."|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004f4:  00008741  .long    $00008741             |...A|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004f8:  0000867c  .long    $0000867c             |...||  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  004fc:  00008668  .long    $00008668             |...h|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00500:  000084df  .long    $000084df             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00504:  000084ac  .long    $000084ac             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00508:  000085d6  .long    $000085d6             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  0050c:  000085b9  .long    $000085b9             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00510:  00008a70  .long    $00008a70             |...p|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00514:  00008b2c  .long    $00008b2c             |...,|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00518:  0000880f  .long    $0000880f             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  0051c:  000088c8  .long    $000088c8             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00520:  000089ea  .long    $000089ea             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00524:  000089f9  .long    $000089f9             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00528:  000089c4  .long    $000089c4             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  0052c:  000096e8  .long    $000096e8             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00530:  000091df  .long    $000091df             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00534:  0000919c  .long    $0000919c             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00538:  00009096  .long    $00009096             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  0053c:  00009099  .long    $00009099             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00540:  00009380  .long    $00009380             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-  00544:  000092ec  .long    $000092ec             |....|  ; RELOC: unresolved external (symndx 380 scn=-3) -- not defined in this ACEF image
-obj_00548:
-  00548:  4469d1c7  .long    $4469d1c7             |Di..|
-  0054c:  6f73d833  .long    $6f73d833             |os.3|
-  00550:  6666ce19  .long    $6666ce19             |ff..|
-  00554:  7265d84b  .long    $7265d84b             |re.K|
-  00558:  3a20f3d9  .long    $3a20f3d9             |: ..|
-  0055c:  4c4c9c7b  .long    $4c4c9c7b             |LL.{|
-  00560:  6666cc34  .long    $6666cc34             |ff.4|
-  00564:  7265dad6  .long    $7265dad6             |re..|
-  00568:  2048df00  .long    $2048df00             | H..|
-  0056c:  646cdb7d  .long    $646cdb7d             |dl.}|
-  00570:  466ccb53  .long    $466ccb53             |Fl.S|
-  00574:  684fd896  .long    $684fd896             |hO..|
-  00578:  7363cb82  .long    $7363cb82             |sc..|
-  0057c:  656e839c  .long    $656e839c             |en..|
-  00580:  4e55f4a6  .long    $4e55f4a6             |NU..|
-  00584:  206fde93  .long    $206fde93             | o..|
-  00588:  7363c949  .long    $7363c949             |sc.I|
-  0058c:  656e9a2c  .long    $656e9a2c             |en.,|
-  00590:  616ed12b  .long    $616ed12b             |an.+|
-  00594:  6500b5b8  .long    $6500b5b8             |e...|
-  00598:  466cc12d  .long    $466cc12d             |Fl.-|
-  0059c:  6843db01  .long    $6843db01             |hC..|
-  005a0:  6f72e061  .long    $6f72e061             |or.a|
-  005a4:  626cd1da  .long    $626cd1da             |bl..|
-  005a8:  204ee27b  .long    $204ee27b             | N.{|
-  005ac:  4c20d513  .long    $4c20d513             |L ..|
-  005b0:  6c6fc4da  .long    $6c6fc4da             |lo..|
-  005b4:  7461d4c9  .long    $7461d4c9             |ta..|
-  005b8:  6520f9ed  .long    $6520f9ed             |e ..|
-  005bc:  6e64ddf1  .long    $6e64ddf1             |nd..|
-  005c0:  0000b0d7  .long    $0000b0d7             |....|
-  005c4:  4361d3d0  .long    $4361d3d0             |Ca..|
-  005c8:  6547f78b  .long    $6547f78b             |eG..|
-  005cc:  7669d098  .long    $7669d098             |vi..|
-  005d0:  3a20fc75  .long    $3a20fc75             |: .u|
-  005d4:  4c4f6d37  .long    $4c4f6d37             |LOm7|
-  005d8:  44663a0e  .long    $44663a0e             |Df:.|
-  005dc:  63664cbc  .long    $63664cbc             |cfL.|
-  005e0:  43622c02  .long    $43622c02             |Cb,.|
-  005e4:  6553260d  .long    $6553260d             |eS&.|
-  005e8:  50623b16  .long    $50623b16             |Pb;.|
-  005ec:  204d1aa8  .long    $204d1aa8             | M..|
-  005f0:  4c231eae  .long    $4c231eae             |L#..|
-  005f4:  78532fcc  .long    $78532fcc             |xS/.|
-  005f8:  486227ba  .long    $486227ba             |Hb'.|
-  005fc:  6c6649ed  .long    $6c6649ed             |lfI.|
-  00600:  466f3d73  .long    $466f3d73             |Fo=s|
-  00604:  68440f05  .long    $68440f05             |hD..|
-  00608:  766a28d2  .long    $766a28d2             |vj(.|
-  0060c:  3a230429  .long    $3a230429             |:#.)|
-  00610:  4c4f6a3d  .long    $4c4f6a3d             |LOj=|
-  00614:  44663c4c  .long    $44663c4c             |Df<L|
-  00618:  63664a8c  .long    $63664a8c             |cfJ.|
-  0061c:  466f3067  .long    $466f3067             |Fo0g|
-  00620:  68532d2f  .long    $68532d2f             |hS-/|
-  00624:  50623082  .long    $50623082             |Pb0.|
-  00628:  204d1222  .long    $204d1222             | M."|
-  0062c:  4c231714  .long    $4c231714             |L#..|
-  00630:  78532654  .long    $78532654             |xS&T|
-  00634:  48622994  .long    $48622994             |Hb).|
-  00638:  6c6646e7  .long    $6c6646e7             |lfF.|
-  0063c:  436225d4  .long    $436225d4             |Cb%.|
-  00640:  6523329e  .long    $6523329e             |e#2.|
-  00644:  696f2dd5  .long    $696f2dd5             |io-.|
-  00648:  62763355  .long    $62763355             |bv3U|
-  0064c:  2c232005  .long    $2c232005             |,# .|
-  00650:  636b2713  .long    $636b2713             |ck'.|
-  00654:  79732798  .long    $79732798             |ys'.|
-  00658:  3d23783a  .long    $3d23783a             |=#x:|
-  0065c:  2c233e0c  .long    $2c233e0c             |,#>.|
-  00660:  636b3820  .long    $636b3820             |ck8 |
-  00664:  3d23788c  .long    $3d23788c             |=#x.|
-  00668:  78095c37  .long    $78095c37             |x.\7|
-  0066c:  50521b35  .long    $50521b35             |PR.5|
-  00670:  6e6a2bc0  .long    $6e6a2bc0             |nj+.|
-  00674:  205631c4  .long    $205631c4             | V1.|
-  00678:  626f3bac  .long    $626f3bac             |bo;.|
-  0067c:  746c7ef5  .long    $746c7ef5             |tl~.|
-  00680:  6c6f36b4  .long    $6c6f36b4             |lo6.|
-  00684:  61773c98  .long    $61773c98             |aw<.|
-  00688:  6d663f8f  .long    $6d663f8f             |mf?.|
-  0068c:  20612d9b  .long    $20612d9b             | a-.|
-  00690:  66662920  .long    $66662920             |ff) |
-  00694:  50521e31  .long    $50521e31             |PR.1|
-  00698:  6c6f3a04  .long    $6c6f3a04             |lo:.|
-  0069c:  3a233bc9  .long    $3a233bc9             |:#;.|
-  006a0:  6d412d1e  .long    $6d412d1e             |mA-.|
-  006a4:  6570741c  .long    $6570741c             |ept.|
-  006a8:  73233a43  .long    $73233a43             |s#:C|
-  006ac:  74233991  .long    $74233991             |t#9.|
-  006b0:  6c773eb7  .long    $6c773eb7             |lw>.|
-  006b4:  6c6677d7  .long    $6c6677d7             |lfw.|
-  006b8:  66231a91  .long    $66231a91             |f#..|
-  006bc:  4e4456ed  .long    $4e4456ed             |NDV.|
-  006c0:  50521541  .long    $50521541             |PR.A|
-  006c4:  6c6f3f03  .long    $6c6f3f03             |lo?.|
-  006c8:  3a2339db  .long    $3a2339db             |:#9.|
-  006cc:  6c66341d  .long    $6c66341d             |lf4.|
-  006d0:  6c233d0f  .long    $6c233d0f             |l#=.|
-  006d4:  6d412a51  .long    $6d412a51             |mA*Q|
-  006d8:  657073b1  .long    $657073b1             |eps.|
-  006dc:  2026361e  .long    $2026361e             | &6.|
-  006e0:  00036d57  .long    $00036d57             |..mW|
-  006e4:  505229f9  .long    $505229f9             |PR).|
-  006e8:  6c6f030d  .long    $6c6f030d             |lo..|
-  006ec:  3a23011c  .long    $3a23011c             |:#..|
-  006f0:  78660800  .long    $78660800             |xf..|
-  006f4:  6f7618d0  .long    $6f7618d0             |ov..|
-  006f8:  6f6d4f89  .long    $6f6d4f89             |omO.|
-  006fc:  756e0dd9  .long    $756e0dd9             |un..|
-  00700:  7223018c  .long    $7223018c             |r#..|
-  00704:  206e0b92  .long    $206e0b92             | n..|
-  00708:  61230b59  .long    $61230b59             |a#.Y|
-  0070c:  66650d16  .long    $66650d16             |fe..|
-  00710:  73230a32  .long    $73230a32             |s#.2|
-  00714:  746b04ca  .long    $746b04ca             |tk..|
-  00718:  69790f3a  .long    $69790f3a             |iy.:|
-  0071c:  00036a6d  .long    $00036a6d             |..jm|
-  00720:  50522e41  .long    $50522e41             |PR.A|
-  00724:  6c6f0583  .long    $6c6f0583             |lo..|
-  00728:  3a233059  .long    $3a233059             |:#0Y|
-  0072c:  61610819  .long    $61610819             |aa..|
-  00730:  20770bda  .long    $20770bda             | w..|
-  00734:  616f08ca  .long    $616f08ca             |ao..|
-  00738:  636213e9  .long    $636213e9             |cb..|
-  0073c:  20661fe0  .long    $20661fe0             | f..|
-  00740:  726246ba  .long    $726246ba             |rbF.|
-  00744:  65640798  .long    $65640798             |ed..|
-  00748:  62760788  .long    $62760788             |bv..|
-  0074c:  65714ddd  .long    $65714ddd             |eqM.|
-  00750:  736a1a45  .long    $736a1a45             |sj.E|
-  00754:  203e4340  .long    $203e4340             | >C@|
-  00758:  78261a6d  .long    $78261a6d             |x&.m|
-  0075c:  000362bc  .long    $000362bc             |..b.|
-  00760:  00035052  .long    $00035052             |..PR|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00764:  00035025  .long    $00035025             |..P%|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00768:  00035054  .long    $00035054             |..PT|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  0076c:  00035064  .long    $00035064             |..Pd|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00770:  00034d93  .long    $00034d93             |..M.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00774:  00034de4  .long    $00034de4             |..M.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00778:  00034eba  .long    $00034eba             |..N.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  0077c:  00034e81  .long    $00034e81             |..N.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00780:  00034f74  .long    $00034f74             |..Ot|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00784:  0003481c  .long    $0003481c             |..H.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00788:  00034833  .long    $00034833             |..H3|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  0078c:  00034aa0  .long    $00034aa0             |..J.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00790:  00034aae  .long    $00034aae             |..J.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00794:  00034ae9  .long    $00034ae9             |..J.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  00798:  00034a48  .long    $00034a48             |..JH|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  0079c:  000349a8  .long    $000349a8             |..I.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007a0:  000348e3  .long    $000348e3             |..H.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007a4:  00034814  .long    $00034814             |..H.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007a8:  000346b2  .long    $000346b2             |..F.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007ac:  00034699  .long    $00034699             |..F.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007b0:  000346cc  .long    $000346cc             |..F.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007b4:  00034604  .long    $00034604             |..F.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007b8:  0003471b  .long    $0003471b             |..G.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007bc:  000340b8  .long    $000340b8             |..@.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007c0:  000343e6  .long    $000343e6             |..C.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007c4:  0003428d  .long    $0003428d             |..B.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007c8:  0003435c  .long    $0003435c             |..C\|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007cc:  0003440c  .long    $0003440c             |..D.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007d0:  00034527  .long    $00034527             |..E'|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007d4:  000345e0  .long    $000345e0             |..E.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007d8:  0003460e  .long    $0003460e             |..F.|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-  007dc:  00034625  .long    $00034625             |..F%|  ; RELOC: unresolved external (symndx 532 scn=-3) -- not defined in this ACEF image
-obj_007e0:
-  007e0:  000376c0  .long    $000376c0             |..v.|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-  007e4:  000375a0  .long    $000375a0             |..u.|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-  007e8:  00037453  .long    $00037453             |..tS|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-  007ec:  00030bf4  .long    $00030bf4             |....|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-  007f0:  00030b56  .long    $00030b56             |...V|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-  007f4:  00030b75  .long    $00030b75             |...u|  ; RELOC: unresolved external (symndx 570 scn=-3) -- not defined in this ACEF image
-obj_007f8:
-  007f8:  00030400  .long    $00030400             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  007fc:  000305b8  .long    $000305b8             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00800:  0003061b  .long    $0003061b             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00804:  000305f8  .long    $000305f8             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00808:  0003040e  .long    $0003040e             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0080c:  00030599  .long    $00030599             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00810:  000302f8  .long    $000302f8             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00814:  0003043c  .long    $0003043c             |...<|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00818:  0003064b  .long    $0003064b             |...K|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0081c:  0003063c  .long    $0003063c             |...<|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00820:  000307be  .long    $000307be             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00824:  00030475  .long    $00030475             |...u|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00828:  00030478  .long    $00030478             |...x|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0082c:  00030468  .long    $00030468             |...h|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00830:  00030b7f  .long    $00030b7f             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00834:  00030b5c  .long    $00030b5c             |...\|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00838:  00030ba6  .long    $00030ba6             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0083c:  00030b39  .long    $00030b39             |...9|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00840:  00031730  .long    $00031730             |...0|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00844:  00031600  .long    $00031600             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00848:  0003160b  .long    $0003160b             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0084c:  00031180  .long    $00031180             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00850:  00031056  .long    $00031056             |...V|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00854:  00031079  .long    $00031079             |...y|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00858:  0003138c  .long    $0003138c             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0085c:  00031238  .long    $00031238             |...8|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00860:  00031133  .long    $00031133             |...3|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00864:  00031128  .long    $00031128             |...(|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00868:  000310a6  .long    $000310a6             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0086c:  0003117d  .long    $0003117d             |...}|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00870:  00031164  .long    $00031164             |...d|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00874:  0003118c  .long    $0003118c             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00878:  000308e7  .long    $000308e7             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0087c:  000308b0  .long    $000308b0             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00880:  000309f2  .long    $000309f2             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00884:  000309d1  .long    $000309d1             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00888:  000303e4  .long    $000303e4             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0088c:  000302dc  .long    $000302dc             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00890:  000305ef  .long    $000305ef             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00894:  00030520  .long    $00030520             |... |  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  00898:  000304d6  .long    $000304d6             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  0089c:  00030415  .long    $00030415             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008a0:  00030468  .long    $00030468             |...h|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008a4:  000304b8  .long    $000304b8             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008a8:  0003077f  .long    $0003077f             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008ac:  00030644  .long    $00030644             |...D|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008b0:  000306d2  .long    $000306d2             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008b4:  000306bd  .long    $000306bd             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008b8:  00030984  .long    $00030984             |....|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008bc:  00030e6c  .long    $00030e6c             |...l|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008c0:  00030f3f  .long    $00030f3f             |...?|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008c4:  00033e34  .long    $00033e34             |..>4|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008c8:  00033d92  .long    $00033d92             |..=.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008cc:  00033d91  .long    $00033d91             |..=.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008d0:  00033c7c  .long    $00033c7c             |..<||  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008d4:  00033b3c  .long    $00033b3c             |..;<|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008d8:  00033a5b  .long    $00033a5b             |..:[|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008dc:  00033a90  .long    $00033a90             |..:.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008e0:  00033976  .long    $00033976             |..9v|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008e4:  00033979  .long    $00033979             |..9y|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008e8:  00033ad0  .long    $00033ad0             |..:.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008ec:  00033a08  .long    $00033a08             |..:.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008f0:  00033b1b  .long    $00033b1b             |..;.|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008f4:  00033b74  .long    $00033b74             |..;t|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008f8:  00030462  .long    $00030462             |...b|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-  008fc:  00030441  .long    $00030441             |...A|  ; RELOC: unresolved external (symndx 688 scn=-3) -- not defined in this ACEF image
-obj_00900:
-  00900:  53604d6c  .long    $53604d6c             |S`Ml|
-  00904:  65414314  .long    $65414314             |eAC.|
-  00908:  2f704cfe  .long    $2f704cfe             |/pL.|
-  0090c:  6e674b04  .long    $6e674b04             |ngK.|
-  00910:  546c6f14  .long    $546c6f14             |Tlo.|
-  00914:  79390e50  .long    $79390e50             |y9.P|
-  00918:  6e705bfc  .long    $6e705bfc             |np[.|
-  0091c:  706c5b60  .long    $706c5b60             |pl[`|
-  00920:  65670833  .long    $65670833             |eg.3|
-  00924:  73777bd0  .long    $73777bd0             |sw{.|
-  00928:  69655f4e  .long    $69655f4e             |ie_N|
-  0092c:  3d230e19  .long    $3d230e19             |=#..|
-  00930:  0a032b20  .long    $0a032b20             |..+ |
-  00934:  53604a9c  .long    $53604a9c             |S`J.|
-  00938:  65414693  .long    $65414693             |eAF.|
-  0093c:  3a235fd2  .long    $3a235fd2             |:#_.|
-  00940:  6b6d4a9d  .long    $6b6d4a9d             |kmJ.|
-  00944:  6e235696  .long    $6e235696             |n#V.|
-  00948:  616f4162  .long    $616f4162             |aoAb|
-  0094c:  756e0759  .long    $756e0759             |un.Y|
-  00950:  2026424d  .long    $2026424d             | &BM|
-  00954:  000326b8  .long    $000326b8             |..&.|
-  00958:  0003211a  .long    $0003211a             |..!.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  0095c:  00032599  .long    $00032599             |..%.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00960:  00032170  .long    $00032170             |..!p|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00964:  000321b4  .long    $000321b4             |..!.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00968:  000324c3  .long    $000324c3             |..$.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  0096c:  00032788  .long    $00032788             |..'.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00970:  0003270e  .long    $0003270e             |..'.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00974:  00032751  .long    $00032751             |..'Q|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00978:  000322e8  .long    $000322e8             |..".|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  0097c:  00032660  .long    $00032660             |..&`|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00980:  00033db3  .long    $00033db3             |..=.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00984:  0003394c  .long    $0003394c             |..9L|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00988:  0003381a  .long    $0003381a             |..8.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  0098c:  00033809  .long    $00033809             |..8.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00990:  00033bd4  .long    $00033bd4             |..;.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00994:  00033a84  .long    $00033a84             |..:.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  00998:  00033d93  .long    $00033d93             |..=.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  0099c:  00033d48  .long    $00033d48             |..=H|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009a0:  00033c9e  .long    $00033c9e             |..<.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009a4:  00033c81  .long    $00033c81             |..<.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009a8:  00033cd8  .long    $00033cd8             |..<.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009ac:  00033c10  .long    $00033c10             |..<.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009b0:  00033f33  .long    $00033f33             |..?3|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009b4:  00033f4c  .long    $00033f4c             |..?L|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009b8:  00033e12  .long    $00033e12             |..>.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009bc:  00033e49  .long    $00033e49             |..>I|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009c0:  0003317c  .long    $0003317c             |..1||  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009c4:  0003302c  .long    $0003302c             |..0,|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009c8:  000330ab  .long    $000330ab             |..0.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009cc:  0003348c  .long    $0003348c             |..4.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009d0:  0003326e  .long    $0003326e             |..2n|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009d4:  00033275  .long    $00033275             |..2u|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009d8:  0003320c  .long    $0003320c             |..2.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009dc:  000333f4  .long    $000333f4             |..3.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009e0:  000332f7  .long    $000332f7             |..2.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009e4:  00033268  .long    $00033268             |..2h|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009e8:  000333be  .long    $000333be             |..3.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009ec:  000333d1  .long    $000333d1             |..3.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009f0:  00033398  .long    $00033398             |..3.|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-  009f4:  00033334  .long    $00033334             |..34|  ; RELOC: unresolved external (symndx 732 scn=-3) -- not defined in this ACEF image
-obj_009f8:
-  009f8:  476647b4  .long    $476647b4             |GfG.|
-  009fc:  65665886  .long    $65665886             |efX.|
-  00a00:  206a5c9c  .long    $206a5c9c             | j\.|
-  00a04:  616f5b91  .long    $616f5b91             |ao[.|
-  00a08:  2071a84f  .long    $2071a84f             | q.O|
-  00a0c:  7445a005  .long    $7445a005             |tE..|
-  00a10:  6723a928  .long    $6723a928             |g#.(|
-  00a14:  7223bcdd  .long    $7223bcdd             |r#..|
-  00a18:  6568833f  .long    $6568833f             |eh.?|
-  00a1c:  7368ee50  .long    $7368ee50             |sh.P|
-  00a20:  2026aa0a  .long    $2026aa0a             | &..|
-  00a24:  0003cee0  .long    $0003cee0             |....|
-  00a28:  0003caa7  .long    $0003caa7             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a2c:  0003cbe0  .long    $0003cbe0             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a30:  0003cb52  .long    $0003cb52             |...R|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a34:  0003cb11  .long    $0003cb11             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a38:  0003c84c  .long    $0003c84c             |...L|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a3c:  0003c864  .long    $0003c864             |...d|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a40:  0003c92b  .long    $0003c92b             |...+|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a44:  0003ceb0  .long    $0003ceb0             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a48:  0003c1fa  .long    $0003c1fa             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a4c:  0003c1dd  .long    $0003c1dd             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a50:  0003c00c  .long    $0003c00c             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a54:  0003c300  .long    $0003c300             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a58:  0003c21b  .long    $0003c21b             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a5c:  0003c234  .long    $0003c234             |...4|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a60:  0003c5fe  .long    $0003c5fe             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a64:  0003c53d  .long    $0003c53d             |...=|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a68:  0003c564  .long    $0003c564             |...d|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a6c:  0003c544  .long    $0003c544             |...D|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a70:  0003c467  .long    $0003c467             |...g|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a74:  0003c4f0  .long    $0003c4f0             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a78:  0003c796  .long    $0003c796             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a7c:  0003c7a5  .long    $0003c7a5             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a80:  0003c648  .long    $0003c648             |...H|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a84:  0003d928  .long    $0003d928             |...(|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a88:  0003d9ff  .long    $0003d9ff             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a8c:  0003d8d0  .long    $0003d8d0             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a90:  0003d8d6  .long    $0003d8d6             |....|  ; RELOC: unresolved external (symndx 798 scn=-3) -- not defined in this ACEF image
-  00a94:  0003dc25  .long    $0003dc25             |...%|
-obj_00a98:
-  00a98:  00038694  .long    $00038694             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00a9c:  0003850c  .long    $0003850c             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00aa0:  000382e7  .long    $000382e7             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00aa4:  000384a0  .long    $000384a0             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00aa8:  000385de  .long    $000385de             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00aac:  000385cd  .long    $000385cd             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ab0:  00038590  .long    $00038590             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ab4:  000383e8  .long    $000383e8             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ab8:  00038457  .long    $00038457             |...W|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00abc:  0003840c  .long    $0003840c             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ac0:  0003875a  .long    $0003875a             |...Z|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ac4:  00038745  .long    $00038745             |...E|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ac8:  0003869c  .long    $0003869c             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00acc:  000389d4  .long    $000389d4             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ad0:  000388f7  .long    $000388f7             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-  00ad4:  00038f00  .long    $00038f00             |....|  ; RELOC: unresolved external (symndx 1004 scn=-3) -- not defined in this ACEF image
-obj_00ad8:
-  00ad8:  0003d416  .long    $0003d416             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00adc:  0003d419  .long    $0003d419             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ae0:  0003d4a4  .long    $0003d4a4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ae4:  0003d438  .long    $0003d438             |...8|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ae8:  0003c07b  .long    $0003c07b             |...{|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00aec:  0003c2d4  .long    $0003c2d4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00af0:  0003c24e  .long    $0003c24e             |...N|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00af4:  0003c265  .long    $0003c265             |...e|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00af8:  0003c340  .long    $0003c340             |...@|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00afc:  0003c34c  .long    $0003c34c             |...L|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b00:  0003c59b  .long    $0003c59b             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b04:  0003c05c  .long    $0003c05c             |...\|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b08:  0003c11e  .long    $0003c11e             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b0c:  0003c101  .long    $0003c101             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b10:  0003f928  .long    $0003f928             |...(|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b14:  0003f864  .long    $0003f864             |...d|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b18:  0003fb47  .long    $0003fb47             |...G|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b1c:  0003fb90  .long    $0003fb90             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b20:  0003fa52  .long    $0003fa52             |...R|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b24:  0003fa31  .long    $0003fa31             |...1|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b28:  0003fa7c  .long    $0003fa7c             |...||  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b2c:  0003fab8  .long    $0003fab8             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b30:  0003fdaf  .long    $0003fdaf             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b34:  0003fff4  .long    $0003fff4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b38:  0003fcaa  .long    $0003fcaa             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b3c:  0003fc6d  .long    $0003fc6d             |...m|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b40:  0003ff8c  .long    $0003ff8c             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b44:  0003fc2c  .long    $0003fc2c             |...,|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b48:  0003fe63  .long    $0003fe63             |...c|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b4c:  0003f19c  .long    $0003f19c             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b50:  0003f196  .long    $0003f196             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b54:  0003f1dd  .long    $0003f1dd             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b58:  0003f088  .long    $0003f088             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b5c:  0003f104  .long    $0003f104             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b60:  0003f277  .long    $0003f277             |...w|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b64:  0003f294  .long    $0003f294             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b68:  0003f356  .long    $0003f356             |...V|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b6c:  0003f339  .long    $0003f339             |...9|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b70:  0003f370  .long    $0003f370             |...p|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b74:  0003f3ac  .long    $0003f3ac             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b78:  0003fe1f  .long    $0003fe1f             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b7c:  0003fe44  .long    $0003fe44             |...D|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b80:  0003ff12  .long    $0003ff12             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b84:  0003ff0d  .long    $0003ff0d             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b88:  0003c3e0  .long    $0003c3e0             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b8c:  0003c3c4  .long    $0003c3c4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b90:  0003e2df  .long    $0003e2df             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b94:  0003e21c  .long    $0003e21c             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b98:  0003e3ee  .long    $0003e3ee             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00b9c:  0003e3d1  .long    $0003e3d1             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ba0:  0003e3c8  .long    $0003e3c8             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ba4:  0003e334  .long    $0003e334             |...4|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00ba8:  0003e0d7  .long    $0003e0d7             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bac:  0003e190  .long    $0003e190             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bb0:  0003deda  .long    $0003deda             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bb4:  0003dedd  .long    $0003dedd             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bb8:  0003d908  .long    $0003d908             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bbc:  0003d904  .long    $0003d904             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bc0:  0003d84b  .long    $0003d84b             |...K|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bc4:  0003d810  .long    $0003d810             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bc8:  0003db5a  .long    $0003db5a             |...Z|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bcc:  0003db3d  .long    $0003db3d             |...=|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bd0:  0003dad4  .long    $0003dad4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bd4:  0003d43c  .long    $0003d43c             |...<|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bd8:  0003d53f  .long    $0003d53f             |...?|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bdc:  0003d5d8  .long    $0003d5d8             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00be0:  0003d61a  .long    $0003d61a             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00be4:  0003d609  .long    $0003d609             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00be8:  0003d6a4  .long    $0003d6a4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bec:  0003d670  .long    $0003d670             |...p|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bf0:  0003d70f  .long    $0003d70f             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bf4:  0003d76c  .long    $0003d76c             |...l|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bf8:  0003d03e  .long    $0003d03e             |...>|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00bfc:  0003d001  .long    $0003d001             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c00:  0003d2b8  .long    $0003d2b8             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c04:  0003d1d8  .long    $0003d1d8             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c08:  0003d10f  .long    $0003d10f             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c0c:  0003d0c4  .long    $0003d0c4             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c10:  0003d0be  .long    $0003d0be             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c14:  0003d0f5  .long    $0003d0f5             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c18:  0003d0bc  .long    $0003d0bc             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c1c:  0003af28  .long    $0003af28             |...(|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c20:  0003ae6b  .long    $0003ae6b             |...k|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c24:  0003ae84  .long    $0003ae84             |....|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c28:  0003ad26  .long    $0003ad26             |...&|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-  00c2c:  0003ad35  .long    $0003ad35             |...5|  ; RELOC: unresolved external (symndx 1016 scn=-3) -- not defined in this ACEF image
-obj_00c30:
-  00c30:  000388d0  .long    $000388d0             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c34:  00038810  .long    $00038810             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c38:  00038937  .long    $00038937             |...7|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c3c:  0003897c  .long    $0003897c             |...||  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c40:  00038e5a  .long    $00038e5a             |...Z|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c44:  00038e55  .long    $00038e55             |...U|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c48:  00038fbc  .long    $00038fbc             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c4c:  00038ce4  .long    $00038ce4             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c50:  00038d37  .long    $00038d37             |...7|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c54:  00038dd8  .long    $00038dd8             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c58:  0003820e  .long    $0003820e             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c5c:  0003822d  .long    $0003822d             |...-|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c60:  00038230  .long    $00038230             |...0|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c64:  000382c0  .long    $000382c0             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c68:  00038327  .long    $00038327             |...'|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c6c:  00038a68  .long    $00038a68             |...h|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c70:  00038afe  .long    $00038afe             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c74:  00038b51  .long    $00038b51             |...Q|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c78:  00038a68  .long    $00038a68             |...h|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c7c:  00038a40  .long    $00038a40             |...@|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c80:  00038d13  .long    $00038d13             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c84:  00038d0c  .long    $00038d0c             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c88:  00038c4a  .long    $00038c4a             |...J|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c8c:  00038c69  .long    $00038c69             |...i|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c90:  00038fa4  .long    $00038fa4             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c94:  00038e04  .long    $00038e04             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c98:  00039103  .long    $00039103             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00c9c:  000391e8  .long    $000391e8             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ca0:  0003902e  .long    $0003902e             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ca4:  00039041  .long    $00039041             |...A|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ca8:  00038f50  .long    $00038f50             |...P|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cac:  00038f88  .long    $00038f88             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cb0:  00038c9b  .long    $00038c9b             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cb4:  00038cf4  .long    $00038cf4             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cb8:  00038de2  .long    $00038de2             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cbc:  00038dc1  .long    $00038dc1             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cc0:  00038a1c  .long    $00038a1c             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cc4:  00038b6c  .long    $00038b6c             |...l|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cc8:  00038a4b  .long    $00038a4b             |...K|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ccc:  00038990  .long    $00038990             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cd0:  000389a6  .long    $000389a6             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cd4:  000389e9  .long    $000389e9             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cd8:  00038930  .long    $00038930             |...0|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cdc:  000388b8  .long    $000388b8             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ce0:  000387cb  .long    $000387cb             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ce4:  00038230  .long    $00038230             |...0|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00ce8:  00038316  .long    $00038316             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cec:  00038315  .long    $00038315             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cf0:  00038378  .long    $00038378             |...x|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cf4:  000383b8  .long    $000383b8             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cf8:  000380df  .long    $000380df             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00cfc:  00038094  .long    $00038094             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d00:  000381f2  .long    $000381f2             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d04:  000381fd  .long    $000381fd             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d08:  000387d4  .long    $000387d4             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d0c:  0003868c  .long    $0003868c             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d10:  0003859f  .long    $0003859f             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d14:  00038570  .long    $00038570             |...p|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d18:  000384e6  .long    $000384e6             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d1c:  000384c5  .long    $000384c5             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d20:  00038eac  .long    $00038eac             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d24:  00038e7c  .long    $00038e7c             |...||  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d28:  0003b1bb  .long    $0003b1bb             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d2c:  0003b000  .long    $0003b000             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d30:  0003b096  .long    $0003b096             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d34:  0003b0f9  .long    $0003b0f9             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d38:  0003b3c0  .long    $0003b3c0             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d3c:  0003b3a8  .long    $0003b3a8             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d40:  0003b2fb  .long    $0003b2fb             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d44:  0003b2a4  .long    $0003b2a4             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d48:  0003b5e2  .long    $0003b5e2             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d4c:  0003b201  .long    $0003b201             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d50:  0003b3cc  .long    $0003b3cc             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d54:  0003b0ac  .long    $0003b0ac             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d58:  0003b1ab  .long    $0003b1ab             |....|  ; RELOC: unresolved external (symndx 1038 scn=-3) -- not defined in this ACEF image
-  00d5c:  0003aabc  .long    $0003aabc             |....|
-obj_00d60:
-  00d60:  5052e127  .long    $5052e127             |PR.'|
-  00d64:  6f6dc001  .long    $6f6dc001             |om..|
-  00d68:  3a23f658  .long    $3a23f658             |:#.X|
-  00d6c:  6171d18d  .long    $6171d18d             |aq..|
-  00d70:  6e6484b2  .long    $6e6484b2             |nd..|
-  00d74:  702f84db  .long    $702f84db             |p/..|
-  00d78:  6f6ecabc  .long    $6f6ecabc             |on..|
-  00d7c:  6c6cc486  .long    $6c6cc486             |ll..|
-  00d80:  2062d220  .long    $2062d220             | b. |
-  00d84:  255bab60  .long    $255bab60             |%[.`|
-  00d88:  4d6ccfd2  .long    $4d6ccfd2             |Ml..|
-  00d8c:  744ec115  .long    $744ec115             |tN..|
-  00d90:  6e398029  .long    $6e398029             |n9.)|
-  00d94:  6572d540  .long    $6572d540             |er.@|
-  00d98:  6e60c5ac  .long    $6e60c5ac             |n`..|
-  00d9c:  6571d17b  .long    $6571d17b             |eq.{|
-  00da0:  72238733  .long    $72238733             |r#.3|
-  00da4:  20229f98  .long    $20229f98             | "..|
-  00da8:  2567914e  .long    $2567914e             |%g.N|
-  00dac:  6676d31e  .long    $6676d31e             |fv..|
-  00db0:  203e9d05  .long    $203e9d05             | >..|
-  00db4:  642f9d9c  .long    $642f9d9c             |d/..|
-  00db8:  6170c8c7  .long    $6170c8c7             |ap..|
-  00dbc:  6676d2df  .long    $6676d2df             |fv..|
-  00dc0:  203e9fcf  .long    $203e9fcf             | >..|
-  00dc4:  6409bff5  .long    $6409bff5             |d...|
-  00dc8:  556dd542  .long    $556dd542             |Um.B|
-  00dcc:  6f74d744  .long    $6f74d744             |ot.D|
-  00dd0:  4676d624  .long    $4676d624             |Fv.$|
-  00dd4:  746ad7d6  .long    $746ad7d6             |tj..|
-  00dd8:  3a238b26  .long    $3a238b26             |:#.&|
-  00ddc:  255bb16d  .long    $255bb16d             |%[.m|
-  00de0:  0003b130  .long    $0003b130             |...0|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00de4:  0003b9a0  .long    $0003b9a0             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00de8:  0003b0e3  .long    $0003b0e3             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00dec:  0003bf2c  .long    $0003bf2c             |...,|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00df0:  0003b762  .long    $0003b762             |...b|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00df4:  0003bf71  .long    $0003bf71             |...q|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00df8:  0003be58  .long    $0003be58             |...X|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00dfc:  0003be40  .long    $0003be40             |...@|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e00:  0003bda7  .long    $0003bda7             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e04:  0003bdc8  .long    $0003bdc8             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e08:  0003bc9e  .long    $0003bc9e             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e0c:  0003bc8d  .long    $0003bc8d             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e10:  0003b740  .long    $0003b740             |...@|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e14:  0003b828  .long    $0003b828             |...(|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e18:  0003b917  .long    $0003b917             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e1c:  0003bb5c  .long    $0003bb5c             |...\|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e20:  0003b81a  .long    $0003b81a             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e24:  0003b111  .long    $0003b111             |....|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e28:  0003bb6c  .long    $0003bb6c             |...l|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e2c:  0003bb7c  .long    $0003bb7c             |...||  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e30:  00024f1f  .long    $00024f1f             |..O.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e34:  00024e18  .long    $00024e18             |..N.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e38:  0002452a  .long    $0002452a             |..E*|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e3c:  00024fcd  .long    $00024fcd             |..O.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e40:  00024570  .long    $00024570             |..Ep|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e44:  000249a8  .long    $000249a8             |..I.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e48:  0002494f  .long    $0002494f             |..IO|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e4c:  00024154  .long    $00024154             |..AT|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e50:  0002430a  .long    $0002430a             |..C.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e54:  00024355  .long    $00024355             |..CU|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e58:  000243fc  .long    $000243fc             |..C.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e5c:  00024264  .long    $00024264             |..Bd|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e60:  00024127  .long    $00024127             |..A'|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e64:  000241c8  .long    $000241c8             |..A.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e68:  0002401e  .long    $0002401e             |..@.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e6c:  0002400d  .long    $0002400d             |..@.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e70:  00024050  .long    $00024050             |..@P|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e74:  00024080  .long    $00024080             |..@.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e78:  0002416b  .long    $0002416b             |..Ak|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e7c:  00024fcc  .long    $00024fcc             |..O.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e80:  00024e9a  .long    $00024e9a             |..N.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e84:  00024235  .long    $00024235             |..B5|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e88:  00024d5c  .long    $00024d5c             |..M\|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e8c:  00024094  .long    $00024094             |..@.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e90:  00024667  .long    $00024667             |..Fg|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e94:  00024258  .long    $00024258             |..BX|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e98:  00024a2e  .long    $00024a2e             |..J.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00e9c:  00024a1d  .long    $00024a1d             |..J.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ea0:  0002452c  .long    $0002452c             |..E,|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ea4:  00024a90  .long    $00024a90             |..J.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ea8:  00024947  .long    $00024947             |..IG|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00eac:  0002452c  .long    $0002452c             |..E,|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00eb0:  0002488a  .long    $0002488a             |..H.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00eb4:  000248d5  .long    $000248d5             |..H.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00eb8:  000257fc  .long    $000257fc             |..W.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ebc:  000257e4  .long    $000257e4             |..W.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ec0:  0002580b  .long    $0002580b             |..X.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ec4:  000256c8  .long    $000256c8             |..V.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ec8:  0002559e  .long    $0002559e             |..U.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ecc:  0002558d  .long    $0002558d             |..U.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ed0:  000259a0  .long    $000259a0             |..Y.|  ; RELOC: unresolved external (symndx 1129 scn=-3) -- not defined in this ACEF image
-  00ed4:  6d63351c  .long    $6d63351c             |mc5.|
-  00ed8:  6f617806  .long    $6f617806             |oax.|
-  00edc:  6c6e37df  .long    $6c6e37df             |ln7.|
-  00ee0:  61763e0e  .long    $61763e0e             |av>.|
-  00ee4:  20273f55  .long    $20273f55             | '?U|
-  00ee8:  627b2f49  .long    $627b2f49             |b{/I|
-  00eec:  73223491  .long    $73223491             |s"4.|
-  00ef0:  747133a3  .long    $747133a3             |tq3.|
-  00ef4:  652235de  .long    $652235de             |e"5.|
-  00ef8:  20763dbb  .long    $20763dbb             | v=.|
-  00efc:  206a308c  .long    $206a308c             | j0.|
-  00f00:  7022366f  .long    $7022366f             |p"6o|
-  00f04:  756c3313  .long    $756c3313             |ul3.|
-  00f08:  2c2227d8  .long    $2c2227d8             |,"'.|
-  00f0c:  696c2219  .long    $696c2219             |il".|
-  00f10:  72226b5a  .long    $72226b5a             |r"kZ|
-  00f14:  257a7a05  .long    $257a7a05             |%zz.|
-  00f18:  686737fc  .long    $686737fc             |hg7.|
-  00f1c:  4d6b3f34  .long    $4d6b3f34             |Mk?4|
-  00f20:  3d22752f  .long    $3d22752f             |="u/|
-  00f24:  2c2238dd  .long    $2c2238dd             |,"8.|
-  00f28:  61721e0f  .long    $61721e0f             |ar..|
-  00f2c:  78226e5d  .long    $78226e5d             |x"n]|
-  00f30:  257a5920  .long    $257a5920             |%zY |
-  00f34:  4d6323a6  .long    $4d6323a6             |Mc#.|
-  00f38:  69702692  .long    $69702692             |ip&.|
-  00f3c:  616e689c  .long    $616e689c             |anh.|
-  00f40:  627b198f  .long    $627b198f             |b{..|
-  00f44:  732250c8  .long    $732250c8             |s"P.|
-  00f48:  20326c2c  .long    $20326c2c             | 2l,|
-  00f4c:  43630308  .long    $43630308             |Cc..|
-  00f50:  42630d2c  .long    $42630d2c             |Bc.,|
-  00f54:  20270a98  .long    $20270a98             | '..|
-  00f58:  64771b37  .long    $64771b37             |dw.7|
-  00f5c:  6e654904  .long    $6e654904             |neI.|
-  00f60:  6e630a74  .long    $6e630a74             |nc.t|
-  00f64:  69740cc0  .long    $69740cc0             |it..|
-  00f68:  72671942  .long    $72671942             |rg.B|
-  00f6c:  65711f76  .long    $65711f76             |eq.v|
-  00f70:  00026bfa  .long    $00026bfa             |..k.|
-  00f74:  00026ba5  .long    $00026ba5             |..k.|
-obj_00f78:
-  00f78:  00026ad0  .long    $00026ad0             |..j.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f7c:  00026af8  .long    $00026af8             |..j.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f80:  000265ab  .long    $000265ab             |..e.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f84:  00026534  .long    $00026534             |..e4|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f88:  00026472  .long    $00026472             |..dr|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f8c:  00026451  .long    $00026451             |..dQ|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f90:  0002679c  .long    $0002679c             |..g.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f94:  000266bc  .long    $000266bc             |..f.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f98:  000261bb  .long    $000261bb             |..a.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00f9c:  00026150  .long    $00026150             |..aP|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00fa0:  0002698a  .long    $0002698a             |..i.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00fa4:  00026a5d  .long    $00026a5d             |..j]|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00fa8:  000269c4  .long    $000269c4             |..i.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-  00fac:  00026918  .long    $00026918             |..i.|  ; RELOC: unresolved external (symndx 1228 scn=-3) -- not defined in this ACEF image
-obj_00fb0:
-  00fb0:  000262e3  .long    $000262e3             |..b.|  ; RELOC: unresolved external (symndx 1258 scn=-3) -- not defined in this ACEF image
-  00fb4:  00026294  .long    $00026294             |..b.|  ; RELOC: unresolved external (symndx 1258 scn=-3) -- not defined in this ACEF image
-  00fb8:  000263ea  .long    $000263ea             |..c.|  ; RELOC: unresolved external (symndx 1258 scn=-3) -- not defined in this ACEF image
-  00fbc:  000263d1  .long    $000263d1             |..c.|  ; RELOC: unresolved external (symndx 1258 scn=-3) -- not defined in this ACEF image
-obj_00fc0:
-  00fc0:  00027fdc  .long    $00027fdc             |....|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fc4:  00027864  .long    $00027864             |..xd|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fc8:  000278b3  .long    $000278b3             |..x.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fcc:  00027b78  .long    $00027b78             |..{x|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fd0:  00027b7e  .long    $00027b7e             |..{~|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fd4:  00027b21  .long    $00027b21             |..{!|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fd8:  00027b88  .long    $00027b88             |..{.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fdc:  00027a10  .long    $00027a10             |..z.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fe0:  00027d53  .long    $00027d53             |..}S|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fe4:  00027b14  .long    $00027b14             |..{.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fe8:  00027aaa  .long    $00027aaa             |..z.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00fec:  00027b79  .long    $00027b79             |..{y|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00ff0:  00027b14  .long    $00027b14             |..{.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00ff4:  00027b94  .long    $00027b94             |..{.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00ff8:  00027863  .long    $00027863             |..xc|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  00ffc:  00027818  .long    $00027818             |..x.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01000:  0002792e  .long    $0002792e             |..y.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01004:  00027911  .long    $00027911             |..y.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01008:  00027144  .long    $00027144             |..qD|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  0100c:  00027014  .long    $00027014             |..p.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01010:  000273df  .long    $000273df             |..s.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01014:  00027310  .long    $00027310             |..s.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  01018:  000272e6  .long    $000272e6             |..r.|  ; RELOC: unresolved external (symndx 1290 scn=-3) -- not defined in this ACEF image
-  0101c:  0002766d  .long    $0002766d             |..vm|
-obj_01020:
-  01020:  00225620  .long    $00225620             |."V |
-  01024:  202256c0  .long    $202256c0             | "V.|
-  01028:  2022591f  .long    $2022591f             | "Y.|
-  0102c:  282a585c  .long    $282a585c             |(*X\|
-  01030:  202250da  .long    $202250da             | "P.|
-  01034:  20225085  .long    $20225085             | "P.|
-  01038:  202253ac  .long    $202253ac             | "S.|
-  0103c:  202253b4  .long    $202253b4             | "S.|
-  01040:  208a62c7  .long    $208a62c7             | .b.|
-  01044:  101262a8  .long    $101262a8             |..b.|
-  01048:  10121dfe  .long    $10121dfe             |....|
-  0104c:  10121ded  .long    $10121ded             |....|
-  01050:  10060824  .long    $10060824             |...$|
-  01054:  04060b74  .long    $04060b74             |...t|
-  01058:  04060a77  .long    $04060a77             |...w|
-  0105c:  10121eac  .long    $10121eac             |....|
-  01060:  1012482b  .long    $1012482b             |..H+|
-  01064:  41434834  .long    $41434834             |ACH4|
-  01068:  0103082d  .long    $0103082d             |...-|
-  0106c:  010308e5  .long    $010308e5             |....|
-  01070:  010309c6  .long    $010309c6             |....|
-  01074:  010309b9  .long    $010309b9             |....|
-  01078:  01030adf  .long    $01030adf             |....|
-  0107c:  10121bfd  .long    $10121bfd             |....|
-  01080:  10124842  .long    $10124842             |..HB|
-  01084:  42404722  .long    $42404722             |B@G"|
-  01088:  020007b5  .long    $020007b5             |....|
-  0108c:  0200067e  .long    $0200067e             |...~|
-  01090:  02000678  .long    $02000678             |...x|
-  01094:  02000627  .long    $02000627             |...'|
-  01098:  0200068e  .long    $0200068e             |....|
-  0109c:  10121704  .long    $10121704             |....|
-  010a0:  20222677  .long    $20222677             | "&w|
-  010a4:  20222698  .long    $20222698             | "&.|
-  010a8:  2022214e  .long    $2022214e             | "!N|
-  010ac:  2022215d  .long    $2022215d             | "!]|
-  010b0:  20222100  .long    $20222100             | "!.|
-  010b4:  202221d0  .long    $202221d0             | "!.|
-  010b8:  202220c7  .long    $202220c7             | " .|
-  010bc:  2022209c  .long    $2022209c             | " .|
-  010c0:  202223ca  .long    $202223ca             | "#.|
-  010c4:  202223d5  .long    $202223d5             | "#.|
-  010c8:  2022220c  .long    $2022220c             | "".|
-  010cc:  20223d44  .long    $20223d44             | "=D|
-  010d0:  20223c67  .long    $20223c67             | "<g|
-  010d4:  20223c98  .long    $20223c98             | "<.|
-  010d8:  20223f7e  .long    $20223f7e             | "?~|
-  010dc:  20223f4d  .long    $20223f4d             | "?M|
-  010e0:  20223f20  .long    $20223f20             | "? |
-  010e4:  20223fc0  .long    $20223fc0             | "?.|
-  010e8:  20223e17  .long    $20223e17             | ">.|
-  010ec:  2022395c  .long    $2022395c             | "9\|
-  010f0:  202239da  .long    $202239da             | "9.|
-  010f4:  20223985  .long    $20223985             | "9.|
-  010f8:  202238ac  .long    $202238ac             | "8.|
-  010fc:  202238b4  .long    $202238b4             | "8.|
-  01100:  20223bf7  .long    $20223bf7             | ";.|
-  01104:  20223b98  .long    $20223b98             | ";.|
-  01108:  20223ace  .long    $20223ace             | ":.|
-  0110c:  20223add  .long    $20223add             | ":.|
-  01110:  20223500  .long    $20223500             | "5.|
-  01114:  20223450  .long    $20223450             | "4P|
-  01118:  20223747  .long    $20223747             | "7G|
-  0111c:  2022379c  .long    $2022379c             | "7.|
-  01120:  2002166a  .long    $2002166a             | ..j|
+  0000:  426f6775  |Bogu|
+  0004:  73000000  |s...|
+  0008:  00000800  |....|  ; -> .text $0224c
+  000c:  00000848  |...H|  ; -> .text $02294
+  0010:  00000890  |....|  ; -> .text $022dc
+  0014:  000008c0  |....|  ; -> .text $0230c
+  0018:  00000908  |....|  ; -> .text $02354
+  001c:  00000944  |...D|  ; -> .text $02390
+  0020:  00000974  |...t|  ; -> .text $023c0
+  0024:  000009a4  |....|  ; -> .text $023f0
+  0028:  00000a84  |....|  ; -> .text $024d0
+  002c:  00000b24  |...$|  ; -> .text $02570
+  0030:  00000bc4  |....|  ; -> .text $02610
+  0034:  00000c38  |...8|  ; -> .text $02684
+  0038:  00000cd8  |....|  ; -> .text $02724
+  003c:  00000d5c  |...\|  ; -> .text $027a8
+  0040:  00000dd0  |....|  ; -> .text $0281c
+  0044:  00000e44  |...D|  ; -> .text $02890
+  0048:  00000f34  |...4|  ; -> .text $02980
+  004c:  00000f84  |....|  ; -> .text $029d0
+  0050:  00000fec  |....|  ; -> .text $02a38
+  0054:  0000103c  |...<|  ; -> .text $02a88
+  0058:  000010a4  |....|  ; -> .text $02af0
+  005c:  00001100  |....|  ; -> .text $02b4c
+  0060:  00001130  |...0|  ; -> .text $02b7c
+  0064:  0000118c  |....|  ; -> .text $02bd8
+  0068:  000012f8  |....|  ; -> .text $02d44
+  006c:  00001304  |....|  ; -> .text $02d50
+  0070:  00001310  |....|  ; -> .text $02d5c
+  0074:  0000131c  |....|  ; -> .text $02d68
+  0078:  000017b4  |....|  ; -> .text $03200
+  007c:  00001794  |....|  ; -> .text $031e0
+  0080:  00001774  |...t|  ; -> .text $031c0
+  0084:  00001754  |...T|  ; -> .text $031a0
+  0088:  00001734  |...4|  ; -> .text $03180
+  008c:  00001714  |....|  ; -> .text $03160
+  0090:  000016f4  |....|  ; -> .text $03140
+  0094:  00002360  |..#`|  ; -> .text $03dac
+  0098:  00002350  |..#P|  ; -> .text $03d9c
+  009c:  00002340  |..#@|  ; -> .text $03d8c
+  00a0:  00002330  |..#0|  ; -> .text $03d7c
+  00a4:  00002320  |..# |  ; -> .text $03d6c
+  00a8:  00002310  |..#.|  ; -> .text $03d5c
+  00ac:  00002300  |..#.|  ; -> .text $03d4c
+  00b0:  000022f0  |..".|  ; -> .text $03d3c
+  00b4:  000022e0  |..".|  ; -> .text $03d2c
+  00b8:  000022d0  |..".|  ; -> .text $03d1c
+  00bc:  000022c0  |..".|  ; -> .text $03d0c
+  00c0:  000022b0  |..".|  ; -> .text $03cfc
+  00c4:  000022a0  |..".|  ; -> .text $03cec
+  00c8:  00002290  |..".|  ; -> .text $03cdc
+  00cc:  00002280  |..".|  ; -> .text $03ccc
+  00d0:  49546162  |ITab|
+  00d4:  4d617463  |Matc|
+  00d8:  683a2049  |h: I|
+  00dc:  6e766572  |nver|
+  00e0:  73652054  |se T|
+  00e4:  61626c65  |able|
+  00e8:  20697320  | is |
+  00ec:  6e6f7420  |not |
+  00f0:  75702d74  |up-t|
+  00f4:  6f2d6461  |o-da|
+  00f8:  74650000  |te..|
+  00fc:  00000000  |....|
+  0100:  42697473  |Bits|
+  0104:  546f5069  |ToPi|
+  0108:  783a2078  |x: x|
+  010c:  6d20706f  |m po|
+  0110:  696e7473  |ints|
+  0114:  20746f20  | to |
+  0118:  6120706f  |a po|
+  011c:  72745069  |rtPi|
+  0120:  784d6170  |xMap|
+  0124:  00000000  |....|
+  0128:  00000560  |...`|  ; -> .text $0710c
+  012c:  00000570  |...p|  ; -> .text $0711c
+  0130:  000007b0  |....|  ; -> .text $0735c
+  0134:  00000580  |....|  ; -> .text $0712c
+  0138:  000007b0  |....|  ; -> .text $0735c
+  013c:  000007b0  |....|  ; -> .text $0735c
+  0140:  000007b0  |....|  ; -> .text $0735c
+  0144:  00000590  |....|  ; -> .text $0713c
+  0148:  000007b0  |....|  ; -> .text $0735c
+  014c:  000007b0  |....|  ; -> .text $0735c
+  0150:  000007b0  |....|  ; -> .text $0735c
+  0154:  000007b0  |....|  ; -> .text $0735c
+  0158:  000007b0  |....|  ; -> .text $0735c
+  015c:  000007b0  |....|  ; -> .text $0735c
+  0160:  000007b0  |....|  ; -> .text $0735c
+  0164:  000005a0  |....|  ; -> .text $0714c
+  0168:  00000640  |...@|  ; -> .text $071ec
+  016c:  00000650  |...P|  ; -> .text $071fc
+  0170:  000007b0  |....|  ; -> .text $0735c
+  0174:  00000660  |...`|  ; -> .text $0720c
+  0178:  000007b0  |....|  ; -> .text $0735c
+  017c:  000007b0  |....|  ; -> .text $0735c
+  0180:  000007b0  |....|  ; -> .text $0735c
+  0184:  00000670  |...p|  ; -> .text $0721c
+  0188:  000007b0  |....|  ; -> .text $0735c
+  018c:  000007b0  |....|  ; -> .text $0735c
+  0190:  000007b0  |....|  ; -> .text $0735c
+  0194:  000007b0  |....|  ; -> .text $0735c
+  0198:  000007b0  |....|  ; -> .text $0735c
+  019c:  000007b0  |....|  ; -> .text $0735c
+  01a0:  000007b0  |....|  ; -> .text $0735c
+  01a4:  00000680  |....|  ; -> .text $0722c
+  01a8:  00000a20  |... |  ; -> .text $075cc
+  01ac:  00000718  |....|  ; -> .text $072c4
+  01b0:  000007b0  |....|  ; -> .text $0735c
+  01b4:  00000730  |...0|  ; -> .text $072dc
+  01b8:  000009a0  |....|  ; -> .text $0754c
+  01bc:  000009b0  |....|  ; -> .text $0755c
+  01c0:  000009f0  |....|  ; -> .text $0759c
+  01c4:  000009c0  |....|  ; -> .text $0756c
+  01c8:  000009f0  |....|  ; -> .text $0759c
+  01cc:  000009f0  |....|  ; -> .text $0759c
+  01d0:  000009f0  |....|  ; -> .text $0759c
+  01d4:  000009d0  |....|  ; -> .text $0757c
+  01d8:  000009f0  |....|  ; -> .text $0759c
+  01dc:  000009f0  |....|  ; -> .text $0759c
+  01e0:  000009f0  |....|  ; -> .text $0759c
+  01e4:  000009f0  |....|  ; -> .text $0759c
+  01e8:  000009f0  |....|  ; -> .text $0759c
+  01ec:  000009f0  |....|  ; -> .text $0759c
+  01f0:  000009f0  |....|  ; -> .text $0759c
+  01f4:  000009e0  |....|  ; -> .text $0758c
+  01f8:  00000cc8  |....|  ; -> .text $082a0
+  01fc:  00000cc8  |....|  ; -> .text $082a0
+  0200:  00000cd0  |....|  ; -> .text $082a8
+  0204:  00000cd8  |....|  ; -> .text $082b0
+  0208:  00000ce0  |....|  ; -> .text $082b8
+  020c:  00000ce8  |....|  ; -> .text $082c0
+  0210:  00000cf0  |....|  ; -> .text $082c8
+  0214:  00000cf8  |....|  ; -> .text $082d0
+  0218:  00000d00  |....|  ; -> .text $082d8
+  021c:  00000d08  |....|  ; -> .text $082e0
+  0220:  00000d10  |....|  ; -> .text $082e8
+  0224:  00000000  |....|
+  0228:  00000274  |...t|  ; -> .text $08888
+  022c:  00000274  |...t|  ; -> .text $08888
+  0230:  00000274  |...t|  ; -> .text $08888
+  0234:  000002a4  |....|  ; -> .text $088b8
+  0238:  00000274  |...t|  ; -> .text $08888
+  023c:  000002c8  |....|  ; -> .text $088dc
+  0240:  0000142c  |...,|  ; -> .text $09a40
+  0244:  0000142c  |...,|  ; -> .text $09a40
+  0248:  0000142c  |...,|  ; -> .text $09a40
+  024c:  0000144c  |...L|  ; -> .text $09a60
+  0250:  0000142c  |...,|  ; -> .text $09a40
+  0254:  0000146c  |...l|  ; -> .text $09a80
+  0258:  000015d8  |....|  ; -> .text $09bec
+  025c:  000015d8  |....|  ; -> .text $09bec
+  0260:  000015d8  |....|  ; -> .text $09bec
+  0264:  000015d8  |....|  ; -> .text $09bec
+  0268:  00001488  |....|  ; -> .text $09a9c
+  026c:  00001488  |....|  ; -> .text $09a9c
+  0270:  00001488  |....|  ; -> .text $09a9c
+  0274:  000014a8  |....|  ; -> .text $09abc
+  0278:  00001488  |....|  ; -> .text $09a9c
+  027c:  000014c8  |....|  ; -> .text $09adc
+  0280:  000014e4  |....|  ; -> .text $09af8
+  0284:  000014e4  |....|  ; -> .text $09af8
+  0288:  000014e4  |....|  ; -> .text $09af8
+  028c:  00001508  |....|  ; -> .text $09b1c
+  0290:  000014e4  |....|  ; -> .text $09af8
+  0294:  0000152c  |...,|  ; -> .text $09b40
+  0298:  000015d8  |....|  ; -> .text $09bec
+  029c:  000015d8  |....|  ; -> .text $09bec
+  02a0:  000015d8  |....|  ; -> .text $09bec
+  02a4:  000015d8  |....|  ; -> .text $09bec
+  02a8:  0000154c  |...L|  ; -> .text $09b60
+  02ac:  0000154c  |...L|  ; -> .text $09b60
+  02b0:  0000154c  |...L|  ; -> .text $09b60
+  02b4:  00001570  |...p|  ; -> .text $09b84
+  02b8:  0000154c  |...L|  ; -> .text $09b60
+  02bc:  00001594  |....|  ; -> .text $09ba8
+  02c0:  44726177  |Draw|
+  02c4:  4d756c74  |Mult|
+  02c8:  694f626a  |iObj|
+  02cc:  6563742f  |ect/|
+  02d0:  6f705768  |opWh|
+  02d4:  69635061  |icPa|
+  02d8:  743a2063  |t: c|
+  02dc:  616e2774  |an't|
+  02e0:  20676574  | get|
+  02e4:  20612050  | a P|
+  02e8:  61747465  |atte|
+  02ec:  726e4361  |rnCa|
+  02f0:  63686545  |cheE|
+  02f4:  6e747279  |ntry|
+  02f8:  20666f72  | for|
+  02fc:  20706174  | pat|
+  0300:  7465726e  |tern|
+  0304:  00000000  |....|
+  0308:  44726177  |Draw|
+  030c:  4d756c74  |Mult|
+  0310:  694f626a  |iObj|
+  0314:  6563742f  |ect/|
+  0318:  6f705768  |opWh|
+  031c:  69636850  |ichP|
+  0320:  61743a20  |at: |
+  0324:  63616e27  |can'|
+  0328:  74206669  |t fi|
+  032c:  6e642050  |nd P|
+  0330:  69785061  |ixPa|
+  0334:  7420696e  |t in|
+  0338:  20636163  | cac|
+  033c:  68650000  |he..|
+  0340:  44726177  |Draw|
+  0344:  4d756c74  |Mult|
+  0348:  694f626a  |iObj|
+  034c:  6563742f  |ect/|
+  0350:  6f705768  |opWh|
+  0354:  69636850  |ichP|
+  0358:  61743a20  |at: |
+  035c:  63616e27  |can'|
+  0360:  74206765  |t ge|
+  0364:  74206120  |t a |
+  0368:  52474250  |RGBP|
+  036c:  61744361  |atCa|
+  0370:  63686545  |cheE|
+  0374:  6e747279  |ntry|
+  0378:  20666f72  | for|
+  037c:  20524742  | RGB|
+  0380:  20506174  | Pat|
+  0384:  7465726e  |tern|
+  0388:  00000000  |....|
+  038c:  44726177  |Draw|
+  0390:  4d756c74  |Mult|
+  0394:  694f626a  |iObj|
+  0398:  6563742f  |ect/|
+  039c:  6f705377  |opSw|
+  03a0:  6170466f  |apFo|
+  03a4:  6e743a20  |nt: |
+  03a8:  77696474  |widt|
+  03ac:  68207461  |h ta|
+  03b0:  626c6520  |ble |
+  03b4:  6973206e  |is n|
+  03b8:  6f742069  |ot i|
+  03bc:  6e207468  |n th|
+  03c0:  65206361  |e ca|
+  03c4:  63686500  |che.|
+  03c8:  44726177  |Draw|
+  03cc:  4d756c74  |Mult|
+  03d0:  694f626a  |iObj|
+  03d4:  6563742f  |ect/|
+  03d8:  6f705377  |opSw|
+  03dc:  6170466f  |apFo|
+  03e0:  6e743a20  |nt: |
+  03e4:  77696474  |widt|
+  03e8:  6820666f  |h fo|
+  03ec:  6e742069  |nt i|
+  03f0:  73206e6f  |s no|
+  03f4:  7420696e  |t in|
+  03f8:  20636163  | cac|
+  03fc:  68650000  |he..|
+  0400:  44726177  |Draw|
+  0404:  4d756c74  |Mult|
+  0408:  694f626a  |iObj|
+  040c:  6563742f  |ect/|
+  0410:  6f705377  |opSw|
+  0414:  6170466f  |apFo|
+  0418:  6e743a20  |nt: |
+  041c:  666f6e74  |font|
+  0420:  20697320  | is |
+  0424:  6e6f7420  |not |
+  0428:  63616368  |cach|
+  042c:  65000000  |e...|
+  0430:  44726177  |Draw|
+  0434:  4d756c74  |Mult|
+  0438:  694f626a  |iObj|
+  043c:  6563743a  |ect:|
+  0440:  20756e6b  | unk|
+  0444:  6e6f776e  |nown|
+  0448:  206f7043  | opC|
+  044c:  6f646520  |ode |
+  0450:  25640a00  |%d..|
+  0454:  00002044  |.. D|  ; -> .text $0cd58
+  0458:  00002044  |.. D|  ; -> .text $0cd58
+  045c:  00002044  |.. D|  ; -> .text $0cd58
+  0460:  00002078  |.. x|  ; -> .text $0cd8c
+  0464:  00002044  |.. D|  ; -> .text $0cd58
+  0468:  0000209c  |.. .|  ; -> .text $0cdb0
+  046c:  000021fc  |..!.|  ; -> .text $0cf10
+  0470:  000021fc  |..!.|  ; -> .text $0cf10
+  0474:  000021fc  |..!.|  ; -> .text $0cf10
+  0478:  00002230  |.."0|  ; -> .text $0cf44
+  047c:  000021fc  |..!.|  ; -> .text $0cf10
+  0480:  00002254  |.."T|  ; -> .text $0cf68
+  0484:  0000109c  |....|  ; -> .text $0bdb0
+  0488:  00002cb0  |..,.|  ; -> .text $0d9c4
+  048c:  00002cb0  |..,.|  ; -> .text $0d9c4
+  0490:  00002cb0  |..,.|  ; -> .text $0d9c4
+  0494:  00001a40  |...@|  ; -> .text $0c754
+  0498:  00000eb0  |....|  ; -> .text $0bbc4
+  049c:  0000062c  |...,|  ; -> .text $0b340
+  04a0:  00000eb0  |....|  ; -> .text $0bbc4
+  04a4:  00000870  |...p|  ; -> .text $0b584
+  04a8:  00001084  |....|  ; -> .text $0bd98
+  04ac:  00000514  |....|  ; -> .text $0b228
+  04b0:  00000e68  |...h|  ; -> .text $0bb7c
+  04b4:  000009c4  |....|  ; -> .text $0b6d8
+  04b8:  00000a18  |....|  ; -> .text $0b72c
+  04bc:  00000ac0  |....|  ; -> .text $0b7d4
+  04c0:  00000a74  |...t|  ; -> .text $0b788
+  04c4:  00000aa4  |....|  ; -> .text $0b7b8
+  04c8:  00002e28  |...(|  ; -> .text $111bc
+  04cc:  00002e34  |...4|  ; -> .text $111c8
+  04d0:  00002e40  |...@|  ; -> .text $111d4
+  04d4:  00002e4c  |...L|  ; -> .text $111e0
+  04d8:  00002e58  |...X|  ; -> .text $111ec
+  04dc:  00002e64  |...d|  ; -> .text $111f8
+  04e0:  00002e70  |...p|  ; -> .text $11204
+  04e4:  00002e7c  |...||  ; -> .text $11210
+  04e8:  00002ec0  |....|  ; -> .text $11254
+  04ec:  00002ecc  |....|  ; -> .text $11260
+  04f0:  00002ed8  |....|  ; -> .text $1126c
+  04f4:  00002ee4  |....|  ; -> .text $11278
+  04f8:  00002ef0  |....|  ; -> .text $11284
+  04fc:  00002efc  |....|  ; -> .text $11290
+  0500:  00002f08  |../.|  ; -> .text $1129c
+  0504:  00002f14  |../.|  ; -> .text $112a8
+  0508:  00002f38  |../8|  ; -> .text $112cc
+  050c:  00002f44  |../D|  ; -> .text $112d8
+  0510:  00002f50  |../P|  ; -> .text $112e4
+  0514:  00002f5c  |../\|  ; -> .text $112f0
+  0518:  00002f68  |../h|  ; -> .text $112fc
+  051c:  00002f74  |../t|  ; -> .text $11308
+  0520:  00002f80  |../.|  ; -> .text $11314
+  0524:  00002f8c  |../.|  ; -> .text $11320
+  0528:  00002fe8  |../.|  ; -> .text $1137c
+  052c:  0000300c  |..0.|  ; -> .text $113a0
+  0530:  00003018  |..0.|  ; -> .text $113ac
+  0534:  00003024  |..0$|  ; -> .text $113b8
+  0538:  00003048  |..0H|  ; -> .text $113dc
+  053c:  00003074  |..0t|  ; -> .text $11408
+  0540:  00003080  |..0.|  ; -> .text $11414
+  0544:  0000308c  |..0.|  ; -> .text $11420
+  0548:  44697370  |Disp|
+  054c:  6f73654f  |oseO|
+  0550:  66667363  |ffsc|
+  0554:  7265656e  |reen|
+  0558:  3a204e55  |: NU|
+  055c:  4c4c206f  |LL o|
+  0560:  66667363  |ffsc|
+  0564:  7265656e  |reen|
+  0568:  2048616e  | Han|
+  056c:  646c6500  |dle.|
+  0570:  466c7573  |Flus|
+  0574:  684f6666  |hOff|
+  0578:  73637265  |scre|
+  057c:  656e3a20  |en: |
+  0580:  4e554c4c  |NULL|
+  0584:  206f6666  | off|
+  0588:  73637265  |scre|
+  058c:  656e2048  |en H|
+  0590:  616e646c  |andl|
+  0594:  65000000  |e...|
+  0598:  466c7573  |Flus|
+  059c:  68436f6c  |hCol|
+  05a0:  6f725461  |orTa|
+  05a4:  626c653a  |ble:|
+  05a8:  204e554c  | NUL|
+  05ac:  4c20636f  |L co|
+  05b0:  6c6f7220  |lor |
+  05b4:  7461626c  |tabl|
+  05b8:  65204861  |e Ha|
+  05bc:  6e646c65  |ndle|
+  05c0:  00000000  |....|
+  05c4:  43616368  |Cach|
+  05c8:  65474465  |eGDe|
+  05cc:  76696365  |vice|
+  05d0:  3a204e55  |: NU|
+  05d4:  4c4c2047  |LL G|
+  05d8:  44657669  |Devi|
+  05dc:  63650000  |ce..|
+  05e0:  43616368  |Cach|
+  05e4:  65506978  |ePix|
+  05e8:  5061743a  |Pat:|
+  05ec:  204e554c  | NUL|
+  05f0:  4c205069  |L Pi|
+  05f4:  78506174  |xPat|
+  05f8:  48616e64  |Hand|
+  05fc:  6c650000  |le..|
+  0600:  466c7573  |Flus|
+  0604:  68474465  |hGDe|
+  0608:  76696365  |vice|
+  060c:  3a204e55  |: NU|
+  0610:  4c4c2047  |LL G|
+  0614:  44657669  |Devi|
+  0618:  63650000  |ce..|
+  061c:  466c7573  |Flus|
+  0620:  68506978  |hPix|
+  0624:  5061743a  |Pat:|
+  0628:  204e554c  | NUL|
+  062c:  4c205069  |L Pi|
+  0630:  78506174  |xPat|
+  0634:  48616e64  |Hand|
+  0638:  6c650000  |le..|
+  063c:  43616368  |Cach|
+  0640:  65207374  |e st|
+  0644:  696c6c20  |ill |
+  0648:  62757379  |busy|
+  064c:  2c206361  |, ca|
+  0650:  63686554  |cheT|
+  0654:  79706520  |ype |
+  0658:  3d202564  |= %d|
+  065c:  2c206361  |, ca|
+  0660:  63686520  |che |
+  0664:  3d20256c  |= %l|
+  0668:  780a0000  |x...|
+  066c:  50514449  |PQDI|
+  0670:  6e69743a  |nit:|
+  0674:  20556e61  | Una|
+  0678:  626c6520  |ble |
+  067c:  746f2061  |to a|
+  0680:  6c6c6f63  |lloc|
+  0684:  61746520  |ate |
+  0688:  6d656761  |mega|
+  068c:  20627566  | buf|
+  0690:  66657200  |fer.|
+  0694:  50514441  |PQDA|
+  0698:  6c6c6f63  |lloc|
+  069c:  3a206e75  |: nu|
+  06a0:  6d427974  |mByt|
+  06a4:  65732069  |es i|
+  06a8:  73206e6f  |s no|
+  06ac:  74206d75  |t mu|
+  06b0:  6c746970  |ltip|
+  06b4:  6c65206f  |le o|
+  06b8:  66204c4f  |f LO|
+  06bc:  4e470000  |NG..|
+  06c0:  50514441  |PQDA|
+  06c4:  6c6c6f63  |lloc|
+  06c8:  3a20696c  |: il|
+  06cc:  6c656761  |lega|
+  06d0:  6c206e75  |l nu|
+  06d4:  6d427974  |mByt|
+  06d8:  6573203d  |es =|
+  06dc:  2025640a  | %d.|
+  06e0:  00000000  |....|
+  06e4:  50514441  |PQDA|
+  06e8:  6c6c6f63  |lloc|
+  06ec:  3a206d61  |: ma|
+  06f0:  78656420  |xed |
+  06f4:  6f757420  |out |
+  06f8:  6f6e206e  |on n|
+  06fc:  756d6265  |umbe|
+  0700:  72206f66  |r of|
+  0704:  206d6567  | meg|
+  0708:  61206275  |a bu|
+  070c:  66666572  |ffer|
+  0710:  73206175  |s au|
+  0714:  74686f72  |thor|
+  0718:  697a6564  |ized|
+  071c:  00000000  |....|
+  0720:  50514441  |PQDA|
+  0724:  6c6c6f63  |lloc|
+  0728:  3a20556e  |: Un|
+  072c:  61626c65  |able|
+  0730:  20746f20  | to |
+  0734:  616c6c6f  |allo|
+  0738:  63617465  |cate|
+  073c:  20657874  | ext|
+  0740:  7261206d  |ra m|
+  0744:  65676120  |ega |
+  0748:  62756666  |buff|
+  074c:  65722c20  |er, |
+  0750:  73697a65  |size|
+  0754:  203d2030  | = 0|
+  0758:  7825780a  |x%x.|
+  075c:  00000000  |....|
+  0760:  00002d38  |..-8|  ; -> .text $16c88
+  0764:  00002d50  |..-P|  ; -> .text $16ca0
+  0768:  00002d78  |..-x|  ; -> .text $16cc8
+  076c:  00002d80  |..-.|  ; -> .text $16cd0
+  0770:  00003154  |..1T|  ; -> .text $170a4
+  0774:  0000315c  |..1\|  ; -> .text $170ac
+  0778:  00003164  |..1d|  ; -> .text $170b4
+  077c:  0000316c  |..1l|  ; -> .text $170bc
+  0780:  00003174  |..1t|  ; -> .text $170c4
+  0784:  0000317c  |..1||  ; -> .text $170cc
+  0788:  00003184  |..1.|  ; -> .text $170d4
+  078c:  000032dc  |..2.|  ; -> .text $1722c
+  0790:  000032d4  |..2.|  ; -> .text $17224
+  0794:  000032cc  |..2.|  ; -> .text $1721c
+  0798:  000032c4  |..2.|  ; -> .text $17214
+  079c:  000032bc  |..2.|  ; -> .text $1720c
+  07a0:  000032b4  |..2.|  ; -> .text $17204
+  07a4:  000032ac  |..2.|  ; -> .text $171fc
+  07a8:  000033dc  |..3.|  ; -> .text $1732c
+  07ac:  000033e4  |..3.|  ; -> .text $17334
+  07b0:  000033ec  |..3.|  ; -> .text $1733c
+  07b4:  000033f4  |..3.|  ; -> .text $17344
+  07b8:  000033fc  |..3.|  ; -> .text $1734c
+  07bc:  00003404  |..4.|  ; -> .text $17354
+  07c0:  0000340c  |..4.|  ; -> .text $1735c
+  07c4:  00003578  |..5x|  ; -> .text $174c8
+  07c8:  00003570  |..5p|  ; -> .text $174c0
+  07cc:  00003568  |..5h|  ; -> .text $174b8
+  07d0:  00003560  |..5`|  ; -> .text $174b0
+  07d4:  00003558  |..5X|  ; -> .text $174a8
+  07d8:  00003550  |..5P|  ; -> .text $174a0
+  07dc:  00003548  |..5H|  ; -> .text $17498
+  07e0:  000005c0  |....|  ; -> .text $17abc
+  07e4:  00000640  |...@|  ; -> .text $17b3c
+  07e8:  00000664  |...d|  ; -> .text $17b60
+  07ec:  00000688  |....|  ; -> .text $17b84
+  07f0:  000006ac  |....|  ; -> .text $17ba8
+  07f4:  000006d0  |....|  ; -> .text $17bcc
+  07f8:  0000088c  |....|  ; -> .text $1a62c
+  07fc:  0000092c  |...,|  ; -> .text $1a6cc
+  0800:  000009cc  |....|  ; -> .text $1a76c
+  0804:  00000a40  |...@|  ; -> .text $1a7e0
+  0808:  00000ae0  |....|  ; -> .text $1a880
+  080c:  00000b64  |...d|  ; -> .text $1a904
+  0810:  00000bd8  |....|  ; -> .text $1a978
+  0814:  00000c4c  |...L|  ; -> .text $1a9ec
+  0818:  00000d2c  |...,|  ; -> .text $1aacc
+  081c:  00000d80  |....|  ; -> .text $1ab20
+  0820:  00000dd4  |....|  ; -> .text $1ab74
+  0824:  00000e00  |....|  ; -> .text $1aba0
+  0828:  00000e54  |...T|  ; -> .text $1abf4
+  082c:  00000e8c  |....|  ; -> .text $1ac2c
+  0830:  00000eb8  |....|  ; -> .text $1ac58
+  0834:  00000ee4  |....|  ; -> .text $1ac84
+  0838:  00000f78  |...x|  ; -> .text $1ad18
+  083c:  00000fd4  |....|  ; -> .text $1ad74
+  0840:  00001030  |...0|  ; -> .text $1add0
+  0844:  00001060  |...`|  ; -> .text $1ae00
+  0848:  000010bc  |....|  ; -> .text $1ae5c
+  084c:  000010fc  |....|  ; -> .text $1ae9c
+  0850:  0000112c  |...,|  ; -> .text $1aecc
+  0854:  0000115c  |...\|  ; -> .text $1aefc
+  0858:  00001200  |....|  ; -> .text $1afa0
+  085c:  0000122c  |...,|  ; -> .text $1afcc
+  0860:  00001264  |...d|  ; -> .text $1b004
+  0864:  00001290  |....|  ; -> .text $1b030
+  0868:  000012c8  |....|  ; -> .text $1b068
+  086c:  00001300  |....|  ; -> .text $1b0a0
+  0870:  00001344  |...D|  ; -> .text $1b0e4
+  0874:  0000137c  |...||  ; -> .text $1b11c
+  0878:  00001500  |....|  ; -> .text $1b2a0
+  087c:  0000150c  |....|  ; -> .text $1b2ac
+  0880:  00001518  |....|  ; -> .text $1b2b8
+  0884:  00001524  |...$|  ; -> .text $1b2c4
+  0888:  00001cc8  |....|  ; -> .text $1ba68
+  088c:  00001cb8  |....|  ; -> .text $1ba58
+  0890:  00001ca8  |....|  ; -> .text $1ba48
+  0894:  00001c98  |....|  ; -> .text $1ba38
+  0898:  00001c88  |....|  ; -> .text $1ba28
+  089c:  00001c78  |...x|  ; -> .text $1ba18
+  08a0:  00001c68  |...h|  ; -> .text $1ba08
+  08a4:  00001c58  |...X|  ; -> .text $1b9f8
+  08a8:  00001c48  |...H|  ; -> .text $1b9e8
+  08ac:  00001c38  |...8|  ; -> .text $1b9d8
+  08b0:  00001c28  |...(|  ; -> .text $1b9c8
+  08b4:  00001c18  |....|  ; -> .text $1b9b8
+  08b8:  00001c08  |....|  ; -> .text $1b9a8
+  08bc:  00001bf8  |....|  ; -> .text $1b998
+  08c0:  00001be8  |....|  ; -> .text $1b988
+  08c4:  00002a8c  |..*.|  ; -> .text $1c82c
+  08c8:  00002a7c  |..*||  ; -> .text $1c81c
+  08cc:  00002a6c  |..*l|  ; -> .text $1c80c
+  08d0:  00002a5c  |..*\|  ; -> .text $1c7fc
+  08d4:  00002a4c  |..*L|  ; -> .text $1c7ec
+  08d8:  00002a3c  |..*<|  ; -> .text $1c7dc
+  08dc:  00002a2c  |..*,|  ; -> .text $1c7cc
+  08e0:  00002a1c  |..*.|  ; -> .text $1c7bc
+  08e4:  00002a0c  |..*.|  ; -> .text $1c7ac
+  08e8:  000029fc  |..).|  ; -> .text $1c79c
+  08ec:  000029ec  |..).|  ; -> .text $1c78c
+  08f0:  000029dc  |..).|  ; -> .text $1c77c
+  08f4:  000029cc  |..).|  ; -> .text $1c76c
+  08f8:  000029bc  |..).|  ; -> .text $1c75c
+  08fc:  000029ac  |..).|  ; -> .text $1c74c
+  0900:  5363616c  |Scal|
+  0904:  65426c74  |eBlt|
+  0908:  2f736349  |/scI|
+  090c:  6e646578  |ndex|
+  0910:  546f416e  |ToAn|
+  0914:  793a2075  |y: u|
+  0918:  6e737570  |nsup|
+  091c:  706f7274  |port|
+  0920:  65642064  |ed d|
+  0924:  73745368  |stSh|
+  0928:  69667420  |ift |
+  092c:  3d202564  |= %d|
+  0930:  0a000000  |....|
+  0934:  5363616c  |Scal|
+  0938:  65426c74  |eBlt|
+  093c:  3a20756e  |: un|
+  0940:  6b6e6f77  |know|
+  0944:  6e207363  |n sc|
+  0948:  616c654e  |aleN|
+  094c:  756d203d  |um =|
+  0950:  2025640a  | %d.|
+  0954:  00000000  |....|
+  0958:  00000044  |...D|  ; -> .text $22acc
+  095c:  000004f4  |....|  ; -> .text $22f7c
+  0960:  00000070  |...p|  ; -> .text $22af8
+  0964:  00000054  |...T|  ; -> .text $22adc
+  0968:  000004f4  |....|  ; -> .text $22f7c
+  096c:  000004f4  |....|  ; -> .text $22f7c
+  0970:  000004f4  |....|  ; -> .text $22f7c
+  0974:  000004f4  |....|  ; -> .text $22f7c
+  0978:  00000064  |...d|  ; -> .text $22aec
+  097c:  000004f4  |....|  ; -> .text $22f7c
+  0980:  00000064  |...d|  ; -> .text $22aec
+  0984:  000004f4  |....|  ; -> .text $22f7c
+  0988:  000004f4  |....|  ; -> .text $22f7c
+  098c:  000004f4  |....|  ; -> .text $22f7c
+  0990:  000004f4  |....|  ; -> .text $22f7c
+  0994:  000004f4  |....|  ; -> .text $22f7c
+  0998:  000004f4  |....|  ; -> .text $22f7c
+  099c:  000004f4  |....|  ; -> .text $22f7c
+  09a0:  000004f4  |....|  ; -> .text $22f7c
+  09a4:  000004f4  |....|  ; -> .text $22f7c
+  09a8:  000004f4  |....|  ; -> .text $22f7c
+  09ac:  000004f4  |....|  ; -> .text $22f7c
+  09b0:  000004f4  |....|  ; -> .text $22f7c
+  09b4:  000004f4  |....|  ; -> .text $22f7c
+  09b8:  000004cc  |....|  ; -> .text $22f54
+  09bc:  000004a4  |....|  ; -> .text $22f2c
+  09c0:  0000047c  |...||  ; -> .text $22f04
+  09c4:  0000044c  |...L|  ; -> .text $22ed4
+  09c8:  0000041c  |....|  ; -> .text $22ea4
+  09cc:  000003f0  |....|  ; -> .text $22e78
+  09d0:  00000514  |....|  ; -> .text $22f9c
+  09d4:  00000550  |...P|  ; -> .text $22fd8
+  09d8:  00000580  |....|  ; -> .text $23008
+  09dc:  000005e0  |....|  ; -> .text $23068
+  09e0:  000003a0  |....|  ; -> .text $22e28
+  09e4:  000003d0  |....|  ; -> .text $22e58
+  09e8:  000003d0  |....|  ; -> .text $22e58
+  09ec:  000003ac  |....|  ; -> .text $22e34
+  09f0:  000003b8  |....|  ; -> .text $22e40
+  09f4:  000003c4  |....|  ; -> .text $22e4c
+  09f8:  47657453  |GetS|
+  09fc:  65656b3a  |eek:|
+  0a00:  20696e76  | inv|
+  0a04:  616c6964  |alid|
+  0a08:  20726563  | rec|
+  0a0c:  74466c61  |tFla|
+  0a10:  6720666f  |g fo|
+  0a14:  72207365  |r se|
+  0a18:  656b4d61  |ekMa|
+  0a1c:  736b203d  |sk =|
+  0a20:  2025640a  | %d.|
+  0a24:  00000000  |....|
+  0a28:  00000390  |....|  ; -> .text $256e0
+  0a2c:  0000039c  |....|  ; -> .text $256ec
+  0a30:  000003a8  |....|  ; -> .text $256f8
+  0a34:  000003b4  |....|  ; -> .text $25704
+  0a38:  000003c0  |....|  ; -> .text $25710
+  0a3c:  000003f0  |....|  ; -> .text $25740
+  0a40:  000003fc  |....|  ; -> .text $2574c
+  0a44:  00000408  |....|  ; -> .text $25758
+  0a48:  00000414  |....|  ; -> .text $25764
+  0a4c:  00000420  |... |  ; -> .text $25770
+  0a50:  0000042c  |...,|  ; -> .text $2577c
+  0a54:  00000470  |...p|  ; -> .text $257c0
+  0a58:  0000047c  |...||  ; -> .text $257cc
+  0a5c:  00000488  |....|  ; -> .text $257d8
+  0a60:  00000494  |....|  ; -> .text $257e4
+  0a64:  00000448  |...H|  ; -> .text $25798
+  0a68:  00000448  |...H|  ; -> .text $25798
+  0a6c:  000004a0  |....|  ; -> .text $257f0
+  0a70:  000004a0  |....|  ; -> .text $257f0
+  0a74:  00000448  |...H|  ; -> .text $25798
+  0a78:  00000448  |...H|  ; -> .text $25798
+  0a7c:  00000448  |...H|  ; -> .text $25798
+  0a80:  00000448  |...H|  ; -> .text $25798
+  0a84:  00000448  |...H|  ; -> .text $25798
+  0a88:  00000448  |...H|  ; -> .text $25798
+  0a8c:  000004ac  |....|  ; -> .text $257fc
+  0a90:  000004ac  |....|  ; -> .text $257fc
+  0a94:  00000000  |....|
+  0a98:  00005a18  |..Z.|  ; -> .text $2d08c
+  0a9c:  00005a18  |..Z.|  ; -> .text $2d08c
+  0aa0:  00005cb0  |..\.|  ; -> .text $2d324
+  0aa4:  00005a18  |..Z.|  ; -> .text $2d08c
+  0aa8:  00005cb0  |..\.|  ; -> .text $2d324
+  0aac:  00005cb0  |..\.|  ; -> .text $2d324
+  0ab0:  00005cb0  |..\.|  ; -> .text $2d324
+  0ab4:  00005a18  |..Z.|  ; -> .text $2d08c
+  0ab8:  00005cb0  |..\.|  ; -> .text $2d324
+  0abc:  00005cb0  |..\.|  ; -> .text $2d324
+  0ac0:  00005cb0  |..\.|  ; -> .text $2d324
+  0ac4:  00005cb0  |..\.|  ; -> .text $2d324
+  0ac8:  00005cb0  |..\.|  ; -> .text $2d324
+  0acc:  00005cb0  |..\.|  ; -> .text $2d324
+  0ad0:  00005cb0  |..\.|  ; -> .text $2d324
+  0ad4:  00005bb8  |..[.|  ; -> .text $2d22c
+  0ad8:  00000348  |...H|  ; -> .text $2dafc
+  0adc:  00000374  |...t|  ; -> .text $2db28
+  0ae0:  000003a4  |....|  ; -> .text $2db58
+  0ae4:  000003d8  |....|  ; -> .text $2db8c
+  0ae8:  0000164c  |...L|  ; -> .text $2ee00
+  0aec:  000013a8  |....|  ; -> .text $2eb5c
+  0af0:  000013b4  |....|  ; -> .text $2eb68
+  0af4:  000013c0  |....|  ; -> .text $2eb74
+  0af8:  000013cc  |....|  ; -> .text $2eb80
+  0afc:  000013d8  |....|  ; -> .text $2eb8c
+  0b00:  0000164c  |...L|  ; -> .text $2ee00
+  0b04:  000013e4  |....|  ; -> .text $2eb98
+  0b08:  000013f0  |....|  ; -> .text $2eba4
+  0b0c:  000013fc  |....|  ; -> .text $2ebb0
+  0b10:  00001408  |....|  ; -> .text $2ebbc
+  0b14:  00001414  |....|  ; -> .text $2ebc8
+  0b18:  00001420  |... |  ; -> .text $2ebd4
+  0b1c:  0000142c  |...,|  ; -> .text $2ebe0
+  0b20:  00001438  |...8|  ; -> .text $2ebec
+  0b24:  00001444  |...D|  ; -> .text $2ebf8
+  0b28:  00001450  |...P|  ; -> .text $2ec04
+  0b2c:  0000145c  |...\|  ; -> .text $2ec10
+  0b30:  00001468  |...h|  ; -> .text $2ec1c
+  0b34:  0000164c  |...L|  ; -> .text $2ee00
+  0b38:  00001474  |...t|  ; -> .text $2ec28
+  0b3c:  00001480  |....|  ; -> .text $2ec34
+  0b40:  0000148c  |....|  ; -> .text $2ec40
+  0b44:  0000164c  |...L|  ; -> .text $2ee00
+  0b48:  000014d4  |....|  ; -> .text $2ec88
+  0b4c:  000014e0  |....|  ; -> .text $2ec94
+  0b50:  000014ec  |....|  ; -> .text $2eca0
+  0b54:  000014f8  |....|  ; -> .text $2ecac
+  0b58:  00001504  |....|  ; -> .text $2ecb8
+  0b5c:  00001510  |....|  ; -> .text $2ecc4
+  0b60:  00001520  |... |  ; -> .text $2ecd4
+  0b64:  0000152c  |...,|  ; -> .text $2ece0
+  0b68:  00001538  |...8|  ; -> .text $2ecec
+  0b6c:  00001544  |...D|  ; -> .text $2ecf8
+  0b70:  00001550  |...P|  ; -> .text $2ed04
+  0b74:  0000155c  |...\|  ; -> .text $2ed10
+  0b78:  00001ff8  |....|  ; -> .text $2f7ac
+  0b7c:  00001ff8  |....|  ; -> .text $2f7ac
+  0b80:  00001ff8  |....|  ; -> .text $2f7ac
+  0b84:  00001ff8  |....|  ; -> .text $2f7ac
+  0b88:  000020cc  |.. .|  ; -> .text $2f880
+  0b8c:  000021a0  |..!.|  ; -> .text $2f954
+  0b90:  00001f98  |....|  ; -> .text $2f74c
+  0b94:  00001fa4  |....|  ; -> .text $2f758
+  0b98:  00001fb0  |....|  ; -> .text $2f764
+  0b9c:  00001fbc  |....|  ; -> .text $2f770
+  0ba0:  00001fc8  |....|  ; -> .text $2f77c
+  0ba4:  00001fd4  |....|  ; -> .text $2f788
+  0ba8:  00001fe0  |....|  ; -> .text $2f794
+  0bac:  00001fec  |....|  ; -> .text $2f7a0
+  0bb0:  00002020  |..  |  ; -> .text $2f7d4
+  0bb4:  00002078  |.. x|  ; -> .text $2f82c
+  0bb8:  00002084  |.. .|  ; -> .text $2f838
+  0bbc:  00002090  |.. .|  ; -> .text $2f844
+  0bc0:  0000209c  |.. .|  ; -> .text $2f850
+  0bc4:  000020a8  |.. .|  ; -> .text $2f85c
+  0bc8:  000020b4  |.. .|  ; -> .text $2f868
+  0bcc:  000020c0  |.. .|  ; -> .text $2f874
+  0bd0:  000020f4  |.. .|  ; -> .text $2f8a8
+  0bd4:  0000214c  |..!L|  ; -> .text $2f900
+  0bd8:  00002158  |..!X|  ; -> .text $2f90c
+  0bdc:  00002164  |..!d|  ; -> .text $2f918
+  0be0:  00002170  |..!p|  ; -> .text $2f924
+  0be4:  0000217c  |..!||  ; -> .text $2f930
+  0be8:  00002188  |..!.|  ; -> .text $2f93c
+  0bec:  00002194  |..!.|  ; -> .text $2f948
+  0bf0:  000021c8  |..!.|  ; -> .text $2f97c
+  0bf4:  000021d4  |..!.|  ; -> .text $2f988
+  0bf8:  000021e0  |..!.|  ; -> .text $2f994
+  0bfc:  000021ec  |..!.|  ; -> .text $2f9a0
+  0c00:  000022b8  |..".|  ; -> .text $2fa6c
+  0c04:  000022b8  |..".|  ; -> .text $2fa6c
+  0c08:  000022b8  |..".|  ; -> .text $2fa6c
+  0c0c:  000022b8  |..".|  ; -> .text $2fa6c
+  0c10:  000022c4  |..".|  ; -> .text $2fa78
+  0c14:  000022d0  |..".|  ; -> .text $2fa84
+  0c18:  00002230  |.."0|  ; -> .text $2f9e4
+  0c1c:  0000223c  |.."<|  ; -> .text $2f9f0
+  0c20:  0000223c  |.."<|  ; -> .text $2f9f0
+  0c24:  0000223c  |.."<|  ; -> .text $2f9f0
+  0c28:  00002248  |.."H|  ; -> .text $2f9fc
+  0c2c:  00002248  |.."H|  ; -> .text $2f9fc
+  0c30:  000007f0  |....|  ; -> .text $30878
+  0c34:  000007e0  |....|  ; -> .text $30868
+  0c38:  000007d0  |....|  ; -> .text $30858
+  0c3c:  000007c0  |....|  ; -> .text $30848
+  0c40:  000007b0  |....|  ; -> .text $30838
+  0c44:  000007a0  |....|  ; -> .text $30828
+  0c48:  00000790  |....|  ; -> .text $30818
+  0c4c:  00000780  |....|  ; -> .text $30808
+  0c50:  00000770  |...p|  ; -> .text $307f8
+  0c54:  00000760  |...`|  ; -> .text $307e8
+  0c58:  00000750  |...P|  ; -> .text $307d8
+  0c5c:  00000740  |...@|  ; -> .text $307c8
+  0c60:  00000730  |...0|  ; -> .text $307b8
+  0c64:  00000720  |... |  ; -> .text $307a8
+  0c68:  00000710  |....|  ; -> .text $30798
+  0c6c:  00000d14  |....|  ; -> .text $30d9c
+  0c70:  00000d04  |....|  ; -> .text $30d8c
+  0c74:  00000cf4  |....|  ; -> .text $30d7c
+  0c78:  00000ce4  |....|  ; -> .text $30d6c
+  0c7c:  00000cd4  |....|  ; -> .text $30d5c
+  0c80:  00000cc4  |....|  ; -> .text $30d4c
+  0c84:  00000cb4  |....|  ; -> .text $30d3c
+  0c88:  00000ca4  |....|  ; -> .text $30d2c
+  0c8c:  00000c94  |....|  ; -> .text $30d1c
+  0c90:  00000c84  |....|  ; -> .text $30d0c
+  0c94:  00000c74  |...t|  ; -> .text $30cfc
+  0c98:  00000c64  |...d|  ; -> .text $30cec
+  0c9c:  00000c54  |...T|  ; -> .text $30cdc
+  0ca0:  00000c44  |...D|  ; -> .text $30ccc
+  0ca4:  00000c34  |...4|  ; -> .text $30cbc
+  0ca8:  0000137c  |...||  ; -> .text $31404
+  0cac:  0000136c  |...l|  ; -> .text $313f4
+  0cb0:  0000135c  |...\|  ; -> .text $313e4
+  0cb4:  0000134c  |...L|  ; -> .text $313d4
+  0cb8:  0000133c  |...<|  ; -> .text $313c4
+  0cbc:  0000132c  |...,|  ; -> .text $313b4
+  0cc0:  0000131c  |....|  ; -> .text $313a4
+  0cc4:  0000130c  |....|  ; -> .text $31394
+  0cc8:  000012fc  |....|  ; -> .text $31384
+  0ccc:  000012ec  |....|  ; -> .text $31374
+  0cd0:  000012dc  |....|  ; -> .text $31364
+  0cd4:  000012cc  |....|  ; -> .text $31354
+  0cd8:  000012bc  |....|  ; -> .text $31344
+  0cdc:  000012ac  |....|  ; -> .text $31334
+  0ce0:  0000129c  |....|  ; -> .text $31324
+  0ce4:  00001788  |....|  ; -> .text $31810
+  0ce8:  00001778  |...x|  ; -> .text $31800
+  0cec:  00001768  |...h|  ; -> .text $317f0
+  0cf0:  00001758  |...X|  ; -> .text $317e0
+  0cf4:  00001748  |...H|  ; -> .text $317d0
+  0cf8:  00001738  |...8|  ; -> .text $317c0
+  0cfc:  00001728  |...(|  ; -> .text $317b0
+  0d00:  00001718  |....|  ; -> .text $317a0
+  0d04:  00001708  |....|  ; -> .text $31790
+  0d08:  000016f8  |....|  ; -> .text $31780
+  0d0c:  000016e8  |....|  ; -> .text $31770
+  0d10:  000016d8  |....|  ; -> .text $31760
+  0d14:  000016c8  |....|  ; -> .text $31750
+  0d18:  000016b8  |....|  ; -> .text $31740
+  0d1c:  000016a8  |....|  ; -> .text $31730
+  0d20:  00001cac  |....|  ; -> .text $31d34
+  0d24:  00001c9c  |....|  ; -> .text $31d24
+  0d28:  00001c8c  |....|  ; -> .text $31d14
+  0d2c:  00001c7c  |...||  ; -> .text $31d04
+  0d30:  00001c6c  |...l|  ; -> .text $31cf4
+  0d34:  00001c5c  |...\|  ; -> .text $31ce4
+  0d38:  00001c4c  |...L|  ; -> .text $31cd4
+  0d3c:  00001c3c  |...<|  ; -> .text $31cc4
+  0d40:  00001c2c  |...,|  ; -> .text $31cb4
+  0d44:  00001c1c  |....|  ; -> .text $31ca4
+  0d48:  00001c0c  |....|  ; -> .text $31c94
+  0d4c:  00001bfc  |....|  ; -> .text $31c84
+  0d50:  00001bec  |....|  ; -> .text $31c74
+  0d54:  00001bdc  |....|  ; -> .text $31c64
+  0d58:  00001bcc  |....|  ; -> .text $31c54
+  0d5c:  00000000  |....|
+  0d60:  5051444d  |PQDM|
+  0d64:  6f6e6574  |onet|
+  0d68:  3a205374  |: St|
+  0d6c:  61727469  |arti|
+  0d70:  6e672075  |ng u|
+  0d74:  702c2063  |p, c|
+  0d78:  6f6d6d62  |ommb|
+  0d7c:  6c6f636b  |lock|
+  0d80:  20617420  | at |
+  0d84:  25580a00  |%X..|
+  0d88:  4d6f6e65  |Mone|
+  0d8c:  744d6169  |tMai|
+  0d90:  6e3a2053  |n: S|
+  0d94:  65717565  |eque|
+  0d98:  6e636520  |nce |
+  0d9c:  6572726f  |erro|
+  0da0:  72202564  |r %d|
+  0da4:  20213d20  | != |
+  0da8:  25642c20  |%d, |
+  0dac:  66756e63  |func|
+  0db0:  203d2025  | = %|
+  0db4:  642c206c  |d, l|
+  0db8:  61737420  |ast |
+  0dbc:  66756e63  |func|
+  0dc0:  203d2025  | = %|
+  0dc4:  640a0000  |d...|
+  0dc8:  556e6b6e  |Unkn|
+  0dcc:  6f776e20  |own |
+  0dd0:  46756e63  |Func|
+  0dd4:  74696f6e  |tion|
+  0dd8:  3a203078  |: 0x|
+  0ddc:  25580a00  |%X..|
+  0de0:  00000a30  |...0|  ; -> .text $327d8
+  0de4:  00000240  |...@|  ; -> .text $31fe8
+  0de8:  00000ad4  |....|  ; -> .text $3287c
+  0dec:  00000a50  |...P|  ; -> .text $327f8
+  0df0:  00000298  |....|  ; -> .text $32040
+  0df4:  00000ad4  |....|  ; -> .text $3287c
+  0df8:  00000ad4  |....|  ; -> .text $3287c
+  0dfc:  00000ad4  |....|  ; -> .text $3287c
+  0e00:  00000a70  |...p|  ; -> .text $32818
+  0e04:  00000a70  |...p|  ; -> .text $32818
+  0e08:  00000a70  |...p|  ; -> .text $32818
+  0e0c:  00000a70  |...p|  ; -> .text $32818
+  0e10:  00000660  |...`|  ; -> .text $32408
+  0e14:  00000858  |...X|  ; -> .text $32600
+  0e18:  00000a70  |...p|  ; -> .text $32818
+  0e1c:  000008e0  |....|  ; -> .text $32688
+  0e20:  00000a70  |...p|  ; -> .text $32818
+  0e24:  00000364  |...d|  ; -> .text $3210c
+  0e28:  00000940  |...@|  ; -> .text $326e8
+  0e2c:  00000998  |....|  ; -> .text $32740
+  0e30:  000002d8  |....|  ; -> .text $32080
+  0e34:  000003a0  |....|  ; -> .text $32148
+  0e38:  000009f4  |....|  ; -> .text $3279c
+  0e3c:  00000320  |... |  ; -> .text $320c8
+  0e40:  00000a70  |...p|  ; -> .text $32818
+  0e44:  000007c8  |....|  ; -> .text $32570
+  0e48:  000007f8  |....|  ; -> .text $325a0
+  0e4c:  00000828  |...(|  ; -> .text $325d0
+  0e50:  00000a70  |...p|  ; -> .text $32818
+  0e54:  00000a70  |...p|  ; -> .text $32818
+  0e58:  00000a70  |...p|  ; -> .text $32818
+  0e5c:  00000a70  |...p|  ; -> .text $32818
+  0e60:  00000a70  |...p|  ; -> .text $32818
+  0e64:  00000a70  |...p|  ; -> .text $32818
+  0e68:  00000a70  |...p|  ; -> .text $32818
+  0e6c:  00000a70  |...p|  ; -> .text $32818
+  0e70:  00000a70  |...p|  ; -> .text $32818
+  0e74:  00000a70  |...p|  ; -> .text $32818
+  0e78:  0000048c  |....|  ; -> .text $32234
+  0e7c:  00000a70  |...p|  ; -> .text $32818
+  0e80:  00000a70  |...p|  ; -> .text $32818
+  0e84:  000006c0  |....|  ; -> .text $32468
+  0e88:  00000a70  |...p|  ; -> .text $32818
+  0e8c:  000006f0  |....|  ; -> .text $32498
+  0e90:  00000720  |... |  ; -> .text $324c8
+  0e94:  000003e0  |....|  ; -> .text $32188
+  0e98:  00000a70  |...p|  ; -> .text $32818
+  0e9c:  00000a70  |...p|  ; -> .text $32818
+  0ea0:  0000052c  |...,|  ; -> .text $322d4
+  0ea4:  00000a70  |...p|  ; -> .text $32818
+  0ea8:  00000a70  |...p|  ; -> .text $32818
+  0eac:  00000750  |...P|  ; -> .text $324f8
+  0eb0:  00000a70  |...p|  ; -> .text $32818
+  0eb4:  00000a70  |...p|  ; -> .text $32818
+  0eb8:  00000a70  |...p|  ; -> .text $32818
+  0ebc:  00000a70  |...p|  ; -> .text $32818
+  0ec0:  000004dc  |....|  ; -> .text $32284
+  0ec4:  00000a70  |...p|  ; -> .text $32818
+  0ec8:  00000a70  |...p|  ; -> .text $32818
+  0ecc:  00000a70  |...p|  ; -> .text $32818
+  0ed0:  00000780  |....|  ; -> .text $32528
+  0ed4:  6d616c6c  |mall|
+  0ed8:  6f632061  |oc a|
+  0edc:  6c6c6f63  |lloc|
+  0ee0:  61746564  |ated|
+  0ee4:  20256420  | %d |
+  0ee8:  62797465  |byte|
+  0eec:  73206f75  |s ou|
+  0ef0:  74736964  |tsid|
+  0ef4:  65206f66  |e of|
+  0ef8:  20746865  | the|
+  0efc:  20686561  | hea|
+  0f00:  7020626f  |p bo|
+  0f04:  756e6473  |unds|
+  0f08:  2c20706f  |, po|
+  0f0c:  696e7465  |inte|
+  0f10:  72203d20  |r = |
+  0f14:  25782c20  |%x, |
+  0f18:  68656170  |heap|
+  0f1c:  4d696e20  |Min |
+  0f20:  3d202578  |= %x|
+  0f24:  2c206865  |, he|
+  0f28:  61704d61  |apMa|
+  0f2c:  78203d20  |x = |
+  0f30:  25780a00  |%x..|
+  0f34:  4d617056  |MapV|
+  0f38:  69727475  |irtu|
+  0f3c:  616c3a20  |al: |
+  0f40:  62797465  |byte|
+  0f44:  73203d3d  |s ==|
+  0f48:  20300000  | 0..|
+  0f4c:  43616c6c  |Call|
+  0f50:  4261636b  |Back|
+  0f54:  20256420  | %d |
+  0f58:  64757269  |duri|
+  0f5c:  6e672069  |ng i|
+  0f60:  6e616374  |nact|
+  0f64:  69766520  |ive |
+  0f68:  72657175  |requ|
+  0f6c:  6573740a  |est.|
+  0f70:  00000000  |....|
+  0f74:  00000000  |....|
+  0f78:  0000005c  |...\|  ; -> .text $340a4
+  0f7c:  0000006c  |...l|  ; -> .text $340b4
+  0f80:  0000007c  |...||  ; -> .text $340c4
+  0f84:  0000008c  |....|  ; -> .text $340d4
+  0f88:  0000009c  |....|  ; -> .text $340e4
+  0f8c:  000000ac  |....|  ; -> .text $340f4
+  0f90:  000000bc  |....|  ; -> .text $34104
+  0f94:  000000cc  |....|  ; -> .text $34114
+  0f98:  000000dc  |....|  ; -> .text $34124
+  0f9c:  000000ec  |....|  ; -> .text $34134
+  0fa0:  000009e0  |....|  ; -> .text $34a28
+  0fa4:  00000a28  |...(|  ; -> .text $34a70
+  0fa8:  000009e8  |....|  ; -> .text $34a30
+  0fac:  000009fc  |....|  ; -> .text $34a44
+  0fb0:  00000124  |...$|  ; -> .text $373f4
+  0fb4:  0000012c  |...,|  ; -> .text $373fc
+  0fb8:  00000134  |...4|  ; -> .text $37404
+  0fbc:  0000013c  |...<|  ; -> .text $3740c
+  0fc0:  000002dc  |....|  ; -> .text $37a08
+  0fc4:  00000404  |....|  ; -> .text $37b30
+  0fc8:  00000404  |....|  ; -> .text $37b30
+  0fcc:  00000404  |....|  ; -> .text $37b30
+  0fd0:  00000404  |....|  ; -> .text $37b30
+  0fd4:  00000404  |....|  ; -> .text $37b30
+  0fd8:  00000404  |....|  ; -> .text $37b30
+  0fdc:  00000404  |....|  ; -> .text $37b30
+  0fe0:  00000404  |....|  ; -> .text $37b30
+  0fe4:  000002ac  |....|  ; -> .text $379d8
+  0fe8:  000002c4  |....|  ; -> .text $379f0
+  0fec:  00000304  |....|  ; -> .text $37a30
+  0ff0:  00000334  |...4|  ; -> .text $37a60
+  0ff4:  00000364  |...d|  ; -> .text $37a90
+  0ff8:  00000384  |....|  ; -> .text $37ab0
+  0ffc:  000003a4  |....|  ; -> .text $37ad0
+  1000:  000003c4  |....|  ; -> .text $37af0
+  1004:  000003e4  |....|  ; -> .text $37b10
+  1008:  00000468  |...h|  ; -> .text $37b94
+  100c:  00000470  |...p|  ; -> .text $37b9c
+  1010:  00000498  |....|  ; -> .text $37bc4
+  1014:  000004a8  |....|  ; -> .text $37bd4
+  1018:  000004b8  |....|  ; -> .text $37be4
+  101c:  00000000  |....|
+  1020:  00202020  |.   |
+  1024:  20202020  |    |
+  1028:  20202828  |  ((|
+  102c:  28282820  |((( |
+  1030:  20202020  |    |
+  1034:  20202020  |    |
+  1038:  20202020  |    |
+  103c:  20202020  |    |
+  1040:  20881010  | ...|
+  1044:  10101010  |....|
+  1048:  10101010  |....|
+  104c:  10101010  |....|
+  1050:  10040404  |....|
+  1054:  04040404  |....|
+  1058:  04040410  |....|
+  105c:  10101010  |....|
+  1060:  10104141  |..AA|
+  1064:  41414141  |AAAA|
+  1068:  01010101  |....|
+  106c:  01010101  |....|
+  1070:  01010101  |....|
+  1074:  01010101  |....|
+  1078:  01010101  |....|
+  107c:  10101010  |....|
+  1080:  10104242  |..BB|
+  1084:  42424242  |BBBB|
+  1088:  02020202  |....|
+  108c:  02020202  |....|
+  1090:  02020202  |....|
+  1094:  02020202  |....|
+  1098:  02020202  |....|
+  109c:  10101010  |....|
+  10a0:  20202020  |    |
+  10a4:  20202020  |    |
+  10a8:  20202020  |    |
+  10ac:  20202020  |    |
+  10b0:  20202020  |    |
+  10b4:  20202020  |    |
+  10b8:  20202020  |    |
+  10bc:  20202020  |    |
+  10c0:  20202020  |    |
+  10c4:  20202020  |    |
+  10c8:  20202020  |    |
+  10cc:  20202020  |    |
+  10d0:  20202020  |    |
+  10d4:  20202020  |    |
+  10d8:  20202020  |    |
+  10dc:  20202020  |    |
+  10e0:  20202020  |    |
+  10e4:  20202020  |    |
+  10e8:  20202020  |    |
+  10ec:  20202020  |    |
+  10f0:  20202020  |    |
+  10f4:  20202020  |    |
+  10f8:  20202020  |    |
+  10fc:  20202020  |    |
+  1100:  20202020  |    |
+  1104:  20202020  |    |
+  1108:  20202020  |    |
+  110c:  20202020  |    |
+  1110:  20202020  |    |
+  1114:  20202020  |    |
+  1118:  20202020  |    |
+  111c:  20202020  |    |
+  1120:  20000000  | ...|
