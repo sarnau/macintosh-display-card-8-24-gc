@@ -442,8 +442,7 @@ The differences:
 
 ## What is open
 
-* Which feature each host-flag bit (`gr64`, `PublicIn+$18`) switches, and the
-  roles of the few services not read in detail (`$CE`, `$D6`;
-  `../HOST_CARD_PROTOCOL.md` section 8).
-* The System 6 `Runtime`, a different kernel build, is disassembled but not
-  annotated (`sw11/disasm/Hand.asm`).
+* Some flag bits (1, 3, 10, 30, 31) are read only in outline
+  (`../HOST_CARD_PROTOCOL.md` section 9, "The flags word on the card").
+* The CFG and OPS bits the flags switch are given by number; which
+  processor features they are was not looked up.

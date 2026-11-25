@@ -2290,7 +2290,7 @@ sub_1604:
   001610:  7c 00                moveq    #$0, d6
   001612:  20 4b                movea.l  a3, a0
   001614:  70 7a                moveq    #$7a, d0
-  001616:  a0 24                dc.w     $a024  ; _SetPtrSize
+  001616:  a0 24                dc.w     $a024  ; _SetHandleSize
   001618:  30 38 02 20          move.w   $220.w, d0
   00161c:  48 c0                ext.l    d0
   00161e:  2c 00                move.l   d0, d6
@@ -9095,7 +9095,7 @@ L6716:
   00671a:  20 50                movea.l  (a0), a0
   00671c:  22 6e ff 80          movea.l  -$80(a6), a1
   006720:  20 29 00 04          move.l   $4(a1), d0
-  006724:  a0 24                dc.w     $a024  ; _SetPtrSize
+  006724:  a0 24                dc.w     $a024  ; _SetHandleSize
   006726:  60 00 05 14          bra.w    $6c3c  ; -> L6c3c
 L672a:
   00672a:  59 8f                subq.l   #$4, a7

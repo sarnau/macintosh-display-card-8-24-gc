@@ -4,6 +4,26 @@
 *  Made by runtime_dasm.py: decrypted as DRVR's ACEFLoad does it,
 *  disassembled by am29k_dasm.py.  L_XXXXXXX = a jump target.
 * ==================================================================
+*
+*  System 6 ("8*24 GC SW 1.1") Boot.  Same size as System 7's ($800 bytes),
+*  but the code ends at $2003764 (System 7: $20037EC); the rest is zero.
+*  Compared with ../../disasm/Boot.asm (System 7, with a description of
+*  what Boot does):
+*    $2003000-$2003170  identical (ID bits -> gr66 and PublicOut+$2C, CFG/CPS,
+*                       gr64 <- PublicIn+$18, POLL PublicIn+0 for $42005300,
+*                       copy of the loaded data, PublicOut+$0C..$18 top nibble)
+*    $200313C-$2003364  vector table fill: same order, System 6 handler
+*                       addresses (default vector $2001B8C)
+*    $2003368-$20034F0  monitor sense probe: CHANGED (see banners)
+*    $20034F4-$2003764  = System 7 $2003554-$20037EC; the monitor table
+*                       lacks extended sense codes $2DF and $30F, code $0F
+*                       gives $230; jumps go to the System 6 kernel init
+*                       $2001E80 (System 7 $2001FFC)
+* ------------------------------------------------------------------
+* ------------------------------------------------------------------
+*  ID bits $4400000C/$44000010 -> gr66, PublicOut+$2C; CFG/CPS; gr64; poll
+*  PublicIn+0 for $42005300; data copy; PublicOut+$0C..$18.  Identical to System 7.
+* ------------------------------------------------------------------
   2003000:  0300460c  const    gr70, $000c             
   2003004:  02444600  consth   gr70, $4400             
   2003008:  03004200  const    gr66, $0000             
@@ -87,6 +107,9 @@ L_20030cc:
   2003130:  90484849  and      gr72, gr72, gr73        
   2003134:  92484842  or       gr72, gr72, gr66        
   2003138:  1e004847  store    0, 0, gr72, gr71        
+* ------------------------------------------------------------------
+*  VECTOR TABLE at $4C000000: same as System 7, System 6 handler addresses
+* ------------------------------------------------------------------
   200313c:  03004700  const    gr71, $0000             
   2003140:  024c4700  consth   gr71, $4c00             
   2003144:  ce000047  mtsr     VAB, gr71               
@@ -229,6 +252,9 @@ L_20032f0:
   200335c:  02024600  consth   gr70, $0200             
   2003360:  1e004647  store    0, 0, gr70, gr71        
   2003364:  15474704  add      gr71, gr71, $04         
+* ------------------------------------------------------------------
+*  MONITOR SENSE: three sense bits from $44000044/48/4C -> gr81 (as System 7)
+* ------------------------------------------------------------------
   2003368:  03005100  const    gr81, $0000             
   200336c:  03004844  const    gr72, $0044             
   2003370:  02444800  consth   gr72, $4400             
@@ -256,6 +282,11 @@ L_20033bc:
   20033bc:  61475107  cpeq     gr71, gr81, $07         
   20033c0:  a400474d  jmpf     gr71, $20034f4             ; -> L_20034f4
   20033c4:  03004600  const    gr70, $0000                ; [delay slot]
+* ------------------------------------------------------------------
+*  code 7 = extended sense: drive one line ($4400002C/30/34 = -1), read the other two.
+*  CHANGED: zeroes $44000034-$48 first (System 7 $38-$40), leaves $44000030 alone in
+*  round 1, has no 8-step settle loop (System 7 $200341C) but reads twice in round 1.
+* ------------------------------------------------------------------
   20033c8:  01ff47ff  constn   gr71, $ffff             
   20033cc:  03004934  const    gr73, $0034             
   20033d0:  02444900  consth   gr73, $4400             
@@ -337,6 +368,11 @@ L_20034e0:
   20034e8:  1e004649  store    0, 0, gr70, gr73        
   20034ec:  81515104  sll      gr81, gr81, $04         
   20034f0:  9351510f  or       gr81, gr81, $0f         
+* ------------------------------------------------------------------
+*  store gr81 (code 0-6, or extended code << 4 | $0F) at $4C006D08.  If VidComm+$18
+*  holds 'WY1`' and VidComm+$08 is not 0, copy VidComm+$08..$14 to
+*  PublicOut+$1C/$24/$20/$28 and jmp $2001E80 (System 7 $2003554)
+* ------------------------------------------------------------------
 L_20034f4:
   20034f4:  036d4808  const    gr72, $6d08             
   20034f8:  024c4800  consth   gr72, $4c00             
@@ -372,6 +408,10 @@ L_20034f4:
   2003570:  024c4a00  consth   gr74, $4c00             
   2003574:  a0fa0043  jmp      $2001e80                
   2003578:  1e00474a  store    0, 0, gr71, gr74           ; [delay slot]
+* ------------------------------------------------------------------
+*  probe $44000000.. and $4400007C/80 -> PublicOut+$1C; [$46C00008] >> 24 ->
+*  PublicOut+$20 (System 7 $20035DC)
+* ------------------------------------------------------------------
 L_200357c:
   200357c:  03004600  const    gr70, $0000             
   2003580:  02444600  consth   gr70, $4400             
@@ -437,6 +477,11 @@ L_2003650:
   2003650:  03684a20  const    gr74, $6820             
   2003654:  024c4a00  consth   gr74, $4c00             
   2003658:  1e00494a  store    0, 0, gr73, gr74        
+* ------------------------------------------------------------------
+*  monitor -> PublicOut+$28 (reading: active lines): 0,3,1,5 $366; 4 $1E6; 2 $180;
+*  6 and others $1E0; $14F $1E6; $0F $230.  CHANGED: System 7 ($20036BC) adds $2DF -> $270,
+*  $30F -> $240 and gives $0F $240.
+* ------------------------------------------------------------------
   200365c:  61455103  cpeq     gr69, gr81, $03         
   2003660:  ac004514  jmpt     gr69, $20036b0             ; -> L_20036b0
   2003664:  61455100  cpeq     gr69, gr81, $00            ; [delay slot]
@@ -477,6 +522,9 @@ L_20036d4:
   20036d4:  03684c28  const    gr76, $6828             
   20036d8:  024c4c00  consth   gr76, $4c00             
   20036dc:  1e004b4c  store    0, 0, gr75, gr76        
+* ------------------------------------------------------------------
+*  PublicOut+$24 from $440000A0.. probe (max $A00), then jmp $2001E80 (System 7 $2003768)
+* ------------------------------------------------------------------
   20036e0:  0300467c  const    gr70, $007c             
   20036e4:  02444600  consth   gr70, $4400             
   20036e8:  16004646  load     0, 0, gr70, gr70        

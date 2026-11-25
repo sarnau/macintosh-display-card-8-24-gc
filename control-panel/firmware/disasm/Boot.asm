@@ -26,7 +26,8 @@
 *              not 0, it copies VidComm+$08..$14 to PublicOut+$1C/$24/$20/
 *              $28 and jumps to Hand's init $2001FFC
 *    $20035DC  otherwise probes the registers from $44000000 and
-*              $4400007C/80 into PublicOut+$1C, decodes [$44000008] >> 24
+*              $4400007C/80 (| gr66 | $0C000000) into PublicOut+$1C, decodes
+*              [$46C00008] >> 24 (a RAMDAC register)
 *              into 1/2/4/8 at PublicOut+$20, picks a configuration value
 *              by gr81 ($1E0, ...) for PublicOut+$28, sets PublicOut+$24
 *              ($A00 ...) and jumps to $2001FFC

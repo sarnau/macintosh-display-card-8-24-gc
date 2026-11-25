@@ -71,7 +71,7 @@ the top nibble), reached through service `$C0` (which returns `PublicIn`,
 
 | channel | direction | where | host side | card side |
 |---|---|---|---|---|
-| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44` | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` in `main` `$31DAC` |
+| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44`; the `$80xx` arguments are read from `[packet+$54]` = `packet+$650` (set by `InitPacket`, `$32A0C`-`$32A18`) | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` in `main` `$31DAC` |
 | requests | card → host | `+$24` mailbox: `+$04` code, `+$08` reply, `+$0C` sequence, `+$14` args | `sub_6442`, called from the idle routine and from `EngineDispatch`'s wait loops | `CallBack` `$33EBC` |
 | modules | host → card code | commands `$8001`-`$8004` and request 999 | `sub_1404` (gc24 entry #105) | `sub_37B58`, `sub_379A0` |
 
@@ -123,8 +123,7 @@ scaleBlt, BitBlt, RgnBlt, the shape drawers, text, DrawMultiObject) plus
 **Named card functions** (the evidence is in the sections below): `main`
 `$31DAC` (prints `PQDMonet: Starting up, commblock at %X`), `InitPacket`
 `$3299C` and the dispatcher `$31E20`; DrawMultiObject `$0AD18`; StretchBits `$2D7B8`;
-scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`
-(likely); DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
+scaleBlt `$22A8C`; GetSeek `$253D4`; BitBlt `$01A50` and RgnBlt `$19DA4`; DrawText `$11AD8`; DrawArc `$075DC`, DrawLine `$08618`, QuickPolys
 `$19270` (from DrawMultiObject's polygon opcode); RSect `$01494` and TrimRect `$01654`
 (from its region opcode); ITabMatch `$06650`; ColorMap `$06F1C`; the long fills `$1701C` (block write), `$17264` (two values) and `$00348` (`storem` bursts), with the burst helpers `$00294` (two values) and `$00248` (copy); the slot burst self-test `$37000` (part of `SelfTest` `$3404C`); the own-address test `IsOnThisCard` `$13F54` (compares an address's top nibble with service `$C4`'s); the host-object cache: find `$15D28`, find-and-stamp `$15E8C`, create `$15EE4`, find-or-create `$15FF4`; font upload `$14B64` (width table) and `$14A80` (strike); BitsToPixMap
 `$06BEC`; DisposeOffscreen `$14034`; FlushOffscreen `$14168`;
@@ -161,10 +160,11 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two `.data` tables, now exact but not yet read) and why a repeated font upload refreshes only glyphs `$84`-`$9E`;
+- DrawMultiObject: all 25 opcodes are named and their cases found; left open are ColorMap's alpha-channel part, what the address bits `$01200000` select, and why a repeated font upload re-converts only glyphs `$84`-`$9E` ("Open points" there);
 - why the status bit at `$4400007C` gates the two-colour block fill;
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
-- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the codec routines step by step.
+- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the codec routines step by step;
+- some flag bits (1, 3, 10, 30, 31) are read only in outline (section 9).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -182,9 +182,8 @@ set a trap restarts the kernel unreported); bit 20 (`$100000`, set when the
 DRAM top is above `$0D000000`) selects the heap-limit computation of service
 `$C1` (`$20012AC`, free heap = `[PublicIn+$08] - $1000 - break` instead of
 `gr127 - $3000 - break`), which uses `PublicIn+$08` as the end of memory
-(**verified**); the kernel also tests
-bits 0, 5, 8, 21 that `SetFeatureFlags` sets for card types `$2C`/`$7E`
-(**reading**: which feature each one switches is not worked out).
+(**verified**); the other bits are listed in
+section 9, "The flags word on the card".
 
 Kernel init (`$20020D0`) also stores the signature `$57593160` ('WY1`') at
 `VidComm+$18` (`$4C007318`). `Boot` only reads it (`$2003560`): with the
@@ -424,6 +423,24 @@ Checks of the exact decode:
   following type-28 record);
 * calls to the kernel and HIF stubs show the service (`svc_CC` …).
 
+**Names from the QuickDraw source.** 410 of the 709 functions carry names
+(`antelope_names.py`). Most of the new ones come from the mode tables, which
+follow the 68k source's table order case by case: BitBlt's loops (`.lit
+$0008`-`$0068`: `bArith32Tab`, the indexed arithmetic loops, `bMAIN8`-`11`,
+the `XMAIN` modes, `bMAIN0`-`3`), RgnBlt's (`.lit $07F8`-`$0878`: the indexed,
+32-bit and 16-bit arithmetic loops, `rMASK0`-`3`, `rMASK8`-`11`), QDUtil.a's
+SlabMode `$1114C` and FastSlabMode `$11A34`, StretchBits' `stColorTab` +
+`stGrayTab` + `stSearchTab` (`.lit $0AE8`, 24 entries, the defaults where QD has
+Bogus) and its arithmetic tables by `dstShift` (`.lit $0B78`), GetSeek's
+`gsSeekTbl`/`gsRunTbl`/`gsExpTbl` (`.lit $0A54`/`$0A3C`/`$0A28`) and file 21 =
+`SeekRgn.a` (INITRGN `$272F4`, SEEKRGN `$259A8`, SEEKUP/SEEKDOWN, INVPAIR).
+DrawArc calls SlopeFromAngle `$081E0` and FixMul `$00CC4` as `DrawArc.a` does;
+QuickPolys sorts its edges with SortVectors `$19134`. The card adds a 50%
+blend loop for indexed depths (`$0604C`, `$21BE0`) that 68k QuickDraw does not
+have. Not named for lack of evidence: scaleBlt's loops, the `$3008C` family,
+DrawLine's fast-line loops, the BitBlt copy fast paths `$02DE0`/`$02F20`/
+`$02FF0`, and most of the C library.
+
 One example is `sub_00178`. It sets the funnel-shift count from an argument
 (`mtsr FC, lr5`), loads 16 words into `gr96..gr111` (`mtsrim CR,$0f` +
 `loadm`), runs them through a chain of 15 `extract` instructions, and
@@ -626,10 +643,10 @@ file's tag word (`$01A50`, `$075DC`, `$08618`, `$0AD18`, `$11AD8`,
 
 | selector | does |
 |---|---|
-| `$8008` | `$378DC(argv[0..2])`: `CopyHostMemory` |
+| `$8008` | `CopyHostMemory(argv[0], argv[2], 0, 2, argv[1])`: copy `argv[2]` bytes from host address `argv[0]` into the buffer `argv[1]` (`$378E8`-`$37904`) |
 | `$8011` / `$8012` | allocate / free (`$3779C`, `$377CC`) |
-| `$8013` | `$3791C(argv[0..3])`: `MapVirtual` |
-| `$8014` | `UnmapAll`, then `$16BA0` |
+| `$8013` | `$3791C(argv[0..3])`: `MapVirtual(addr, len, &outLen, &outFlag)` (`$3791C`-`$37998`) |
+| `$8014` | `UnmapAll`, then `$16BA0` (frees mega buffers 1-9 and rewinds buffer 0) |
 | `$8015` / `$8016` | return `[extern#1772+$8C]` / `[extern#1772+$90]` |
 | `$8017` | clear the mapped-range list head `[extern#1772+$00]` |
 | `$8018` | return `[extern#1651]` (a 36-byte block PQDInit fills) |
@@ -644,9 +661,12 @@ callback into Antelope, including the entry table with `DrawMultiObject`.
 **The host side of `$80xx`: a module/task API (`gc24.s` `$1404`-`$239A`).**
 `sub_1404(selector, params, &handle)` is a public entry point: gc24 exports it
 as dispatch entry #105 (`$FFFFFFFD`, `GA_ControlFFFFFFFD` at `$6C70`, reached
-through engine globals `+$14+$1A4`). Nothing else in this repo calls that
-entry, so it is an API for other code (the selectors and their arguments
-follow). Its state is a `$7A`-byte handle (`*&handle`, created on first use):
+through engine globals `+$14+$1A4`). The driver calls
+it too: `DRVR` Control 54 (`$0F0A`) through slot `$A84` (entry #105's `+$28`,
+filled at `$1076`-`$10A4` because the ID is -3) with `(csParam+2, csParam+6,
+&globals+$AA0)`, and Status 54 (`$06D0`) with `(-1, 0, &globals+$AA0)`;
+nothing in the repo sends Control/Status 54 (the selectors and their
+arguments follow). Its state is a `$7A`-byte handle (`*&handle`, created on first use):
 
 | offset | field |
 |---|---|
@@ -657,23 +677,23 @@ follow). Its state is a `$7A`-byte handle (`*&handle`, created on first use):
 | `+$0E` | command (`$8001`-`$8004`) |
 | `+$12` | reply |
 | `+$16`, `+$1A`, `+$1E` | arguments; `+$56` = their count |
-| `+$66` | a device handle (`sub_225C(slot)`); its `+$6C` points back here |
+| `+$66` | a private `$70`-byte record (`NewHandle,SYS,CLEAR`, `$225C`-`$22B4`; `sub_1604` always passes slot 0); its `+$6C` points back here. The status word `sub_22DA` tests comes from the real unit (`[$888]` → `+$214`, `$231A`-`$2354`) |
 | `+$6A` | the last result |
 | `+$76` | a `$5C`-byte message buffer in card memory (from `$8002`) |
 
-The selectors (`sel - 1` first, then `$3DC` for 999):
+The selectors (`sel + 1` first, `addq.l #1` at `$144E`, so -1 is the first case; then `subq #1` per selector, then `$3DC` for 999):
 
 | sel | routine | does |
 |---|---|---|
 | -1 | | return the last result |
 | 0 | `sub_1604` | open: allocate the tables; send `$8004(0x11111111, 0x22222222, 0x33333333)` and require the reply `$66666666` (else -4); allocate the card message buffer with `$8002($5C)` (else -5) |
-| 1 | `sub_1A2E`, params `{acef, size}` | load a module: `$8002(size)` allocates card memory, `ACEFLoad(acef, addr, size)` relocates and copies it there; returns module id `$53000000 \| n`. The module record keeps the card address (`+$08`) and the entry point (`+$0C`) |
+| 1 | `sub_1A2E`, params `{acef, size}` | load a module: `$8002(size)` allocates card memory, `ACEFLoad(acef, addr, size)` relocates and copies it there; returns module id `$53000000 \| n`. The module record keeps the card address (`+$08`) and the entry point (`+$0C`), always `addr + 4` because `ACEFLoad` overwrites the header's entry field (`$2528`/`$2534`). The result is 0 on any failure; the card block leaks when `ACEFLoad` fails |
 | 2 | `sub_1B3C`, params `{module id}` | unload: kill the module's tasks, `$8003(addr)` frees its memory |
 | 3 | `sub_1C94`, params `{module id}` | create a task of the module; returns task id `$54000000 \| n` |
 | 4 | `sub_1D70`, params `{task id}` | kill a task: send it message `$FFFE`, free its handler list |
 | 5 | `sub_1E12`, params `{task, sel, proc, refcon}` | register a host callback `proc` for selector `sel` of `task` (`sub_1810`, a linked list per task) |
 | 6 | `sub_1E7E`, params `{msg}` | send a message and wait for the reply |
-| 7 | `sub_1FD6`, params `{msg}` | send a message without waiting (sets bit 7 of `msg+8`) |
+| 7 | `sub_1FD6`, params `{msg}` | send a message and wait until the task leaves state 3 (`$2118`), i.e. until it has sent `$8003` or `$8002`; returns the task id. Bit 7 of the caller's `msg+8` is set after the copy (`$20E8`) and never reaches the card |
 | 8 | `sub_2130`, params `{task id}` | wait for the task's reply and return it |
 | 9 / 10 | | return 1 / 0 |
 | 11 | `sub_22DA` | idle: pump the mailbox and the card's requests |
@@ -681,15 +701,21 @@ The selectors (`sel - 1` first, then `$3DC` for 999):
 
 **Sending a message.** A message is `{+$04 task id, +$09 length in bytes,
 +$0A message type, +$0C data}`. `sub_1E7E` waits until the task is idle (state 0 or
-2), copies the message into the card buffer `+$76` (with `SwapMMUMode` to
-32-bit), and posts `$8001(buffer, task.+$08, module entry point)`. The task
+2), writes `+$04` (task id), `+$0A` (type) and `length` bytes of data from
+`+$0C` into the card buffer `+$76` (`$1F14`-`$1F64`, with `SwapMMUMode` to
+32-bit; `+$08`/`+$09` are not written and the length is not checked against
+the buffer's 80 data bytes), and posts `$8001(buffer, task.+$08, module entry point)`. The task
 is then in state 3 (running) until the card answers. So **`$8001` is "run
 this module's entry point on this message"**, and its card side is
 `p[2](p[0], p[1], sub_379A0)`: `entry(message, task data, services)`
 (**verified**). The uploaded code gets Antelope's service switch, and with
 it the entry table that holds `DrawMultiObject`. Task creation (`sub_1BEE`)
 sends message `$FFFF` and kill sends `$FFFE`, so these are the module's own
-init and exit messages.
+init and exit messages. The task then waits for state 2, which only a `$8002`
+request sets; the `$8001` reply (the entry's return value) is discarded. If
+the `$FFFF` answer is not 0, `sub_1C94` grows the task table and retries
+until `NewPtrSys` fails (`$1D5E`), counting the task again on each try
+(`$1C6C`).
 
 **How the mailbox reaches the card.** The `$80xx` commands do not use a
 separate channel. `sub_22DA` (the idle routine, which every wait loop calls)
@@ -701,7 +727,9 @@ and calls `sub_6442`, the handler for requests from the card.
 **Requests from the card (`sub_6442`).** The card writes a code into a
 mailbox at its base address `+$24` (`+$04` of it). The handler reads it, sets it to
 -1, and switches on codes 3-8, 12-18, 20-22, 100 and 999. Code 999 forwards
-the card's request to `sub_1404(999, …)`, which reads `{task id, selector,
+the card's request to `sub_1404(999, …)` with the handle `globals+$AA0`
+(`$6594`); `argv` is copied, up to `count` longs with no bound, into a
+16-long local array (`$15A8`), which reads `{task id, selector,
 count, argv}` and runs `sub_18BE`:
 
 | selector | does |
@@ -711,12 +739,17 @@ count, argv}` and runs `sub_18BE`:
 | `$8004` / `$8005` | get / set a module field (`+$10`) |
 | `$8006` / `$8007` | get / set a task field (`+$08`) |
 | `$8010` | `_Debugger` |
-| `$8000`, `$8001`, `$8008`-`$800F` | nothing, or -1 |
+| `$8000` | returns its `task` argument (`$192C` → `$1A22`) |
+| `$8001`, `$8008`-`$800F` | -1 (`$8004`-`$8007` return -50 without a task; `$8010` returns 0; any other value ≤ 0 is -1) |
 | > 0 | call the host callback registered for this selector: `proc(count, argv, refcon)` (Pascal order) |
 
-On the card, `$8004`-`$8007` are sent by `$37838`, `$377FC`, `$378A8` and
-`$3786C` (get/set module field, get/set task field), and after a `$8003`
-request `sub_37730` calls `sub_32AB8(1)`.
+On the card, `$37838`, `$377FC`, `$378A8` and `$3786C` would send
+`$8004`-`$8007` (get/set module field, get/set task field), but nothing calls
+them; a module reaches the selectors through `services` (`sub_379A0`'s
+default → `sub_37730`). After a `$8003` request `sub_37730` calls
+`sub_32AB8(1)`, which posts status 1 without clearing `+$14`: that ends the
+host's wait while the command is still open (the asynchronous path;
+nothing in the repo uses it).
 
 `sub_6442` is also called from six wait loops inside `EngineDispatch`
 (`$60B0`, `$612E`, `$62E8`, `$6362`, `$6EC8`, `$71A2`), so the card can make
@@ -750,7 +783,7 @@ The codes are all host services that 68k code has to perform for the card:
 | 3 | `NewHandle(p[0])` | the handle |
 | 4 | `DisposHandle(p[0])` | |
 | 5 | `ReallocHandle(p[0], p[1])` | |
-| 6 | `SetPtrSize(p[0], p[1])` | |
+| 6 | `SetHandleSize(p[0], p[1])` (trap `$A024`, `$6724`) | |
 | 7 | `RGetResource(p[0], p[1])` (type, id) | the handle |
 | 8 | copy `p[2]` longs from `p[1]` to `p[0]`, in 32-bit mode | the source address |
 | 18 | the same, from the data of handle `p[1]` | the source address |
@@ -808,7 +841,7 @@ The calls (every `CallBack` call site in the exact listing):
 | `$33E4C` | 21 (copy into a handle) | 3 | `$14478` |
 | `$33E88` | 1, no wait, no arguments | | no caller; the host's `sub_6442` ignores code 1 |
 | `$3373C`, `$33A9C` | 15 (lock + physical pages) | 4 or 3 | see below |
-| `$37730` | 999 (module request) | 4: task, selector, count, argv | the `$80xx` service switch `sub_379A0` (unhandled selectors) and `$377FC`, `$37838`, `$3786C`, `$378A8` |
+| `$37730` | 999 (module request) | 4: task, selector, count, argv | the `$80xx` service switch `sub_379A0` (unhandled selectors) and `$377FC`, `$37838`, `$3786C`, `$378A8` (which have no callers) |
 | dispatcher `$31FE8` | 100 (reset) | 0 | command `$01` |
 
 Not used on the card: codes 3-7 (handles, resources), 16 and 20. They are
@@ -960,8 +993,8 @@ anchors:
 |---|---|---|---|
 | `+$00` | `$2D7B8` | **StretchBits** | host trap `$AB27`, the parameter block |
 | `+$14` | `$22A8C` | **scaleBlt** | strings; `GetSeek` + a family of depth loops |
-| `+$0C` | `$01A50` | **BitBlt** (likely) | called by StretchBits, DrawLine, QuickPolys and DrawMultiObject; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
-| `+$10` | `$19DA4` | **RgnBlt** (likely) | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; a four-way switch picks one of four mode loops `$1B33C`, `$1BAE0`, `$1BC64`, `$1BDE8` (`$1B2A0`-`$1B2DC`) |
+| `+$0C` | `$01A50` | **BitBlt** | called by StretchBits, DrawLine, QuickPolys and DrawMultiObject; does *not* call `GetSeek`; switch tables by mode (`.lit $0008`-`$0068`); falls back to `$19DA4` |
+| `+$10` | `$19DA4` | **RgnBlt** | calls `GetSeek`; called by BitBlt, StretchBits, text and shapes; a four-way switch picks one of four mode loops `$1B33C`, `$1BAE0`, `$1BC64`, `$1BDE8` (`$1B2A0`-`$1B2DC`) |
 | `+$1C`, `+$20`, `+$28` | `$075DC`, `$08618`, `$19270` | the three shape drawers that use `GetSeek`: `$075DC` **DrawArc**, `$08618` **DrawLine**, `$19270` **QuickPolys** (settled by DrawMultiObject's polygon opcode, below) | same helpers (`$0E398`, `$1114C`, `$17500`, `$1553C`); called by DrawMultiObject |
 | `+$24` | `$11AD8` | **DrawText** (see "Text and fonts") | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw) and RgnBlt, not BitBlt; uses `extern#1772+$60`-`$6C` |
 | `+$18` | `$3008C` | a `GetSeek` user. Its object file (`$30088`-`$31DA4`) holds five more routines, each entering an unrolled loop through a 15-entry `.lit` jump table (`$0C30`, `$0C6C`, `$0CA8`, `$0CE4`, `$0D20`; entries are offsets from `$30088`) | |
@@ -1851,11 +1884,12 @@ organised per kind and keyed by the host handle:
 * **`$15E8C`** finds and stamps a hit with the clock (HIF service `$111`)
   for LRU replacement.
 * **`$15EE4` creates** an entry:
-  1. `$15A7C` makes room, evicting if needed;
-  2. `$15958` allocates the entry;
+  1. `$15A7C` (CacheLock) takes the cache's two-flag spin lock;
+  2. `$15958` (CacheAlloc) allocates the entry, evicting the least recently
+     used one (`$15CB0`, CacheFindLRU) when there is no room;
   3. it stamps the entry, zeroes its data, sets the key and links it at the
      head;
-  4. `$15ACC` counts it.
+  4. `$15ACC` (CacheUnlock) releases the lock.
 * **`$15FF4(kind, key)`** is find-or-create.
 
 The kinds seen so far:
@@ -2009,8 +2043,11 @@ the handle and its `FontRec` copy.
 
 * **ColorMap's alpha-channel part** (`$06F1C`) is not checked against
   `QDUtil.a`.
-* **`$17500`**, called before every BitBlt and RgnBlt of the rectangle and
-  region cases (and by DrawArc, DrawLine and QuickPolys), is not read.
+* **`$17500`** is PatExpand (`Patterns.a`), called before every BitBlt and
+  RgnBlt of the rectangle and region cases (and by DrawArc, DrawLine and
+  QuickPolys). Its bit-pattern path `$178B8` tests patStretch -2/2 and
+  indexes PatExTbl by dstShift (`.lit $07E0`); pixel patterns go through
+  PatConvert `$17C60` (MakeScaleTbl `$18278`, PatDither `$188C4`).
 * **The address bits `$01200000`** that send a run to FillLongsBurst
   instead of the block write: what they select in the card's memory map is
   not read.
@@ -2152,7 +2189,7 @@ anything else returns `-$32`) through `.lit $1008`, the module's `.lit` base
 
 The allocator is the module `$372D0`-`$3772C`:
 
-* Its heap descriptor sits at `.data+$1388` (0 in the file).
+* `.data+$1388` holds a pointer to the heap (0 in the file); the header is at the start of the `sysalloc` block (`$37328`-`$37338`). The entry points are `sub_37658` (malloc, initialising on first use), `HeapFree` `$376A0`, and `sub_376EC` (free bytes, no caller); Antelope's own `malloc` users share this heap with the modules.
 * It is created on first use by `sub_372D4`:
   1. call service `$C1` (stub `$38F24`);
   2. subtract `$1000`;
@@ -2186,6 +2223,258 @@ and `$38` (through `sub_31e20(6, …)`). By the command returned:
 Inside the wait, `$26` and `$38` store `p[1]` in `+$1C0` and skip the
 completion, leaving the request open for the caller; from the main loop
 (`n` = -1) both reply 0.
+
+#### Host-loaded modules, end to end
+
+This section follows one module from the host call to the card and back.
+Both sides were read in the exact listings (`gc24.s` `$1404`-`$239A`,
+`$6442`, `$6C70`, `DRVR.s` `$0F0A`/`$06D0`, `text.asm` `$372D0`-`$37C0C`,
+`$32AB8`, `$31F7C`, `$3299C`). The selectors are 32-bit values: the card
+builds them with `constn` (`$FFFF80xx`), and the host tests them as
+`sel - $FFFF8000` (`$190E`). Below they are written `$80xx`.
+
+**The way in.** A program reaches the API through the driver, not through
+the patch table. `DRVR` Control 54 (`$0F0A`) calls the hook in slot
+`$A84` with `(csParam+2, csParam+6, &globals+$AA0)`, and raises the
+card-response timeout (unit `+$002`) to 2000 ticks for the call. Status
+54 (`$06D0`) calls it with `(-1, 0, &globals+$AA0)` and returns the result
+in `csParam+2`. The slot is filled at patch time (`DRVR` `$1076`-`$10A4`):
+gc24 entry #105 has ID `$FFFFFFFD` = -3, so `$A78 + 4·3` = `$A84` gets the
+entry's `+$28`, `bra.l GA_ControlFFFFFFFD` (`$13D8`), which passes its
+three arguments on to `sub_1404` (`$6C70`). DoOpen clears
+`globals+$AA0` (`DRVR` `$00FA`). The card's request 999 uses the same
+handle (`sub_6442` `$6594`: `sub_1404(999, p, globals+$AA0)`), so the
+module state is the one at `globals+$AA0`. No caller of Control or Status
+54 is in this repo. (Under System 6, slot `$A84` holds the codec entry
+instead; see section 10.)
+
+`sub_1404(sel, params, &h)` (C calling convention) creates `h` on first
+use (`NewHandle,SYS,CLEAR($7A)`), locks it for the call, stores the result
+in `+$6A` and unlocks it. An unknown selector returns -50.
+
+**The state block (`$7A` bytes).**
+
+| offset | field |
+|---|---|
+| `+$00` | module table: `$1C`-byte records, `+$5E` of them (16, grows by 16) |
+| `+$04` | task table: `$20`-byte records, `+$5A` of them (32, grows by 32) |
+| `+$08` | module counter (the low part of the next module id) |
+| `+$0C` / `+$0D` | mailbox command posted / reply ready (bytes) |
+| `+$0E` | mailbox command (`$8001`-`$8004`) |
+| `+$12` | mailbox reply |
+| `+$16`, `+$1A`, `+$1E` | its arguments; `+$56` = their count |
+| `+$66` | a private `$70`-byte record from `sub_225C(0)` (not the driver's device record); its `+$6C` points to this block |
+| `+$6A` | the last result |
+| `+$76` | the card message buffer, `$5C` bytes (from `$8002`) |
+
+| module record (`$1C`) | | task record (`$20`) | |
+|---|---|---|---|
+| `+$00` | id `$53000000 \| n` (0 = free) | `+$00` | its module record (0 = free) |
+| `+$04` | image size | `+$04` | the host callback list |
+| `+$08` | card address | `+$08` | the task word (passed to the entry; `$8006`/`$8007`) |
+| `+$0C` | entry point | `+$10` | last command (`$8001`) |
+| `+$10` | the module word (`$8004`/`$8005`) | `+$14` | state: 0 idle, 3 running, 1 accepted, 2 replied |
+| `+$14` | task count | `+$18` | the reply |
+
+Module ids carry a running counter (`$1B1C`), task ids the table index
+(`$1C38`); both are found by masking with `$FFFF`. Task lookups check only
+the `$54` prefix, not the index range or whether the slot is in use.
+
+**The mailbox.** All `$80xx` commands go through the same path. The
+caller fills `+$0E`, `+$16`-`+$1E` and `+$56`, clears `+$12`/`+$0D`, and
+sets `+$0C`. The idle routine `sub_22DA` (selector 11; every wait loop
+calls it) sees `+$0C`, clears it, runs `EngineDispatch(+$0E, &+$16, +$56)`,
+and stores the reply in `+$12` with `+$0D` = 1 (`$22F0`-`$2310`). It then
+tests the status word: bit 2 set means a card request is waiting, and
+`sub_6442` serves it (`$2352`-`$2366`). `sub_21BC(n)` is `$8002(n)` and
+`sub_220C(a)` is `$8003(a)`; both wait for `+$0D`.
+
+On the card the command arrives at the dispatcher's main loop, which sends
+`(cmd & $FF00) == $8000` to `sub_37B58(cmd, count, p)` and stores the
+result as the reply (`$31F7C`-`$31FE0`). `p` is `[packet+$54]`, which
+`InitPacket` sets to `packet+$650` (`$32A0C`-`$32A18`): the argument
+block. The nested wait (`sub_31e20(6, …)`) does not list `$80xx`, so
+modules run only from the main loop.
+
+| command | card (`sub_37B58`, `.lit $1008`) | host user |
+|---|---|---|
+| `$8000` | 0 | none |
+| `$8001` | `p[2](p[0], p[1], sub_379A0)` (`$37B9C`) | `sub_1E7E`, `sub_1FD6` (run a task) |
+| `$8002` | `sub_3779C(p[0])` → `sub_37658`: card heap, the address or 0 | `sub_21BC` (open, load) |
+| `$8003` | `sub_377CC(p[0])` → `HeapFree`; 0 | `sub_220C` (unload) |
+| `$8004` | `p[0] + p[1] + p[2]` | open |
+| other | -50 | |
+
+(verified)
+
+**The card heap.** `sub_37658` (malloc) creates the heap on first use
+(`sub_372D4`): service `$C1` (free memory) minus `$1000`, then `sysalloc`
+(`$101`), retrying 1000 bytes smaller until it succeeds. The block's
+address goes to `.data+$1388`, and `sub_373A0` builds the header in it.
+`sub_37470` is a next-fit allocator (size rounded up to 4, `$0C` bytes of
+header per block, 0 when nothing fits); `sub_3754C` frees and merges.
+`HeapFree` `$376A0` ignores calls before the heap exists. `sub_376EC`
+(free bytes, heap `+$0C`) has no caller. This is Antelope's general heap:
+`sub_37658` and `HeapFree` have about twenty other callers (malloc
+`$33680`, PQDInit, the caches, the C library), so modules share it with
+Antelope itself.
+
+**Open (selector 0, `sub_1604`).** It sets the handle size to `$7A` (trap
+`$A024`, SetHandleSize), makes the private record (`sub_225C(0)`, else -1),
+allocates the two tables with `NewPtrSys` (else `MemErr`), and links the
+record's `+$6C` to the block. Then the echo: `$8004($11111111, $22222222,
+$33333333)`, pumped until `+$0D`; any reply other than `$66666666` frees
+the tables and returns -4 (`$1758`). Finally `$8002($5C)` allocates the
+message buffer into `+$76` (0: -5). It returns 0. Open does not check
+whether it is already open.
+
+**Load (selector 1, `sub_1A2E`, params `{acef, size}`).** It takes a free
+module record (the table grows by 16 if none is free), allocates `size`
+bytes on the card with `$8002`, and calls `ACEFLoad(acef, addr, size)`.
+ACEFLoad relocates the image for `addr` and returns `addr + 4`. It reads
+the header's entry field into `-$8(a6)` but then overwrites it (`$2528`,
+`$2534`), so the entry is always the first word after the first tag word
+of `.text`. The record gets the id `$53000000 | ++counter`. The result is
+the id, or 0 on any failure. When ACEFLoad fails the card block is not
+freed.
+
+**Unload (selector 2, `sub_1B3C`, `{module id}`).** Kills every task of
+the module (`sub_1D70`), frees its card block with `$8003`, and clears the
+record. -1 for a bad id.
+
+**Tasks (selectors 3 and 4).** `sub_1C94` (`{module id}`) takes a free
+task slot through `sub_1BEE`, which sends the new task the message type
+`$FFFF` and waits for the answer (see below). A non-zero answer frees the
+slot, and `sub_1BEE` returns 0. `sub_1C94` treats that 0 as "table full",
+grows the table by 32 and tries again (`$1D5E`). A module whose `$FFFF`
+handler fails therefore makes it loop until `NewPtrSys` fails (returns 0),
+and the module's task count (`+$14`) goes up on every attempt (`$1C6C`).
+On success it returns the task id `$54000000 | index`. `sub_1D70` (`{task
+id}`) sends `$FFFE` and waits (the answer is ignored), frees the callback
+list, decrements the task count and frees the slot.
+
+**Messages.** The caller's message is `{+$04 task id, +$08 flags, +$09
+length in bytes, +$0A type (word), +$0C data}`. Sending (`sub_1E7E`,
+selector 6) does the following:
+1. Wait until the task is in state 0 or 2, pumping `sub_22DA`.
+2. In 32-bit mode (`SwapMMUMode`), write the card buffer `+$76`: the task
+   id at `+$04`, the type at `+$0A`, and `length` bytes of data from
+   `+$0C`, copied in longs. `+$00`, `+$08` and `+$09` are not written,
+   and the length is not checked against the buffer's 80 bytes of data
+   room.
+3. Post `$8001(buffer, task.+$08, module.+$0C)`. The task goes to state 3
+   with reply 0.
+4. Pump until state 2, set state 0, and return the task's `+$18`.
+
+The `$8001` reply itself (the entry's return value, stored in `+$12`) is
+never read. Only a `$8002` request from the task ends the wait, and there
+is no timeout. `sub_1FD6` (selector 7) does steps 1-3 the same way, sets
+bit 7 of the caller's `+$08` (host side only, after the copy), waits only
+until the state leaves 3, and returns the task id. `sub_2130` (selector 8,
+`{task id}`) requires state 1 or 2 (else -1), pumps until 2, sets 0 and
+returns the reply.
+
+**On the card: the entry and the services.** The module is entered as
+`entry(msg, taskword, services)` (`lr2`-`lr4`), where `msg` is the card
+buffer (task id at `+$04`, type at `+$0A`, data at `+$0C`) and `services`
+is `sub_379A0(task, sel, count, argv)`, a C function. `sel - $8008` is
+switched through `.lit $0FC0` (18 cases); `task` is only passed on:
+
+| selector | card (`sub_379A0`) | does |
+|---|---|---|
+| `$8008` | `$378DC(a0, a1, a2)` → `CopyHostMemory(a0, a2, 0, 2, a1)` | copy `argv[2]` bytes of host memory at `argv[0]` into the card buffer `argv[1]` |
+| `$8011` | `sub_3779C(argv[0])` | allocate on the card heap |
+| `$8012` | `sub_377CC(argv[0])`; 0 | free |
+| `$8013` | `$3791C(addr, len, &outLen, &outFlag)` | `MapVirtual(addr, len)`. On -1 it stores 0 in `*outLen` and returns `addr`; otherwise it stores `len` and returns the mapped address. If `outFlag` is non-zero, it gets `extern#1772+$90` (`$13FE0`) |
+| `$8014` | `UnmapAll`, then `sub_16BA0`; 0 | unmap, then free mega buffers 1-9 (`extern#1750+$10`-`$90`) and rewind buffer 0 |
+| `$8015` | `$13FCC` | return `extern#1772+$8C` |
+| `$8016` | `$13FE0` | return `extern#1772+$90` (the mapping flag) |
+| `$8017` | `$13FF4`; 0 | clear the mapped-range list head `extern#1772+$00` |
+| `$8018` | `$1400C` | return `extern#1651`: the 36-byte block PQDInit allocates (`$1671C`); `+$00` = `&extern#1772`, `+$10` = `&extern#1750`, `+$1C` = the packet base, the rest pointers into `.data` and Antelope's blocks |
+| `$8019` | `$14020` | return the entry table `extern#1636` |
+| `$8009`-`$8010` and anything outside `$8008`-`$8019` | `sub_37730` | `CallBack(999, 1, 4, task, sel, count, argv)`; after `$8003`, also `sub_32AB8(1)` |
+
+(verified against `.lit $0FC0`-`$1004`)
+
+The entry table (24 functions, see "The entry table, named") gives the
+module the QuickDraw core and also `CallBack` (`+$44`). With `CallBack` a
+module can make any host request directly (handles, resources, memory
+locking), including codes 3-7, 16 and 20, which Antelope itself never
+uses. `CallBack` works only while a command is active (packet `+$14` set),
+that is, while the module's `$8001` call has not returned.
+
+**Request 999 on the host.** `sub_6442` (`$657E`) calls `sub_1404(999, p,
+globals+$AA0)` and writes the result to mailbox `+$08`. `p` is the
+mailbox argument block (low 20 bits of mailbox `+$14` plus the packet's
+top 12 bits): `{task, sel, count, argv}`. `sub_1404` copies `count` longs
+from `argv` into a 16-long local array in 32-bit mode (`$15A8`; `count` is
+not checked, and `argv` is used without translation), then calls
+`sub_18BE(state, task, sel, count, copy)`. A task id must have the `$54`
+prefix, or be 0 (else -1).
+
+| selector | host (`sub_18BE`, table at `$192C`) |
+|---|---|
+| `$8000` | returns the `task` argument |
+| `$8001`, `$8008`-`$800F`, other values ≤ 0 | -1 |
+| `$8002` | the reply: task `+$18` = `argv[0]`, state 2. With task 0: mailbox `+$12` = `argv[0]`, `+$0D` = 1 |
+| `$8003` | state 1 ("accepted") |
+| `$8004` / `$8005` | get / set the module word (`+$10`); -50 without a task |
+| `$8006` / `$8007` | get / set the task word (`+$08`); -50 without a task |
+| `$8010` | `_Debugger`, returns 0 (the `moveq #1` at `$19E0` is overwritten at once) |
+| > 0 | the first callback registered for `sel` on this task: `proc(count, argv, refcon)` (Pascal, long result); -1 if there is none or no task |
+
+Host callbacks are registered with selector 5 (`sub_1E12`, `{task, sel,
+proc, refcon}`, `sel` > 0, else -1): a list of `{sel, proc, refcon, next}`
+nodes. Registering a `sel` again replaces `proc` and keeps the old
+`refcon`. A callback sees the host's copy of `argv`, so it can answer only
+through its result (or by writing card memory through pointers it is
+given). The card-side wrappers for `$8004`-`$8007` (`$37838`, `$377FC`,
+`$378A8`, `$3786C`) exist but have no callers. A module sends these
+selectors through `services`, which forwards them to 999.
+
+**Replies, synchronous and asynchronous.** A module answers a message by
+calling `services(task, $8002, 1, &value)` before it returns. To work on
+after the host has stopped waiting, it calls `$8003` first. The host then
+sets state 1, and `sub_37730` calls `sub_32AB8(1)`, which waits until
+status bit 2 is clear and writes 1 to packet `+$18` (and
+`*[packet+$20]`). `+$14` is left set. The host's `EngineDispatch` sees
+bit 0 and returns the `$8001` reply that is still in `+$1C` (the 1 that
+the dispatcher stored when it took the command), and `sub_1FD6` returns.
+The module keeps running inside the still-open `$8001`. It can go on
+making requests, which the host serves from its idle routine. A later
+`$8002` sets state 2 for selector 8. When the entry returns, the
+dispatcher completes normally (`+$14` = 0, status 3).
+
+Reading: during that window the host considers the card idle (`sub_624A`
+waits only for status bits 0-1). A command posted then is not taken until
+the entry returns, and the completion of `$8001` clears `+$14` and posts
+status 3 over it. Nothing in gc24 guards against this. Nothing in this
+repo uses the asynchronous path.
+
+**Card addresses on the host.** The host writes the `$8002` buffer
+(`+$76`) and reads the 999 `argv` without any translation in 32-bit mode
+(`$1F0C`, `$15B2`). So card addresses (slot nibble on top, filled in by
+Boot) are usable as host 32-bit addresses. Only the mailbox pointer itself
+is rebuilt from its low 20 bits.
+
+**Results, all selectors.**
+
+| sel | result |
+|---|---|
+| -1 | the last result |
+| 0 | 0; -1 (no record); `MemErr`; -4 (echo); -5 (no card buffer) |
+| 1 | module id, or 0 |
+| 2 | 0; -1 |
+| 3 | task id, or 0 |
+| 4 | 0; -1 (bad prefix) |
+| 5 | 0; -1; `MemErr` |
+| 6 | the task's reply; -1 (bad prefix) |
+| 7 | the task id; -1 |
+| 8 | the task's reply; -1 (not state 1 or 2) |
+| 9 / 10 | 1 / 0 |
+| 11 | 0 (the idle routine) |
+| 999 | as in the table above, also written to mailbox `+$08` |
+| other | -50 |
 
 #### The case blocks
 
@@ -2479,7 +2768,7 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | `$CB` | `$2001414` | adds `lr2` to `[$4C003120]` when `gr64` bit 20 is set, else returns 0 | `$38FF8` |
 | `$CC` | `$200146C` | region-table add (`$2001478`): map a memory range | `$39018`; `TestMMU`, `MapVirtual`, the dispatcher |
 | `$CD` | `$20015F8` | region-table remove (`$2001604`; -1 = all) | `$39028`; `TestMMU`, `MapVirtual`, `UnmapAll`, the dispatcher |
-| `$CE` | `$2001774` | checks that `lr2` is 1 KB-aligned, then works on the region table at `$4C003168` (not read further) | `$39038` |
+| `$CE` | `$2001774` | translates a 1 KB-aligned address through the region table (`$4C003168` count, 12-byte entries from `$4C00316C`: start, length, target): returns 0 and the target address in `gr122` (the stub stores it to `*lr3`); an unaligned or unmapped address takes the error path | `$39038` |
 | `$CF` | `$2001950` | set interrupt handler `n` (0-3) to `fn` (`$4C00617C + 4n`); 0, else -1 | `$390D4`; `TestInterrupts` |
 | `$D0` | `$20019BC` | return from an interrupt handler (the flag and saved registers at `$4C00618C`) | `$390E4`; the interrupt handlers |
 | `$D1` | `$2001A48` | returns `[$4C006804]` (`PublicOut+$04`) | `$390F4` |
@@ -2487,7 +2776,7 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | `$D3` | `$2001820` | host access mode: stores `lr2` at `$4C006848`, switches OPS bit 6, returns the old mode | `$390B4`; `TestMMU`, `CopyHostMemory`, `MapVirtual`, the dispatcher |
 | `$D4` | `$2001808` | translates `lr2` through the table walker `$2001C2C`: physical address in `gr96`, length in `gr122` (the stub stores it to `*lr3`) | `$39050`, `$39064`; `TestMMU`, `CopyHostMemory` |
 | `$D5` | `$2001260` | slot burst mask: `lr2 < 0` returns it, else clears bit `lr2` of `[$4C00643C]` and writes the mask to `$46000000` | `$39104`; command `$14` |
-| `$D6` | `$2001888` | clears `gr64` bit 8 and sets OPS bit 11 (not read further) | `$390C4` |
+| `$D6` | `$2001888` | clears flags bit 8, sets OPS bit 11 and writes 0 to `$4400005C`: the reverse of what kernel init does when bit 8 is set (see section 9, the flags word) | `$390C4` |
 
 The self-test's use of them agrees with the handlers: `TestMMU` reports
 "mapmem failed" after `$CC`, "mmu error" after `$CD`, "get phys size" and
@@ -2571,6 +2860,43 @@ debug messages are not delivered. (An earlier version of this paragraph
 said that no client sends cs17. That came from scanning only some of
 the control panel's `_Control` calls.)
 
+**The flags word on the card.** The kernel loads `PublicIn+$18` into
+`gr64` at init (`$200200C`) and tests it bit by bit (`sll gN, gr64, 31-bit`
+followed by a jump); Antelope reads it through `$BB`. Set by the host
+(`SetFeatureFlags`, `DRVR.s` `$2AD2`) or by the kernel:
+
+| bit | value | set by | used by (card) |
+|---|---|---|---|
+| 0 | `$1` | config `$20` (default) | init: on a CPU with revision (CFG bits 24-31) of 2 or more the flag leaves CFG bit 0 clear, otherwise CFG bit 0 is set (`$2002248`) |
+| 1, 3 | `$2`, `$8` | - | init: bit 3 sets CFG bit 1; else bit 1 sets it too, followed by a special store (`$2002288`); bit 1 also adds words to the register dump (`$2002A44`) |
+| 2 | `$4` | - | vector 4 (coprocessor exception): ignored if set, else reason `$9D` |
+| 5 | `$20` | GC card types | init: clears the TLB and the pager's tables (`$4C002818`, `$4C002CA8`, free list `$4C002810`), i.e. demand paging is set up (`$2002370`) |
+| 6, 7 | `$40`, `$80` | - | init: written, inverted, to `$44000090` and `$4400008C` |
+| 8 | `$100` | GC card types | init: clears OPS bit 11 and writes -1 to `$4400005C` (`$20022D8`); cleared at init when a probe finds nothing (`$20021C0`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
+| 9 | `$200` | config `$40` (default) | not tested by the kernel; Antelope's `storem` fills and copies (`$37C40`, `$37D98`, `$38248`, `$38900`) bracket their bursts with service `$B9` (OPS bit 4) when it is set |
+| 10 | `$400` | - | init: OPS bit 13; vector 15 (trace) |
+| 11 | `$800` | host, until config `$100` (cs50) clears it | the mailbox: when set, the kernel does not post its reports (`$2001BC0`, `$2002AAC`) |
+| 15 | `$8000` | - | vector 2 (out of range): ignored if set, else reason `$93` |
+| 16 | `$10000` | - | the kernel stops after init with reason `$A1` instead of starting the program (`$2002634`); the timer vector's debug hook (`$2000978`); also read by Antelope's feature-flag readers in file 25 |
+| 17 | `$20000` | - | init: OPS bit 1 |
+| 18 | `$40000` | - | vector 1 (unaligned access) and init: when clear, CFG bit 5 is set |
+| 19 | `$80000` | - | init: the timer runs without its interrupt (TMR `$7530` instead of `$01007530`) |
+| 20 | `$100000` | DRAM above `$0D000000` | init picks the heap base (`$20025CC`); services `$C1` and `$CB` |
+| 21 | `$200000` | GC card types | init: OPS bit 4 |
+| 23 | `$800000` | GC card types | not tested on the card; the host's `ACEFLoad` uses the same bit as "load into the top of DRAM" |
+| 24 | `$1000000` | `globals+$254` | not tested by the kernel |
+| 27 | `$8000000` | kernel | "regions registered": set by the region add (`$CC`, `$20014B4`), cleared by the remove (`$2001764`) and at init; the TLB-miss handler and the table walker `$2001C2C` test it |
+| 28 | `$10000000` | - | service `$D2` restarts the kernel |
+| 29 | `$20000000` | kernel init, when `[$46000000]` reports a hardware revision of 1 or more (`$2002208`) | not tested in `Hand` |
+| 30 | `$40000000` | - | data TLB miss outside any region: record it at `$4C0061C8`/`$61CC` instead of failing with reason `$A6` (a debugger watch); trace vector |
+| 31 | `$80000000` | - | vector 7 (data access exception) takes its recovery path only when set (`$2000594`) |
+
+So the default flags (`$A00B21` on a GC card with the default config: bits 0,
+5, 8, 9, 11, 21, 23) turn on paging, the `storem` interlock and the card
+register set-up, and leave the debug bits (2, 15, 16, 30, 31) and the mailbox
+off. The CFG and OPS bits are given by number; which processor features they
+are was not looked up.
+
 **The Control 18 word is the card-response timeout, in ticks.** The
 driver never reads unit `+$002` itself, apart from returning it with
 Status. It sets it to 300 (5 s) when it builds the unit record (`DRVR.s`
@@ -2632,7 +2958,8 @@ The handlers are in the same order, each `$140`-`$17C` bytes lower
 System 7's extra service `$D6` (`$2001888`: clears `gr64` bit 8, sets
 `OPS` bit 11, stores 0 to `$4400005C`) has one caller, PQDInit
 (`$163DC`). System 6's Antelope has no stub for it. The System 6 `Hand`
-and `Boot` listings are plain generated ones, not annotated.
+and `Boot` listings are annotated with their System 7 counterparts (see
+"The System 6 kernel against System 7's" below).
 
 ### The System 6 key
 
@@ -2641,6 +2968,119 @@ System 7's (`acef_unpack.py`). The KEY byte is `$D7` for `ACEF` 100
 (System 7: `$4D`) and `$18` for `ACEF` 1 (System 7: `$BC`). (An earlier
 version of this section fitted a key per word from relocation and idiom
 samples with `antelope6_key.py`. That tool is removed.)
+
+### The System 6 kernel against System 7's
+
+`Hand` has 2,781 words in System 6 and 2,885 in System 7 (`$2B74` / `$2D14` bytes).
+`Boot` is `$800` bytes in both, but System 6's code ends at `$2003764` (System 7
+`$20037EC`) and the rest is zero. The two `Hand` listings were aligned on the
+instruction text, with branch targets ignored. 2,725 System 6 instructions
+match a System 7 one; a byte-for-byte alignment matches 2,654 words. All data
+addresses are the same: `$4C00xxxx`, the `$44xxxxxx` registers, and the
+PublicIn, PublicOut, HifComm and VidComm offsets. The annotated System 6
+listings are `firmware/sw11/disasm/Hand.asm` and `Boot.asm`; each banner there
+gives the System 7 address of its routine.
+
+System 6 address = System 7 address − delta. The delta is `$150` for
+`$2000324`-`$2001494`, `$140` to `$20015F4`, `$14C` to `$2001880`, `$17C` to
+`$2002484`, and `$1A0` from `$2002518` to the end. The vector table that Boot
+builds lists the same handlers in the same order. Only their addresses differ
+(for example, the default vector is `$2001B8C` against `$2001D08`).
+
+| routine | System 6 | System 7 | |
+|---|---|---|---|
+| vector 0 / entry (`jmp` fatal reporter, reason `$91`) | `$2000000` | `$2000000` | same |
+| vector 1, unaligned access | `$2000008` | `$2000008` | **changed** (115 words against 199) |
+| vector 7, data access | `$2000208` | `$2000358` | same |
+| vectors 6, 8/10, 9/11 (TLB miss), 12, 13 | `$20004F4` … `$2000758` | `$2000644` … `$20008A8` | same |
+| vectors 2-5, timer, trace, 68 | `$20007B8` … `$2000998` | `$2000908` … `$2000AE8` | same |
+| INTR0-3 | `$20009B8`, `$20009F8`, `$2000A48`, `$2000F14` | `$2000B08`, `$2000B48`, `$2000B98`, `$2001064` | same |
+| video command service (VidComm) | `$2000AC4` | `$2000C14` | same |
+| interrupt dispatch | `$2000F54` | `$20010A4` | same |
+| TRAP0/1, spill, fill | `$2000FF4` … `$2001068` | `$2001144` … `$20011B8` | same |
+| vector 66 service dispatcher | `$2001098` | `$20011E8` | **changed** (bound) |
+| service handlers | `$20010D4`-`$20018E4` | `$2001224`-`$2001A60` | see below |
+| region-table insert / remove | `$2001328` / `$20014B8` | `$2001478` / `$2001604` | **changed** |
+| vector 69, HIF services | `$20018F4` | `$2001A70` | same |
+| range clip / table walker | `$2001AB0` | `$2001C2C` | same |
+| default vector, pager | `$2001B8C`, `$2001B94` | `$2001D08`, `$2001D10` | same |
+| kernel init | `$2001E80` | `$2001FFC` | **changed** (TLB count, monitor table) |
+| report to host (mailbox) | `$20024B0` | `$2002650` | same |
+| PC trace | `$20025F4` | `$2002794` | same |
+| fatal-trap reporter | `$2002668` | `$2002808` | same |
+
+What changed:
+
+* **Unaligned access (vector 1).** System 6 clears CFG `$20` and CHC bit 0
+  on entry. It checks each halfword separately with the walker (`$2001AB0`,
+  length 2). System 7 sets CFG `$20` and checks the whole word (length 4),
+  with a fast path when the whole word passes. It also has a second path
+  with no range check when OPS bit 6 (`$40`) is set (`$200022C`). OPS bit 6
+  is the bit that service `$D3` switches for host access. System 7 also
+  treats a load/store-multiple count of 0 as `$200` and clears CHC on exit.
+  So in System 7, unaligned accesses work in the physical host-access mode.
+  In System 6 they always go through the region table (reading).
+* **TLB scans.** Four routines clear the TLB entries tagged `$36`: insert
+  (`$200144C`), remove (`$200159C`), `$D3` (`$2001704`) and init
+  (`$200225C`). In System 6 these loops run `$3E`+2 = 64 steps of 2, which is
+  exactly the Am29000's 128 TLB registers. System 7 runs `$7E`+2 = 128 steps
+  (`$2001594`, `$20016E8`, `$2001850`, `$20023D8`). I can't say why; it is
+  not needed for an Am29000.
+* **Monitor table, in Boot and in kernel init.** Boot reads the three sense
+  lines (`$44000044/48/4C`). Code 7 is an extended sense, and Boot reads it as
+  `code << 4 | $0F`. The value is stored at `$4C006D08`. Boot
+  (`$200365C`, System 7 `$20036BC`) turns it into PublicOut+`$28`, and kernel
+  init (`$20022C8`, System 7 `$2002444`) turns it into a row size `gr81`.
+  The row size times (PublicOut+`$28` + 6), plus PublicOut+`$1C`, gives
+  `$4C003120` and the heap start. Both builds have codes 0-6, `$14F` (486
+  lines, `$A00`) and `$0F`. System 6 gives `$0F` 560 lines (`$230`); System 7
+  gives 576 (`$240`). Only System 7 has `$2DF` (624 lines `$270`, row
+  `$680`) and `$30F` (576 lines, row `$A00`). Read as Apple's extended sense
+  codes, `$2D` is the 16" 832×624 display, `$30` is PAL (alternate) and `$00`
+  is PAL (reading). So System 7's kernel adds the 16" monitor and corrects
+  PAL to 576 lines.
+* **Extended sense probe in Boot** (`$20033C8`, System 7 `$20033C8`).
+  System 6 first zeroes `$44000034`-`$44000048`; System 7 zeroes only
+  `$38`-`$40`. In each round one drive line (`$4400002C/30/34`) is set to −1
+  and the other two sense lines are read. System 6 leaves `$44000030` alone
+  in round 1 and has no settle delay. Its round 1 reads each line twice.
+  System 7 waits through an 8-step loop (`$200341C`, `$2003484`, `$20034EC`)
+  before every read. I read this as a timing fix.
+
+Service table (vector 66): the handlers are the same code in the same order,
+except for these:
+
+| service | System 6 | System 7 | difference |
+|---|---|---|---|
+| dispatcher | `$20010A4` `cpge …, $D5` | `$20011F4` `cpge …, $D6` | the bound follows the table size. Both builds compare it with the *index* (number − `$B6`), not the number, so numbers up to `$18A` (System 6) or `$18B` (System 7) pass the check and jump through words past the table (reading) |
+| `$CC` region insert | `$200131C` → `$2001328` | `$200146C` → `$2001478` | System 6 also requires `lr4` to be 1 KB-aligned (`$2001348`-`$2001354`, else −6). System 7's −6 exit (`$20015D8`) is unreachable |
+| `$CD` region remove | `$20014B8`, the routine itself | `$20015F8`: `call $2001604`, `iret` | System 6 ends with `iret`, but its error exits (−9, −8, −4 at `$2001480`-`$20014A8`) are the insert routine's `jmpi gr69`, and no call has set `gr69`; its TLB loop also uses `gr69` as the counter. System 7's wrapper makes the errors return properly. Probably a System 6 bug (reading) |
+| `$D3` host access mode | `$20016D4` | `$2001820` | TLB scan count only |
+| `$D6` | none | `$2001888` | only in System 7 (System 6's Antelope has no stub) |
+
+All other services (`$B8`, `$B9`, `$BB`, `$BF`, `$C0`-`$C8`, `$CB`, `$CE`-`$D2`,
+`$D4`, `$D5`, and the −42 entries) are the same code, at the addresses in the
+sw11 `RuntimeData.asm`.
+
+**Effect on the host protocol: none for the fields.** The following are
+instruction for instruction the same in both builds:
+
+* the Boot handshake: poll PublicIn+0 for `$42005300` (`$2003078`), the data
+  copy, the top nibble of PublicOut+`$0C`-`$18`;
+* the `'WY1`'` warm-start path (VidComm+`$18`, VidComm+`$08`-`$14` →
+  PublicOut+`$1C`-`$28`);
+* the kernel init's use of PublicIn+`$04`/`$10`/`$18`/`$40`;
+* the mailbox report (`'s337'`/`$96666669` at `$4C007000`) and the reason
+  codes;
+* the VidComm command service, including PublicIn+`$3D4` restart and the
+  page permutation;
+* the HIF services.
+
+A host driver written for one kernel works with the other. What differs is
+what the card reports: PublicOut+`$28` for a PAL monitor (560 against 576),
+and the 16" and PAL-alternate monitors, which System 6's kernel does not
+recognize. Those take the default 480 lines (`$1E0`) in Boot and row `$50` in
+init (reading). Service `$D6` is missing too.
 
 ### System 6 against System 7, function by function (`antelope_compare.py`)
 
