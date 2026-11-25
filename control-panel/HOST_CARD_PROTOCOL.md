@@ -2716,9 +2716,11 @@ readable. It is a Unix-style C library on AMD's HIF system calls:
 | `.data+$1580` | `_iob` (20-byte `FILE`s; `stdout` at `+$14`) | |
 | `$39284` | `printf` | spills its varargs; if bit 15 of a flag halfword of `stdout` is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0(x, stdout, fmt, ap)`, where `x` is a relocated address not read here |
 | `$39214` | `vprintf` | the same without the spill |
-| `$399E0` | `_doprnt` (the formatting core) | calls memset, the `_ctype_` table, and the number converters `$3A5A4`-`$3AC24` |
+| `$399E0` | `_doprnt` (the formatting core) | calls memchr (4 times; `%s` with a precision), the `_ctype_` table, and the number converters `$3A5A4`-`$3AC24` |
 | `$39304` | `fseek` | calls lseek; `(fp, 0, 2)` is `SEEK_END` |
-| `$3B500` | `memset` | returns if `n` = 0; replicates the byte to a word |
+| `$3B500` | `memchr(s, c, n)` (earlier read as memset) | returns 0 if `n` = 0; replicates `c` into a word and scans with `cpbyte`; returns the address of the match or 0 |
+| `$3B600` | `memcpy(dst, src, n)` | returns `dst`; byte, halfword or word loops by alignment, forward only; 30 calls from Apple's code |
+| `$3B748` | `memset(dst, c, n)` | returns `dst`; replicates `c`, stores words, masks the partial words at both ends; one caller (`$3B300`) |
 | `.lit+$1021` | `_ctype_` (+1 for EOF) | |
 | `$3AA9C`-`$3ABB4` | isupper, islower, isalpha, isdigit, isxdigit, isspace, ispunct, isalnum, isgraph, isprint, iscntrl | `_ctype_[c]` masked with 1, 2, 3, 4, `$44`, 8, `$10`, 7, `$17`, `$97`, `$20`: the V7/BSD bits `_U _L _N _S _P _C _X _B` (the masks are bits 0-7, plain) |
 | `$3ABD0` `$3ABE0` `$3ABEC` `$3ABF8` `$3AC24` | isascii (c ≤ `$7F`), `_toupper`, `_tolower`, toupper, tolower | `c - $20` / `c + $20`, the last two only if `_L` / `_U` |
@@ -2856,7 +2858,20 @@ end of `.text`. Only bits 0-1 of the `.text` key are shown to hold for `.lit`.
 * **`.data`, `.data1`, `Apple` and `Code` do not share this keystream.** None
   matches the `.text` key at the same index. No offset from 0 to 70,000 words
   makes even 5% of `.data`'s low 13 bits decode to zero, although 919 of its
-  1,596 words have a zero top byte.
+  1,596 words have a zero top byte. Restarting the `.text` key at each object
+  file's `.data` start (23 files have `.data`) fails too: 1 of 919.
+* **But `.data` is masked by the same kind of generator, with its own
+  tables** (`antelope_data_key.py`). Over the zero-top-byte words, bits 0-4
+  are equal at distance 24 in 76% of pairs, and bits 0-7 at distance 48 in
+  68%, against 0-5% at other distances. That is the `.text` key's column
+  structure (period 24 for bits 0-4, 48 for bits 5-6, and so on). A majority
+  fit per class, assuming those words are mostly zero, decodes 288 of them to
+  0 in bits 0-8 (chance about 2) and 257 in bits 0-10 (chance under 1). Bits
+  9-10 have only 2-4 samples per class and are often wrong. In `_iob`
+  (`.data+$1580`, file 44) the 20-byte `FILE` stride shows, and word 4 of each
+  of the first three entries has the plaintext top byte `$50`. That doesn't fit
+  BSD's `_flag<<16 | _file<<8`, so the library's `FILE` layout is not BSD's
+  in that word.
 
 ## 8. The kernel's service table (vector 66)
 

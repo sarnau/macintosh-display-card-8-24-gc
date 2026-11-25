@@ -18,8 +18,10 @@
 *  agree), a "!" bits 16-23 inside a step of the key, where the
 *  switch point was chosen from opcode statistics (less sure).
 *  Both are decoded in full, with jump and call targets.  "??" is
-*  a byte still masked (no estimate).  Labels sub_XXXXX are the 768
-*  .text entries of the (unmasked) ACEF symbol table.  Functions
+*  a byte still masked (no estimate).  Labels sub_XXXXX are the 709
+*  functions of the (unmasked) ACEF symbol table; file_NN marks the
+*  .text start of object file NN (antelope_modules.py), usually the
+*  tag word in front of the file's first function.  Functions
 *  named in HOST_CARD_PROTOCOL.md carry their name on the label line
 *  and after each target that points at them (NAMES in the script;
 *  names by role where the original is unknown).
@@ -51,6 +53,7 @@
 *    constn      509
 *
 
+file_01:   ; object file 1 (C): .text starts here
 sub_00000:
   00000:  03006000   const    gr96, $0000   ; lo of extern#1756
   00004:  02006000   consth   gr96, $0000   ; -> extern#1756+$0000
@@ -143,6 +146,7 @@ sub_000f4:
   00138:  c0000080   jmpi     lr0
   0013c:  70400101   nop         ; [delay slot]
 
+file_02:   ; object file 2 (asm): .text starts here
 sub_00140:   ; Report
   00140:  03006000   const    gr96, $0000   ; lo of .data+$284
   00144:  02006000   consth   gr96, $0000   ; -> .data+$0284
@@ -1094,7 +1098,7 @@ sub_00f6c:
   00f6c:  c0000080   jmpi     lr0
   00f70:  15818200~  add      lr1, lr2, $00   ; [delay slot]
 
-sub_00f74:
+file_04:   ; object file 4 (C-g): .text starts here; tag word of the next function
   00f74:  00030000~  .word    $00030000
 
 sub_00f78:
@@ -1431,7 +1435,7 @@ sub_01468:
   01488:  c0000080   jmpi     lr0
   0148c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_01490:
+file_05:   ; object file 5 (C-g): .text starts here; tag word of the next function
   01490:  00120040~  .word    $00120040
 
 sub_01494:   ; RSect
@@ -1741,7 +1745,7 @@ sub_01910:
   01940:  87608401~  sra      gr96, lr4, $01
   01944:  14606061~  add      gr96, gr96, gr97
   01948:  03006100   const    gr97, $0000   ; lo of .text+$3b950
-  0194c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  0194c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   01950:  c8007a61~  calli    gr122, gr97
   01954:  9e826084~  setip    lr2, gr96, lr4   ; [delay slot]
   01958:  ac006203~  jmpt     gr98, $01964
@@ -1808,7 +1812,7 @@ sub_01970:
   01a44:  c0000080   jmpi     lr0
   01a48:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_01a4c:
+file_06:   ; object file 6 (C-g): .text starts here; tag word of the next function
   01a4c:  000f0018~  .word    $000f0018
 
 sub_01a50:   ; BitBlt
@@ -1887,7 +1891,7 @@ sub_01a50:   ; BitBlt
   01b70:  16008d62~  load     0, 0, lr13, gr98
   01b74:  03006000   const    gr96, $0000   ; lo of .text+$3ba38
   01b78:  15618d01~  add      gr97, lr13, $01
-  01b7c:  02006000   consth   gr96, $0000   ; -> .text $3ba38 (sub_3ba38)
+  01b7c:  02006000   consth   gr96, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   01b80:  c8007a60~  calli    gr122, gr96
   01b84:  9e606184~  setip    gr96, gr97, lr4   ; [delay slot]
   01b88:  25606001~  sub      gr96, gr96, $01
@@ -6760,7 +6764,7 @@ sub_064c4:
   06644:  c0000080   jmpi     lr0
   06648:  70400101   nop         ; [delay slot]
 
-sub_0664c:
+file_07:   ; object file 7 (C-g): .text starts here; tag word of the next function
   0664c:  00040000~  .word    $00040000
 
 sub_06650:   ; ITabMatch
@@ -7057,7 +7061,7 @@ sub_069a0:
   06ac0:  02008300   consth   lr3, $0000   ; -> .data+$02fc
   06ac4:  15828900~  add      lr2, lr9, $00
   06ac8:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  06acc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  06acc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   06ad0:  c8008080~  calli    lr0, lr0
   06ad4:  03008406~  const    lr4, $0006   ; [delay slot]
   06ad8:  15010118   add      gr1, gr1, $18
@@ -7069,7 +7073,7 @@ sub_069a0:
   06af0:  1583600a~  add      lr3, gr96, $0a
   06af4:  15828900~  add      lr2, lr9, $00
   06af8:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  06afc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  06afc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   06b00:  c8008080~  calli    lr0, lr0
   06b04:  03008406~  const    lr4, $0006   ; [delay slot]
   06b08:  15010118   add      gr1, gr1, $18
@@ -7116,7 +7120,7 @@ sub_06b1c:
   06ba4:  c0000080   jmpi     lr0
   06ba8:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_06bac:
+file_08:   ; object file 8 (C-g): .text starts here; tag word of the next function
   06bac:  00030000~  .word    $00030000
 
 sub_06bb0:
@@ -7205,7 +7209,7 @@ sub_06bec:   ; BitsToPixMap
   06cf0:  15838c06~  add      lr3, lr12, $06
   06cf4:  15828e00~  add      lr2, lr14, $00
   06cf8:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  06cfc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  06cfc:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   06d00:  c8008080~  calli    lr0, lr0
   06d04:  03008408~  const    lr4, $0008   ; [delay slot]
   06d08:  15608d04~  add      gr96, lr13, $04
@@ -7697,7 +7701,7 @@ sub_06f1c:   ; ColorMap
   07498:  158c7d08~  add      lr12, gr125, $08   ; [delay slot]
   0749c:  15828c00~  add      lr2, lr12, $00
   074a0:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  074a4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  074a4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   074a8:  c8008080~  calli    lr0, lr0
   074ac:  03008406~  const    lr4, $0006   ; [delay slot]
   074b0:  03006000   const    gr96, $0000   ; lo of .text+$6b1c
@@ -7775,7 +7779,7 @@ sub_06f1c:   ; ColorMap
   075d0:  a0ff0048~  jmp      $072f0
   075d4:  61616100~  cpeq     gr97, gr97, $00   ; [delay slot]
 
-sub_075d8:
+file_09:   ; object file 9 (C-g): .text starts here; tag word of the next function
   075d8:  00120110~  .word    $00120110
 
 sub_075dc:   ; DrawArc
@@ -7860,14 +7864,14 @@ sub_075dc:   ; DrawArc
   07714:  70400101   nop         ; [delay slot]
   07718:  ac00a907~  jmpt     lr41, $07734
   0771c:  03006000   const    gr96, $0000   ; [delay slot]   ; lo of .text+$3b950
-  07720:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  07720:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   07724:  c8007a60~  calli    gr122, gr96
   07728:  9e76a962~  setip    gr118, lr41, gr98   ; [delay slot]
   0772c:  a0000009~  jmp      $07750
   07730:  15a97400~  add      lr41, gr116, $00   ; [delay slot]
   07734:  3561a900~  subr     gr97, lr41, $00
   07738:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  0773c:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  0773c:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   07740:  c8007a60~  calli    gr122, gr96
   07744:  9e766162~  setip    gr118, gr97, gr98   ; [delay slot]
   07748:  24746274~  sub      gr116, gr98, gr116
@@ -8197,7 +8201,7 @@ sub_075dc:   ; DrawArc
   07c58:  160061b1~  load     0, 0, gr97, lr49
   07c5c:  03006200   const    gr98, $0000   ; lo of .text+$3ba38
   07c60:  15616101~  add      gr97, gr97, $01
-  07c64:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38)
+  07c64:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   07c68:  c8007a62~  calli    gr122, gr98
   07c6c:  9e616160~  setip    gr97, gr97, gr96   ; [delay slot]
   07c70:  25636101~  sub      gr99, gr97, $01
@@ -8553,7 +8557,7 @@ sub_081e0:
   081e0:  ac008208~  jmpt     lr2, $08200
   081e4:  030062b4~  const    gr98, $00b4   ; [delay slot]
   081e8:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  081ec:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  081ec:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   081f0:  c8007a60~  calli    gr122, gr96
   081f4:  9e768262~  setip    gr118, lr2, gr98   ; [delay slot]
   081f8:  a000000a~  jmp      $08220
@@ -8561,7 +8565,7 @@ sub_081e0:
   08200:  35618200~  subr     gr97, lr2, $00
   08204:  030062b4~  const    gr98, $00b4
   08208:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  0820c:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  0820c:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   08210:  c8007a60~  calli    gr122, gr96
   08214:  9e766162~  setip    gr118, gr97, gr98   ; [delay slot]
   08218:  357474b4~  subr     gr116, gr116, $b4
@@ -8711,7 +8715,7 @@ sub_08354:
   08450:  87606010~  sra      gr96, gr96, $10
   08454:  81606010~  sll      gr96, gr96, $10
   08458:  03006100   const    gr97, $0000   ; lo of .text+$3b950
-  0845c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  0845c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   08460:  c8007a61~  calli    gr122, gr97
   08464:  9e83608a~  setip    lr3, gr96, lr10   ; [delay slot]
   08468:  15888918~  add      lr8, lr9, $18
@@ -8824,7 +8828,7 @@ sub_084ac:
   0860c:  c0000080   jmpi     lr0
   08610:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_08614:
+file_10:   ; object file 10 (C-g): .text starts here; tag word of the next function
   08614:  001200b0~  .word    $001200b0
 
 sub_08618:   ; DrawLine
@@ -9110,7 +9114,7 @@ sub_08618:   ; DrawLine
   08a74:  81626010~  sll      gr98, gr96, $10
   08a78:  24619a98~  sub      gr97, lr26, lr24
   08a7c:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  08a80:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  08a80:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   08a84:  c8007a60~  calli    gr122, gr96
   08a88:  9e9b6261~  setip    lr27, gr98, gr97   ; [delay slot]
   08a8c:  63679d01~  cpneq    gr103, lr29, $01
@@ -9392,7 +9396,7 @@ sub_08618:   ; DrawLine
   08edc:  16006199~  load     0, 0, gr97, lr25
   08ee0:  03006200   const    gr98, $0000   ; lo of .text+$3ba38
   08ee4:  15616101~  add      gr97, gr97, $01
-  08ee8:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38)
+  08ee8:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   08eec:  c8007a62~  calli    gr122, gr98
   08ef0:  9e616160~  setip    gr97, gr97, gr96   ; [delay slot]
   08ef4:  25626101~  sub      gr98, gr97, $01
@@ -11380,7 +11384,7 @@ sub_0ac0c:
   0ad0c:  c0000080   jmpi     lr0
   0ad10:  70400101   nop         ; [delay slot]
 
-sub_0ad14:
+file_11:   ; object file 11 (C-g): .text starts here; tag word of the next function
   0ad14:  000d05a8~  .word    $000d05a8
 
 sub_0ad18:   ; DrawMultiObject
@@ -11716,7 +11720,7 @@ sub_0ad18:   ; DrawMultiObject
   0b23c:  15828500~  add      lr2, lr5, $00
   0b240:  1583cf00~  add      lr3, lr79, $00
   0b244:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0b248:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0b248:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0b24c:  c8008080~  calli    lr0, lr0
   0b250:  03008406~  const    lr4, $0006   ; [delay slot]
   0b254:  0300cc00~  const    lr76, $0000
@@ -11784,7 +11788,7 @@ sub_0ad18:   ; DrawMultiObject
   0b34c:  15828500~  add      lr2, lr5, $00
   0b350:  1583cf00~  add      lr3, lr79, $00
   0b354:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0b358:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0b358:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0b35c:  c8008080~  calli    lr0, lr0
   0b360:  03008406~  const    lr4, $0006   ; [delay slot]
   0b364:  0300cc00~  const    lr76, $0000
@@ -11853,7 +11857,7 @@ sub_0ad18:   ; DrawMultiObject
   0b460:  15828500~  add      lr2, lr5, $00
   0b464:  1583cf00~  add      lr3, lr79, $00
   0b468:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0b46c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0b46c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0b470:  c8008080~  calli    lr0, lr0
   0b474:  03008406~  const    lr4, $0006   ; [delay slot]
   0b478:  0300cc00~  const    lr76, $0000
@@ -11929,7 +11933,7 @@ sub_0ad18:   ; DrawMultiObject
   0b590:  15828500~  add      lr2, lr5, $00
   0b594:  1583cf00~  add      lr3, lr79, $00
   0b598:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0b59c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0b59c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0b5a0:  c8008080~  calli    lr0, lr0
   0b5a4:  03008406~  const    lr4, $0006   ; [delay slot]
   0b5a8:  0300cc00~  const    lr76, $0000
@@ -12249,7 +12253,7 @@ sub_0ad18:   ; DrawMultiObject
   0ba90:  1582c962~  add      lr2, lr73, $62
   0ba94:  15838900~  add      lr3, lr9, $00
   0ba98:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0ba9c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0ba9c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0baa0:  c8008080~  calli    lr0, lr0
   0baa4:  03008406~  const    lr4, $0006   ; [delay slot]
   0baa8:  1582c910~  add      lr2, lr73, $10
@@ -12318,7 +12322,7 @@ sub_0ad18:   ; DrawMultiObject
   0bba4:  02008200   consth   lr2, $0000   ; -> extern#1772+$0038
   0bba8:  1583a60a~  add      lr3, lr38, $0a
   0bbac:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  0bbb0:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  0bbb0:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   0bbb4:  c8??0080   calli    ?r0, lr0
   0bbb8:  03008406~  const    lr4, $0006   ; [delay slot]
   0bbbc:  a0fe0025~  jmp      $0b450
@@ -14872,7 +14876,7 @@ sub_0ad18:   ; DrawMultiObject
   0e38c:  a0ff00fe~  jmp      $0e384
   0e390:  14909087~  add      lr16, lr16, lr7   ; [delay slot]
 
-sub_0e394:
+file_12:   ; object file 12 (C-g): .text starts here; tag word of the next function
   0e394:  000c0000~  .word    $000c0000
 
 sub_0e398:
@@ -18500,7 +18504,7 @@ sub_11a34:
   11acc:  c0000080   jmpi     lr0
   11ad0:  02006000   consth   gr96, $0000   ; [delay slot]   ; -> .text $01468 (sub_01468)
 
-sub_11ad4:
+file_13:   ; object file 13 (C-g): .text starts here; tag word of the next function
   11ad4:  001201e0~  .word    $001201e0
 
 sub_11ad8:   ; DrawText
@@ -20315,7 +20319,7 @@ sub_136c4:
   13710:  14618761~  add      gr97, lr7, gr97
   13714:  16126161~  load     0, 12, gr97, gr97
   13718:  03008700   const    lr7, $0000   ; lo of .text+$3b950
-  1371c:  02008700   consth   lr7, $0000   ; -> .text $3b950 (sub_3b950)
+  1371c:  02008700   consth   lr7, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   13720:  c8007a87~  calli    gr122, lr7
   13724:  9e836261~  setip    lr3, gr98, gr97   ; [delay slot]
   13728:  03008600   const    lr6, $0000   ; lo of .text+$cc4
@@ -20336,7 +20340,7 @@ sub_136c4:
   13764:  c0000080   jmpi     lr0
   13768:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_1376c:
+file_14:   ; object file 14 (C-g): .text starts here; tag word of the next function
   1376c:  00030338~  .word    $00030338
 
 sub_13770:
@@ -20381,7 +20385,7 @@ sub_13770:
   13808:  15839a0e~  add      lr3, lr26, $0e
   1380c:  15828d00~  add      lr2, lr13, $00
   13810:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  13814:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  13814:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   13818:  c8008080~  calli    lr0, lr0
   1381c:  03008432~  const    lr4, $0032   ; [delay slot]
   13820:  15609108~  add      gr96, lr17, $08
@@ -20845,7 +20849,7 @@ sub_13770:
   13f48:  a0ff00fc~  jmp      $13f38
   13f4c:  0300840c~  const    lr4, $000c   ; [delay slot]
 
-sub_13f50:
+file_15:   ; object file 15 (C-g): .text starts here; tag word of the next function
   13f50:  00030000~  .word    $00030000
 
 sub_13f54:   ; IsOnThisCard
@@ -21974,7 +21978,7 @@ sub_14f64:   ; CacheGDevice
   1503c:  15828a58~  add      lr2, lr10, $58
   15040:  15837d0a~  add      lr3, gr125, $0a
   15044:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  15048:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  15048:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   1504c:  c8??0080   calli    ?r0, lr0
   15050:  03008408~  const    lr4, $0008   ; [delay slot]
   15054:  15607d12~  add      gr96, gr125, $12
@@ -22139,7 +22143,7 @@ sub_151c4:   ; CachePixPat
   152b8:  15838706~  add      lr3, lr7, $06
   152bc:  15828d00~  add      lr2, lr13, $00
   152c0:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  152c4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  152c4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   152c8:  c8008080~  calli    lr0, lr0
   152cc:  03008408~  const    lr4, $0008   ; [delay slot]
   152d0:  15608720~  add      gr96, lr7, $20
@@ -22218,7 +22222,7 @@ sub_153d4:
   153ec:  15828500~  add      lr2, lr5, $00
   153f0:  15838a00~  add      lr3, lr10, $00
   153f4:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  153f8:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  153f8:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   153fc:  c8008080!  calli    lr0, lr0
   15400:  03008408!  const    lr4, $0008   ; [delay slot]
   15404:  16126885!  load     0, 12, gr104, lr5
@@ -23640,7 +23644,7 @@ sub_16974:
   16974:  25010108   sub      gr1, gr1, $08
   16978:  5e40017e   asgeu    trap64, gr1, gr126
   1697c:  03006000   const    gr96, $0000   ; lo of .text+$3b428
-  16980:  02006000   consth   gr96, $0000   ; -> .text $3b428 (sub_3b428 _hif_exit)
+  16980:  02006000   consth   gr96, $0000   ; -> .text $3b428 (sub_3b428 _exit)
   16984:  c8008060~  calli    lr0, gr96
   16988:  15810110~  add      lr1, gr1, $10   ; [delay slot]
   1698c:  15010108   add      gr1, gr1, $08
@@ -24398,7 +24402,7 @@ sub_17264:   ; Fill2Longs
   174f4:  a0ff00ca~  jmp      $1741c
   174f8:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_174fc:
+file_16:   ; object file 16 (C-g): .text starts here; tag word of the next function
   174fc:  00070000~  .word    $00070000
 
 sub_17500:
@@ -24627,7 +24631,7 @@ sub_17500:
   17878:  15828500~  add      lr2, lr5, $00
   1787c:  15838700~  add      lr3, lr7, $00
   17880:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  17884:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  17884:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   17888:  c8008080~  calli    lr0, lr0
   1788c:  15848900~  add      lr4, lr9, $00   ; [delay slot]
   17890:  25949401~  sub      lr20, lr20, $01
@@ -24909,7 +24913,7 @@ sub_17c60:
   17cd0:  a0010067~  jmp      $1826c
   17cd4:  878b6303~  sra      lr11, gr99, $03   ; [delay slot]
   17cd8:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  17cdc:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  17cdc:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   17ce0:  c8007a60~  calli    gr122, gr96
   17ce4:  9e??6163   setip    ?r97, gr99   ; [delay slot]
   17ce8:  1e008899~  store    0, 0, lr8, lr25
@@ -25576,7 +25580,7 @@ sub_18278:
   18734:  02006000~  consth   gr96, $0000
   18738:  81606010~  sll      gr96, gr96, $10
   1873c:  03006300   const    gr99, $0000   ; lo of .text+$3ba38
-  18740:  02006300   consth   gr99, $0000   ; -> .text $3ba38 (sub_3ba38)
+  18740:  02006300   consth   gr99, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   18744:  c8007a63~  calli    gr122, gr99
   18748:  9e686089~  setip    gr104, gr96, lr9   ; [delay slot]
   1874c:  ac006204~  jmpt     gr98, $1875c
@@ -25765,25 +25769,25 @@ sub_188c4:
   18a18:  15828e02~  add      lr2, lr14, $02
   18a1c:  15838a00~  add      lr3, lr10, $00
   18a20:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  18a24:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  18a24:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   18a28:  c8008080~  calli    lr0, lr0
   18a2c:  03008406~  const    lr4, $0006   ; [delay slot]
   18a30:  15828e0a~  add      lr2, lr14, $0a
   18a34:  15838700~  add      lr3, lr7, $00
   18a38:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  18a3c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  18a3c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   18a40:  c8008080~  calli    lr0, lr0
   18a44:  03008406~  const    lr4, $0006   ; [delay slot]
   18a48:  15828e12~  add      lr2, lr14, $12
   18a4c:  15838500~  add      lr3, lr5, $00
   18a50:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  18a54:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  18a54:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   18a58:  c8008080~  calli    lr0, lr0
   18a5c:  03008406~  const    lr4, $0006   ; [delay slot]
   18a60:  15828e1a~  add      lr2, lr14, $1a
   18a64:  15838800~  add      lr3, lr8, $00
   18a68:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  18a6c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  18a6c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   18a70:  c8008080~  calli    lr0, lr0
   18a74:  03008406~  const    lr4, $0006   ; [delay slot]
   18a78:  15010130   add      gr1, gr1, $30
@@ -26233,7 +26237,7 @@ sub_18f7c:
   19128:  c0000080   jmpi     lr0
   1912c:  70400101   nop         ; [delay slot]
 
-sub_19130:
+file_17:   ; object file 17 (C-g): .text starts here; tag word of the next function
   19130:  00040008~  .word    $00040008
 
 sub_19134:
@@ -26686,7 +26690,7 @@ sub_19270:   ; QuickPolys
   19824:  16006161~  load     0, 0, gr97, gr97
   19828:  15606101~  add      gr96, gr97, $01
   1982c:  03006100   const    gr97, $0000   ; lo of .text+$3ba38
-  19830:  02006100   consth   gr97, $0000   ; -> .text $3ba38 (sub_3ba38)
+  19830:  02006100   consth   gr97, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   19834:  c8007a61~  calli    gr122, gr97
   19838:  9e606062~  setip    gr96, gr96, gr98   ; [delay slot]
   1983c:  25646001~  sub      gr100, gr96, $01
@@ -26743,7 +26747,7 @@ sub_19270:   ; QuickPolys
   19908:  16126561~  load     0, 12, gr101, gr97
   1990c:  15619106~  add      gr97, lr17, $06
   19910:  16126161~  load     0, 12, gr97, gr97
-  19914:  02006300   consth   gr99, $0000   ; -> .text $3b950 (sub_3b950)
+  19914:  02006300   consth   gr99, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   19918:  81616110~  sll      gr97, gr97, $10
   1991c:  c8007a63~  calli    gr122, gr99
   19920:  9e636165~  setip    gr99, gr97, gr101   ; [delay slot]
@@ -27035,7 +27039,7 @@ sub_19270:   ; QuickPolys
   19d98:  a0ff005d~  jmp      $19b0c
   19d9c:  6160a000~  cpeq     gr96, lr32, $00   ; [delay slot]
 
-sub_19da0:
+file_18:   ; object file 18 (C-g): .text starts here; tag word of the next function
   19da0:  001200c0~  .word    $001200c0
 
 sub_19da4:   ; RgnBlt
@@ -27242,7 +27246,7 @@ sub_19da4:   ; RgnBlt
   1a0c4:  03006000   const    gr96, $0000   ; lo of .text+$3ba38
   1a0c8:  15618d01~  add      gr97, lr13, $01
   1a0cc:  16008594~  load     0, 0, lr5, lr20
-  1a0d0:  02006000   consth   gr96, $0000   ; -> .text $3ba38 (sub_3ba38)
+  1a0d0:  02006000   consth   gr96, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   1a0d4:  c8007a60~  calli    gr122, gr96
   1a0d8:  9e606185~  setip    gr96, gr97, lr5   ; [delay slot]
   1a0dc:  25606001~  sub      gr96, gr96, $01
@@ -36149,7 +36153,7 @@ sub_22758:
   22a80:  c0000080   jmpi     lr0
   22a84:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_22a88:
+file_19:   ; object file 19 (C-g): .text starts here; tag word of the next function
   22a88:  001200a0~  .word    $001200a0
 
 sub_22a8c:   ; scaleBlt
@@ -38795,7 +38799,7 @@ sub_24f0c:
   25348:  c0000080   jmpi     lr0
   2534c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_25350:
+file_20:   ; object file 20 (C-g): .text starts here; tag word of the next function
   25350:  00040000~  .word    $00040000
 
 sub_25354:
@@ -40877,7 +40881,7 @@ sub_27290:
   272e8:  c0000080   jmpi     lr0
   272ec:  70400101   nop         ; [delay slot]
 
-sub_272f0:
+file_21:   ; object file 21 (C-g): .text starts here; tag word of the next function
   272f0:  00070000~  .word    $00070000
 
 sub_272f4:
@@ -41112,7 +41116,7 @@ sub_27588:
   2766c:  c0000080   jmpi     lr0
   27670:  1e006062~  store    0, 0, gr96, gr98   ; [delay slot]
 
-sub_27674:
+file_22:   ; object file 22 (C-g): .text starts here; tag word of the next function
   27674:  00040000~  .word    $00040000
 
 sub_27678:
@@ -41157,7 +41161,7 @@ sub_276d4:
   27708:  87606010~  sra      gr96, gr96, $10
   2770c:  81606010~  sll      gr96, gr96, $10
   27710:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  27714:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  27714:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   27718:  c8007a62~  calli    gr122, gr98
   2771c:  9e606082~  setip    gr96, gr96, lr2   ; [delay slot]
   27720:  02006000~  consth   gr96, $0000
@@ -41249,7 +41253,7 @@ sub_276d4:
   27878:  87606010~  sra      gr96, gr96, $10
   2787c:  81606010~  sll      gr96, gr96, $10
   27880:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  27884:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  27884:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   27888:  c8007a62~  calli    gr122, gr98
   2788c:  9e606083~  setip    gr96, gr96, lr3   ; [delay slot]
   27890:  02006000~  consth   gr96, $0000
@@ -46281,7 +46285,7 @@ sub_2c408:
   2c498:  a000000d!  jmp      $2c4cc
   2c49c:  83616501!  srl      gr97, gr101, $01   ; [delay slot]
   2c4a0:  03006200   const    gr98, $0000   ; lo of .text+$3ba38
-  2c4a4:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38)
+  2c4a4:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   2c4a8:  c8007a62~  calli    gr122, gr98
   2c4ac:  9e616764~  setip    gr97, gr103, gr100   ; [delay slot]
   2c4b0:  81686110~  sll      gr104, gr97, $10
@@ -46353,7 +46357,7 @@ sub_2c408:
   2c5b8:  a000000e~  jmp      $2c5f0
   2c5bc:  83616501~  srl      gr97, gr101, $01   ; [delay slot]
   2c5c0:  03006200   const    gr98, $0000   ; lo of .text+$3ba38
-  2c5c4:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38)
+  2c5c4:  02006200   consth   gr98, $0000   ; -> .text $3ba38 (sub_3ba38 udiv_millicode)
   2c5c8:  c8007a62~  calli    gr122, gr98
   2c5cc:  9e616764~  setip    gr97, gr103, gr100   ; [delay slot]
   2c5d0:  8161610a~  sll      gr97, gr97, $0a
@@ -47266,7 +47270,7 @@ sub_2cfd4:
   2d3c4:  cc008680~  jmpti    lr6, lr0
   2d3c8:  156a8a00~  add      gr106, lr10, $00   ; [delay slot]
   2d3cc:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  2d3d0:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  2d3d0:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   2d3d4:  1602636a~  load     0, 2, gr99, gr106
   2d3d8:  c8007a62~  calli    gr122, gr98
   2d3dc:  9e616389~  setip    gr97, gr99, lr9   ; [delay slot]
@@ -47334,7 +47338,7 @@ sub_2cfd4:
   2d4d4:  cc008680~  jmpti    lr6, lr0
   2d4d8:  156a8a00~  add      gr106, lr10, $00   ; [delay slot]
   2d4dc:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  2d4e0:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  2d4e0:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   2d4e4:  1602636a~  load     0, 2, gr99, gr106
   2d4e8:  c8007a62~  calli    gr122, gr98
   2d4ec:  9e616389~  setip    gr97, gr99, lr9   ; [delay slot]
@@ -47516,7 +47520,7 @@ sub_2cfd4:
   2d7ac:  c0000080   jmpi     lr0
   2d7b0:  70400101   nop         ; [delay slot]
 
-sub_2d7b4:
+file_23:   ; object file 23 (C-g): .text starts here; tag word of the next function
   2d7b4:  000701d8~  .word    $000701d8
 
 sub_2d7b8:   ; StretchBits
@@ -48195,7 +48199,7 @@ sub_2d7b8:   ; StretchBits
   2e238:  02008200   consth   lr2, $0000   ; -> extern#1772+$0030
   2e23c:  15838cee~  add      lr3, lr12, $ee
   2e240:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  2e244:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  2e244:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   2e248:  c8008080~  calli    lr0, lr0
   2e24c:  03008406~  const    lr4, $0006   ; [delay slot]
   2e250:  63608500~  cpneq    gr96, lr5, $00
@@ -48213,7 +48217,7 @@ sub_2d7b8:   ; StretchBits
   2e280:  02008200   consth   lr2, $0000   ; -> extern#1772+$0040
   2e284:  15838cfe~  add      lr3, lr12, $fe
   2e288:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  2e28c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  2e28c:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   2e290:  c8008080~  calli    lr0, lr0
   2e294:  03008406~  const    lr4, $0006   ; [delay slot]
   2e298:  61608500~  cpeq     gr96, lr5, $00
@@ -49876,7 +49880,7 @@ sub_2d7b8:   ; StretchBits
   2fc7c:  4461dfe0~  cple     gr97, lr95, lr96
   2fc80:  ac006108~  jmpt     gr97, $2fca0
   2fc84:  03006100   const    gr97, $0000   ; [delay slot]   ; lo of .text+$3b950
-  2fc88:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  2fc88:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   2fc8c:  c8007a61~  calli    gr122, gr97
   2fc90:  9e76dfe0~  setip    gr118, lr95, lr96   ; [delay slot]
   2fc94:  61617400~  cpeq     gr97, gr116, $00
@@ -50133,7 +50137,7 @@ sub_2d7b8:   ; StretchBits
   30080:  a0fc0035~  jmp      $2f154
   30084:  03009d03~  const    lr29, $0003   ; [delay slot]
 
-sub_30088:
+file_24:   ; object file 24 (C-g): .text starts here; tag word of the next function
   30088:  001200a0~  .word    $001200a0
 
 sub_3008c:
@@ -50225,7 +50229,7 @@ sub_3008c:
   301e0:  c8007a9a~  calli    gr122, lr26
   301e4:  9e6060a4~  setip    gr96, gr96, lr36   ; [delay slot]
   301e8:  03006100   const    gr97, $0000   ; lo of .text+$3b950
-  301ec:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  301ec:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   301f0:  c8007a61~  calli    gr122, gr97
   301f4:  9e6060a5~  setip    gr96, gr96, lr37   ; [delay slot]
   301f8:  16128a9c~  load     0, 12, lr10, lr28
@@ -50265,7 +50269,7 @@ sub_3008c:
   30280:  c8007a9a~  calli    gr122, lr26
   30284:  9e6060a5~  setip    gr96, gr96, lr37   ; [delay slot]
   30288:  03006100   const    gr97, $0000   ; lo of .text+$3b950
-  3028c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  3028c:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   30290:  c8007a61~  calli    gr122, gr97
   30294:  9e6060a4~  setip    gr96, gr96, lr36   ; [delay slot]
   30298:  159d9c04~  add      lr29, lr28, $04
@@ -50332,7 +50336,7 @@ sub_3008c:
   3038c:  15??0c00   add      ?, ?r12, $00   ; [delay slot]
   30390:  159d9c04~  add      lr29, lr28, $04
   30394:  03006100   const    gr97, $0000   ; lo of .text+$3b950
-  30398:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950)
+  30398:  02006100   consth   gr97, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   3039c:  8160a310~  sll      gr96, lr35, $10
   303a0:  87606010~  sra      gr96, gr96, $10
   303a4:  81606010~  sll      gr96, gr96, $10
@@ -52011,14 +52015,14 @@ sub_31888:
   31da0:  c0000080   jmpi     lr0
   31da4:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_31da8:
+file_25:   ; object file 25 (C-g): .text starts here; tag word of the next function
   31da8:  00020000~  .word    $00020000
 
-sub_31dac:
+sub_31dac:   ; main
   31dac:  25010118   sub      gr1, gr1, $18
   31db0:  5e40017e   asgeu    trap64, gr1, gr126
   31db4:  15810120   add      lr1, gr1, $20
-  31db8:  a80280f9~  call     lr0, $3299c   ; -> (sub_3299c)
+  31db8:  a80280f9~  call     lr0, $3299c   ; -> (sub_3299c InitPacket)
   31dbc:  03008201~  const    lr2, $0001   ; [delay slot]
   31dc0:  03008400   const    lr4, $0000   ; lo of .bss
   31dc4:  02008400   consth   lr4, $0000   ; -> .bss+$0000
@@ -52165,7 +52169,7 @@ sub_31e20:   ; CommandDispatcher
   31ff0:  16006260~  load     0, 0, gr98, gr96
   31ff4:  1560620c~  add      gr96, gr98, $0c
   31ff8:  16008260~  load     0, 0, lr2, gr96
-  31ffc:  a8028068~  call     lr0, $3299c   ; -> (sub_3299c)
+  31ffc:  a8028068~  call     lr0, $3299c   ; -> (sub_3299c InitPacket)
   32000:  70400101   nop         ; [delay slot]
   32004:  03008c00~  const    lr12, $0000
   32008:  03006108   const    gr97, $0008   ; lo of .bss
@@ -52784,7 +52788,7 @@ sub_328c8:
   32994:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
   32998:  00030000~  .word    $00030000
 
-sub_3299c:
+sub_3299c:   ; InitPacket
   3299c:  25010108   sub      gr1, gr1, $08
   329a0:  5e40017e   asgeu    trap64, gr1, gr126
   329a4:  03006000   const    gr96, $0000   ; lo of .text+$38fc8
@@ -53009,7 +53013,7 @@ sub_32c10:   ; ShieldCursor
   32ce0:  15857d08~  add      lr5, gr125, $08
   32ce4:  15828500~  add      lr2, lr5, $00
   32ce8:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  32cec:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  32cec:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   32cf0:  c8008080~  calli    lr0, lr0
   32cf4:  03008408~  const    lr4, $0008   ; [delay slot]
   32cf8:  03066000~  const    gr96, $0600
@@ -53189,7 +53193,7 @@ sub_32ef8:   ; ShowCursorAfterDraw
   32fa8:  15857d08~  add      lr5, gr125, $08
   32fac:  15828500~  add      lr2, lr5, $00
   32fb0:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  32fb4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  32fb4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   32fb8:  c8008080~  calli    lr0, lr0
   32fbc:  03008408~  const    lr4, $0008   ; [delay slot]
   32fc0:  03066000~  const    gr96, $0600
@@ -53386,7 +53390,7 @@ sub_33238:
   332ac:  14616182~  add      gr97, gr97, lr2
   332b0:  1e006162~  store    0, 0, gr97, gr98
   332b4:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  332b8:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  332b8:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   332bc:  c8007a62~  calli    gr122, gr98
   332c0:  9e616160~  setip    gr97, gr97, gr96   ; [delay slot]
   332c4:  03006000   const    gr96, $0000   ; lo of .bss
@@ -54303,7 +54307,7 @@ sub_3401c:
   34040:  c0000080   jmpi     lr0
   34044:  70400101   nop         ; [delay slot]
 
-sub_34048:
+file_26:   ; object file 26 (C-g): .text starts here; tag word of the next function
   34048:  00030000~  .word    $00030000
 
 sub_3404c:
@@ -54677,7 +54681,7 @@ sub_34304:
   345c8:  03008368   const    lr3, $0068   ; lo of .data+$f10
   345cc:  02008300   consth   lr3, $0000   ; -> .data+$0f78
   345d0:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  345d4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  345d4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   345d8:  c8008080~  calli    lr0, lr0
   345dc:  03008410~  const    lr4, $0010   ; [delay slot]
   345e0:  0301609c~  const    gr96, $019c
@@ -55061,7 +55065,7 @@ sub_34b64:
 
 sub_34b80:
   34b80:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  34b84:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  34b84:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   34b88:  c8007a60~  calli    gr122, gr96
   34b8c:  9e608283~  setip    gr96, lr2, lr3   ; [delay slot]
   34b90:  c0000080   jmpi     lr0
@@ -55812,7 +55816,7 @@ sub_3563c:
   35714:  030d6140~  const    gr97, $0d40
   35718:  02006103~  consth   gr97, $0003
   3571c:  03006200   const    gr98, $0000   ; lo of .text+$3b950
-  35720:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950)
+  35720:  02006200   consth   gr98, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   35724:  c8007a62~  calli    gr122, gr98
   35728:  9e??6061   setip    ?r96, gr97   ; [delay slot]
   3572c:  03??60d0   const    ?r96, $??d0
@@ -57315,7 +57319,7 @@ sub_36e04:
   36e38:  03fc8300~  const    lr3, $fc00   ; [delay slot]
   36e3c:  024c8300~  consth   lr3, $4c00
   36e40:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  36e44:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  36e44:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   36e48:  c8??0080   calli    ?r0, lr0
   36e4c:  15848800~  add      lr4, lr8, $00   ; [delay slot]
   36e50:  03006008   const    gr96, $0008   ; lo of .data+$f10
@@ -57345,7 +57349,7 @@ sub_36e7c:
   36ea8:  02008500   consth   lr5, $0000   ; -> .data+$0f18
   36eac:  16008485~  load     0, 0, lr4, lr5
   36eb0:  03008000   const    lr0, $0000   ; lo of .text+$3b600
-  36eb4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600)
+  36eb4:  02008000   consth   lr0, $0000   ; -> .text $3b600 (sub_3b600 memcpy)
   36eb8:  c8008080~  calli    lr0, lr0
   36ebc:  15838600~  add      lr3, lr6, $00   ; [delay slot]
   36ec0:  03006000   const    gr96, $0000   ; lo of .text+$376a0
@@ -57393,7 +57397,7 @@ sub_36f4c:
   36f58:  03f3611d~  const    gr97, $f31d
   36f5c:  02006101~  consth   gr97, $0001
   36f60:  03006000   const    gr96, $0000   ; lo of .text+$3b950
-  36f64:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950)
+  36f64:  02006000   consth   gr96, $0000   ; -> .text $3b950 (sub_3b950 div_millicode)
   36f68:  c8007a60~  calli    gr122, gr96
   36f6c:  9e606261~  setip    gr96, gr98, gr97   ; [delay slot]
   36f70:  81627406~  sll      gr98, gr116, $06
@@ -57615,7 +57619,7 @@ sub_37000:   ; TestSlotBurst
   372c8:  a0ff00ee~  jmp      $37280
   372cc:  03006001~  const    gr96, $0001   ; [delay slot]
 
-sub_372d0:
+file_27:   ; object file 27 (C-g): .text starts here; tag word of the next function
   372d0:  00020000~  .word    $00020000
 
 sub_372d4:
@@ -57914,7 +57918,7 @@ sub_376ec:
   37724:  c0000080   jmpi     lr0
   37728:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3772c:
+file_28:   ; object file 28 (C-g): .text starts here; tag word of the next function
   3772c:  00060000~  .word    $00060000
 
 sub_37730:
@@ -58251,6 +58255,7 @@ sub_37b58:
   37c08:  c0000080   jmpi     lr0
   37c0c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
+file_29:   ; object file 29 (C): .text starts here
 sub_37c10:   ; FillPatternStorem
   37c10:  25010140   sub      gr1, gr1, $40
   37c14:  5e40017e   asgeu    trap64, gr1, gr126
@@ -59558,6 +59563,7 @@ sub_38ec8:
   38f1c:  a0ff003d~  jmp      $38c10   ; -> (sub_38c10)
   38f20:  91949403~  and      lr20, lr20, $03   ; [delay slot]
 
+file_30:   ; object file 30 (asm): .text starts here
 sub_38f24:
   38f24:  030079c1~  const    gr121, $00c1
   38f28:  72420101~  asneq    trap66, gr1, gr1
@@ -59736,7 +59742,7 @@ sub_39104:
   3910c:  c0000080   jmpi     lr0
   39110:  70400101   nop         ; [delay slot]
 
-sub_39114:
+file_31:   ; object file 31 (C): .text starts here; tag word of the next function
   39114:  00050000~  .word    $00050000
 
 sub_39118:
@@ -59871,7 +59877,7 @@ sub_39284:   ; printf
   392f8:  a0ff00f4~  jmp      $392c8
   392fc:  02008600   consth   lr6, $0000   ; [delay slot]   ; -> .data+$1594
 
-sub_39300:
+file_32:   ; object file 32 (C): .text starts here; tag word of the next function
   39300:  00050000~  .word    $00050000
 
 sub_39304:   ; fseek
@@ -60030,7 +60036,7 @@ sub_39304:   ; fseek
   39564:  c0000080   jmpi     lr0
   39568:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3956c:
+file_33:   ; object file 33 (C): .text starts here; tag word of the next function
   3956c:  00030000~  .word    $00030000
 
 sub_39570:
@@ -60091,7 +60097,7 @@ sub_39570:
   39648:  c0000080   jmpi     lr0
   3964c:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_39650:
+file_34:   ; object file 34 (C): .text starts here; tag word of the next function
   39650:  00050000~  .word    $00050000
 
 sub_39654:
@@ -60157,7 +60163,7 @@ sub_39654:
   39740:  15876100~  add      lr7, gr97, $00
   39744:  16008285~  load     0, 0, lr2, lr5
   39748:  15838800~  add      lr3, lr8, $00
-  3974c:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3974c:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600 memcpy)
   39750:  15848700~  add      lr4, lr7, $00   ; [delay slot]
   39754:  14888788~  add      lr8, lr7, lr8
   39758:  16006085~  load     0, 0, gr96, lr5
@@ -60189,14 +60195,14 @@ sub_39798:
   397b8:  45616000~  cple     gr97, gr96, $00
   397bc:  ac006104~  jmpt     gr97, $397cc
   397c0:  70400101   nop         ; [delay slot]
-  397c4:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  397c4:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38 udiv_millicode)
   397c8:  9e606089~  setip    gr96, gr96, lr9   ; [delay slot]
   397cc:  15010118   add      gr1, gr1, $18
   397d0:  70400101   nop      
   397d4:  c0000080   jmpi     lr0
   397d8:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_397dc:
+file_35:   ; object file 35 (C): .text starts here; tag word of the next function
   397dc:  00050000~  .word    $00050000
 
 sub_397e0:
@@ -60206,7 +60212,7 @@ sub_397e0:
   397ec:  1581012c~  add      lr1, gr1, $2c
   397f0:  15828500~  add      lr2, lr5, $00
   397f4:  15838900~  add      lr3, lr9, $00
-  397f8:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  397f8:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600 memcpy)
   397fc:  15848a00~  add      lr4, lr10, $00   ; [delay slot]
   39800:  1485858a~  add      lr5, lr5, lr10
   39804:  03006000~  const    gr96, $0000
@@ -60259,7 +60265,7 @@ sub_39864:   ; sprintf
   398b0:  c0000080   jmpi     lr0
   398b4:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_398b8:
+file_36:   ; object file 36 (C): .text starts here; tag word of the next function
   398b8:  00060000~  .word    $00060000
 
 sub_398bc:
@@ -60363,7 +60369,7 @@ sub_399e0:   ; _doprnt
   39a30:  1582a600~  add      lr2, lr38, $00
   39a34:  03008300~  const    lr3, $0000
   39a38:  03ff84ff~  const    lr4, $ffff
-  39a3c:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memset)
+  39a3c:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memchr)
   39a40:  027f84ff~  consth   lr4, $7fff   ; [delay slot]
   39a44:  15876000~  add      lr7, gr96, $00
   39a48:  61608700~  cpeq     gr96, lr7, $00
@@ -60376,7 +60382,7 @@ sub_399e0:   ; _doprnt
   39a64:  1600a688~  load     0, 0, lr38, lr8
   39a68:  1582a600~  add      lr2, lr38, $00
   39a6c:  03008325~  const    lr3, $0025
-  39a70:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memset)
+  39a70:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memchr)
   39a74:  15849a00~  add      lr4, lr26, $00   ; [delay slot]
   39a78:  15866000~  add      lr6, gr96, $00
   39a7c:  63608600~  cpneq    gr96, lr6, $00
@@ -60546,7 +60552,7 @@ sub_399e0:   ; _doprnt
   39d0c:  16008660~  load     0, 0, lr6, gr96
   39d10:  03ff84ff~  const    lr4, $ffff
   39d14:  15828600~  add      lr2, lr6, $00
-  39d18:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memset)
+  39d18:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memchr)
   39d1c:  027f84ff~  consth   lr4, $7fff   ; [delay slot]
   39d20:  15876000~  add      lr7, gr96, $00
   39d24:  61608700~  cpeq     gr96, lr7, $00
@@ -60711,7 +60717,7 @@ sub_399e0:   ; _doprnt
   39fa0:  15828600~  add      lr2, lr6, $00
   39fa4:  03008300~  const    lr3, $0000
   39fa8:  03ff84ff~  const    lr4, $ffff
-  39fac:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memset)
+  39fac:  a8008000   call     lr0, $3b500   ; R_IREL call -> .text $3b500 (sub_3b500 memchr)
   39fb0:  027f84ff~  consth   lr4, $7fff   ; [delay slot]
   39fb4:  15876000~  add      lr7, gr96, $00
   39fb8:  61608700~  cpeq     gr96, lr7, $00
@@ -61093,7 +61099,7 @@ sub_399e0:   ; _doprnt
   3a598:  a0ff00e7~  jmp      $3a534
   3a59c:  01ff85ff~  constn   lr5, $ffff   ; [delay slot]
 
-sub_3a5a0:
+file_37:   ; object file 37 (C): .text starts here; tag word of the next function
   3a5a0:  00070028~  .word    $00070028
 
 sub_3a5a4:
@@ -61142,7 +61148,7 @@ sub_3a5a4:
   3a64c:  9074648a~  and      gr116, gr100, lr10   ; [delay slot]
   3a650:  a0000004~  jmp      $3a660
   3a654:  828a8a63~  srl      lr10, lr10, gr99   ; [delay slot]
-  3a658:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  3a658:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38 udiv_millicode)
   3a65c:  9e8a8a89~  setip    lr10, lr10, lr9   ; [delay slot]
   3a660:  45607409~  cple     gr96, gr116, $09
   3a664:  ac006004~  jmpt     gr96, $3a674
@@ -61156,7 +61162,7 @@ sub_3a5a4:
   3a684:  acff60f1~  jmpt     gr96, $3a648
   3a688:  15858501~  add      lr5, lr5, $01   ; [delay slot]
   3a68c:  15848501~  add      lr4, lr5, $01
-  3a690:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3a690:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600 memcpy)
   3a694:  15828800~  add      lr2, lr8, $00   ; [delay slot]
   3a698:  61608b00~  cpeq     gr96, lr11, $00
   3a69c:  ac006004~  jmpt     gr96, $3a6ac
@@ -61230,7 +61236,7 @@ sub_3a768:
   3a794:  c0000080   jmpi     lr0
   3a798:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3a79c:
+file_38:   ; object file 38 (C): .text starts here; tag word of the next function
   3a79c:  00050000~  .word    $00050000
 
 sub_3a7a0:
@@ -61357,7 +61363,7 @@ sub_3a90c:
   3a970:  82888487~  srl      lr8, lr4, lr7   ; [delay slot]
   3a974:  03008700~  const    lr7, $0000
   3a978:  01ff84ff~  constn   lr4, $ffff
-  3a97c:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38)
+  3a97c:  a8007a00   call     gr122, $3ba38   ; R_IREL call -> .text $3ba38 (sub_3ba38 udiv_millicode)
   3a980:  9e88848d~  setip    lr8, lr4, lr13   ; [delay slot]
   3a984:  03008301   const    lr3, $0001   ; lo of .lit+$1020
   3a988:  02008300   consth   lr3, $0000   ; -> .lit+$1021
@@ -61431,7 +61437,7 @@ sub_3aa68:
   3aa90:  c0000080   jmpi     lr0
   3aa94:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3aa98:
+file_39:   ; object file 39 (C): .text starts here; tag word of the next function
   3aa98:  00030000~  .word    $00030000
 
 sub_3aa9c:   ; isupper
@@ -61590,7 +61596,7 @@ sub_3ac50:
   3ac7c:  c0000080   jmpi     lr0
   3ac80:  70400101   nop         ; [delay slot]
 
-sub_3ac84:
+file_41:   ; object file 41 (C): .text starts here; tag word of the next function
   3ac84:  00030000~  .word    $00030000
 
 sub_3ac88:   ; exit
@@ -61627,7 +61633,7 @@ sub_3ac88:   ; exit
   3ad00:  c0000080   jmpi     lr0
   3ad04:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3ad08:
+file_42:   ; object file 42 (C): .text starts here; tag word of the next function
   3ad08:  00020000~  .word    $00020000
 
 sub_3ad0c:
@@ -61836,7 +61842,7 @@ sub_3afd4:
   3b00c:  c0000080   jmpi     lr0
   3b010:  70400101   nop         ; [delay slot]
 
-sub_3b014:
+file_43:   ; object file 43 (C): .text starts here; tag word of the next function
   3b014:  00040000~  .word    $00040000
 
 sub_3b018:
@@ -62071,7 +62077,7 @@ sub_3b300:
   3b358:  24848687~  sub      lr4, lr6, lr7   ; [delay slot]
   3b35c:  16008385~  load     0, 0, lr3, lr5
   3b360:  14828387~  add      lr2, lr3, lr7
-  3b364:  a8008000   call     lr0, $3b748   ; R_IREL call -> .text $3b748 (sub_3b748)
+  3b364:  a8008000   call     lr0, $3b748   ; R_IREL call -> .text $3b748 (sub_3b748 memset)
   3b368:  03008300~  const    lr3, $0000   ; [delay slot]
   3b36c:  16008385~  load     0, 0, lr3, lr5
   3b370:  15608a04~  add      gr96, lr10, $04
@@ -62113,10 +62119,10 @@ sub_3b390:
   3b3f8:  a0ff00f2~  jmp      $3b3c0
   3b3fc:  15858808~  add      lr5, lr8, $08   ; [delay slot]
 
-sub_3b400:
+file_45:   ; object file 45 (asm): .text starts here; tag word of the next function
   3b400:  00030000~  .word    $00030000
 
-sub_3b404:   ; _hif_close
+sub_3b404:   ; close
   3b404:  03007912~  const    gr121, $0012
   3b408:  72450101~  asneq    trap69, gr1, gr1
   3b40c:  cc007980~  jmpti    gr121, lr0
@@ -62126,10 +62132,10 @@ sub_3b404:   ; _hif_close
   3b41c:  c0000080   jmpi     lr0
   3b420:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b424:
+file_46:   ; object file 46 (asm): .text starts here; tag word of the next function
   3b424:  00030000~  .word    $00030000
 
-sub_3b428:   ; _hif_exit
+sub_3b428:   ; _exit
   3b428:  03007901~  const    gr121, $0001
   3b42c:  72450101~  asneq    trap69, gr1, gr1
   3b430:  cc??7980   jmpti    ?r121, lr0
@@ -62139,10 +62145,10 @@ sub_3b428:   ; _hif_exit
   3b440:  c0000080   jmpi     lr0
   3b444:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b448:
+file_47:   ; object file 47 (asm): .text starts here; tag word of the next function
   3b448:  00050000~  .word    $00050000
 
-sub_3b44c:   ; _hif_lseek
+sub_3b44c:   ; lseek
   3b44c:  03007915~  const    gr121, $0015
   3b450:  72450101~  asneq    trap69, gr1, gr1
   3b454:  cc007980~  jmpti    gr121, lr0
@@ -62152,10 +62158,10 @@ sub_3b44c:   ; _hif_lseek
   3b464:  c0000080   jmpi     lr0
   3b468:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b46c:
+file_48:   ; object file 48 (asm): .text starts here; tag word of the next function
   3b46c:  00050000~  .word    $00050000
 
-sub_3b470:   ; _hif_open
+sub_3b470:   ; open
   3b470:  03007911~  const    gr121, $0011
   3b474:  72450101~  asneq    trap69, gr1, gr1
   3b478:  cc007980~  jmpti    gr121, lr0
@@ -62165,10 +62171,10 @@ sub_3b470:   ; _hif_open
   3b488:  c0000080   jmpi     lr0
   3b48c:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b490:
+file_49:   ; object file 49 (asm): .text starts here; tag word of the next function
   3b490:  00050000~  .word    $00050000
 
-sub_3b494:   ; _hif_read
+sub_3b494:   ; read
   3b494:  03007913~  const    gr121, $0013
   3b498:  72450101~  asneq    trap69, gr1, gr1
   3b49c:  cc007980~  jmpti    gr121, lr0
@@ -62178,10 +62184,10 @@ sub_3b494:   ; _hif_read
   3b4ac:  c0000080   jmpi     lr0
   3b4b0:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b4b4:
+file_50:   ; object file 50 (asm): .text starts here; tag word of the next function
   3b4b4:  00030000~  .word    $00030000
 
-sub_3b4b8:   ; _hif_21
+sub_3b4b8:   ; tmpnam
   3b4b8:  03007921~  const    gr121, $0021
   3b4bc:  72450101~  asneq    trap69, gr1, gr1
   3b4c0:  cc007980~  jmpti    gr121, lr0
@@ -62191,10 +62197,10 @@ sub_3b4b8:   ; _hif_21
   3b4d0:  c0000080   jmpi     lr0
   3b4d4:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b4d8:
+file_51:   ; object file 51 (asm): .text starts here; tag word of the next function
   3b4d8:  00050000~  .word    $00050000
 
-sub_3b4dc:   ; _hif_write
+sub_3b4dc:   ; write
   3b4dc:  03007914~  const    gr121, $0014
   3b4e0:  72450101~  asneq    trap69, gr1, gr1
   3b4e4:  cc007980~  jmpti    gr121, lr0
@@ -62204,10 +62210,10 @@ sub_3b4dc:   ; _hif_write
   3b4f4:  c0000080   jmpi     lr0
   3b4f8:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3b4fc:
+file_52:   ; object file 52 (asm): .text starts here; tag word of the next function
   3b4fc:  00050000~  .word    $00050000
 
-sub_3b500:   ; memset
+sub_3b500:   ; memchr
   3b500:  63608400~  cpneq    gr96, lr4, $00
   3b504:  c4006080~  jmpfi    gr96, lr0
   3b508:  91618203~  and      gr97, lr2, $03   ; [delay slot]
@@ -62282,10 +62288,10 @@ sub_3b5bc:
   3b5f4:  c0000080   jmpi     lr0
   3b5f8:  24606065~  sub      gr96, gr96, gr101   ; [delay slot]
 
-sub_3b5fc:
+file_53:   ; object file 53 (asm): .text starts here; tag word of the next function
   3b5fc:  00050000~  .word    $00050000
 
-sub_3b600:
+sub_3b600:   ; memcpy
   3b600:  61608400~  cpeq     gr96, lr4, $00
   3b604:  cc006080~  jmpti    gr96, lr0
   3b608:  15608200~  add      gr96, lr2, $00   ; [delay slot]
@@ -62386,10 +62392,10 @@ sub_3b724:
   3b73c:  c0000080   jmpi     lr0
   3b740:  1e006482~  store    0, 0, gr100, lr2   ; [delay slot]
 
-sub_3b744:
+file_54:   ; object file 54 (asm): .text starts here; tag word of the next function
   3b744:  00050000~  .word    $00050000
 
-sub_3b748:
+sub_3b748:   ; memset
   3b748:  61608400~  cpeq     gr96, lr4, $00
   3b74c:  cc006080~  jmpti    gr96, lr0
   3b750:  15608200~  add      gr96, lr2, $00   ; [delay slot]
@@ -62449,7 +62455,7 @@ sub_3b7e4:
   3b808:  c0000080   jmpi     lr0
   3b80c:  1e006282!  store    0, 0, gr98, lr2   ; [delay slot]
 
-sub_3b810:
+file_55:   ; object file 55 (asm): .text starts here; tag word of the next function
   3b810:  00200000!  .word    $00200000
 
 sub_3b814:   ; mul_millicode
@@ -62538,10 +62544,10 @@ sub_3b8c8:
   3b944:  c000007a!  jmpi     gr122
   3b948:  c6008300!  mfsr     gr0, Q   ; [delay slot]
 
-sub_3b94c:
+file_56:   ; object file 56 (asm): .text starts here; tag word of the next function
   3b94c:  00200000!  .word    $00200000
 
-sub_3b950:
+sub_3b950:   ; div_millicode
   3b950:  03007500!  const    gr117, $0000
   3b954:  60757500!  cpeq     gr117, gr117, gr0
   3b958:  ac007535!  jmpt     gr117, $3ba2c   ; -> (sub_3ba2c)
@@ -62608,10 +62614,10 @@ sub_3ba2c:
   3ba2c:  c000007a!  jmpi     gr122
   3ba30:  e1000000!  divide   gr0, gr0, gr0   ; [delay slot]
 
-sub_3ba34:
+file_57:   ; object file 57 (asm): .text starts here; tag word of the next function
   3ba34:  00200000!  .word    $00200000
 
-sub_3ba38:
+sub_3ba38:   ; udiv_millicode
   3ba38:  03007400!  const    gr116, $0000
   3ba3c:  60747400!  cpeq     gr116, gr116, gr0
   3ba40:  ac007427!  jmpt     gr116, $3badc   ; -> (sub_3badc)
@@ -62658,7 +62664,7 @@ sub_3badc:
   3badc:  c000007a!  jmpi     gr122
   3bae0:  e1000000!  divide   gr0, gr0, gr0   ; [delay slot]
 
-sub_3bae4:
+file_59:   ; object file 59 (C): .text starts here; tag word of the next function
   3bae4:  00040000!  .word    $00040000
 
 sub_3bae8:
@@ -62861,7 +62867,7 @@ sub_3bae8:
   3bdf8:  c0000080   jmpi     lr0
   3bdfc:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3be00:
+file_60:   ; object file 60 (C): .text starts here; tag word of the next function
   3be00:  00040008~  .word    $00040008
 
 sub_3be04:
@@ -63009,7 +63015,7 @@ sub_3be04:
   3c038:  a0ff00eb~  jmp      $3bfe4
   3c03c:  62608b89~  cpneq    gr96, lr11, lr9   ; [delay slot]
 
-sub_3c040:
+file_61:   ; object file 61 (C): .text starts here; tag word of the next function
   3c040:  00030000~  .word    $00030000
 
 sub_3c044:
@@ -63113,7 +63119,7 @@ sub_3c044:
   3c1c8:  c0000080   jmpi     lr0
   3c1cc:  5641817f   asleu    trap65, lr1, gr127   ; [delay slot]
 
-sub_3c1d0:
+file_62:   ; object file 62 (C): .text starts here; tag word of the next function
   3c1d0:  00030000~  .word    $00030000
 
 sub_3c1d4:
@@ -63208,7 +63214,7 @@ sub_3c1d4:
   3c334:  a0ff00c3~  jmp      $3c240
   3c338:  02006100   consth   gr97, $0000   ; [delay slot]   ; -> extern#1715+$0000
 
-sub_3c33c:
+file_63:   ; object file 63 (C): .text starts here; tag word of the next function
   3c33c:  00080018~  .word    $00080018
 
 sub_3c340:
@@ -63426,7 +63432,7 @@ sub_3c340:
   3c68c:  acff60fb~  jmpt     gr96, $3c678
   3c690:  158f8f01~  add      lr15, lr15, $01   ; [delay slot]
   3c694:  15828d00~  add      lr2, lr13, $00
-  3c698:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600)
+  3c698:  a8008000   call     lr0, $3b600   ; R_IREL call -> .text $3b600 (sub_3b600 memcpy)
   3c69c:  15838800~  add      lr3, lr8, $00   ; [delay slot]
   3c6a0:  16008487~  load     0, 0, lr4, lr7
   3c6a4:  148f848f~  add      lr15, lr4, lr15
@@ -63471,7 +63477,7 @@ sub_3c340:
   3c740:  a0ff00d5~  jmp      $3c694
   3c744:  16008487~  load     0, 0, lr4, lr7   ; [delay slot]
 
-sub_3c748:
+file_64:   ; object file 64 (C): .text starts here; tag word of the next function
   3c748:  00030000~  .word    $00030000
 
 sub_3c74c:
@@ -63499,7 +63505,7 @@ sub_3c74c:
   3c7a0:  c0000080   jmpi     lr0
   3c7a4:  70400101   nop         ; [delay slot]
 
-sub_3c7a8:
+file_65:   ; object file 65 (C): .text starts here; tag word of the next function
   3c7a8:  00070000~  .word    $00070000
 
 sub_3c7ac:
@@ -63653,10 +63659,10 @@ sub_3c920:
   3c9e0:  c0000080   jmpi     lr0
   3c9e4:  157d7d08~  add      gr125, gr125, $08   ; [delay slot]
 
-sub_3c9e8:
+file_67:   ; object file 67 (asm): .text starts here; tag word of the next function
   3c9e8:  00030000~  .word    $00030000
 
-sub_3c9ec:
+sub_3c9ec:   ; remove
   3c9ec:  03007916~  const    gr121, $0016
   3c9f0:  72450101~  asneq    trap69, gr1, gr1
   3c9f4:  cc007980~  jmpti    gr121, lr0
@@ -63666,7 +63672,7 @@ sub_3c9ec:
   3ca04:  c0000080   jmpi     lr0
   3ca08:  01ff60ff~  constn   gr96, $ffff   ; [delay slot]
 
-sub_3ca0c:
+file_68:   ; object file 68 (C): .text starts here; tag word of the next function
   3ca0c:  00030000~  .word    $00030000
 
 sub_3ca10:

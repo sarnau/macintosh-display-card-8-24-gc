@@ -400,7 +400,7 @@ the copyright, so the version and build date were also compiled into the program
   exactly the source's `$00030000` and `$00050000`.
 * **A BSD-style C library** on top: `printf`/`vprintf`, `fseek`, `_doprnt`,
   20-byte `FILE`s in `_iob`, the V7/BSD `_ctype_` bits, `exit` with a handler
-  table, `memset`, plus multiply and divide millicode. It is 14,788 bytes and
+  table, `memchr`/`memcpy`/`memset`, plus multiply and divide millicode. It is 14,788 bytes and
   identical in size and layout in both releases. So it is a prebuilt vendor
   library, unchanged over 15 months.
 
@@ -415,13 +415,22 @@ the copyright, so the version and build date were also compiled into the program
   (`$3AC88`). Two of the undefined symbols are crt0's common blocks
   (`.comm`, the value is the size): `__29027Mode` (8) and `__LibInit` (4).
   Through the placeholder symbol 1048, `_main` is **`$31DAC`**, the first
-  function of file 25, the dispatcher's file.
+  function of file 25, the dispatcher's file. `main` calls `InitPacket(1)`
+  (`$3299C`). That routine takes a base from kernel service `$C0` (stub `$38FC8`),
+  stores the packet pointer `[base+$418]` at `.bss+0`, and initialises the
+  packet: `+$00` = `$0101xxxx`, `+$04` = the argument, the buffer pointers
+  `+$10`/`+$38`/`+$54` = packet `+$6D0`/`+$610`/`+$650`, and `+$28`/`+$34`/`+$44`
+  cleared. Then `main` clears the go flag `+$14` and prints a start-up message
+  through `Report` (`.lit+$D60`, partly decoded "…: st…ing up …"). It stores
+  `packet+$44` (`rec`) at `.bss+4` and loops forever on
+  `CommandDispatcher(-1)`.
 * **Millicode.** Files 55-57 are transparent routines (return `jmpi tpc`):
   a multiply (`$3B814` etc., 55 `mulu` steps) and two divides (`$3B950`
   etc. with 31 `div` steps, and `$3BA38` with `div0`, 31 `div`, `divl`,
   `divrem`). Apple's C code calls them 89 times, always as `const`/`consth
   reg` + `calli tpc,reg`: multiply 59, `$3B950` 22, `$3BA38` 8. Files
-  52-54 are C-callable `memset` and string/memory routines. newlib has no
+  52-54 are C-callable `memchr` (`$3B500`), `memcpy` (`$3B600`) and `memset`
+  (`$3B748`), one per file, each with a tag word for 3 arguments. newlib has no
   source for these. Its `intrinsi.h` is the floating-point package that
   Quantitative Technology Corporation wrote for AMD.
 
@@ -457,7 +466,7 @@ for the relocations. Three kinds of file show:
 | 30 | assembly | `$38F24`-`$39114`, the card's service-call stubs: `const gr121,N` / `asneq 66` (the card's services `$B8`-`$D6`) or `asneq 69` (HIF `$111`/`$112`), no tag words |
 | 31-44, 59-66, 68 | C without debug information | the C library: `printf.o` (`$39114`), `fseek` (`$39300`), `_doprnt` (`$398B8`, with `.data1`), `_ctype_` (a `.lit`-only file at `$3AA98`), the ctype functions, `exit` (`$3AC84`), stdio (`$3B014`) |
 | 45-51, 67 | assembly | AMD's HIF stubs, one per file: close, exit, lseek, open, read, tmpnam, write; remove |
-| 52-57 | assembly | `memset` and millicode; the divide `$3BA38` is file 57 |
+| 52-57 | assembly | `memchr`, `memcpy`, `memset`, then the millicode: multiply (55), divides (56, 57) |
 
 The 768 `.text` addresses in `symbols.txt` are **709 functions and 59 file
 starts**. In C files and most assembly files a file starts 4 bytes before its
@@ -490,8 +499,10 @@ The differences:
   and System 7 can be compared file by file.
 * About 15 KB is vendor library code with known behaviour. It needs no
   reverse engineering and can be named from the standard library.
-* Each file's `.data` start bounds its data objects. That is a structural constraint for the
-  still-masked `.data`.
+* Each file's `.data` start bounds its data objects. As a key hypothesis
+  (the mask restarting per file) it failed, but it led to the finding that
+  `.data` uses the `.text` generator with its own tables, and its bits 0-8
+  now fit (`../antelope_data_key.py`).
 * Earlier "module" readings based on `.lit` bases or guesses can be checked
   against real file boundaries. One correction so far: `$11AD4`-`$174FC` is
   three files, not one.

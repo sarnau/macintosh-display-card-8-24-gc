@@ -18,7 +18,8 @@ masked print as '?':
 Words whose whole plaintext is known (the samples in mask_samples.tsv: nop,
 jmpi lr0, the spill/fill asserts, sub/add gr1/lr1 frame words, and the
 relocated const/consth words) are decoded in full.  Function labels come from
-the ACEF symbol table (symbols.txt, 768 .text entries), which is not masked.
+the ACEF symbol table (symbols.txt, 768 .text entries: 709 functions and 59
+object-file starts, labelled file_NN when the ACEF is given), which is not masked.
 
 Given the ACEF file, each direct call with an R_IREL relocation (type 24,
 133 of them) gets its target, and each relocated const/consth its target as a
@@ -68,9 +69,13 @@ NAMES = {
     0x3AAF0: 'isdigit', 0x3AB0C: 'isxdigit', 0x3AB28: 'isspace', 0x3AB44: 'ispunct',
     0x3AB60: 'isalnum', 0x3AB7C: 'isgraph', 0x3AB98: 'isprint', 0x3ABB4: 'iscntrl',
     0x3ABD0: 'isascii', 0x3ABF8: 'toupper', 0x3AC24: 'tolower', 0x3AC88: 'exit',
-    0x3B404: '_hif_close', 0x3B428: '_hif_exit', 0x3B44C: '_hif_lseek',
-    0x3B470: '_hif_open', 0x3B494: '_hif_read', 0x3B4B8: '_hif_21',
-    0x3B4DC: '_hif_write', 0x3B500: 'memset',
+    # AMD's HIF stubs (antelope_hif_stubs.py), by their C names
+    0x3B404: 'close', 0x3B428: '_exit', 0x3B44C: 'lseek', 0x3B470: 'open',
+    0x3B494: 'read', 0x3B4B8: 'tmpnam', 0x3B4DC: 'write', 0x3C9EC: 'remove',
+    0x3B500: 'memchr', 0x3B600: 'memcpy', 0x3B748: 'memset',
+    # main (crt0 calls it) and its set-up; millicode (transparent, return via tpc)
+    0x31DAC: 'main', 0x3299C: 'InitPacket',
+    0x3B950: 'div_millicode', 0x3BA38: 'udiv_millicode',
 }
 
 
@@ -171,6 +176,18 @@ def main():
         p = ln.split()
         if len(p) == 2 and p[0] == '.text':
             syms.add(int(p[1], 16))
+    files = {}                              # object-file starts that are not functions
+    if len(sys.argv) > 1:
+        import antelope_modules as am
+        data = open(sys.argv[1], 'rb').read()
+        h = am.header(data)
+        fs, _, _ = am.files(data, h['symptr'], h['nsyms'])
+        own, _ = am.split_globals(fs[-1])
+        rows = [am.classify(f['syms']) for f in fs[:-1]] + [am.classify(own)]
+        funcs = {v for r in rows for v in r['funcs']}
+        for n, r in enumerate(rows):
+            if r['start'] is not None and r['start'] not in funcs and r['start'] not in files:
+                files[r['start']] = (n, r['kind'])
     def tgt_is_stub(v):                     # 'const gr121, N' starts a stub
         x = U[v // 4]
         return x >> 24 == 0x03 and (x >> 8) & 0xFF == 121
@@ -179,8 +196,14 @@ def main():
     mix = collections.Counter()
     for i, w in enumerate(U):
         pc = 4 * i
-        if pc in syms:
+        if pc in files:
             out.append('')
+            out.append('file_%02d:   ; object file %d (%s): .text starts here%s' % (
+                files[pc][0], files[pc][0], files[pc][1],
+                '; tag word of the next function' if (w >> 24) == 0 else ''))
+        if pc in syms and (pc not in files or (w >> 24) != 0):
+            if pc not in files:
+                out.append('')
             out.append('sub_%05x:' % pc + ('   ; %s' % NAMES[pc] if pc in NAMES else ''))
         n = known[i]
         jann = ''
@@ -247,8 +270,10 @@ def main():
         '*  agree), a "!" bits 16-23 inside a step of the key, where the',
         '*  switch point was chosen from opcode statistics (less sure).',
         '*  Both are decoded in full, with jump and call targets.  "??" is',
-        '*  a byte still masked (no estimate).  Labels sub_XXXXX are the 768',
-        '*  .text entries of the (unmasked) ACEF symbol table.  Functions',
+        '*  a byte still masked (no estimate).  Labels sub_XXXXX are the 709',
+        '*  functions of the (unmasked) ACEF symbol table; file_NN marks the',
+        '*  .text start of object file NN (antelope_modules.py), usually the',
+        '*  tag word in front of the file\'s first function.  Functions',
         '*  named in HOST_CARD_PROTOCOL.md carry their name on the label line',
         '*  and after each target that points at them (NAMES in the script;',
         '*  names by role where the original is unknown).',
