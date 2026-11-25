@@ -9,7 +9,7 @@
 *  but the code ends at $2003764 (System 7: $20037EC); the rest is zero.
 *  Compared with ../../disasm/Boot.asm (System 7, with a description of
 *  what Boot does):
-*    $2003000-$2003170  identical (ID bits -> gr66 and PublicOut+$2C, CFG/CPS,
+*    $2003000-$2003170  identical (slot ID -> gr66 and PublicOut+$2C, CFG/CPS,
 *                       gr64 <- PublicIn+$18, POLL PublicIn+0 for $42005300,
 *                       copy of the loaded data, PublicOut+$0C..$18 top nibble)
 *    $200313C-$2003364  vector table fill: same order, System 6 handler
@@ -21,7 +21,7 @@
 *                       $2001E80 (System 7 $2001FFC)
 * ------------------------------------------------------------------
 * ------------------------------------------------------------------
-*  ID bits $4400000C/$44000010 -> gr66, PublicOut+$2C; CFG/CPS; gr64; poll
+*  slot ID $4400000C..$18 -> gr66, PublicOut+$2C; CFG/CPS; gr64; poll
 *  PublicIn+0 for $42005300; data copy; PublicOut+$0C..$18.  Identical to System 7.
 * ------------------------------------------------------------------
   2003000:  0300460c  const    gr70, $000c             

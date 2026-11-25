@@ -30,8 +30,9 @@
 *   2. Probes whether Toolbox trap $A8B5 is implemented (GetTrapAddr
 *      vs. the address of _Unimplemented); bails if not.  (Apple's
 *      Traps.h maps $A8B5 to _ScriptUtil; two more calls to it, with
-*      selector-like longs $84020008/$8404000C, most likely fetch the
-*      current script/language code into D6 -- D6 is then used
+*      selectors $84020008 = GetEnvirons(smSysScript = 18) and
+*      $8404000C = GetScript(script, smScriptLang = 28), fetch the
+*      system script's language code into D6 -- D6 is then used
 *      directly as '1000+D6' to pick a *localised* STR# resource
 *      below, which is exactly the kind of thing ScriptUtil is for.)
 *   3. Loads STR#(1000+D6) (falling back to STR#(1000) if that
@@ -65,7 +66,8 @@
 *          (report that error) and stop;
 *          else its first long nonzero -> Control $0D (13, EnableAccel),
 *          zero -> Control $0E (14, DisableAccel)
-*          (that long is plausibly the 'accelerator on' preference);
+*          (that long is the accelerator on/off setting, PupS +$0;
+*          HOST_CARD_PROTOCOL.md section 9);
 *        GetKeys: key code $38 = Shift held -> Control $0E again (force
 *          the accelerator off -- the usual hold-Shift-at-boot convention;
 *          inferred from the key code, not otherwise confirmed);
@@ -881,7 +883,8 @@ Main:
 * ICN# resource (id = A6+$8) and processes it via sub_0AFE, falling
 * back to a single _SysBeep if the icon resource is missing.  The
 * inner helpers ($A78, $AD0, $AFE, $B7E -- the latter two using
-* _NewGrowRgn-family traps $AA1E/$AA25) are icon/alert plumbing not
+* Color QuickDraw icon traps $AA1E _GetCIcon / $AA25 _DisposCIcon) are
+* icon/alert plumbing not
 * traced further here -- and per the credit block right after this
 * function (sub_0a78's header below), they're third-party code
 * (Paul Mercer's ShowINIT), not this project's own logic.

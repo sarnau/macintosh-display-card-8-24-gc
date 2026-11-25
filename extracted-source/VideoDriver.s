@@ -15,7 +15,7 @@
 *  Register banks (base = card super-slot space, held in A4/$24(A3)):
 *     base + $0400'00xx   MFB / control registers
 *                         $44,$48,$4C = the three monitor SENSE lines
-*     base + $04C0'0000   AC842 CLUT / colour-table port
+*     base + $04C0'0000   timing-bank serial data register
 *
 *  Control csCodes : 0 Reset  1 KillIO  2 SetMode  3 SetEntries  4 SetGamma
 *                    5 GrayPage  6 SetGray  7 SetInterrupt
@@ -743,7 +743,7 @@ L59c8:
   0059c8:  61 04                bsr.b    $59ce  ; -> sub_59ce
   0059ca:  60 00 fb b6          bra.w    $5582  ; -> Ctl_KillIO
 * sub_59ce  -  disable and remove the card VBL interrupt.
-* Turns the IRQ off in the serial-ctl port, clears the IRQ reg, and
+* Sets timing control to 3 (interrupt off) through $04C00000/$0440003C, and
 * _SIntRemove's the slot queue element (storage.$10).
 sub_59ce:
   0059ce:  48 e7 f8 88          movem.l  d0-d4/a0/a4, -(a7)
@@ -760,12 +760,12 @@ L59e6:
   0059e6:  42 40                clr.w    d0
   0059e8:  10 29 00 28          move.b   $28(a1), d0
   0059ec:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  0059f0:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  0059f0:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   0059f6:  72 03                moveq    #$3, d1
   0059f8:  74 0c                moveq    #$c, d2
   0059fa:  4e ba 08 a0          jsr      $629c(pc)  ; -> SerialShiftOut
   0059fe:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005a02:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  005a02:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   005a08:  42 b4 48 00          clr.l    (a4, d4.l)
   005a0c:  20 03                move.l   d3, d0
   005a0e:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
@@ -788,7 +788,7 @@ sub_5a1e:
   005a30:  31 7c 00 06 00 04    move.w   #$6, $4(a0)
   005a36:  21 4a 00 08          move.l   a2, $8(a0)
   005a3a:  24 6b 00 24          movea.l  $24(a3), a2  ; [saveHardBase]
-  005a3e:  d5 fc 04 40 00 48    adda.l   #$4400048, a2  ; MFB IRQ +$48 (IRQ status/flag reg)
+  005a3e:  d5 fc 04 40 00 48    adda.l   #$4400048, a2  ; VBL slot-interrupt acknowledge
   005a44:  21 4a 00 0c          move.l   a2, $c(a0)
   005a48:  70 00                moveq    #$0, d0
   005a4a:  10 29 00 28          move.b   $28(a1), d0
@@ -797,12 +797,12 @@ sub_5a1e:
   005a52:  70 01                moveq    #$1, d0
   005a54:  a0 5d                dc.w     $a05d  ; _SwapMMUMode ->32-bit mode
   005a56:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005a5a:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  005a5a:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   005a60:  72 01                moveq    #$1, d1
   005a62:  74 0c                moveq    #$c, d2
   005a64:  4e ba 08 36          jsr      $629c(pc)  ; -> SerialShiftOut
   005a68:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005a6c:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  005a6c:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   005a72:  42 b4 48 00          clr.l    (a4, d4.l)
   005a76:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   005a78:  b2 41                cmp.w    d1, d1
@@ -1109,8 +1109,9 @@ ChkPage:
   005d3a:  4a 40                tst.w    d0
   005d3c:  4e 75                rts
 * WaitForVBlank  -  wait for vertical blanking.
-* Polls the video-sync status (via sub_5d96 on the serial-ctl port /
-* sync reg at base+$0440'01C0) across a full blank so CLUT writes do not
+* Reads base+$0440'01C0 (loads a status into the timing serial register),
+* then tests bit 31 of the following $04C00000 reads (sub_5d96) across a
+* full blank so CLUT writes do not
 * tear.  Saves/forces the interrupt mask while spinning.
 WaitForVBlank:
   005d3e:  48 e7 c8 88          movem.l  d0-d1/d4/a0/a4, -(a7)
@@ -1123,10 +1124,10 @@ WaitForVBlank:
   005d50:  02 7c fa ff          andi.w   #$faff, sr
 L5d54:
   005d54:  20 6b 00 24          movea.l  $24(a3), a0  ; [saveHardBase]
-  005d58:  d1 fc 04 40 01 c0    adda.l   #$44001c0, a0  ; MFB IRQ +$1c0 (video-sync status reg)
+  005d58:  d1 fc 04 40 01 c0    adda.l   #$44001c0, a0  ; timing status: loads it into $04C00000's shift register
   005d5e:  72 02                moveq    #$2, d1
   005d60:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005d64:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  005d64:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
 L5d6a:
   005d6a:  20 10                move.l   (a0), d0
   005d6c:  4e ba 00 28          jsr      $5d96(pc)  ; -> sub_5d96
@@ -1145,7 +1146,7 @@ L5d82:
   005d8e:  46 df                move.w   (a7)+, sr
   005d90:  4c df 11 13          movem.l  (a7)+, d0-d1/d4/a0/a4
   005d94:  4e 75                rts
-* sub_5d96  -  read the serial-ctl/sync register (D1 = pre-shift count),
+* sub_5d96  -  read/write-back loop on the timing serial register (D1 = pre-shift count),
 * returning the sampled long in D0 (bit 31 = blanking state).
 sub_5d96:
   005d96:  74 0b                moveq    #$b, d2
@@ -1274,12 +1275,12 @@ L5eae:
   005f16:  48 c4                ext.l    d4
   005f18:  28 84                move.l   d4, (a4)
   005f1a:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005f1e:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  005f1e:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   005f24:  72 03                moveq    #$3, d1
   005f26:  74 0c                moveq    #$c, d2
   005f28:  4e ba 03 72          jsr      $629c(pc)  ; -> SerialShiftOut
   005f2c:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005f30:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  005f30:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   005f36:  42 b4 48 00          clr.l    (a4, d4.l)
   005f3a:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
   005f3e:  d9 fc 0c 00 73 00    adda.l   #$c007300, a4  ; MFB/Am29000 param block +$0
@@ -1309,12 +1310,12 @@ L5f88:
   005f8a:  66 fc                bne.b    $5f88  ; -> L5f88
 L5f8c:
   005f8c:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005f90:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  005f90:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   005f96:  72 01                moveq    #$1, d1
   005f98:  74 0c                moveq    #$c, d2
   005f9a:  4e ba 03 00          jsr      $629c(pc)  ; -> SerialShiftOut
   005f9e:  28 6b 00 24          movea.l  $24(a3), a4  ; [saveHardBase]
-  005fa2:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  005fa2:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   005fa8:  42 b4 48 00          clr.l    (a4, d4.l)
   005fac:  32 2b 00 2a          move.w   $2a(a3), d1  ; [saveDepth]
   005fb0:  61 22                bsr.b    $5fd4  ; -> sub_5fd4
@@ -1414,7 +1415,7 @@ L6076:
   0060b4:  08 05 00 0b          btst.b   #$b, d5
   0060b8:  67 1a                beq.b    $60d4  ; -> L60d4
   0060ba:  26 49                movea.l  a1, a3
-  0060bc:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; clock/timing coeff RAM +$0
+  0060bc:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
   0060c2:  34 3c 00 0f          move.w   #$f, d2
 L60c6:
   0060c6:  26 98                move.l   (a0)+, (a3)  ; [saveMode]
@@ -1433,17 +1434,17 @@ L60d4:
   0060f6:  72 01                moveq    #$1, d1
   0060f8:  ef f4 10 01 48 00    bfins    d1, (a4, d4.l){0:1}
   0060fe:  28 49                movea.l  a1, a4
-  006100:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  006100:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   006106:  72 00                moveq    #$0, d1
   006108:  74 0c                moveq    #$c, d2
   00610a:  4e ba 01 90          jsr      $629c(pc)  ; -> SerialShiftOut
-  00610e:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  00610e:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   006114:  42 b4 48 00          clr.l    (a4, d4.l)
   006118:  26 49                movea.l  a1, a3
   00611a:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
   006120:  36 3c 00 0e          move.w   #$e, d3
   006124:  28 49                movea.l  a1, a4
-  006126:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  006126:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
 L612c:
   00612c:  74 0c                moveq    #$c, d2
   00612e:  22 18                move.l   (a0)+, d1
@@ -1454,11 +1455,11 @@ L612c:
   006142:  72 01                moveq    #$1, d1
   006144:  ef f4 10 01 48 00    bfins    d1, (a4, d4.l){0:1}
   00614a:  28 49                movea.l  a1, a4
-  00614c:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  00614c:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
   006152:  72 01                moveq    #$1, d1
   006154:  74 0c                moveq    #$c, d2
   006156:  4e ba 01 44          jsr      $629c(pc)  ; -> SerialShiftOut
-  00615a:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  00615a:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   006160:  42 b4 48 00          clr.l    (a4, d4.l)
   006164:  26 5f                movea.l  (a7)+, a3
   006166:  61 00 fb d6          bsr.w    $5d3e  ; -> WaitForVBlank

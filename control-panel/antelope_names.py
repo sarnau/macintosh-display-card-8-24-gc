@@ -258,7 +258,7 @@ NAMES = {
     # the kernel/HIF service stubs (file 30), by HOST_CARD_PROTOCOL.md section 8
     0x38F24: 'svc_C1_FreeMemory', 0x38F34: 'svc_C4_GetCardNibble', 0x38F44: 'svc_BB_GetHostFlags',
     0x38F54: 'svc_C5_WaitVideoInterrupt', 0x38F64: 'svc_D2_RestartIfRequested',
-    0x38F74: 'svc_C6_WritePixelClock', 0x38F84: 'svc_C7_WriteRAMDAC', 0x38F94: 'svc_C8_ReadCLUTEntry',
+    0x38F74: 'svc_C6_SetDisplayStart', 0x38F84: 'svc_C7_WriteRAMDAC', 0x38F94: 'svc_C8_ReadCLUTEntry',
     0x38FC8: 'svc_C0_GetPublicIn', 0x38FD8: 'svc_112_HifCycles', 0x38FE8: 'svc_111_HifClock',
     0x38FF8: 'svc_CB_AddTo4C003120', 0x39008: 'svc_101_HifSysalloc', 0x39018: 'svc_CC_MapRegion',
     0x39028: 'svc_CD_UnmapRegion', 0x39038: 'svc_CE_TranslateRegion', 0x39050: 'svc_D4_PhysAddress',

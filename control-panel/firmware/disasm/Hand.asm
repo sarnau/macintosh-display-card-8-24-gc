@@ -71,7 +71,9 @@
 *    $4C003168/316C  memory-region table: count, then 12-byte entries
 *                    (base, size, aux); used by $2001C2C and the TLB handlers
 *    $4C006400 PublicIn (host -> card): +00 boot poke $42005300, +10 address
-*                    limit, +18 flags (-> gr64), +3C timer value
+*                    limit, +18 flags (-> gr64), +3C slot burst-mask master
+*                    copy ($0000FFFF in RuntimeData; read by $D5, init and the
+*                    timer, mirrored << 16 to $46000000)
 *    $4C00617C..$4C00618C  INTR0..INTR3 handler/enable words, pending flag
 *    $4C0061BC..$4C0061CC  trace / single-step state;  $4C006748 fatal-trap
 *                    register dump;  $4C006800 PublicOu (card -> host):
@@ -81,9 +83,11 @@
 *                    $73333337 's337' host acknowledges), +04 reason/status,
 *                    +08 host argument, +10..+4F register dump
 *    $4C007300 VidComm video command block (+04 ack, +08.. params, +1C command)
-*    $44000000..$440000A0 card control registers (HW-ID bits +44/+48/+4C,
+*    $44000000..$440000C8 card control registers (monitor sense lines
+*                    +44/+48/+4C, slot ID +0C..+18, board ID +94/+98/+9C,
 *                    interrupt acks +50/+54/+58, status +64/+68/+70, +7C/+80)
-*    $46000000       interrupt mask/pending word;  $40003400 register spill area
+*    $46000000       bus status, board revision and slot burst mask (see
+*                    ../../HOST_CARD_PROTOCOL.md 11.4);  $40003400 register spill area
 *
 *  HOST-WRITTEN FIELDS OF PublicIn ($4C006400), cross-checked with DRVR.s
 *  (see ../../HOST_CARD_PROTOCOL.md):
@@ -2297,9 +2301,11 @@ L_2001cf8:
 *  'mftlb'/'mttlb' scan that compares tags under the mask $FFFF8000), fills the
 *  entry (+$00 page, +$04 data, +$08 bucket), links it at the head of the new
 *  bucket, then brings the page in: it saves lr0..lr31 to $4C002E4C, bursts
-*  seven 32-word 'loadm' reads (stride $80) from the page (address | $4C000000)
+*  eight 32-word 'loadm' reads (stride $80, the 1 KB page; the counter starts
+*  at 6) from the page (address | $4C000000)
 *  between writes of the page/bus control registers $4400008C/$44000088 (the
-*  value for $4400008C is derived from gr64 bits 8-15), restores the registers
+*  value for $4400008C is ~(gr64 << 24), bit 31 = NOT flags bit 7, as init
+*  writes it), restores the registers
 *  and jumps to $20006EC, the TLB reload ('mttlb' at LRU) of the miss handler.
 *  Failures here give reasons $9E / $A1.
 * ==================================================================

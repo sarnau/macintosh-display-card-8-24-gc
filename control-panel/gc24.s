@@ -2,13 +2,16 @@
 *  gc24  -  QuickDraw GC accelerator engine (resource 'gc24' id -4048)
 *           48 KB, 68020.  Host side of the 8*24 GC acceleration.
 * ==================================================================
-*  For each accelerated drawing op it marshals a command + parameters and
-*  appends them to the on-card Am29000's command queue, falling back to
-*  software QuickDraw when acceleration is unavailable.
+*  For each accelerated op it either writes a record into the DrawMultiObject
+*  drawing stream in card memory (the Std* bottlenecks and drawing state) or
+*  posts one command in the shared packet (selector +$48, sequence +$4C,
+*  count +$50, go +$14, reply +$1C) for the Am29000 to run, falling back to
+*  software QuickDraw when acceleration is unavailable (HOST_CARD_PROTOCOL.md).
 *
 *  Layout:
 *    $0000..$13E3  dispatch table  - 106 entries x $30 bytes.  Each entry:
-*                    +$00  dc.l  Am29000 command code / firmware offset
+*                    +$00  dc.l  address of the patched trap-table slot (or
+*                                low-mem vector; -1/-2/-3 = control records)
 *                    +$04  stub  (GlobalsAccessor) - fetch engine globals via
 *                                low-mem [$888] and tail-jump through them
 *                    +$28  bra.l GA_<trap>    (the 68k handler for this op)
@@ -20,8 +23,11 @@
 *    +$AA6  per-op scratch word (StoreCtxWord_AA6)
 *
 *  gc24 also contains ACEFLoad - the relocating loader that parses the ACEF
-*  Am29000 object format (magic/sections/symbols/relocations) and downloads
-*  the firmware to the card.  Its own embedded debug strings (near $3080)
+*  Am29000 object format (magic/sections/symbols/relocations) and copies an
+*  ACEF image into card memory.  gc24 uses it only for host-loaded modules
+*  (module API selector 1, sub_1A2E: card memory from $8002, then
+*  ACEFLoad); it accepts only plain $012A files.  The firmware itself
+*  (Runtime, Antelope) is loaded by DRVR's decrypting copy.  Its own embedded debug strings (near $3080)
 *  spell out the algorithm directly: for each section, log
 *  "Section %8s: (0x%08x) %d Address: %X size: %d %s at 0x%08X" (%s =
 *  "loaded" or "zeroed"), i.e. BlockMove the raw bytes to a real target
@@ -36,15 +42,16 @@
 *  the same 24-bit-clean hygiene classic Mac OS applies to any hardware
 *  pointer -- i.e. the Am29000's program/data memory is directly
 *  memory-mapped into the card's NuBus slot space and firmware bytes are
-*  written with plain BlockMove/move.l, not shuttled through the
-*  separate command-queue mechanism (CopyParamsToQueue) gc24 uses for
-*  ordinary QuickDraw commands at runtime.  Not established: exactly how
-*  execution gets kicked off afterward (reset-vector poke, a "go" bit in
-*  the comm block, etc.) -- not traced past the load/relocate step.
+*  written with plain BlockMove/move.l, not through the command packet
+*  (CopyParamsToQueue) gc24 uses for ordinary commands at runtime.  A
+*  loaded module is started with command $8001 (run its entry point on a
+*  message); the firmware is started by the Runtime kernel, which jumps to
+*  the entry DRVR's LoadFirmware stores at PublicIn+$04
+*  (HOST_CARD_PROTOCOL.md, sections 3 and "Host-loaded modules").
 *
-*  DRVR.s carries its own copy of this loader (LoadFirmware/ACEFLoad,
-*  invoked from a private Control selector) -- i.e. the low-level driver
-*  can itself re-flash firmware, not just gc24.
+*  DRVR.s carries its own copy of this loader (Init29K and LoadFirmware,
+*  Control cs2/cs3), which also decrypts $012B files: that copy loads the
+*  firmware into card RAM.
 *
 *  Labels: infrastructure routines named by inspection (GlobalsAccessor,
 *  Strip24, GetA5, EngineDispatch, StoreCtxWord_AA6, HWPrivProbe,
@@ -3505,7 +3512,10 @@ sub_23ae:
   0023ae:  4e 56 00 00          link.w   a6, #$0
   0023b2:  4e 5e                unlk     a6
   0023b4:  4e 75                rts      
-* ACEFLoad  -  the relocating loader for the Am29000 firmware (ACEF).
+* ACEFLoad  -  the relocating ACEF (Am29000 COFF) loader.  gc24's only
+* caller is the module API's load selector (sub_1A2E, $1B04), which loads a
+* host-supplied plain ($012A) module into card heap memory from $8002; the
+* firmware itself is loaded by DRVR.s's decrypting copy.
 * Parses the ACEF object format (magic / sections / symbols / relocations)
 * directly out of the in-memory resource buffer -- same file-header (20
 * bytes) then optional-header (68 bytes) layout ../acef_unpack.py already
@@ -6518,7 +6528,8 @@ GA_CalcCMask:
   004818:  28 6e ff f6          movea.l  -$a(a6), a4
   00481c:  4e 5e                unlk     a6
   00481e:  4e 74 00 1c          rtd      #$1c
-* example command wrapper: EngineDispatch(arg, 0, cmd=$26).
+* sub_4822(reason) = EngineDispatch($26, NULL, reason): flush / end the
+* DrawMultiObject stream (a final $38 if needed), the reason in the count slot.
 sub_4822:
   004822:  4e 56 00 00          link.w   a6, #$0
   004826:  2f 2e 00 08          move.l   $8(a6), -(a7)
@@ -6667,7 +6678,11 @@ L49ba:
 * ~137x through thin per-command wrappers).  Fetches the globals, walks to
 * the device record at globals+$214, checks its ready flags ($8 of the
 * device) and issues the command; on a not-ready state it branches to the
-* software fallback.
+* software fallback.  EngineDispatch(cmd, params, count): the drawing and
+* drawing-state selectors become DrawMultiObject stream records (reply 1, or
+* 2 while a picture/region/polygon is recording); the others are posted in
+* the packet (+$48 cmd, +$4C sequence, +$50 count, +$14 = -1) and the card's
+* reply is read from +$1C (HOST_CARD_PROTOCOL.md).
 EngineDispatch:
   0049c4:  4e 56 ff 90          link.w   a6, #$ff90
   0049c8:  48 e7 1f 38          movem.l  d3-d7/a2-a4, -(a7)
@@ -8481,8 +8496,11 @@ L5fd4:
   005fee:  30 3b 08 06          move.w   $5ff6(pc, d0.l), d0
 * CopyParamsToQueue  -  a Duff's-device unrolled copy: a switch on the
 * parameter count jumps into a chain of  move.l (params)+,(queue)+  ,
-* appending N argument longs to the card command queue (case 7 = 1 long
-* ... case 1 = 7 longs).
+* copying the N argument longs into the command packet's argument area
+* (a3 = $18(a4)); there is no queue: one command at a time, after which
+* +$14 = -1 posts it.  The loop above copies 8 longs at a time; the table
+* then copies the remaining 1-7 (case n = n longs: case 1 -> L6040, one
+* move.l; case 7 -> L6004, seven).
 CopyParamsToQueue:
   005ff2:  4e fb 00 00          jmp      $5ff4(pc,d0.w)  ; -> L5ff4
 * jump table (word offsets relative to $5FF4, indexed by selector*2):
@@ -9563,7 +9581,9 @@ L6c4c:
   006c66:  4c ee 18 f0 ff 50    movem.l  -$b0(a6), d4-d7/a3-a4
   006c6c:  4e 5e                unlk     a6
   006c6e:  4e 75                rts      
-* Patch #105 replaces special; no EngineDispatch command found
+* Patch #105 replaces special; no EngineDispatch command in its own body:
+* it forwards to sub_1404, the module/task API, which sends $8001-$8004
+* (DRVR Control/Status 54 call it through slot $A84).
 GA_ControlFFFFFFFD:
   006c70:  4e 56 00 00          link.w   a6, #$0
   006c74:  2f 2e 00 10          move.l   $10(a6), -(a7)
@@ -17209,7 +17229,7 @@ Lbfd2:
 sub_bfde:
   00bfde:  22 5f                movea.l  (a7)+, a1
   00bfe0:  20 5f                movea.l  (a7)+, a0
-  00bfe2:  a0 25                dc.w     $a025  ; _GetPtrSize
+  00bfe2:  a0 25                dc.w     $a025  ; _GetHandleSize
   00bfe4:  2e 80                move.l   d0, (a7)
   00bfe6:  6a 02                bpl.b    $bfea  ; -> Lbfea
   00bfe8:  42 97                clr.l    (a7)
@@ -17240,8 +17260,11 @@ sub_c000:
   00c014:  2e b1 00 00          move.l   (a1, d0.w), (a7)
 Lc018:
   00c018:  4e d0                jmp      (a0)
-* HWPrivProbe  -  queries the hardware via _HWPriv (selector 2);
-* returns 0/1.  Used during environment/capability checks.
+* HWPrivProbe(enable)  -  _HWPriv selector 2 = SwapDataCache: turns the
+* 68K data cache on (non-zero) or off (0) and returns its previous state
+* (0/1).  Not a probe: EngineDispatch and others call it with 0 before
+* touching the packet and with the saved state afterwards (e.g. $5F16,
+* $6C5E), so card memory is not read through the data cache.
 HWPrivProbe:
   00c01a:  22 5f                movea.l  (a7)+, a1
   00c01c:  70 00                moveq    #$0, d0
@@ -17302,7 +17325,7 @@ Lc08a:
   00c09a:  60 ee                bra.b    $c08a  ; -> Lc08a
 * GestaltSelectorTable  -  (OSType, offset) pairs the engine probes via
 * _Gestalt to vet the environment: vers/mach/sysv/proc/fpu/qd/kbd/atlk/
-* mmu/dram/lram.  Gates acceleration (cf. the requirement strings).
+* mmu/ram/lram.  Gates acceleration (cf. the requirement strings).
 GestaltSelectorTable:
   00c09c:  76 65 72 73 00 00 00 60 dc.l     $76657273,$00000060  ; Gestalt 'vers'
   00c0a4:  6d 61 63 68 00 00 00 64 dc.l     $6D616368,$00000064  ; Gestalt 'mach'

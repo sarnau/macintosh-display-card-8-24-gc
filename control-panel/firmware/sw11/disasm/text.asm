@@ -71770,7 +71770,7 @@ sub_3ef68:   ; svc_D2_RestartIfRequested
   3ef70:  c0000080  jmpi     lr0
   3ef74:  70400101  nop         ; [delay slot]
 
-sub_3ef78:   ; svc_C6_WritePixelClock
+sub_3ef78:   ; svc_C6_SetDisplayStart
   3ef78:  030079c6  const    gr121, $00c6
   3ef7c:  72420101  asneq    trap66, gr1, gr1
   3ef80:  c0000080  jmpi     lr0

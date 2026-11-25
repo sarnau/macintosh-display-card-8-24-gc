@@ -81,24 +81,25 @@ KEY `0xBC`. 13 sections; header `symptr=0`/`nsyms=0` and every section has
 
 (`disasm/Boot.asm`, whose header has the details.)
 
-1. Probes the two words at `$4400000C`/`$44000010` into a 2-bit value and
-   stores it, shifted left by 28, at `$4C00682C` (`PublicOu+$2C`); sets
+1. Reads the four words at `$4400000C`/`$10`/`$14`/`$18` (writing each back)
+   into the 4-bit NuBus slot number (bit 31 of each, inverted) and stores
+   it, shifted left by 28, at `$4C00682C` (`PublicOu+$2C`); sets
    `CFG = 0`, `CPS = $047F`; loads the host's flags from `PublicIn+$18` into
    `gr64`.
 2. **Polls `$4C006400` (`PublicIn` word 0) until it reads `$42005300`** -- the
    value `DRVR.s`'s `Init29K` pokes to `image+$00` after uploading `Runtime` --
    then writes 0 back.
-3. Copies a block described by `PublicIn+$20`-`$2C`, and puts the probed
-   value into the top nibble of the four pointers at `PublicOu+$0C`-`$18`.
+3. Copies a block described by `PublicIn+$20`-`$2C`, and puts the slot
+   number into the top nibble of the four pointers at `PublicOu+$0C`-`$18`.
 4. Sets `VAB = $4C000000` (the `Vec` section) and `CFG |= $10`, and **fills the
    trap vector table** with handler addresses `$0200xxxx` (`$2000000`,
    `$2000008`, `$2000908`, ... and `$2001D08` for the unused entries).
-5. Reads the three hardware-ID bits at `$44000044/48/4C` (the host's
-   `$0400004C/48/44`, the readiness bits `BuildUnitRecords` reads). It takes
+5. Reads the three monitor sense lines at `$44000044/48/4C` (the host's
+   `$04000044/48/4C`, which VideoOpen and `BuildUnitRecords` read too). It takes
    the board parameters from `VidComm` when that holds `'WY1`'`, or else
    probes the card registers, and stores them at `PublicOu+$1C`-`$28` (a
-   configuration value `$1E0`, `$366`, `$1E6`, `$180`, `$240`, `$270` by board
-   at `+$28`).
+   configuration value `$1E0`, `$366`, `$1E6`, `$180`, `$240`, `$270` by monitor
+   code at `+$28`).
 6. `jmp $2001FFC` into `Hand`'s reset/initialisation routine.
 
 ### What `Hand` contains

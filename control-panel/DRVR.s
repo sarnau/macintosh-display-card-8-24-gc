@@ -681,8 +681,8 @@ StsExit:
 * derefs to the engine globals (A3), and validates an index (D7) taken
 * from csParam against globals+$10 (a count field) before continuing.
 * One Control path (via LoadFirmware, bsr'd at $AEC below) drives
-* this driver's own copy of the ACEFLoad Am29000-COFF loader -- i.e.
-* *this* driver, not just gc24, can download firmware to the card.
+* this driver's own copy of the ACEFLoad Am29000-COFF loader -- the only
+* copy that loads the card's firmware (gc24's loads host modules only).
 DoControl:
   00710:  4e 56 ff ec          link.w   a6, #$ffec
   00714:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
@@ -754,12 +754,13 @@ DoControl:
 *     cs4  A4+$12C <- csParam+2
 *     cs5  state |= 4   cs6  state &= ~4
 *     cs13 EnableAccel   cs14 DisableAccel   cs17/cs50 reconfigure variants
-*     cs16 globals+$250 <- arg    cs18 A4+$2 <- csParam+4 (word)
+*     cs16 globals+$250 <- arg    cs18 A4+$2 <- csParam+4 (word: gc24's
+*                                 card-response timeout in ticks)
 *     cs19 globals+$24C <- arg
 *     cs20 A4+$17C <- arg (report an error code), state |= $400
 *     cs21 state |= $800
 *     cs48 / cs52 / cs53  small setters (see each)   cs49  $2D44(...) helper
-*     cs51 mailbox send to the Am29000   cs54 invoke client hook #3
+*     cs51 answer the card's mailbox report   cs54 invoke client hook #3
 *     cs99 ($63) ping -> noErr;  cs10/11/12 and everything else -> -17
 *   Decoded from how INIT_main.s drives them (its boot handshake is mapped
 *   onto these cases in that file's header).
@@ -1010,8 +1011,9 @@ DoControl:
   00ac2:  29 7c ff ff d8 da 01 7c move.l   #$ffffd8da, $17c(a4)
   00aca:  60 00 04 a8          bra.w    $f74
 * cs3  Ctl_LoadFirmware: LoadFirmware(unit record handle, csParam+2 = ACEF
-* Handle) -- see LoadFirmware's header for what it does.  This is the private
-* 're-flash the Am29000' selector.
+* Handle) -- see LoadFirmware's header for what it does.  This is the
+* selector that loads the accelerator program (Antelope, ACEF 100) into card
+* RAM after cs2/Init29K has loaded the Runtime kernel (nothing is flashed).
   00ace:  20 0c                move.l   a4, d0
   00ad0:  67 00 04 aa          beq.w    $f7c
   00ad4:  2f 0b                move.l   a3, -(a7)
@@ -1071,7 +1073,7 @@ DoControl:
   00b98:  61 ff 00 00 1e 9e    bsr.l    $2a38
   00b9e:  4f ef 00 0c          lea.l    $c(a7), a7
   00ba2:  60 00 03 ca          bra.w    $f6e
-* cs51 MAILBOX SEND to the Am29000: refuses if A4+$168&$800, if state bit 2
+* cs51 MAILBOX ANSWER to the Am29000 (see below): refuses if A4+$168&$800, if state bit 2
 * is clear, or if state&$600.  Clears the word at A4+$13C (the ack/flag word),
 * then PokeHardwareLong(A4+$144 + 8, csParam+2) -- the payload -- and only
 * THEN PokeHardwareLong(A4+$144, $73333337 = ASCII 's337') to commit it:
@@ -1079,6 +1081,12 @@ DoControl:
 * is the card's MAILBOX address, read back from image+$40C by Init29K ($23CC),
 * which also stored the ack-word address at mailbox+$0C and wrote the first
 * 's337' to open the mailbox (Status cs16 reads this same field).
+* Card side (Hand $2002650, HOST_CARD_PROTOCOL.md section 4): the mailbox
+* (HifComm) carries CARD-to-host reports.  The card posts only while +$00
+* reads 's337' (reason at +$04, register dump at +$10, $96666669 to +$00 and
+* to the ack word), then waits for the host's next 's337' and returns +$08
+* as the result of its HIF service.  So cs51 ANSWERS a posted report: the
+* payload is that answer, and 's337' re-arms the mailbox.
   00ba6:  20 0c                move.l   a4, d0
   00ba8:  67 00 03 d2          beq.w    $f7c
   00bac:  20 3c 00 00 08 00    move.l   #$800, d0
@@ -1343,7 +1351,9 @@ DoControl:
   00f2c:  39 45 00 02          move.w   d5, $2(a4)
   00f30:  4f ef 00 0c          lea.l    $c(a7), a7
   00f34:  60 38                bra.b    $f6e
-* cs18 A4+$2 <- csParam+4 (word).
+* cs18 A4+$2 <- csParam+4 (word): the card-response timeout in ticks that
+* gc24's wait loops use (300 from BuildUnitRecords; gc24 32 sends the PupS
+* value, 1200; cs54 forces 2000 around its hook call).
   00f36:  20 0c                move.l   a4, d0
   00f38:  67 42                beq.b    $f7c
   00f3a:  20 6e ff f4          movea.l  -$c(a6), a0
@@ -2597,11 +2607,13 @@ ClassifyTrapNum:
 * (NewHandle/MoveHHi/HNoPurge/HLock) = the UNIT RECORD that A4 = *handle points
 * at everywhere else in this driver.  Field map, established from every reader
 * and writer in this file (confidence noted where it is inferred):
-*    +$000 w  slot number              +$002 w  scratch (cs18 / Status $002)
+*    +$000 w  slot number              +$002 w  card-response timeout, ticks
+*             (300 here; cs18 sets it; read by gc24's wait loops; Status 8)
 *    +$004 l  1, or 8 if globals+$254 (a 'big/24-bit mode' flag byte)
 *    +$008 l  STATE FLAGS (see the DoControl map): bit1 = firmware loaded,
 *             bit2 = cs5/cs6, bit5 = accelerator active, $400/$800 = cs20/21
-*    +$00C l  slot-space base + $8C00   +$010/+$014  globals-derived pointers
+*    +$00C l  slot-space base + $8C00 = the command packet (card $4C008C00,
+*             PublicOut+$18)   +$010/+$014  globals-derived pointers
 *    +$0AC.. +$0C8  copied from globals+$26C/$268/$270 (client hook words)
 *    +$128 l  CONFIG word: starts $80000000; cs17/cs50 write it; bits $20 /
 *             $40 / $100 are tested by SetFeatureFlags ($2AD2)
@@ -2617,8 +2629,11 @@ ClassifyTrapNum:
 *    +$14C/+$150 l  (version, date) of the ACEF whose program name is 'Runtime'
 *    +$154/+$158 l  (version, date) of the other ACEF (see RecordAcefVersion)
 *             ($FF in either = two different values were seen)  [Status 17/18]
-*    +$15C w  zero      +$15E w  hardware-ready bits: BuildUnitRecords samples
-*             bit31 of card regs $0400004C/48/44 into bits 1/2/4
+*    +$15C w  zero here; gc24's give-up routine sub_75FE stores its reason
+*             code there      +$15E w  monitor sense code: BuildUnitRecords samples
+*             bit31 of the sense lines $0400004C/48/44 into values 1/2/4; with
+*             all three set (code 7) and d5 = 0 it sets +$15E = $FFFF and
+*             skips ProbeCard ($2064-$207C)
 *    +$160 w  slot copy                +$162 w  CARD TYPE ($2C or $7E = a GC)
 *    +$164 l  ProbeCard result (also copied to +$17C when it reports failure)
 *    +$168 l  FEATURE FLAGS built by SetFeatureFlags ($2AD2); passed to the card
@@ -3080,7 +3095,9 @@ ClassifyTrapNum:
 * Init29K(unit handle, ACEF handle)  -- the cs2 engine ('GA_DrvrControl: Init29K
 * error' is logged when this fails).  Only card types $2C/$7E are initialised;
 * any other type returns noErr without touching the card.  Sequence:
-*   1. $1D8E(unit): writes 0 to hardware reg $04000028 (release).
+*   1. $1D8E(unit): writes 0 to hardware reg $04000028 ($1DDC writes -1 after
+*      the flags word; the card never reads it, so which value holds or releases
+*      the Am29000 is open).
 *   2. SRAM test (128 KB at card offset 0, stride $1000, writes ~addr); needs
 *      >= 64 KB else last-error $FFFFD8EA.
 *   3. DRAM probe: TestRAMLong($0C000000), AliasCheck($0C000000/$0C100000)
@@ -3090,8 +3107,11 @@ ClassifyTrapNum:
 *   4. $1D8E again; helper $4564 (feature flags | $10 passed in); then
 *      ACEFLoad(the ACEF handle) with &unit+$130 as the out-parameter -> unit
 *      +$130 = image base on the card.  Failure = last-error $FFFFD8EA.
-*   5. Handshake: reads image+$400 and requires $32100456 (a 'firmware is up'
-*      signature the card side wrote; else last-error $FFFFD8EA).  Then pokes:
+*   5. Handshake: reads image+$400 and requires $32100456 (else last-error
+*      $FFFFD8EA).  That word is the static first word of the UPLOADED
+*      PublicOu section, so it only proves the upload landed; the card does
+*      not write it.  The card-ready handshake is the other way: Boot polls
+*      image+$00 for $42005300 and clears it.  Then pokes:
 *        image+$18 <- unit +$168 (feature flags)
 *        image+$00 <- $42005300
 *        image+$08 <- superslot($138)   [top of DRAM]
@@ -3099,9 +3119,11 @@ ClassifyTrapNum:
 *      and, unless feature flag $800 is set, reads the card's MAILBOX address
 *      from image+$40C into unit +$144, pokes mailbox+$0C <- unit +$140 (the
 *      ack-word address) and finally mailbox+$00 <- 's337' ($73333337) to
-*      open it.  cs51 later sends payloads through that mailbox.
-*   (Which ACEF this loads depends on what cs2 was handed; INIT_main passes the
-*   Runtime image, so the 'Runtime' kernel is what ends up at +$130.)
+*      arm it for the card's reports, which cs51 later answers.
+*   (Which ACEF this loads depends on what cs2 was handed; INIT_main sends no
+*   cs2 -- its Control calls are $63, 13, 14, 20 and 21 -- so the caller that
+*   hands it the Runtime (ACEF 1) is elsewhere; the image at +$130 is the
+*   Runtime's PublicIn, per the image+$400 check above.)
   023cc:  4e 56 ff f6          link.w   a6, #$fff6
   023d0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   023d4:  26 6e 00 08          movea.l  $8(a6), a3
@@ -3527,8 +3549,9 @@ ClassifyTrapNum:
 * LoadFirmware
 * ==================================================================
 * Orchestrates a firmware download: prepares the source/relocation
-* context then calls ACEFLoad (twice, for two different inputs -- 
-* compare gc24.s's ACEFLoad, called once from its own loader path).
+* context then calls ACEFLoad once ($2982; the other DRVR caller is
+* Init29K at $25F6, for the Runtime).  gc24.s's copy is called only by
+* its module API (sub_1A2E).
 *
 * After a successful ACEFLoad, on the SUCCESS path this writes FOUR
 * longwords into fixed offsets of the just-loaded image (base = the unit
@@ -3541,8 +3564,9 @@ ClassifyTrapNum:
 *           address; most plausibly the entry/base of the module just
 *           loaded.  (An earlier note here read it as the ACEF magic
 *           nibble; that was wrong -- ACEFLoad's result is d5 here.)
-*   +$04  <- ACEFLoad's out-parameter (end address / size written through
-*           the pointer passed at call time -- not proven which)
+*   +$04  <- ACEFLoad's out-parameter (-$8(a6)): the program's ENTRY point;
+*           the kernel init jumps to [PublicIn+$04] (HOST_CARD_PROTOCOL.md
+*           section 3)
 *   +$40  <- MakeSuperslotAddr(unit record +$134) -- the engine RAM region
 *           start reserved by ReserveEngineRegion ($2B5E)
 * Only after all four writes does it set bit 1 of the unit's state flags
@@ -3657,7 +3681,7 @@ LoadFirmware:
 * ($2000C14, run when $04000050 / card $44000050 is rung) tests before jumping
 * to kernel init, and $04000050 is the doorbell the video driver also uses.  So
 * this routine asks the card to restart with the new flags; state bit 2 is what
-* cs51 (mailbox send) and the enable path require.  Name kept for continuity.
+* cs51 (mailbox answer) and the enable path require.  Name kept for continuity.
   02a38:  4e 56 00 00          link.w   a6, #$0
   02a3c:  2f 0c                move.l   a4, -(a7)
   02a3e:  28 6e 00 08          movea.l  $8(a6), a4
@@ -4293,9 +4317,9 @@ PokeHardwareLong:
 * live counterpart of the offline COFF-relocation work), destination
 * pointer Strip24'd first, confirming the Am29000's memory is directly
 * NuBus-memory-mapped rather than loaded via a queued/DMA protocol.
-* Being called from a private Control selector here (not just from
-* gc24's own loader path) means this driver can itself re-flash
-* firmware, independent of gc24.
+* This copy (Init29K for the Runtime, LoadFirmware/cs3 for Antelope) is
+* the one that loads the card's firmware into its RAM; gc24's copy only
+* loads plain host modules for the module API.
 *
 * Unlike gc24's copy (which rejects 0x12B), this one DECRYPTS 0x12B
 * files.  Header and section headers: a running byte keystream ($31D6-
@@ -5078,12 +5102,13 @@ ACEFLoad:
 * ==================================================================
 * Index*6 into a 6-byte-stride table (entry = 2 header bytes + 4-byte
 * value at +2), bound-checked to 0..34 (35 entries -> the jump table
-* below).  Same shape as the CmdTable2 lookup further down; likely a
-* per-selector command/info record, structurally reminiscent of
-* gc24.s's 106-entry Am29000 dispatch table, but this copy is local to
-* (a different, smaller) DRVR-internal command set.  Not deep-dived
-* case-by-case here (low marginal value vs. effort); case targets are
-* listed for reference.
+* below).  Not a command table: this is ACEFLoad's relocation step.  The
+* 6-byte table at -$1C(a6) is the loaded symbol table (2-byte section,
+* 4-byte value; section -3 = use the next symbol), indexed by the
+* relocation record's r_symndx ($4(a3)); the switch is on its r_type
+* ($8(a3)), and the cases that do work, 24-27 and 29-31, are the Am29000
+* COFF types R_IREL, R_IABS, R_ILOHALF, R_IHIHALF, R_BYTE, R_HWORD,
+* R_WORD (R_IHCONST, 28, goes to the default here).
   03b2e:  30 2b 00 08          move.w   $8(a3), d0
   03b32:  65 00 02 30          bcs.w    $3d64
   03b36:  0c 40 00 22          cmpi.w   #$22, d0
@@ -5352,8 +5377,8 @@ CmdTableJumpTable_03b48:
 * ==================================================================
 * CmdTable2 lookup
 * ==================================================================
-* Same index*6 addressing as CmdTable1 above, keyed off a different
-* selector field.
+* The same relocation switch as CmdTable1 above for the other record
+* layout: symbol index at $4(a4), r_type at $6(a4).
   03e40:  30 2c 00 06          move.w   $6(a4), d0
   03e44:  65 00 02 32          bcs.w    $4078
   03e48:  0c 40 00 22          cmpi.w   #$22, d0

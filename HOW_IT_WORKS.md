@@ -25,7 +25,7 @@ everything.
 | `$4C000000`-`$4C1FFFFF` | slot base + `$0C000000` | 2 MB video memory. The first 64 KB hold the kernel's shared areas (vector table, service table, `PublicIn`/`PublicOut`, the mailbox, the video command block, the command packet at `$4C008C00`); the frame buffer starts at `+$10000` |
 | `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM (off-screen pixel maps, caches, the heap); the host probes how much |
 | `$4C400000`.. | | the video memory's block-write alias (fills with one colour per write) |
-| `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, the pixel-clock chip (`$440000A0`) |
+| `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, display start and row bytes (`$44000000`, `$440000A0`) |
 | `$46C00000` | | the RAMDAC (colour table) |
 | `$02000000`.. | | the kernel's code (`Hand` at `$2000000`, `Boot` at `$2003000`) |
 | low addresses | the Mac's memory | read and written over NuBus (host pixel maps, handles) |
@@ -46,7 +46,7 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
   (including a software-managed TLB with a pager), the timer, the video
   command block, a mailbox for fatal-error reports, and 33 services that the
   accelerator calls (memory regions and address translation, interrupt
-  handlers, the RAMDAC and pixel clock, the host flags).
+  handlers, the RAMDAC, display start and row bytes, the host flags).
 * **Antelope** ("32-Bit Antelope"; its messages call it PQD and Monet), the
   accelerator: 243 KB of C (25 of Apple's source files with debug
   information) plus AMD's C library, HIF system-call stubs and millicode,
@@ -80,8 +80,7 @@ in card memory:
 * **Commands.** For CopyBits/StretchBits and for keeping the card's caches of
   host objects up to date (GDevices, colour tables, inverse tables, pixel
   patterns, offscreens, fonts), the host writes a selector and arguments and
-  waits. The reply says "done" (1), "not handled" (0, the Mac draws it), or
-  "run the original without drawing" (2).
+  waits. The card replies "done" (1) or "not handled" (0, the Mac draws it).
 * **The drawing stream.** Lines, rectangles, ovals, round rectangles, arcs,
   polygons, regions and text are not sent one by one. The host appends
   records to a buffer in card memory, and the card plays them back

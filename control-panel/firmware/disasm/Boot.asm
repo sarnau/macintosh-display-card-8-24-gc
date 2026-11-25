@@ -6,9 +6,10 @@
 *  mask tables and was wrong in 150 of the 512 words.)
 *
 *  What Boot does (read from this listing):
-*    $2003000  reads and writes back the two words at $4400000C/$44000010
-*              and builds a 2-bit value gr66 from their sign bits; stores
-*              gr66 << 28 at $4C00682C (PublicOut+$2C)
+*    $2003000  reads and writes back the four words at $4400000C/10/14/18
+*              (the counter starts at 2: 4 iterations) and builds the 4-bit
+*              slot number from their inverted sign bits; stores
+*              gr66 = slot << 28 at $4C00682C (PublicOut+$2C)
 *    $2003030  mtsrim CFG,$0000 / CPS,$047F
 *    $2003048  gr64 <- [PublicIn+$18] (the host's feature flags);
 *              [$4C006A5C] <- $94
@@ -20,7 +21,8 @@
 *              +$18 (HifComm, InpArgs, VidComm, the packet) with gr66
 *    $200313C  VAB <- $4C000000 (Vec), CFG |= $10, and fills the vector
 *              table with handler addresses $0200xxxx (default $2001D08)
-*    $2003368  reads three ID bits from $44000044/48/4C (gr81).  With all
+*    $2003368  reads the three monitor sense lines $44000044/48/4C (gr81,
+*              as in VideoOpen).  With all
 *              three set it initialises card registers from $44000038 on;
 *              if VidComm+$18 holds 'WY1`' ($57593160) and VidComm+$08 is
 *              not 0, it copies VidComm+$08..$14 to PublicOut+$1C/$24/$20/

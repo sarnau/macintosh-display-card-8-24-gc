@@ -10,7 +10,7 @@ are patches of low-memory vectors or OS traps (`$800`-`$890`, `$590`, `$644`)
 and the last three (`$FFFFFFFF`, `$FFFFFFFE`, `$FFFFFFFD`) are control
 records, not traps.
 
-The "card commands" column lists the command codes (`$0C`-`$38`) that the
+The "card commands" column lists the command codes (`$00`-`$3C`; EngineDispatch's own table covers `$0C`-`$38`) that the
 handler (and the helpers it calls, to depth 3) passes to `EngineDispatch` as
 its selector. For the drawing and drawing-state codes, that is not what the
 card receives: `EngineDispatch` turns them into stream records (see the
@@ -199,8 +199,9 @@ record and replies at once; see the note above the main table.)
 
 1. **Port state.** `GetA5 -> [A5] -> QD globals -> thePort`; the handler reads
    `thePort^.pnVis` (GrafPort offset `$42`). If the pen is hidden (negative) it
-   does not ask the card to draw: it issues the synchronise command
-   (`sub_4822`, `EngineDispatch(arg 8, 0, cmd $26)`) and calls the original.
+   does not ask the card to draw: it flushes the drawing stream
+   (`sub_4822(8)`, i.e. `EngineDispatch($26, NULL, 8)`, reason 8 in the count
+   slot) and calls the original.
 2. **Ask the card.** `EngineDispatch(cmd, paramPtr, count)` (`$49C4`): the
    handler builds an array of longs on its stack and `CopyParamsToQueue` copies
    `count` of them after the command header (see the packet layout in `HOST_CARD_PROTOCOL.md`).
@@ -220,8 +221,13 @@ record and replies at once; see the note above the main table.)
    The original routine's address is fetched by `StoreCtxWord_AA6(tableAddr, ...)`
    (the trap-table address from the dispatch entry, e.g. `$1040` for `StdLine`)
    and called with the unchanged arguments. Around the fallback, `sub_86d6`
-   / `sub_879a` save and restore a small piece of port state (it takes
-   `&thePort^.portBits`), apparently making the bitmap safe for software drawing.
+   (given `&thePort^.portBits`) first sends `$38`, so the card plays out the
+   pending stream before the 68K draws. For an offscreen PixMap (`pmVersion` 1
+   or 2) it then sends `$0D` (the offscreen's handle, 0): the card looks the
+   offscreen up in its cache (type 6) and replies with its entry's `+$10`. If
+   that is non-zero, `sub_86d6` saves `baseAddr` and `pmVersion` and points the
+   PixMap at that address with `pmVersion` 4 (32-bit clean), so the 68K draws
+   into the card's copy; `sub_879a` restores the two fields afterwards.
 
 Packet parameters (longs after the header) as built by each handler:
 
@@ -243,7 +249,7 @@ the Am29000 side must parse; they are exact for the handlers listed, from the
 code, but the meaning of the verb values and of the replies beyond `1`/`2` is
 inferred from QuickDraw's own conventions.
 
-## Direct card calls per handler (`EngineDispatch(count, params, cmd)`)
+## Direct card calls per handler (`EngineDispatch(cmd, params, count)`)
 
 Extracted from every handler's own code (calls made through helpers are not
 included): `cmd:count` pairs in the order they appear. `$26:0` is the
@@ -418,16 +424,16 @@ Process Manager, and its card has no `$3C`.
 | `$36` | `ForeColor`, `RGBForeColor`, `PmForeColor`, `GetForeColor` | 1 | foreground colour: stream record `$66` or `$64` |
 | `$37` | `BackColor`, `RGBBackColor`, `PmBackColor`, `GetBackColor` | 1 | background colour: stream record `$6D` or `$6B` |
 | `$2A` | `PenPat`, `BackPat`, `PenPixPat`, `BackPixPat`, `CopyPixPat`, `MakeRGBPat`, `SetPenState` | 2 | pattern / pixel-pattern (pointer plus a second long) |
-| `$2C` | `DisposPixPat` | 1 | pixel pattern disposed (release the card's copy) |
-| `$29` | `AddSearch`, `DelSearch`, `AddComp`, `DelComp`, `SetDeviceAttribute`, `SetEntries`, `InitGDevice` | 1 | search/complement procs and device attributes |
-| `$1A` | `SetEntries`, `SaveEntries`, `RestoreEntries`, `GetSubTable` | 1 | colour-table / palette entries |
-| `$1B` | `MakeITable` | 1 | inverse colour table |
-| `$2B` | `DisposGDevice` | 1 | graphics device released |
+| `$2C` | `DisposPixPat` | 1 | pixel pattern disposed: **FlushPixPat** (`$158F4`) |
+| `$29` | `AddSearch`, `DelSearch`, `AddComp`, `DelComp`, `SetDeviceAttribute`, `SetEntries`, `InitGDevice` | 1 | the GDevice changed: the card's **FlushGDevice** (`$15808`) drops its cached copy |
+| `$1A` | `SetEntries`, `SaveEntries`, `RestoreEntries`, `GetSubTable` | 1 | the colour table changed: **FlushColorTable** (`$141F8`) |
+| `$1B` | `MakeITable` | 1 | inverse colour table rebuilt: the card's `$14274` finds and releases its cache entry of type 1 |
+| `$2B` | `DisposGDevice` | 1 | graphics device released: **FlushGDevice** (`$15808`), the same handler as `$29` |
 | `$33` | `_QDExtensions` LockPixels (pixels purged), DisposeGWorld, DisposeScreenBuffer; GetPixel/GetCPixel through a helper | 1 | **DisposeOffscreen**: the card drops its copy of the offscreen (the card's `$14034`, "DisposeOffscreen: NULL offscreen Handle") |
-| `$0F` | `_QDExtensions` UnlockPixels | 1 | the card's `$15D28` with mode 6 |
+| `$0F` | `_QDExtensions` UnlockPixels | 1 | the card finds the offscreen in its cache (`CacheFind(6, p[0])`, `$15D28`) and clears the entry's `+$18` |
 | `$19` | `_QDExtensions` UpdateGWorld, SetPixelsState | 1 | **FlushOffscreen** (the card's `$14168`) |
-| `$26` | `ColorBit`, `CopyPixMap`, `SetPortPix`, `OpColor`, `ActivatePalette`, `SetPalette`, `Palette2CTab`, `InitGDevice`, `CharExtra`, ... | 0 | synchronise / flush before software handles the call |
-| `$00`, `$02`, `$11`, `$26:14` | the three control records (`$FFFFFFFF`, `$FFFFFFFE`) | 0-1 | engine start-up / shut-down and mode handshakes (not QuickDraw traps) |
+| `$26` | `ColorBit`, `CopyPixMap`, `SetPortPix`, `OpColor`, `ActivatePalette`, `SetPalette`, `Palette2CTab`, `InitGDevice`, `CharExtra`, ... | 0 (the count slot carries a reason code) | flush / end the drawing stream (a final `$38` if needed) before software handles the call; on the card the `$38` twin, serviced by DrawMultiObject's nested wait |
+| `$00`, `$02`, `$11`, `$26:14` | the three control records (`$FFFFFFFF`, `$FFFFFFFE`) | 0-1 | engine start-up / shut-down (not QuickDraw traps). On the card `$00` replies 0 and `$02` does nothing (reply 1); `$11` runs the first steps of PQDInit (`sub_15D84` for 0..10, then `sub_16BA0`) |
 
 Every command above is a *state-mirroring* call except the shape and text
 commands in the previous table. `$10`, `$32`, `$35`, `$36` and `$37` become
@@ -447,7 +453,7 @@ size, pen mode, colours). The helper at `$3868` (the code just before
 `GA_StdText`) sets up the foreground colour via `_PaletteDispatch` and
 `_RGBForeColor`, then sends **four longs**: the count sign-extended, the text
 address, a pointer to `numer` and a pointer to `denom`
-(`EngineDispatch(4, &block, $21)`). `EngineDispatch` then measures the text,
+(`EngineDispatch($21, &block, 4)`). `EngineDispatch` then measures the text,
 uploads the font if the card lacks it (`$30`), and writes a `$67` font
 record (when the font changed) and a text record 6. Reply `1` means drawn; `2` runs the original
 with the pen hidden, as for the shapes; otherwise the original is called. Before

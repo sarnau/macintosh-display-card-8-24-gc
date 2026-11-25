@@ -71,11 +71,12 @@ The banks used by the code (all reached as `base + offset`):
 | Address | Bank | Notes |
 |---------|------|-------|
 | `base + $0400'00xx` | MFB control registers | `$44`,`$48`,`$4C` = the three **monitor SENSE lines** (read 1 bit each via `bfextu`); `$2C`/`$30`/`$34` drive them for extended sense |
-| `base + $0440'00xx` | MFB interrupt registers | `$48` IRQ flag, `$3C` IRQ clear, `$01C0` video-sync status |
+| `base + $0440'00xx` | timing registers | `$00`-`$38` timing registers 0-14 and `$3C` control (0/1/3), each latching the 12 bits just shifted into `$04C0'0000`; `$48` VBL interrupt acknowledge; a read of `$01C0` loads a status that the following `$04C0'0000` reads return |
 | `base + $0480'0000` | clock-synth serial port | pixel-clock / AC842 coefficients shifted in bit-serially |
-| `base + $04C0'0000` | control serial port | mode / interrupt strobing |
+| `base + $04C0'0000` | timing serial data register | 12-bit values shifted in MSB first, read back the same way |
+| `base + $0600'0000` | card bus status word | bits 12-15 = board revision (PrimaryInit picks its clock set by it) |
 | `base + $06C0'0000/04` | **AC842** CLUT address / data (R,G,B) port | written by SetEntries / SetGamma |
-| `base + $0680'0000` | clock/timing coefficient RAM | per-mode timing loaded on SetMode |
+| `base + $0680'0000` | 16-entry table port | written by the VideoDriver only in Interlaced (TV) modes; the per-mode timing goes to `$0440'xxxx` |
 | `base + $0C00'0000` | **VRAM / framebuffer** | page base `+$10000` or `+$11400` by depth |
 | `base + $0C00'7300` | **MFB / Am29000 parameter block** | 68k↔coprocessor handshake (gated by a `'WY1\`'` signature at `+$18`) |
 

@@ -137,8 +137,11 @@ EntryStub:
 * ATrap68020's live A-line dispatch indexes OSTable by the trap word's
 * LOW BYTE ONLY, so $A204 and $A004 execute the byte-identical
 * OSTable[4] entry -- $A204 IS _Control, not a distinct/undocumented
-* trap; bit 9 only matters to GetTrapAddress/SetTrapAddress's own,
-* unrelated 'new numbering' convention).  Each call builds a CntrlParam
+* trap.  Bit 9 is not ignored, though: the dispatcher passes the trap word
+* in D1 and the Device Manager tests it, and for the I/O traps bit 9 ($200)
+* is the IMMED flag, so $A204 = _Control,IMMED -- an immediate call that
+* bypasses the driver's I/O queue, as Traps.a's 'immed' modifier encodes).
+* Each call builds a CntrlParam
 * on the stack (ioCRefNum=D6, the slot's OWN driver refnum from the
 * Unit Table chase above; csParam=A2).  These are NOT private selectors:
 * the records match the standard Apple video-driver Control calls exactly
@@ -276,7 +279,7 @@ FindGCSlot:
   00598:  31 46 00 18          move.w   d6, $18(a0)
   0059c:  31 7c 00 04 00 1a    move.w   #$4, $1a(a0)
   005a2:  21 4a 00 1c          move.l   a2, $1c(a0)
-  005a6:  a2 04                dc.w     $a204  ; _Control
+  005a6:  a2 04                dc.w     $a204  ; _Control,IMMED
   005a8:  20 78 08 a8          movea.l  $8a8.w, a0
   005ac:  20 50                movea.l  (a0), a0
   005ae:  bc 50                cmp.w    (a0), d6
@@ -302,7 +305,7 @@ FindGCSlot:
   005ec:  31 46 00 18          move.w   d6, $18(a0)
   005f0:  31 7c 00 03 00 1a    move.w   #$3, $1a(a0)
   005f6:  21 4a 00 1c          move.l   a2, $1c(a0)
-  005fa:  a2 04                dc.w     $a204  ; _Control
+  005fa:  a2 04                dc.w     $a204  ; _Control,IMMED
   005fc:  20 5f                movea.l  (a7)+, a0
   005fe:  a0 2a                dc.w     $a02a  ; _HUnlock
   00600:  60 00 fe 86          bra.w    $488

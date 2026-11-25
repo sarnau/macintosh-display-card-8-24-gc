@@ -207,9 +207,9 @@ L22bc:
   0022c4:  08 05 00 00          btst.b   #$0, d5
   0022c8:  67 04                beq.b    $22ce  ; -> L22ce
   0022ca:  08 85 00 02          bclr.b   #$2, d5
-* Program the pixel-clock synthesiser and AC842 through the serial
-* port with the base coefficients, reading back the AC842 id ($06000000)
-* to pick the right coefficient set.
+* Program the clock synthesiser ($04800000, reading) through the serial
+* port with the base coefficients, reading the board revision (bits 12-15
+* of the card's bus status word $06000000) to pick the coefficient set.
 L22ce:
   0022ce:  28 49                movea.l  a1, a4
   0022d0:  28 3c 04 80 00 00    move.l   #$4800000, d4  ; clock-synth serial port
@@ -225,11 +225,11 @@ L22ce:
   0022f6:  22 3c 00 00 aa ad    move.l   #$aaad, d1
   0022fc:  74 10                moveq    #$10, d2
   0022fe:  4e ba 05 80          jsr      $2880(pc)  ; -> SerialShiftOutReg
-  002302:  24 3c 06 00 00 00    move.l   #$6000000, d2  ; AC842 space +$0
-  002308:  22 34 28 00          move.l   (a4, d2.l), d1  ; read AC842 id register
+  002302:  24 3c 06 00 00 00    move.l   #$6000000, d2  ; card bus status word
+  002308:  22 34 28 00          move.l   (a4, d2.l), d1  ; read bus status (bits 12-15 = board revision)
   00230c:  02 41 f0 00          andi.w   #$f000, d1
   002310:  0c 41 10 00          cmpi.w   #$1000, d1
-  002314:  67 3a                beq.b    $2350  ; -> L2350  branch on AC842 revision
+  002314:  67 3a                beq.b    $2350  ; -> L2350  branch on board revision
   002316:  22 3c 00 00 9a cc    move.l   #$9acc, d1
   00231c:  74 10                moveq    #$10, d2
   00231e:  4e ba 05 60          jsr      $2880(pc)  ; -> SerialShiftOutReg
@@ -450,7 +450,7 @@ L252c:
   002564:  74 0c                moveq    #$c, d2
   002566:  4e ba 03 18          jsr      $2880(pc)  ; -> SerialShiftOutReg
   00256a:  26 49                movea.l  a1, a3
-  00256c:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; clock/timing coeff RAM +$0
+  00256c:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
   002572:  34 3c 00 0f          move.w   #$f, d2
 L2576:
   002576:  26 98                move.l   (a0)+, (a3)
@@ -462,7 +462,7 @@ L2580:
   002586:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
   00258c:  36 3c 00 0f          move.w   #$f, d3
   002590:  28 49                movea.l  a1, a4
-  002592:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  002592:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
 L2598:
   002598:  74 0c                moveq    #$c, d2
   00259a:  22 18                move.l   (a0)+, d1
@@ -472,7 +472,7 @@ L2598:
   0025a6:  72 03                moveq    #$3, d1
   0025a8:  4e ba 02 d6          jsr      $2880(pc)  ; -> SerialShiftOutReg
   0025ac:  27 34 48 00          move.l   (a4, d4.l), -(a3)
-  0025b0:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; MFB IRQ +$48 (IRQ status/flag reg)
+  0025b0:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; VBL slot-interrupt acknowledge
   0025b6:  42 b4 48 00          clr.l    (a4, d4.l)
   0025ba:  2a 1f                move.l   (a7)+, d5
   0025bc:  28 49                movea.l  a1, a4
@@ -586,7 +586,7 @@ L26c2:
   0026fa:  22 3c 00 00 aa ad    move.l   #$aaad, d1
   002700:  74 10                moveq    #$10, d2
   002702:  4e ba 01 7c          jsr      $2880(pc)  ; -> SerialShiftOutReg
-  002706:  24 3c 06 00 00 00    move.l   #$6000000, d2  ; AC842 space +$0
+  002706:  24 3c 06 00 00 00    move.l   #$6000000, d2  ; card bus status word
   00270c:  22 34 28 00          move.l   (a4, d2.l), d1
   002710:  02 41 f0 00          andi.w   #$f000, d1
   002714:  0c 41 10 00          cmpi.w   #$1000, d1
@@ -653,7 +653,7 @@ L2790:
   0027ec:  74 0c                moveq    #$c, d2
   0027ee:  4e ba 00 90          jsr      $2880(pc)  ; -> SerialShiftOutReg
   0027f2:  26 49                movea.l  a1, a3
-  0027f4:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; clock/timing coeff RAM +$0
+  0027f4:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
   0027fa:  34 3c 00 0f          move.w   #$f, d2
 L27fe:
   0027fe:  26 98                move.l   (a0)+, (a3)
@@ -665,7 +665,7 @@ L2808:
   00280e:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
   002814:  36 3c 00 0f          move.w   #$f, d3
   002818:  28 49                movea.l  a1, a4
-  00281a:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  00281a:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
 L2820:
   002820:  74 0c                moveq    #$c, d2
   002822:  22 18                move.l   (a0)+, d1
@@ -675,7 +675,7 @@ L2820:
   00282e:  72 03                moveq    #$3, d1
   002830:  4e ba 00 4e          jsr      $2880(pc)  ; -> SerialShiftOutReg
   002834:  27 34 48 00          move.l   (a4, d4.l), -(a3)
-  002838:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; MFB IRQ +$48 (IRQ status/flag reg)
+  002838:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; VBL slot-interrupt acknowledge
   00283e:  42 b4 48 00          clr.l    (a4, d4.l)
   002842:  28 49                movea.l  a1, a4
   002844:  22 3c 06 c0 00 04    move.l   #$6c00004, d1  ; AC842 CLUT data port (R,G,B)
@@ -686,9 +686,9 @@ L2820:
   00285a:  51 f4 18 00          sf.b     (a4, d1.l)
   00285e:  51 f4 18 00          sf.b     (a4, d1.l)
   002862:  51 f4 18 00          sf.b     (a4, d1.l)
-  002866:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; MFB IRQ +$3c (IRQ clear reg)
+  002866:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   00286c:  42 b4 48 00          clr.l    (a4, d4.l)
-  002870:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; MFB IRQ +$48 (IRQ status/flag reg)
+  002870:  28 3c 04 40 00 48    move.l   #$4400048, d4  ; VBL slot-interrupt acknowledge
   002876:  42 b4 48 00          clr.l    (a4, d4.l)
   00287a:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   00287c:  60 00 fe 38          bra.w    $26b6  ; -> L26b6
@@ -770,19 +770,19 @@ sub_28b0:
   002990:  28 3c 04 00 00 34    move.l   #$4000034, d4  ; MFB reg +$34
   002996:  42 b4 48 00          clr.l    (a4, d4.l)
   00299a:  4e 75                rts      
-* ReadExtendedSense  -  drive each sense line and read the others to
-* form the extended monitor-sense code (as in the driver's sub_62F6).
-ReadExtendedSense:
+* WaitForVBlankCopy  -  a copy of the VideoDriver's WaitForVBlank ($5D3E),
+* with no caller.  (The extended-sense copy is sub_28b0.)
+WaitForVBlankCopy:
   00299c:  48 e7 c8 80          movem.l  d0-d1/d4/a0, -(a7)
   0029a0:  40 c0                move.w   sr, d0
   0029a2:  3f 00                move.w   d0, -(a7)
   0029a4:  00 40 07 00          ori.w    #$700, d0
   0029a8:  46 c0                move.w   d0, sr
   0029aa:  20 49                movea.l  a1, a0
-  0029ac:  d1 fc 04 40 01 c0    adda.l   #$44001c0, a0  ; MFB IRQ +$1c0 (video-sync status reg)
+  0029ac:  d1 fc 04 40 01 c0    adda.l   #$44001c0, a0  ; timing status: loads it into $04C00000's shift register
   0029b2:  72 02                moveq    #$2, d1
   0029b4:  28 49                movea.l  a1, a4
-  0029b6:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; control serial port (mode/IRQ)
+  0029b6:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
 L29bc:
   0029bc:  20 10                move.l   (a0), d0  ; [seSlot]
   0029be:  4e ba fe de          jsr      $289e(pc)  ; -> RegTouchLoop

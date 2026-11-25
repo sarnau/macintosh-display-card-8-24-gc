@@ -46,6 +46,7 @@ before drawing over it and asks the host to redraw it afterwards.
 | the kernel's services | section 8 |
 | the `PupS` resource, Control calls 17-19, the feature flags | section 9 |
 | the System 6 package and its Antelope | section 10 |
+| the card's I/O registers | section 11 |
 
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
 The card firmware is encrypted with a running 32-bit XOR key per section,
@@ -82,8 +83,9 @@ video command block (section 5).
 
 **Commands and replies.** The host sends a selector (`$0C`-`$3C` for drawing
 and caches, `$80xx` for modules). A reply of 1 means "done". 0 means "not
-handled", and the host runs the original 68k QuickDraw routine. Some patches
-use 2 ("run the original without drawing"). Command `$01` resets the
+handled", and the host runs the original 68k QuickDraw routine. EngineDispatch
+itself returns 2 ("run the original without drawing") while a picture,
+region or polygon is being recorded; the card never sends 2. Command `$01` resets the
 sequence numbers on both sides; a mismatch is logged by the dispatcher
 (`$31EA0`, except for command `$01`) as `MonetMain: Sequence error %d != %d,
 func = %d, last func = %d`.
@@ -147,8 +149,9 @@ pointer); the pattern fills `$04110` and `$1C8A8` (called directly from
 BitBlt `$02B3C` and RgnBlt `$1B090`); and the kernel services, whose table
 (section 8) is exact. The ones that were unknown, read in `Hand.asm`:
 `$BB` returns the flags word `gr64` (`$2001A58`); `$D1` returns
-`PublicOu+$04`, the version `$00700D01` with bits 24-31 filled in by kernel
-init from a register probe and from `$46000000` (`$2001A48`, `$20021C4`);
+`PublicOu+$04`, the version `$00700D01` with bits 24-26 filled in by kernel
+init from the board code at `$44000094/98/9C` (bit 31 each) and bits 28-31
+from `$46000000` bits 12-15 (`$2001A48`, `$2002170`-`$20021F0`);
 `$D4` translates an address through the memory-region table and clips a
 length to the region (`$2001808` → `$2001C2C`; address in `gr96`, length in
 `gr122`);
@@ -216,8 +219,9 @@ the 68k side kicks the program directly; the kick is the restart below, which
 
 ### Restart
 
-`PostLoadPoke` writes the flags to `image+$18`, `$FF` to `image+$3D4`
-(`$4C0067D4`) and `$FF` to register `$04000050` (card `$44000050`). On the card
+`PostLoadPoke` writes the flags to `image+$18`, `$FFFFFFFF` to `image+$3D4`
+(`$4C0067D4`) and `$FFFFFFFF` to register `$04000050` (card `$44000050`;
+`moveq #$ff` sign-extends, DRVR `$2A88`, `$2AA6`). On the card
 the `$44000050` register is acknowledged (cleared) at the start of the video
 command service `$2000C14`, which then reads `$4C0067D4` and, if set, jumps to
 kernel init `$2001FFC`; init clears the word again (`$20020B0`) and reloads
@@ -298,7 +302,7 @@ or overscan variants). So the layout conversion happens only on NTSC and
 PAL output: there the frame buffer is interleaved at 1-8 bpp and linear at
 24 bpp. On the Apple monitors no conversion is ever requested.
 
-**The layout bit is the host's.** The clock routine (`$601A`, after
+**The layout bit is the host's.** The mode-programming routine (`sub_5FD4`, `$601A`, after
 `WaitForVBlank`) writes bit 31 of MFB register `+$80` (`$04000080` from the
 host, `$44000080` on the card) with `bfins`. The value is 1, except when
 GFlags has `Interlaced` set and `BigScreen` clear, in which case it is 0.
@@ -322,7 +326,11 @@ wait for them in opposite states. The card waits for them *before* it
 acknowledges (`$2000E5C`-`$2000E78` and `$2000F2C`-`$2000F48`, then `+$04 <- 0`),
 while the host programs them only after its wait for that acknowledge
 (which has a timeout) and, when `savePageCfg` is non-zero, an extra delay
-(`$5F78`). Whether the card's waits depend on this host write is open.
+(`$5F78`). No card code writes `+$7C` or `+$80`: the only writers are
+PrimaryInit (`$252C`, `$253A`, `$27B6`, `$27C2`) and the VideoDriver's
+`sub_5FD4` (`$6076`, `$6084`). So, as far as the code shows, the card's waits
+(`$2000E5C`, `$2000F2C`) end only through the host's write, and the host's
+wait for `+$04` runs into its timeout first.
 
 ## What this corrects
 
@@ -520,7 +528,9 @@ calls `sub_31e20(-1)` forever. One call:
 * It spins until packet `+$14` is nonzero. The host writes `$FFFFFFFF`
   there when it posts a request (`gc24.s` `$604A`).
 * It stores 1 in packet `+$1C`. The host reads its return code from
-  `+$1C`: 1 = drawn, 2 = drawn but run the original too.
+  `+$1C` (1 = done, 0 = not handled; no card case stores 2, which is
+  EngineDispatch's own answer while a picture, region or polygon is being
+  recorded, see "The reply" in the DrawMultiObject section).
 * It reads the command from `rec+$04` (packet `+$48`) into `lr8`. If the
   sequence number `rec+$08` differs from `[.bss+8]` and the command is not
   `$01`, it prints "MonetMain: Sequence error %d != %d, func = %d, last func
@@ -1665,7 +1675,7 @@ the pattern, width-table and font entries the stream still holds.
 
        So `$44000080` bit 31 reads 1 while the frame buffer is in the
        linear layout and 0 while it is interleaved; `$4400007C` is its
-       complement (both are written by the host, section 5). The kernel's pixel-clock stub `$20012E8` also halves both of
+       complement (both are written by the host, section 5). The kernel's display-start/row-bytes stub `$20012E8` also halves both of
        its values when the bit is set. For `$1701C` this means: the block
        write works only in the linear layout, and interleaved memory falls
        back to the `storem` burst. The host sets the layout (section 5):
@@ -1748,8 +1758,12 @@ the pattern, width-table and font entries the stream still holds.
        otherwise clears bit `lr2` of that word and mirrors the result to
        `$46000000`. `$37000` calls `$D5(-1)` to read the mask and
        `$D5(slot)` to drop a slot that failed. So the word is a per-slot
-       "burst transfers work" mask, and `$46000000` presumably the hardware
-       copy of it. The host's command `$14` (`$D5(p[0])`, sent from the
+       "burst transfers work" mask, and bits 16-31 of `$46000000` are the
+       hardware slot enable bits: vector 7 clears a slot's bit there directly
+       after a fault with status bit 2 (`$20004A4`-`$200053C`), and the timer
+       rewrites the master copy every 65536 ticks (`$20009CC`-`$20009E4`).
+       Bits 0-4 are read as bus status and bits 12-15 as the board revision
+       (section 11.4). The host's command `$14` (`$D5(p[0])`, sent from the
        InitGDevice patch) can drop a slot as well.
 
        `.data+$280`, read by every caller of the fills (`$03838`, `$03A28`,
@@ -2863,8 +2877,8 @@ returns the comm header at `$4C006400` (`PublicIn`; handler `Hand`
 | `+$18` | `$4C008C00` | the packet, `InitPacket`'s pointer |
 | `+$1C` | `$00010000` | (Boot overwrites it) |
 
-Boot replaces the top nibble of the four pointers with the value it probes
-at `$4400000C` (see `Boot.asm`). `PublicOut` also holds, at `+$510`, the
+Boot replaces the top nibble of the four pointers with the slot number it
+reads from `$4400000C`-`$18` (see `Boot.asm`, section 11.1). `PublicOut` also holds, at `+$510`, the
 text "(c) 1989 Apple Computer, Inc. All Rights Reserved", then the credits
 "Special Projects Group - SEG", "Hardware: Tony Masterson, Rob Pugh, Dean
 Drako", "Software: Jean-Charles Mourey, Mark Krueger, Rekha Sh…", cut off by
@@ -2907,10 +2921,10 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | `$BF` | `$2001924` | OPS.DI (disable interrupts, `$02`), as `$B9` | `$390A4` |
 | `$C0` | `$2001408` | returns `$4C006400` (`PublicIn`, the comm header) | `$38FC8`, `InitPacket` and the feature-flag readers |
 | `$C1` | `$20012AC` | free memory: `gr127 - $3000 - gr65` (stack limit minus break) | `$38F24` |
-| `$C4` | `$2001250` | returns `[$4C00682C]`, the value Boot probed, shifted left by 28 | `$38F34`, the own-memory test `$13F54` |
+| `$C4` | `$2001250` | returns `[$4C00682C]`, the slot number Boot read (`$4400000C`-`$18`), shifted left by 28 | `$38F34`, the own-memory test `$13F54` |
 | `$C5` | `$2001224` | waits for the video interrupt: enables it at `$44000054`, polls `$44000068`, disables it | `$38F54`, `TestCLUT` |
-| `$C6` | `$20012E8` | serial write to the pixel-clock chip (`$44000080`/`$440000A0`) | `$38F74` |
-| `$C7` | `$2001374` | writes three bytes (`lr2`-`lr4`) to the RAMDAC at `$46C00000` | `$38F84` |
+| `$C6` | `$20012E8` | sets the display start and row bytes: if `$44000080` bit 31 is set it halves `lr2` and `lr4`; stores `lr2` at PublicOut+`$1C` and shifts it into `$44000000` (20 bits from `lr2 << 10`), stores `lr4` at PublicOut+`$24` and shifts it into `$440000A0` (12 bits from `lr4 << 18`); `lr3` is unused (`$20012E8`-`$2001368`; Boot reads both registers back into the same fields, `$20035DC`, `$2003768`) | `$38F74` (no callers) |
+| `$C7` | `$2001374` | writes CLUT entry `lr2` (index to `$46C00000`) with the three data bytes `lr3`, `lr4`, `lr5` (to `$46C00004`) (`$2001374`-`$20013A8`) | `$38F84` |
 | `$C8` | `$20013AC` | reads CLUT entry `lr2` (0-255, else -1) from the RAMDAC | `$38F94` |
 | `$CB` | `$2001414` | adds `lr2` to `[$4C003120]` when `gr64` bit 20 is set, else returns 0 | `$38FF8` |
 | `$CC` | `$200146C` | region-table add (`$2001478`): map a memory range | `$39018`; `TestMMU`, `MapVirtual`, the dispatcher |
@@ -3019,7 +3033,7 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 | 2 | `$4` | - | vector 4 (coprocessor exception): ignored if set, else reason `$9D` |
 | 5 | `$20` | GC card types | init: clears the TLB and the pager's tables (`$4C002818`, `$4C002CA8`, free list `$4C002810`), i.e. demand paging is set up (`$2002370`) |
 | 6, 7 | `$40`, `$80` | - | init: written, inverted, to `$44000090` and `$4400008C` |
-| 8 | `$100` | GC card types | init: clears OPS.TU (no trap on unaligned access) and writes -1 to `$4400005C` (`$20022D8`); cleared at init when a probe finds nothing (`$20021C0`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
+| 8 | `$100` | GC card types | init: clears OPS.TU (no trap on unaligned access) and writes -1 to `$4400005C` (`$20022D8`); cleared at init when the 3-bit board code at `$44000094/98/9C` is 0 (`$20021C0`; the same code gates TestInterleave, and DRVR's ProbeCard reads `$9C`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
 | 9 | `$200` | config `$40` (default) | not tested by the kernel; Antelope's `storem` fills and copies (`$37C40`, `$37D98`, `$38248`, `$38900`) bracket their bursts with service `$B9` (OPS.SM, supervisor mode) when it is set |
 | 10 | `$400` | - | init: OPS.TE (trace enable); vector 15 (trace) |
 | 11 | `$800` | host, until config `$100` (cs50) clears it | the mailbox: when set, the kernel does not post its reports (`$2001BC0`, `$2002AAC`) |
@@ -4042,3 +4056,136 @@ of unit `+$1F`, and returns whether the `$26` call returned 0. The driver
 calls it first in Status 10, and in Control 14, 17 and 50 before it
 re-initialises.
 
+## 11. The card's registers
+
+This map lists every access to a non-memory card address on both sides.
+Sources: `Boot.asm` and `Hand.asm` (kernel), `text.asm` (Antelope), the same
+files of System 6 (`firmware/sw11/disasm/`), `DRVR.s`, `gc24.s`, and the
+declaration ROM (`../extracted-source/PrimaryInit.s`, `VideoDriver.s`). The
+card-side accesses were found by tracking `const`/`consth` pairs (and
+`add` steps in loops) up to each `load`/`store`. The host side was found
+from the immediate offsets added to the slot base. System 6 touches the
+same registers in the same places. The one difference is in Boot's sense
+probe (section 10).
+
+**Addresses.** Card address = host super-slot offset + `$40000000`. The
+host reaches card `$4xxxxxxx` at `$s0xxxxxx` (`s` = slot). Four pairs
+show the rule from both sides: the doorbell (`$44000050`/`$04000050`), the
+revision nibble (`$46000000`/`$06000000`), the RAMDAC (`$46C0000x`/`$06C0000x`)
+and `VidComm` (`$4C007300`/`$0C007300`). In the tables, "card" is the
+Am29000 address and "host" the offset from the slot base.
+
+**Conventions.**
+* *Flag registers* use only bit 31. Writers store `$FFFFFFFF`/0, or set
+  bit 31 with `bfins {0:1}`. Readers test bit 31 (`jmpt`/`jmpf`, `bfextu
+  {0:1}`, `and #$80000000`).
+* *Serial registers* take one bit per write, from data bit 31, MSB first
+  (`SerialShiftOut` `$629C`, PrimaryInit `$2880`). A read returns the
+  current MSB in bit 31. Boot reads such a register back by N cycles of
+  "read, write the same word back" (`$20035EC`, `$2003788`), so writing the
+  read bit back turns the register round. The read-and-write-back loops in
+  the host's `sub_5D96` and PrimaryInit's `RegTouchLoop` (`$289E`) have the
+  same shape.
+
+Legend: **est.** = the code's effect is unambiguous, or both sides agree;
+*reading* = what the code suggests.
+
+### 11.1 `$44000000`-`$440000C8` (host `$04000000`-`$040000C8`)
+
+| card | bits | written by | read by | meaning |
+|---|---|---|---|---|
+| `$44000000` | serial, 20 | PrimaryInit `$254E`/`$27D6` and VideoDriver `$6098` (timing-table long 3, always `$2000`); Hand `$C6` `$2001328` (20 stores of `lr2 << 10`, `lr2` halved first if `+$80` is set) | Boot `$20035EC` (20 read/write-backs) | **display start** (est.). Boot makes PublicOut+`$1C` = value `<< 2`, `<< 1` more if `+$7C` is set and `<< 1` more if `+$80` is set, then ORs in `gr66` (slot) and `$0C000000`. `$2000 << 3` = `$10000` = the VideoDriver's base offset (`$5E4A`). In the interleaved layout, `$C6`'s scaling (÷4) and Boot's (×8) disagree (open) |
+| `$44000004` | serial, 8 | PrimaryInit `$2540`/`$27C8`, VideoDriver `$608A` (long 2: `$F8/$FC/$FE/$FF` for 1/2/4/8 bpp on the 12" and portrait tables, `$E0/$F0/$F8/$FC/$FF` on the 13" table) | - | depth-dependent, meaning unknown (no card access) |
+| `$44000008` | serial, 16 | PrimaryInit `$20BC`-`$20D8` (4 × 4 bits of `$A`, i.e. `$AAAA`), at reset only | - | unknown (*reading*: a reset/unlock pattern) |
+| `$4400000C`, `$10`, `$14`, `$18` | bit 31 | Boot writes each value back | Boot `$2003010` loop (4 iterations, bit inverted) | **NuBus slot ID** (est.). Boot builds the 4-bit slot `s` and stores `gr66 = s << 28` at PublicOut+`$2C`. That value is the top nibble of the pointers PublicOut+`$0C`-`$18` and service `$C4`'s result, which IsOnThisCard `$13F54` uses as the slot |
+| `$4400001C`, `$20`, `$24` | bit 31 | PrimaryInit -1 (`$214C`-`$216E`); VideoDriver sets bit 31 after each mode change (`$60D4`-`$60F8`) | - | unknown, always set |
+| `$44000028` | flag | PrimaryInit 0 (`$2176`); DRVR `$1D8E` 0 (`$1DBA`: Init29K start and after the RAM tests, cs6, cs20), DRVR `$1DDC` -1 (`$1E28`, after the flags at image+`$18`; cs5) | - | host-only control. Its sense (0 = Am29000 held or released) is **open**: the "release" note at DRVR `$3083` does not follow from the code |
+| `$4400002C`, `$30`, `$34` | flag | PrimaryInit 0 at reset; XtdSense (VideoDriver `$62F6`, PrimaryInit `$28B0`) and Boot `$20033C8`-`$2003548`: -1 to one line per round | - | **sense-line drive** for lines 0/1/2 (est.: each round drives one line and reads the other two) |
+| `$44000038`, `$3C`, `$40` | ? | PrimaryInit 0 (`$20FA`-`$2114`); Boot 0 before its probe (`$20033D4`-`$20033EC`; System 6 also zeroes `$34`-`$48`) | - | cleared before sensing (*reading*: sense-related) |
+| `$44000044`, `$48`, `$4C` | bit 31 | (System 6 Boot writes 0, without effect in the code) | VideoOpen `$532E`-`$5354`, XtdSense, PrimaryInit `$21DE`-`$2204`, Boot `$2003368`-`$20033B0`, DRVR BuildUnitRecords `$2004`-`$205E` | **monitor sense lines** 0/1/2 (est.). `$44` is the code's MSB. DRVR: code 7 with `d5` = 0 sets `+$15E` = `$FFFF` and skips the card |
+| `$44000050` | flag | host -1: VideoDriver `$5F54` (after each `VidComm` command), DRVR PostLoadPoke `$2AAA`, gc24 `$75DA` (copy of PostLoadPoke); card 0: INTR2 `$2000BE0`, `$2000C30`, kernel init `$2002020` | via `$44000064` | **doorbell host → card** (est.): -1 sets it and raises INTR2, 0 acknowledges it |
+| `$44000054` | flag | Hand `$C5` `$2001230` (-1) / `$2001248` (0); INTR2 ack `$2000BFC` (0); init `$200202C` (0); Antelope interrupt test `$368BC` (-1) | via `$44000068` | **video interrupt** to INTR2 (est.: the self-test arms it and waits up to `$F4240` loops for Int2Handler). -1 arms, 0 clears |
+| `$44000058` | flag | INTR1 `$2000B6C` (0); Antelope interrupt test `$367A4` (-1) | - | **INTR1 source** (est.: the test writes -1 and waits for Int1Handler, and INTR1 clears it). The hardware source behind it is unknown |
+| `$4400005C` | flag | kernel init -1 when flags bit 8 is set (`$20022F4`); `$D6` 0 (`$20018B0`); vector 7: 0 then -1 (`$2000348`/`$2000354`) before it emulates the access through vector 1 | - | enables the hardware handling of unaligned accesses (*reading*; it goes with OPS.TU clear). The 0/-1 pulse acknowledges a fault |
+| `$44000064` | bit 31 | - | INTR2 `$2000BD0`, service `$2000C14` (`$2000C20`), mailbox waits `$2002678`, `$2002708` | doorbell pending (est.) |
+| `$44000068` | bit 31 | - | INTR2 `$2000BEC`, `$C5` `$200123C` | video interrupt pending (est.) |
+| `$44000070` | bit 31 | - | vector 7 `$2000440` (only with flags bit 8) | set → the fault is handled as an unaligned access (`$2000324`); *reading*: "fault from the unaligned-access logic" |
+| `$44000078` | ? | PrimaryInit 0 (`$2118`) | - | unknown |
+| `$4400007C` | bit 31 | host only: PrimaryInit `$253A`/`$27C2`, VideoDriver `$6084` (bit 0 of timing long 1) | Boot `$2003610`, `$2003770`; Hand `$2000E64`, `$2000F34`; Antelope Fill2Longs `$172A8`, TestInterleave `$34CA8` | **1 = interleaved layout** (est., section 5) |
+| `$44000080` | bit 31 | host only: PrimaryInit `$252C` (0 for monitor codes 0/4/8/`$C`, else 1), `$27B6` (0); VideoDriver `$6076` | Boot `$2003628`, `$20037A8`; Hand `$2000E74`, `$2000F44`, `$C6` `$20012F0`; Antelope FillLongs `$17044`, `$34CB8` | **1 = linear layout** (est.) |
+| `$44000084` | ? | PrimaryInit -1 (`$213E`) | - | unknown |
+| `$44000088` | flag | Hand pager -1 (`$2001FA8`) / 0 (`$2001FD0`) around its 8 `loadm` of 32 words (`$2001FBC`: one 1 KB page) | - | page-fill bracket (*reading*: cache/burst fill) |
+| `$4400008C` | bit 31 | kernel init `$2002308` and pager `$2001FF0`: `~(gr64 << 24)`, so bit 31 = NOT flags bit 7; pager 0 during the fill (`$2001F84`) | - | controlled by flags bit 7 (meaning unknown) |
+| `$44000090` | bit 31 | PrimaryInit -1 (`$2130`); kernel init `$200231C`: `~(gr64 << 25)`, so bit 31 = NOT flags bit 6 | - | controlled by flags bit 6 (meaning unknown) |
+| `$44000094`, `$98`, `$9C` | bit 31 | - | kernel init `$2002178`-`$20021A0`; TestInterleave `$34C44`-`$34C78`; DRVR ProbeCard `$21F0` (`$9C` only) | **3-bit board configuration** (est. as a code). Init ORs it into PublicOu+`$04` bits 24-26 and clears flags bit 8 when it is 0. TestInterleave skips when it is 0. DRVR: `$9C` clear means board generation 2 |
+| `$440000A0` | serial, 12 | PrimaryInit `$255C`/`$27E4`, VideoDriver `$60A6` (long 4); Hand `$C6` `$2001358` (12 stores of `lr4 << 18`, halved first if `+$80` is set) | Boot `$2003788` (12 read/write-backs; only when `+$7C` is clear, else `$A00`) | **row bytes / 8** in the linear layout (est.: the ROM's values ×8 equal the driver's rowBytes table, e.g. `$10,$20,$28,$50,$140` → 128, 256, 320, 640, 2560 at `$387E`). Boot computes value `<< 2`, `<< 1` more if `+$80` is set, capped at `$A00`, into PublicOut+`$24` |
+| `$440000A8` | ? | PrimaryInit 0 (`$2180`); -1 for monitor code 3 (`$23D8`) | - | unknown (two-page monitor only) |
+| `$440000AC`, `$B8`, `$BC` | ? | PrimaryInit -1 (`$218A`, `$2198`, `$2122`) | - | unknown |
+| `$440000C0` | ? | PrimaryInit 0 (`$21A6`) | - | unknown |
+| `$440000C4` | bit 31 | PrimaryInit 0 (`$21B0`); VideoDriver sets it after the timing registers (`$613C`) | - | *reading*: timing loaded / video on |
+| `$440000C8` | flag | Antelope TestInterleave -1 (`$34D28`) / 0 (`$34D68`), timer off | - | *reading*: **paired-word write**. While it is set, the test stores 0 to the even words only, then checks that all words are 0. It runs only with a non-zero board code and the linear layout |
+
+No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
+
+### 11.2 Timing generator: `$44400000`, `$44C00000` (host `$04400000`, `$04C00000`)
+
+| card | written by | read by | meaning |
+|---|---|---|---|
+| `$44C00000` | host, 12-bit serial: PrimaryInit `$2598`/`$2820`; VideoDriver `$612C` (values), `$59F0`, `$5A5A`, `$5F1E`, `$5F90`, `$6100`, `$614C` (control values 0/1/3) | host read/write-back loops (`$5D96`, `$289E`); Antelope `$000DC`, `$0010C`, `$00124` | serial data register of the bank (est. as a mechanism) |
+| `$44400000 + 4n`, n = 0-14 | PrimaryInit `$25A0` (`clr.l (a3)+`, 16 registers); VideoDriver `$6134` (writes the `$44C00000` word just read) | - | **timing registers** (*reading*). Each write latches the 12 bits just shifted into `$44C00000`, so the written data does not matter. Values come from timing-table longs 5-19 (VideoDriver) |
+| `$4440003C` (n = 15) | `clr.l` after shifting 0, 1 or 3: VideoDriver `$5A08` (3: VBL off), `$5A72` (1: on), `$5F36` (3), `$5FA8` (1), `$6114` (0, before the timing registers), `$6160` (1); PrimaryInit `$25AC` (3), `$2866` | - | **control** (*reading*): 0 while the timing is loaded, 1 = running with the slot interrupt on, 3 = interrupt off |
+| `$44400048` | PrimaryInit `$25B6`/`$283E`; VideoDriver's VBL task `$62E2` (`clr.l (a1)`; `a1` = the queue element's `sqParm`, set to base + `$04400048` at `$5A3E`) | - | **acknowledges the host's VBL slot interrupt** (est.) |
+| `$444001C0` / `$444000C0` | - | host WaitForVBlank `$5D6A`-`$5D8C` (`$1C0`, then 10 read/write-backs of `$44C00000`); unused copy PrimaryInit `$299C`; Antelope `$000C4`/`$000F4` (`$0C0`, then 7 read/write-backs; no callers) | the read loads a status into the shift register. The tested bit is bit 31 of the **last `$44C00000` read**, not of this read. The host waits set → clear → set (vertical blank, *reading*) |
+
+### 11.3 Other host-only ports
+
+| card | host | written by | meaning |
+|---|---|---|---|
+| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | serial clock-synthesiser port (*reading*, from the shape of the data). The VideoDriver never writes it |
+| `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | 16-entry table port. The values rise from `$0C` to `$F0` in the TV tables (*reading*: a filter/convolution curve). It does not hold the per-mode timing |
+
+### 11.4 `$46000000` (host `$06000000`): bus status, revision, slot burst mask
+
+| bits | access | evidence | meaning |
+|---|---|---|---|
+| 1:0 | read | vector 7 `$20003CC`: 0 or 3 → resume, 1 or 2 → `$2000474` (count in `$4C0067E0` while negative, else reason `$90`) | NuBus response of the faulting cycle (*reading*: 0 ok, 1 error, 2 timeout, 3 retry) |
+| 2 | read | vector 7: set → `$20004A4` clears bit 16+`n` of `$46000000` (`$2000534`-`$200053C`), `n` = top nibble of CHA (the next nibble for `$Fn……`) | a burst to slot `n` failed (est.: the handler drops that slot from the mask) |
+| 4 | read | vector 7: set → resume at once | *reading*: retry |
+| 12-15 | read | kernel init `$20021E0` → PublicOu+`$04` bits 28-31, flags bit 29 if ≥ 1; PrimaryInit `$2302`/`$2706` (= 1 picks the second clock set); DRVR ProbeCard `$220A`/`$2228` (0 → generation 3, 1 → 4) | **board revision** (est., three readers agree) |
+| 16-31 | write | `[$4C00643C] << 16`: kernel init `$200260C`, `$D5` `$200128C`, the timer every 65536 ticks `$20009E4` (restores the slots that vector 7 dropped); vector 7 read-modify-write `$200053C` | **per-slot burst enable** (est.). The master copy is PublicIn+`$3C`, `$0000FFFF` at load (RuntimeData) |
+
+### 11.5 RAMDAC `$46C00000`-`$46C00008` (host `$06C00000`-`$06C00008`)
+
+| card | written by | read by | meaning |
+|---|---|---|---|
+| `$46C00000` | host byte at `+0`: VideoDriver `$5604`, `$56F8`, `$58D4`, `$5974`, `$5BA6`; PrimaryInit `$25C4`/`$284A` (long 0). Card: Hand `$C7` `$2001384` and `$C8` `$20013D0` (byte store, BP 0); Antelope TestCLUT `$359D8`/`$359F4` (word `$FE`), SaveCLUT `$36CA0`, RestoreCLUT `$36D2C`, WriteCLUT `$36DC0` (word 0) | - | **CLUT index** (est.) |
+| `$46C00004` | three bytes per entry: host `$560C`, `$5704`-`$5710`, `$58DE`-`$58E6`, `$597E`-`$5986`; PrimaryInit (entry 0 = `$FF,$FF,$FF`, entry 1 = 0,0,0); card `$C7` (`lr3`, `lr4`, `lr5`), Antelope `$359E8`, `$36D44`, `$36DD8` (bits 31-24) | card bits 31-24: `$C8` `$20013DC`-`$20013F4` (result `$00BBGGRR`), TestCLUT `$359F8`…, SaveCLUT `$36CB0`. Host GetEntries `$5BAA`-`$5BC6` uses bits 7-0 of a long read | **CLUT data**, auto-increment (est.). The byte lanes differ between the two sides (see note) |
+| `$46C00008` | host only: timing-table long 0 (PrimaryInit `$2504`/`$27AC`, VideoDriver `$605C`) | Boot `$200365C` (bits 31-24) | **pixel mode** (est. for depth). Boot: bits 26-25 ≠ 0 → 24 bpp, else bits 28-27 = log2 depth (1/2/4/8); ROM values `$C0/$C8/$D0/$D8`, `$80…/$9C` for 24 bpp, `$C1…` on TV |
+
+Note on lanes: the host writes the index and data as bytes at `+0` and reads
+data in bits 7-0 of a long. The card reads data in bits 31-24. Antelope
+writes the index as a word with the index in bits 7-0, while Hand's `$C7`
+puts it in bits 31-24 as well (`inbyte` with BP = 0). TestCLUT rewrites
+the same index before it reads back, so the test passes under either
+wiring.
+
+### 11.6 Block-write colour registers `$4CC00000`, `$4CC00004` (host `$0CC00000`, `$0CC00004`)
+
+Only Antelope accesses these: FillLongs `$170F4`/`$17100` and Fill2Longs
+`$1737C`/`$17388`. The fill stores go to the bit-22 alias of the frame
+buffer (`dst | $00400000`), and only in the linear layout. See "the
+rectangle case". No host code addresses this range.
+
+### 11.7 Order of the host's mode programming (VideoDriver `sub_5FD4`, after WaitForVBlank)
+
+1. `$46C00008` ← long 0.
+2. `+$80` bit 31 (linear, from GFlags).
+3. `+$7C` bit 31 ← long 1.
+4. `+$04` ← long 2 (8 bits), `+$00` ← long 3 (20 bits), `+$A0` ← long 4 (12 bits).
+5. TV modes only: `$46800000` ← 16 longs, then a delay.
+6. `+$1C`/`$20`/`$24` bit 31 set.
+7. Timing control ← 0, then timing registers 0-14 ← 15 longs.
+8. `+$C4` bit 31 set, timing control ← 1, WaitForVBlank.
+
+JMFBSetDepth runs this between `control ← 3` / doorbell and the final
+`VidComm+$04 ← -1`.

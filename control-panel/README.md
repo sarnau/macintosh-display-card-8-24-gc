@@ -19,14 +19,17 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 | `INIT` -4080 | 1.5 K | 68k | **`'DSInit'`** — finds/reconciles every 8•24 GC card by slot (`INIT_DSInit.s`) |
 | `CODE` -4048 | 548 B | 68k | cdev main-segment stub |
 | **`ACEF` 100** | **322 K** | **Am29000** | the main **"QuickDraw GC" accelerator firmware** |
-| `ACEF` 1 | 18 K | Am29000 | smaller Am29000 image (bootstrap/secondary) |
+| `ACEF` 1 | 18 K | Am29000 | the **Runtime** kernel (`Boot` + `Hand`), loaded first by `Init29K` |
 | `mntr` `card` `gc70` `Gama` `PupS` | small | data | monitor/card tables, gamma; `PupS` is the accelerator's on/off flag and the config words sent with Control 17/18 (`HOST_CARD_PROTOCOL.md` section 9) |
 | `cicn` `icl8` `ICN#` `STR#` `DITL` … | — | data | icons, strings, dialog items |
 
 The `ACEF` blobs carry a plaintext "© Copyright Apple Computer, 1990" header
 then a high-entropy body (7.2–7.4 bits/byte) — i.e. the Am29000 image is
-**packed/encoded**, unpacked by `ACEFLoad` — a routine both `gc24.s` and
-`DRVR.s` carry their own copy of (see `LoadFirmware` in `DRVR.s`). (`ACEF` ≈
+**encrypted** (a running 32-bit XOR key per section), and decrypted while
+loading by `ACEFLoad` — a routine both `gc24.s` and `DRVR.s` carry their own
+copy of, but only `DRVR.s`'s decrypts (`$012B` files) and loads the firmware
+(see `Init29K`/`LoadFirmware` in `DRVR.s`); `gc24.s`'s accepts only plain
+`$012A` files and loads host modules. (`ACEF` ≈
 the accelerator-executable container; the string table literally names the
 loader "ACEFLoad".)
 
@@ -40,8 +43,8 @@ The destination pointer is `Strip24`'d (`StripAddress`) first, the same
 hygiene classic Mac OS applies to any hardware pointer — meaning the
 Am29000's program/data memory is directly memory-mapped into the card's
 NuBus slot space, and firmware is written there with plain
-`BlockMove`/`move.l`, not shuttled through the separate command-queue
-mechanism `gc24` uses for ordinary QuickDraw commands at runtime.
+`BlockMove`/`move.l`, not through the command packet `gc24` uses for
+ordinary commands at runtime.
 
 **What happens around the load, traced in `DRVR.s`** (`MakeSuperslotAddr` is
 the NuBus super-slot address builder and `PokeHardwareLong` a
@@ -62,8 +65,9 @@ their bodies). There are two loaders, not one:
   It writes `+$18` (feature flags), `+$00` (`$42005300`), `+$08` (top of
   DRAM) and `+$14` (engine region), then reads the card's **mailbox address**
   from `+$40C`, stores the host ack-word address at mailbox`+$0C` and the
-  `'s337'` signature at mailbox`+$00` to open it (cs51 later sends payloads
-  through it: payload at `+$08`, then `'s337'`).
+  `'s337'` signature at mailbox`+$00` to arm it. The mailbox carries the
+  card's reports to the host; cs51 answers a posted report (payload at
+  `+$08`, which the card returns as its service result, then `'s337'`).
 * **`LoadFirmware` (`$2926`, cs3)** loads the second ACEF (**Antelope**) with
   the same `ACEFLoad`, then writes four longwords into the same header
   (`+$18` flags, `+$0C` ACEFLoad's return value as a card address, `+$04` its
@@ -78,7 +82,7 @@ ACEFLoad's own message strings (now correctly decoded as data) confirm the
 ACEF layout: `Program '%s' version %08x date %d` (optional header `+$1C`
 name, `+$14` version, `+$18` date), the 32-text-section limit, "multiple
 .BSS not allowed", and the relocation range errors. `DRVR.s` documents the
-whole 1 KB-per-slot **unit record** (`BuildUnitRecords`, `$1E4A`) field by
+whole `$600`-byte (1.5 KB) per-slot **unit record** (`BuildUnitRecords`, `$1E4A`) field by
 field. An earlier version of this README said `+$0C` was "built from the ACEF
 magic byte's low nibble"; that was a misreading.
 
@@ -166,30 +170,41 @@ data tables decoded). Structure:
 
 * **`$0000..$13E3` — dispatch table**, 106 entries × `$30` bytes. Each entry is
   a self-contained patch stub:
-  * `+$00  dc.l` — the **Am29000 command code / firmware offset** for this op
+  * `+$00  dc.l` — the **address of the trap-table slot** (or low-memory
+    vector) this entry patches, which `DRVR.s`'s `ClassifyTrapNum` turns into
+    a trap number; `-1`/`-2`/`-3` mark three control records
   * `+$04` — a stub that fetches the engine's globals through low-memory
     `[$888]` and tail-jumps through them (`GlobalsAccessor`)
   * `+$28  bra.l GA_<trap>` — the 68k handler
-  These are the patched QuickDraw/CQD bottlenecks and related entry points; the
-  106 command codes are the host→coprocessor opcodes.
-* **`$13E4..$C27C` — handler + engine code.** Each handler marshals its
-  arguments into a command packet and appends it to the card's command queue.
+  These are the patched QuickDraw/CQD bottlenecks and related entry points. The
+  card command codes are separate: the selectors (`$00`-`$3C`, `$8000`-`$8004`)
+  that the handlers pass to `EngineDispatch` (`QUICKDRAW_PATCHES.md`).
+* **`$13E4..$C27C` — handler + engine code.** Each handler passes its
+  arguments to `EngineDispatch`, which either appends a record to the
+  DrawMultiObject drawing stream in card memory (the `Std*` bottlenecks and
+  drawing state) or posts one command in the shared packet (selector `+$48`,
+  sequence `+$4C`, count `+$50`, go `+$14`, reply `+$1C`) and waits for the
+  reply; there is no command queue (`HOST_CARD_PROTOCOL.md`).
   The parameter copy is a classic **Duff's-device unrolled loop** — a `switch`
-  on the argument count jumps into a chain of `move.l (params)+,(queue)+`.
+  on the argument count jumps into a chain of `move.l (params)+,(a3)+` into the
+  packet's argument area.
 * **`$C09C` — `GestaltSelectorTable`**: the engine probes the environment via
-  Gestalt (`vers mach sysv proc fpu qd kbd atlk mmu dram lram`) to decide
+  Gestalt (`vers mach sysv proc fpu qd kbd atlk mmu ram lram`) to decide
   whether/how to accelerate (matching the "requires 32-Bit QuickDraw / 3 MB /
   68040 caveat" strings above).
 
-* **`ACEFLoad` (`$23B6`)** — gc24 *contains the relocating loader* for the
-  Am29000 firmware. Its embedded log strings spell out the **ACEF object
+* **`ACEFLoad` (`$23B6`)** — gc24 *contains a copy of the relocating ACEF
+  loader*, used only by its module API (`sub_1A2E`) to load host-supplied
+  Am29000 modules into card heap memory; the firmware itself is loaded by
+  `DRVR.s`'s copy. Its embedded log strings spell out the **ACEF object
   format**: a magic number, sections (incl. `.BSS`), a symbol table, and
   absolute/relative branch-target relocations ("Loading %d sections", "Not in
   ACEF format!", "…Branch Target … Out of Range…", "Load Complete."). So the
   high-entropy `ACEF` resources are *relocatable Am29000 object code*, and the
   code that parses them is right here. This copy accepts only plain (`$012A`)
   files; `DRVR.s`'s copy also decrypts the `$012B` ones (a running 32-bit
-  key per section, see `firmware/README.md` and `SECOND_MASK.md`).
+  key per section, see `firmware/README.md` and `HOST_CARD_PROTOCOL.md`
+  section 6; `SECOND_MASK.md` is the superseded model).
 
 ### Labels
 
@@ -232,11 +247,16 @@ globals" struct, `$BAA`/2986 bytes) and **A1 = ParamBlock**
 * **`DoControl`** — validates a `csParam` index against the engine globals,
   and (via `LoadFirmware`) can itself run **`ACEFLoad`** — this driver
   carries its *own* copy of the Am29000-COFF loader (checking the same
-  `0x12A`/`0x12B` magic as `gc24.s`'s copy), so firmware loading isn't
-  gc24-exclusive.
+  `0x12A`/`0x12B` magic as `gc24.s`'s copy, but decrypting `0x12B`). This
+  copy is the one that loads the firmware: `Init29K` (cs2) the Runtime,
+  `LoadFirmware` (cs3) Antelope.
 * **`DoClose`** — a no-op stub (the driver expects to stay resident).
-* Two smaller 35-case dispatch tables (index×6 into 6-byte records) are
-  identified and rendered structurally but not deep-dived case-by-case.
+* Two 35-case switches inside `ACEFLoad` (labelled `CmdTable1`/`CmdTable2`)
+  are its relocation step, not command tables: they switch on the
+  relocation record's `r_type`, and the working cases 24-27 and 29-31 are the
+  Am29000 COFF types `R_IREL`, `R_IABS`, `R_ILOHALF`, `R_IHIHALF`, `R_BYTE`,
+  `R_HWORD`, `R_WORD`; the index×6 lookup before them reads the 6-byte
+  symbol table.
 
 ## The two boot-time INITs
 
@@ -291,8 +311,8 @@ only one will function as a graphics accelerator; any other becomes a
 glorified display card"* — `DSInit` is very plausibly the code that finds
 and reconciles those "other" cards as ordinary Color QuickDraw devices
 (via a `'scrn'` calibration-resource lookup and two standard video-driver
-`_Control` calls — `$A204`, confirmed identical to `_Control`/`$A004` by
-tracing Apple's own live trap dispatcher — `cscSetGamma` (csCode 4) then
+`_Control` calls — `$A204`, `_Control,IMMED`: it dispatches to the same
+routine as `_Control`/`$A004`, with bit 9 as the immediate flag — `cscSetGamma` (csCode 4) then
 `cscSetEntries` (csCode 3), sent to the slot's ROM video driver; the record
 layouts match `extracted-source/VideoDriver.s` exactly, see `INIT_DSInit.s`).
 An earlier revision of this README called them private selectors of
@@ -300,7 +320,7 @@ An earlier revision of this README called them private selectors of
 `LoadFirmware` and a field setter.
 
 `.GraphAccel`'s own `DoControl` csCode map (InitAccel, LoadFirmware,
-Enable/DisableAccel, a mailbox-send to the Am29000, …) is documented at the
+Enable/DisableAccel, the answer to a card's mailbox report, …) is documented at the
 cascade in `DRVR.s`, and `INIT_main.s`'s boot handshake is decoded against it.
 
 ## Reproducing the inputs
@@ -341,6 +361,7 @@ boot-time **`INIT`**s. Remaining, on request:
   a `Traps.h` entry at all: tracing Apple's own live A-line dispatcher
   (`OS/TrapDispatcher/Dispatch.a`) shows it indexes its handler table by
   the trap word's low byte only — `$A204` and `$A004` (`_Control`)
-  dispatch to the byte-identical routine, so `$A204` *is* `_Control`; the
-  higher bits only matter to `GetTrapAddress`/`SetTrapAddress`'s own,
-  unrelated numbering convention.
+  dispatch to the byte-identical routine, so `$A204` *is* `_Control`. Bit 9
+  is still meaningful: the trap word reaches the Device Manager in `D1`, and
+  for the I/O traps bit 9 is the `IMMED` flag, so `$A204` is
+  `_Control,IMMED` (an immediate call, bypassing the driver queue).
