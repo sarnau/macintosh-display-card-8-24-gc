@@ -3016,7 +3016,17 @@ readable):
   heapMin = %x, heapMax = %x`, `MapVirtual: bytes == 0`, `CallBack %X
   during inactive request`.
 
-**Service `$C0` (open).** `InitPacket` takes the packet pointer from
+**Service `$C0`: the comm header; the packet pointer is in `PublicOut+$18`.**
+Besides `InitPacket`, three functions in file 25 call `$C0`. They read
+`+$18 & $10000` (the feature flags that `LoadFirmware` writes to
+`image+$18`) and copy `+$10`/`+$14`. So `$C0` returns the comm header at
+`$4C006400` (`PublicIn`), and `InitPacket` reads `[$4C006818]` =
+`PublicOut+$18`. That word is initialised in the Runtime image. Unmasked with
+`PublicIn`'s keystream (accurate to about `$7C`, as for the service table),
+it is `$4C008C20`, in other words `$4C008C00`: exactly where the host puts
+the packet (below). Earlier notes on how this was traced:
+
+`InitPacket` takes the packet pointer from
 `[$C0() + $418]`. On the host, `gc24` reads the packet address from its
 device record `+$0C`, and `LoadFirmware` writes `image+$0C` = the card address
 `ACEFLoad` returned for the program. The device record `gc24` uses is the
@@ -3026,7 +3036,7 @@ host's packet is at offset `$s08C00` of the slot space, presumably card SRAM
 `$4C008C00`, right after `InpArgs`. No host program writes a field at
 `+$418`, the kernel never touches `$4C006818` and never builds `$8C00`, and
 neither host program writes into `InpArgs` (`$4C007800`, which only the
-kernel's getargs uses). How the two meet is not settled: the
+kernel's getargs uses). That question is answered above. The approximate
 `PrivNZ` pointer for `$C0` (`$20017DC`, accurate only to about `$7C`) falls in
 the kernel's region-table lookup, and no stub there fits a call without
 arguments.
@@ -3096,6 +3106,26 @@ So `$D2` is not where drawing happens: it is not one of the stubs near its
 pointer, which all return at once and touch no command data. The drawing
 selectors have no case in the dispatcher; they reach the card as stream
 records instead (see "DrawMultiObject: the batched drawing stream").
+
+**Services named by the self-test's use** (call sites listed by
+service; the stubs are at `$38F24`-`$39104`):
+
+| service | used by | reading |
+|---|---|---|
+| `$CF` | `TestInterrupts` with `(1, $00000)`, `(2, $00020)`, `(n, 0)` | set interrupt handler `n` (0 clears) |
+| `$D0` | the two interrupt handlers `$00000`, `$00020` (file 1) | acknowledge / end of interrupt |
+| `$CC` | `TestMMU` (followed by "mapmem failed"), `MapVirtual`, the dispatcher | map memory |
+| `$CD` | `TestMMU` ("unmapmem failed"), `UnmapAll`, `MapVirtual`, the dispatcher | unmap memory |
+| `$D3`, `$D4` | `TestMMU` ("get phys size", "mmu phys access"), `CopyHostMemory`, the cursor and copy routines | physical size / address of a mapping |
+| `$C5` | `TestCLUT` and its helpers | read the CLUT |
+| `$x11` | `TestTimer`, `CacheFindStamp`, `CacheCreate` | the clock (HIF `$111`) |
+| `$C0` | `InitPacket` and three readers of the feature flags | the comm header base |
+
+**System 6's strings.** Every System 7 `.lit` string is found in System 6's
+`.lit` by its plain first characters, so the messages are the same. System 6
+has more strings at `.lit $0000`-`$0178`: the names of its 16-bit
+arithmetic stubs (`StretchAverage16` …), which System 7 dropped with the
+stubs.
 
 ### Antelope mask: the `.lit` jump/command tables (partial result)
 
