@@ -55,7 +55,7 @@ Antelope is masked:
   tests (section 6, "bits 16-23 from the neighbours");
 * `.lit` has a separate key, recovered in bits 0-11 with host-confirmed
   pins;
-* `.data` is still masked.
+* `.data` is decoded by a model that is only partly certain ("`.data` decoded", section 7).
 
 So card-side details are readings unless the text says they are checked
 against the host or against QuickDraw's sources (`System 7.1 Source Code`).
@@ -138,7 +138,7 @@ prints these names in `text.partial.asm`.
 - DrawMultiObject: all 24 opcodes are named and their cases found; left open are details of the per-device refresh (two masked `.data` tables) and why a repeated font upload refreshes only glyphs `$84`-`$9E`;
 - kernel services: `$D5` is settled (the slot burst mask); `$BB` (feature flags), `$D1` and `$D4` (address translation) have candidate stubs but are not confirmed; `$D2`, `$B8`, `$B9` and `$BF` are unknown. The service table's pointers are only approximate (section 8);
 - why the status bit at `$4400007C` gates the two-colour block fill;
-- `.data`, still masked: the mode and ColorMap tables, the report level, the shared fill flag `.data+$280`, and the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`;
+- `.data` above bit 12 ("`.data` decoded": a step-function estimate, sure only near samples), the function tables that presumably reach the pattern fills `$04110` and `$1C8A8`, and which kernel service `$C0` is (`InitPacket`'s base);
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - a closed form for the `.text` key. Bits 16-23 are estimated from neighbouring samples for 98% of the words; 1,277 words stay undecoded;
 - the System 6 Antelope: its key is largely recovered (opcode byte, bits 0-12, bits 16-23 by neighbours; section 10), and its functions are matched to System 7's (645 of 768 with the same code; all 83 named ones found). Its `.lit` key is known in bits 0-8 (`antelope6_lit.py`), which names 26 stubs for the 16-bit arithmetic modes. Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B` (`antelope6_tables.py`), and the stubs mark the 16-bit arithmetic loops that System 7 adds. `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants; and the dispatcher fits System 7 for 53 of 60 commands, the other seven explained. The codec's switch targets come from fitting key bits 11-15 (`antelope6_switches.py`): settled for the encoder's 18 switches and the `'rle '` pair, and for three of the decoder's four. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path dithers 24-bit pixels to 16 bits with a 4×4 ordered matrix. Open: the first decoder table, the `.data` key, the codec routines step by step.
@@ -1861,8 +1861,8 @@ estimated). For each device (`lr76` up to `lr105`):
 3. it looks up a byte in an 8-entry table at `.data+$3D8`, indexed by
    `(mode xor lr42) & 7`, or takes −1, and stores it in a per-device slot
    (`+$B4`). That is a per-device choice of blit loop by mode, as
-   QuickDraw's mode tables do. `.data` is masked, so the table's values
-   are not known;
+   QuickDraw's mode tables do. Decoded (`.data` decoded, below), the eight
+   bytes are `00 00 01 02 02 64 64 64`;
 4. it sets a per-device flag (`+$1CC` slot) unless the byte is `$64`.
 
 So colours and mode are mapped per device once per change, not once per
@@ -2745,7 +2745,7 @@ Level 2 goes to `$00F84`, a log buffer:
 
 So at level 2 the host sees messages only in batches. Between flushes they
 sit in card memory, where a debugger could read them through the buffer
-pointer. The levels' initial values are in masked `.data`.
+pointer. The reporter level starts at 1 (`.data+$284`) and the log size at `$400` (`.data+$298`); see "`.data` decoded".
 
 These are names by role: the library's own names and version are not in
 the file.
@@ -2872,6 +2872,74 @@ end of `.text`. Only bits 0-1 of the `.text` key are shown to hold for `.lit`.
   of the first three entries has the plaintext top byte `$50`. That doesn't fit
   BSD's `_flag<<16 | _file<<8`, so the library's `FILE` layout is not BSD's
   in that word.
+
+### `.data` decoded (`antelope_data_key.py`)
+
+`.data`'s key has the `.text` key's form with its own constants:
+`key mod 2^13 = J13[k mod 48] + $800·(k div 48)`. Word pairs 48 apart
+differ by `$800` in 145 of 149 cases; 96 apart by `$1000`, 192 apart by 0
+mod `$2000`. `J13` is fitted on words with a zero top byte (assumed zero).
+Bits 13-23 are a step function of `k`, as in `.text`. They come from the
+nearest of two kinds of sample: words that decode to 0 in bits 0-12 (394),
+and the 101 relocated words. Those are type 31 against a file's `.text` or
+`.data1` start, so their plaintext is an offset inside a file smaller than
+8 KB and bits 13-23 are 0. The result is `firmware/ACEF_100_Antelope/data.partial.bin` with a
+flag per word (`z`/`r` sample, `=` both neighbouring samples agree, `~` they
+differ).
+
+Checks:
+* held out, 98 of the 101 relocated words decode to a 4-aligned offset
+  inside their target file;
+* ColorMap's `arithMode` copy at `.data+$2EC` decodes to
+  `00 03 02 01 01 03 02 01`. That is exactly 68k QuickDraw's `arithMode`
+  table (`QDUtil.a`: `srcCopy, srcBic, srcXor, srcOr, srcOr, srcBic,
+  srcXor, srcOr`), 8 bytes through bit 23;
+* `.data+$1380`/`$1384` hold 42 and 123456 (`$1E240`), the classic test
+  constants.
+
+Values the analysis was waiting for:
+
+| address | value | meaning |
+|---|---|---|
+| `.data+$280` | 1 | the shared fill flag read by every caller of the fills |
+| `.data+$284` | 1 | the reporter level: messages go straight to `printf` (level 1) |
+| `.data+$288`, `$28C` | 0, 0 | log buffer and write pointer (allocated on first use) |
+| `.data+$298` | `$400` | log buffer size |
+| `.data+$3D8` | `00 00 01 02 02 64 64 64` | the per-device blit-loop choice by `(mode xor lr42) & 7`; `$64` is the "no fast loop" value the code tests |
+| `.data+$F08` | -1 | the last command (no command yet) |
+| `.data+$1560`-`$157C` | 0 | the `exit` handler table, empty |
+
+`J13` rests on the assumption that most zero-top-byte words are 0. The
+high bits are sure only next to samples (flag `z`, `r` or `=`, 726 of 1,596
+words); elsewhere they can be off by a step.
+
+### `.lit` strings in full (`antelope_lit_strings.py`)
+
+The same idea reads the middle characters of `.lit`'s strings. Relocated
+`.lit` words whose fitted 12-bit offset picks exactly one case block give
+the full plaintext and so the full key (482 samples, all agreeing with
+`antelope_lit_key.py`'s bits 0-11). String words take bits 12-23 from the
+nearest sample. Most text reads; single-bit errors remain in the middle
+characters. Read with those corrected:
+
+* `P??Monet: Starting up, comm block at %X` (main's message; the first and
+  fourth characters of each word are plain, so "Monet" is sure in both
+  this and the next) and `Mo?etMain: Sequence error %d != %d, func = %d,
+  last func = %d`;
+* `Unknown Function: 0x%X`;
+* `ITabMatch: Inverse Table is not up-to-date`;
+* `DrawMultiObject/opWhichPat: can't get a PatternCacheEntry for pattern`,
+  `… can't find PixPat in cache`, `… can't get a RGBPatCacheEntry for RGB
+  Pattern`, `DrawMultiObject/opSwapFont: width table is …`;
+* `DisposeOffscreen: NULL offscreen Handle`, `FlushOffscreen: NULL
+  offscreen Handle`, `FlushColorTable: NULL color table Handle`,
+  `CacheGDevice: NULL GDevice`, `CachePixPat: NULL PixPatHandle`, and the
+  `Flush…` twins;
+* `ScaleBlt/…IndexToAny: unsupported … = %d`, `ScaleBlt: unknown scaleNum = %d`;
+* `GetSeek: invalid rectFlag for seekMask = %d`;
+* `malloc allocated %d bytes outside of the heap bounds, pointer = %x,
+  heapMin = %x, heapMax = %x`, `MapVirtual: bytes == 0`, `CallBack %d
+  during inactive request`.
 
 ## 8. The kernel's service table (vector 66)
 

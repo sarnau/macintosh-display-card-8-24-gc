@@ -420,8 +420,8 @@ the copyright, so the version and build date were also compiled into the program
   stores the packet pointer `[base+$418]` at `.bss+0`, and initialises the
   packet: `+$00` = `$0101xxxx`, `+$04` = the argument, the buffer pointers
   `+$10`/`+$38`/`+$54` = packet `+$6D0`/`+$610`/`+$650`, and `+$28`/`+$34`/`+$44`
-  cleared. Then `main` clears the go flag `+$14` and prints a start-up message
-  through `Report` (`.lit+$D60`, partly decoded "…: st…ing up …"). It stores
+  cleared. Then `main` clears the go flag `+$14` and prints "P??Monet: Starting
+  up, comm block at %X" through `Report` (`.lit+$D60`). It stores
   `packet+$44` (`rec`) at `.bss+4` and loops forever on
   `CommandDispatcher(-1)`.
 * **Millicode.** Files 55-57 are transparent routines (return `jmpi tpc`):
