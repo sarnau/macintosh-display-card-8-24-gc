@@ -4613,7 +4613,6 @@ and where it is argued.
 | the card can reply 2 | only `EngineDispatch` returns 2 (recording a picture, region or polygon) | Overview |
 | arguments "after `+$44`" or "from `+$58`" | every command's arguments through the pointer at `packet+$54` (`packet+$650`); only `$15` and PQDInit use fixed blocks | Overview, section 10 |
 | the host can overwrite a command the card still runs | the next command waits in `sub_624A` for status bit 1, the completion | "Early release", "When the host waits for the card" |
-| CopyBits always synchronous | StretchBits releases the host early once all its pixmaps are on the card | "Early release" |
 | `$C6` programs the pixel clock | `$C6` sets the display start and row stride, and nothing calls it | sections 8, 11.1 |
 | `$44000028`: sense open | the Am29000's run control (most likely *RESET): 0 held, -1 runs at cs5 | sections 1, 11.1 |
 | `$44800000` is the clock synthesiser; `$46800000` a TV filter curve | `$46800000` is the DP8531 clock synthesiser; `$44800000` most likely an MFB configuration chain | 11.3, 11.8 |
@@ -4625,4 +4624,3 @@ and where it is argued.
 | a "32×32 multiply" at `$00CC4` | FixMul | "The entry table, named" |
 | flag bits 1, 3, 10, 30, 31 "read in outline" | kernel debug switches nothing sets | section 9 |
 | give-up reasons 4, 6, 9 open | settled; 6 is dead code, 9 spins | section 9 |
-| the extended "no display" drop removes a monitorless card | it never fires; a card without a monitor can still accelerate | section 1 |
