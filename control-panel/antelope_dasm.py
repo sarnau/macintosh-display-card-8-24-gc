@@ -31,7 +31,7 @@ Usage:  antelope_dasm.py ACEF_100.bin OUTDIR [--names-from S7_ACEF_100.bin]
 import collections, os, struct, sys
 import acef_unpack, apply_reloc as ar, antelope_modules as am
 from am29k_dasm import decode
-from antelope_names import NAMES
+from antelope_names import NAMES, BANNERS
 
 SECNAME = {1: 'Code', 2: '.text', 3: '.lit', 4: '.data', 5: 'Apple', 6: '.data1', 7: '.bss'}
 BR = {'jmp', 'jmpf', 'jmpt', 'jmpfdec', 'call', 'jmpi', 'jmpfi', 'calli', 'jmpti'}
@@ -176,6 +176,11 @@ def dasm_section(img, name, base, names, syms, files, svc):
         pc = base + 4 * i
         if pc in files:
             out.append('')
+            bn = BANNERS.get(names.get(pc + 4) or names.get(pc) or svc.get(pc + 4) or svc.get(pc))
+            if bn:
+                if bn[0]:
+                    out += ['* ' + '=' * 66, '*  ' + bn[0], '* ' + '=' * 66]
+                out += ['*  ' + l for l in bn[1:]]
             out.append('file_%02d:   ; object file %d (%s): .text starts here' % (
                 files[pc][0], files[pc][0], files[pc][1]))
         if pc in lab:
@@ -296,6 +301,8 @@ def main(path, outdir, ref=None):
             '*  "extern#N" is an undefined symbol (N = its symbol index).  The spill/',
             '*  fill asserts carry trap number 0 in the file; the loader patches',
             '*  in V_SPILL/V_FILL (64/65) from the byte relocations.',
+            '*  Banners (antelope_names.BANNERS) open each object file whose first',
+            '*  function is named, grouped under subsystem headings.',
             '*  %d functions named.' % sum(1 for a in syms if a in names),
             '*', '*  Instruction mix (top 24 mnemonics):']
     head += ['*    %-8s %6d' % kv for kv in mix.most_common(24)] + ['*']

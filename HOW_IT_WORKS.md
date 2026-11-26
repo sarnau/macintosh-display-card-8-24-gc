@@ -25,7 +25,7 @@ everything.
 | `$4C000000`-`$4C1FFFFF` | slot base + `$0C000000` | 2 MB video memory. The first 64 KB hold the kernel's shared areas (vector table, service table, `PublicIn`/`PublicOut`, the mailbox, the video command block, the command packet at `$4C008C00`); the frame buffer starts at `+$10000` |
 | `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM (off-screen pixel maps, caches, the heap); the host probes how much |
 | `$4C400000`.. | | the video memory's block-write alias (fills with one colour per write) |
-| `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, display start and row bytes (`$44000000`, `$440000A0`) |
+| `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, display start and row bytes (`$44000000`, `$440000A0`), the Am29000's run control (`$44000028`) |
 | `$46C00000` | | the RAMDAC (colour table) |
 | `$02000000`.. | | the kernel's code (`Hand` at `$2000000`, `Boot` at `$2003000`) |
 | low addresses | the Mac's memory | read and written over NuBus (host pixel maps, handles) |
@@ -58,14 +58,17 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
 
 ## Start-up
 
-1. The driver (`.GraphAccel`, `DRVR` in the control panel) probes the card,
-   uploads Runtime, writes its feature flags and memory limits into
-   `PublicIn`, and pokes `$42005300`. Boot sees it and starts the kernel.
-2. The host reads the mailbox address back from `PublicOut` and answers it
-   with `'s337'`.
-3. The driver uploads and links Antelope into card DRAM and starts it. Its
-   `main` finds the command packet through `PublicOut+$18`, the same address
-   (`$s08C00`) the host uses, and enters the command loop.
+1. The driver (`.GraphAccel`, `DRVR` in the control panel) holds the
+   Am29000 (0 to `$44000028`), tests the card's memory, uploads Runtime,
+   writes its feature flags and memory limits into `PublicIn`, pokes the
+   go-ahead `$42005300` and arms the mailbox with `'s337'`.
+2. It uploads and links Antelope into card DRAM and records its entry point
+   in `PublicIn`.
+3. It writes -1 to `$44000028` and the Am29000 runs: Boot finds the go-ahead,
+   sets up the kernel and jumps to Antelope. Its `main` finds the command
+   packet through `PublicOut+$18`, the same address (`$s08C00`) the host
+   uses, and enters the command loop. Turning the accelerator off writes 0
+   again.
 
 The feature flags (from the control panel's `PupS` resource and the card
 type) switch processor and kernel features: paging, supervisor mode,

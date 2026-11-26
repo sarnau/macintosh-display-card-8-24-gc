@@ -10,6 +10,8 @@
 *  "extern#N" is an undefined symbol (N = its symbol index).  The spill/
 *  fill asserts carry trap number 0 in the file; the loader patches
 *  in V_SPILL/V_FILL (64/65) from the byte relocations.
+*  Banners (antelope_names.BANNERS) open each object file whose first
+*  function is named, grouped under subsystem headings.
 *  709 functions named.
 *
 *  Instruction mix (top 24 mnemonics):
@@ -39,6 +41,11 @@
 *    constn      509
 *
 
+* ==================================================================
+*  START-UP AND INTERRUPTS
+* ==================================================================
+*  The two interrupt handlers (host doorbell, video), the interrupt mask, the timer
+*  and the serial port at $44C00000.
 file_01:   ; object file 1 (C): .text starts here
 sub_00000:   ; Int1Handler
   00000:  03006000  const    gr96, $0000   ; lo of extern#1756+$0
@@ -138,6 +145,12 @@ L_00124:
   00138:  c0000080  jmpi     lr0
   0013c:  70400101  nop         ; [delay slot]
 
+* ==================================================================
+*  ASSEMBLY HELPERS
+* ==================================================================
+*  Report (the fatal-error path to the host mailbox), the burst copies and fills,
+*  the pixel shrink/stretch row loops used by StretchBits, and FixMul, 64-bit
+*  arithmetic and the frame-pointer accessors.
 file_02:   ; object file 2 (asm): .text starts here
 sub_00140:   ; Report
   00140:  03006000  const    gr96, $0000   ; lo of .data+$0284
@@ -1125,6 +1138,11 @@ sub_00f6c:   ; SetFramePtr
   00f6c:  c0000080  jmpi     lr0
   00f70:  15818200  add      lr1, lr2, $00   ; [delay slot]
 
+* ==================================================================
+*  DEBUG LOG
+* ==================================================================
+*  The debug-report hooks; NullReport is the default, the log variants are
+*  debug options switched by the feature flags.
 file_04:   ; object file 4 (C-g): .text starts here
 sub_00f74:
   00f74:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
@@ -1476,6 +1494,10 @@ sub_01468:   ; Bogus
   01488:  c0000080  jmpi     lr0
   0148c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: GEOMETRY
+* ==================================================================
+*  Rectangle intersection and trimming, and coordinate mapping.
 file_05:   ; object file 5 (C-g): .text starts here
 sub_01490:
   01490:  00120040  .word    $00120040   ; tag word: 16 arguments, frame $40
@@ -1893,6 +1915,11 @@ sub_01970:   ; MapRect
   01a44:  c0000080  jmpi     lr0
   01a48:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: BLITTERS
+* ==================================================================
+*  BitBlt with its setup and its per-mode inner loops (bMAINn, bcMAINn, ...),
+*  in the order of the 68k BitBlt.a tables.
 file_06:   ; object file 6 (C-g): .text starts here
 sub_01a4c:
   01a4c:  000f0018  .word    $000f0018   ; tag word: 13 arguments, frame $18
@@ -7378,6 +7405,7 @@ L_06634:
   06644:  c0000080  jmpi     lr0
   06648:  70400101  nop         ; [delay slot]
 
+*  Colour lookup: inverse-table match, colour <-> index.
 file_07:   ; object file 7 (C-g): .text starts here
 sub_0664c:
   0664c:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
@@ -7758,6 +7786,7 @@ L_06b74:
   06ba4:  c0000080  jmpi     lr0
   06ba8:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  BitsToPixMap and ColorMap (the colour-mapping of the pen and fill colours).
 file_08:   ; object file 8 (C-g): .text starts here
 sub_06bac:
   06bac:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
@@ -8470,6 +8499,10 @@ L_075ac:
   075d0:  a0ff0048  jmp      $072f0   ; -> L_072f0
   075d4:  61616100  cpeq     gr97, gr97, $00   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: SHAPES
+* ==================================================================
+*  DrawArc and the oval scan converter (INITOVAL, BUMPOVAL).
 file_09:   ; object file 9 (C-g): .text starts here
 sub_075d8:
   075d8:  00120110  .word    $00120110   ; tag word: 16 arguments, frame $110
@@ -9612,6 +9645,7 @@ L_08604:
   0860c:  c0000080  jmpi     lr0
   08610:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  DrawLine with its row/column fills and the fast slanted-line loops.
 file_10:   ; object file 10 (C-g): .text starts here
 sub_08614:
   08614:  001200b0  .word    $001200b0   ; tag word: 16 arguments, frame $b0
@@ -12421,6 +12455,11 @@ L_0acf4:
   0ad0c:  c0000080  jmpi     lr0
   0ad10:  70400101  nop         ; [delay slot]
 
+* ==================================================================
+*  THE DRAWING STREAM
+* ==================================================================
+*  DrawMultiObject: plays back the host's stream of shape and text records
+*  (25 opcodes; HOST_CARD_PROTOCOL.md).
 file_11:   ; object file 11 (C-g): .text starts here
 sub_0ad14:
   0ad14:  000d05a8  .word    $000d05a8   ; tag word: 11 arguments, frame $5a8
@@ -16199,6 +16238,11 @@ L_0e38c:
   0e38c:  a0ff00fe  jmp      $0e384   ; -> L_0e384
   0e390:  14909087  add      lr16, lr16, lr7   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: SLABS
+* ==================================================================
+*  DrawSlab and the slab mask loops per transfer mode (slMASKn, slXMASKn, the
+*  arithmetic modes).
 file_12:   ; object file 12 (C-g): .text starts here
 sub_0e394:
   0e394:  000c0000  .word    $000c0000   ; tag word: 10 arguments, frame $0
@@ -20200,6 +20244,10 @@ L_11aa0:
   11acc:  c0000080  jmpi     lr0
   11ad0:  02006000  consth   gr96, $0000   ; hi of .text $01468 (Bogus)   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: TEXT
+* ==================================================================
+*  DrawText and the character-extra calculation.
 file_13:   ; object file 13 (C-g): .text starts here
 sub_11ad4:
   11ad4:  001201e0  .word    $001201e0   ; tag word: 16 arguments, frame $1e0
@@ -22225,6 +22273,7 @@ L_1375c:
   13764:  c0000080  jmpi     lr0
   13768:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  DrawStreamCommand.
 file_14:   ; object file 14 (C-g): .text starts here
 sub_1376c:
   1376c:  00030338  .word    $00030338   ; tag word: 1 arguments, frame $338
@@ -22775,6 +22824,12 @@ L_13f48:
   13f48:  a0ff00fc  jmp      $13f38   ; -> L_13f38
   13f4c:  0300840c  const    lr4, $000c   ; [delay slot]
 
+* ==================================================================
+*  HOST OBJECTS AND MEMORY
+* ==================================================================
+*  Address tests, the region and mapping flags, the host-object cache (GDevices,
+*  colour and inverse tables, offscreens, pixel patterns, fonts), font upload,
+*  PQDInit, the PQDAlloc arena, CopyHostMemory and the long fills.
 file_15:   ; object file 15 (C-g): .text starts here
 sub_13f50:
   13f50:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
@@ -26584,6 +26639,10 @@ L_174f4:
   174f4:  a0ff00ca  jmp      $1741c   ; -> L_1741c
   174f8:  01ff60ff  constn   gr96, $ffff   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: PATTERNS
+* ==================================================================
+*  Pattern expansion per depth, conversion, dithering and the scale tables.
 file_16:   ; object file 16 (C-g): .text starts here
 sub_174fc:
   174fc:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
@@ -28574,6 +28633,7 @@ L_19114:
   19128:  c0000080  jmpi     lr0
   1912c:  70400101  nop         ; [delay slot]
 
+*  QuickPolys and its edge sort.
 file_17:   ; object file 17 (C-g): .text starts here
 sub_19130:
   19130:  00040008  .word    $00040008   ; tag word: 2 arguments, frame $8
@@ -29467,6 +29527,10 @@ L_19d98:
   19d98:  a0ff005d  jmp      $19b0c   ; -> L_19b0c
   19d9c:  6160a000  cpeq     gr96, lr32, $00   ; [delay slot]
 
+* ==================================================================
+*  QUICKDRAW: REGIONS AND STRETCHING
+* ==================================================================
+*  RgnBlt and its per-mode loops (rSrc..., rMASKn).
 file_18:   ; object file 18 (C-g): .text starts here
 sub_19da0:
   19da0:  001200c0  .word    $001200c0   ; tag word: 16 arguments, frame $c0
@@ -39681,6 +39745,7 @@ L_22a78:
   22a80:  c0000080  jmpi     lr0
   22a84:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  scaleBlt: depth conversion while copying (indexed <-> 16/32 bits).
 file_19:   ; object file 19 (C-g): .text starts here
 sub_22a88:
   22a88:  001200a0  .word    $001200a0   ; tag word: 16 arguments, frame $a0
@@ -42601,6 +42666,7 @@ L_25340:
   25348:  c0000080  jmpi     lr0
   2534c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  GetSeek and the region scan (SeekRgn, the run buffers).
 file_20:   ; object file 20 (C-g): .text starts here
 sub_25350:
   25350:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
@@ -44913,6 +44979,7 @@ L_272d0:
   272e8:  c0000080  jmpi     lr0
   272ec:  70400101  nop         ; [delay slot]
 
+*  Region scan helpers (INITRGN, SEEKUP/SEEKDOWN, INVPAIR).
 file_21:   ; object file 21 (C-g): .text starts here
 sub_272f0:
   272f0:  00070000  .word    $00070000   ; tag word: 5 arguments, frame $0
@@ -45165,6 +45232,7 @@ L_27664:
   2766c:  c0000080  jmpi     lr0
   27670:  1e006062  store    0, 0, gr96, gr98   ; [delay slot]
 
+*  StretchBits' setup and its mask and arithmetic-mode loops.
 file_22:   ; object file 22 (C-g): .text starts here
 sub_27674:
   27674:  00040000  .word    $00040000   ; tag word: 2 arguments, frame $0
@@ -52150,6 +52218,7 @@ L_2d7ac:
   2d7ac:  c0000080  jmpi     lr0
   2d7b0:  70400101  nop         ; [delay slot]
 
+*  StretchBits.
 file_23:   ; object file 23 (C-g): .text starts here
 sub_2d7b4:
   2d7b4:  000701d8  .word    $000701d8   ; tag word: 5 arguments, frame $1d8
@@ -55033,6 +55102,7 @@ L_30080:
   30080:  a0fc0035  jmp      $2f154   ; -> L_2f154
   30084:  03009d03  const    lr29, $0003   ; [delay slot]
 
+*  The fast 32-bit (and 16-to-32) stretch paths, plain and smoothed.
 file_24:   ; object file 24 (C-g): .text starts here
 sub_30088:
   30088:  001200a0  .word    $001200a0   ; tag word: 16 arguments, frame $a0
@@ -57042,6 +57112,12 @@ L_31d98:
   31da0:  c0000080  jmpi     lr0
   31da4:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+* ==================================================================
+*  THE COMMAND LOOP
+* ==================================================================
+*  main, the command packet, CommandDispatcher and the per-command handlers,
+*  the cursor lock, the stream buffer, MapVirtual, and the callbacks that ask
+*  the host for work (CallBack, CB...).
 file_25:   ; object file 25 (C-g): .text starts here
 sub_31da8:
   31da8:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
@@ -59434,6 +59510,11 @@ L_34030:
   34040:  c0000080  jmpi     lr0
   34044:  70400101  nop         ; [delay slot]
 
+* ==================================================================
+*  SELF-TEST
+* ==================================================================
+*  SelfTest and its tests (CPU, arithmetic, timer, clock, memory, CLUT, MMU,
+*  interrupts, slot burst); nothing in Antelope calls it.
 file_26:   ; object file 26 (C-g): .text starts here
 sub_34048:
   34048:  00030000  .word    $00030000   ; tag word: 1 arguments, frame $0
@@ -63021,6 +63102,10 @@ L_372b4:
   372c8:  a0ff00ee  jmp      $37280   ; -> L_37280
   372cc:  03006001  const    gr96, $0001   ; [delay slot]
 
+* ==================================================================
+*  HEAP AND MODULES
+* ==================================================================
+*  The card heap (a free list).
 file_27:   ; object file 27 (C-g): .text starts here
 sub_372d0:
   372d0:  00020000  .word    $00020000   ; tag word: 0 arguments, frame $0
@@ -63338,6 +63423,8 @@ L_37718:
   37724:  c0000080  jmpi     lr0
   37728:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+*  The module interface: services for host-loaded code (memory, words,
+*  host copies, address mapping, commands).
 file_28:   ; object file 28 (C-g): .text starts here
 sub_3772c:
   3772c:  00060000  .word    $00060000   ; tag word: 4 arguments, frame $0
@@ -63681,6 +63768,10 @@ L_37c00:
   37c08:  c0000080  jmpi     lr0
   37c0c:  5600817f  asleu    trap65, lr1, gr127   ; [delay slot]
 
+* ==================================================================
+*  LIBRARY CODE WITHOUT DEBUG INFORMATION
+* ==================================================================
+*  The storem burst fills and copies.
 file_29:   ; object file 29 (C): .text starts here
 sub_37c10:   ; FillPatternStorem
   37c10:  25010140  sub      gr1, gr1, $40
@@ -65057,6 +65148,8 @@ L_38ed8:
   38f1c:  a0ff003d  jmp      $38c10   ; -> CopyBackTail
   38f20:  91949403  and      lr20, lr20, $03   ; [delay slot]
 
+*  The kernel and HIF service stubs (const gr121, N; asneq V_SYSCALL),
+*  HOST_CARD_PROTOCOL.md section 8.
 file_30:   ; object file 30 (asm): .text starts here
 sub_38f24:   ; svc_C1_FreeMemory
   38f24:  030079c1  const    gr121, $00c1
@@ -65236,6 +65329,11 @@ sub_39104:   ; svc_D5_SlotBurstMask
   3910c:  c0000080  jmpi     lr0
   39110:  70400101  nop         ; [delay slot]
 
+* ==================================================================
+*  AMD'S C LIBRARY
+* ==================================================================
+*  stdio, printf, string conversion, ctype, signals, the HIF system-call stubs,
+*  memchr/memcpy/memset and the multiply/divide millicode (from here to the end).
 file_31:   ; object file 31 (C): .text starts here
 sub_39114:
   39114:  00050000  .word    $00050000   ; tag word: 3 arguments, frame $0

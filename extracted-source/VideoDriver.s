@@ -358,7 +358,7 @@ L560c:
   005616:  46 df                move.w   (a7)+, sr
   005618:  30 1f                move.w   (a7)+, d0
   00561a:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
-  00561c:  61 00 07 8a          bsr.w    $5da8  ; -> JMFBSetDepth  JMFBSetDepth: program MFB / pixel clock for the mode
+  00561c:  61 00 07 8a          bsr.w    $5da8  ; -> JMFBSetDepth  JMFBSetDepth: VidComm block + video timing for the mode
 L5620:
   005620:  25 6b 00 08 00 08    move.l   $8(a3), $8(a2)  ; [saveVidBase]
   005626:  60 00 ff 5a          bra.w    $5582  ; -> Ctl_KillIO
@@ -776,8 +776,9 @@ L59e6:
   005a1c:  4e 75                rts
 * sub_5a1e  -  install the slot VBL interrupt handler.
 * Fills the SlotIntQElement (storage.$10): siInterval=6,
-* siIntHandler=VBLInterruptTask, and points it at the card IRQ reg;
-* _SIntInstall's it, then enables the card IRQ.  Returns D0 status.
+* siIntHandler=VBLInterruptTask, sqParm = base+$0440'0048 (VBL ack);
+* _SIntInstall's it, then sets timing control to 1 (running, slot
+* interrupt on).  Returns D0 status.
 sub_5a1e:
   005a1e:  48 e7 c8 a8          movem.l  d0-d1/d4/a0/a2/a4, -(a7)
   005a22:  45 fa 08 96          lea.l    $62ba(pc), a2
@@ -1156,11 +1157,14 @@ L5d9a:
   005d9e:  29 80 48 00          move.l   d0, (a4, d4.l)
   005da2:  51 ca ff f6          dbra     d2, $5d9a  ; -> L5d9a
   005da6:  4e 75                rts
-* JMFBSetDepth  -  program the MFB and pixel clock for the current mode.
-* Derives rowBytes/scanlines/depth/page from the timing table, then hands
-* them to the MFB (and, if the "WY1`" signature is present at
-* base+$0C00'7318, to the on-card Am29000) through the parameter block at
-* base+$0C00'7300, and re-times the pixel clock via sub_5fd4.
+* JMFBSetDepth  -  set up the card for the current mode.
+* Derives rowBytes/scanlines/depth/page from the mode table and the base
+* address (base+$0C00'0000 + $10000/$11400).  If the "WY1`" signature is at
+* base+$0C00'7318 (the Am29000 kernel is running), it writes them to the
+* VidComm block in VRAM at base+$0C00'7300 (+$08/$0C/$10/$14/$1C), sets
+* timing control to 3 (interrupt off), posts the command (+$00 = $80000000,
+* doorbell $0400'0050) and waits for +$04 to clear.  Either way sub_5fd4
+* then loads the mode's timing table into the card registers.
 JMFBSetDepth:
   005da8:  48 e7 e8 88          movem.l  d0-d2/d4/a0/a4, -(a7)
   005dac:  70 01                moveq    #$1, d0
@@ -1331,9 +1335,13 @@ L5fca:
   005fcc:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   005fce:  4c df 11 17          movem.l  (a7)+, d0-d2/d4/a0/a4
   005fd2:  4e 75                rts
-* sub_5fd4  -  load the pixel-clock / MFB timing coefficients for the
-* depth in D1 (1/2/4/8/24 bpp select table offset $00/$50/$A0/$F0/$140).
-* Shifts the coefficients into the card registers via SerialShiftOut.
+* sub_5fd4  -  load the mode's 20-long timing table for the depth in D1
+* (1/2/4/8/24 bpp select table offset $00/$50/$A0/$F0/$140), after
+* WaitForVBlank: long 0 -> RAMDAC pixel mode $06C0'0008, layout bits
+* $0400'0080/$7C, longs 2-4 shifted into $0400'0004/$00/$A0 (display start,
+* row bytes/8), TV-only 16 longs to $0680'0000, then longs 5-19 through
+* $04C0'0000 into timing registers $0440'0000+4n, timing control 0 -> 1.
+* It does not touch the clock synthesiser ($0480'0000).
 sub_5fd4:
   005fd4:  48 e7 fc d8          movem.l  d0-d5/a0-a1/a3-a4, -(a7)
   005fd8:  36 92                move.w   (a2), (a3)  ; [saveMode]
@@ -1385,7 +1393,7 @@ L604a:
   00604e:  3a 2b 00 1c          move.w   $1c(a3), d5  ; [GFlags]
   006052:  2f 0b                move.l   a3, -(a7)
   006054:  26 49                movea.l  a1, a3
-  006056:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; AC842 control port
+  006056:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; RAMDAC pixel mode (timing long 0)
   00605c:  26 98                move.l   (a0)+, (a3)  ; [saveMode]
   00605e:  28 49                movea.l  a1, a4
   006060:  28 3c 04 00 00 80    move.l   #$4000080, d4  ; MFB reg +$80
@@ -1441,7 +1449,7 @@ L60d4:
   00610e:  28 3c 04 40 00 3c    move.l   #$440003c, d4  ; timing reg 15 = control (0/1/3), latched from $04C00000
   006114:  42 b4 48 00          clr.l    (a4, d4.l)
   006118:  26 49                movea.l  a1, a3
-  00611a:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
+  00611a:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; timing registers 0-14 (each write latches $04C00000)
   006120:  36 3c 00 0e          move.w   #$e, d3
   006124:  28 49                movea.l  a1, a4
   006126:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
@@ -1584,7 +1592,9 @@ GrayPatterns:
   006288:  aa aa aa aa cc cc cc cc f0 f0 f0 f0 ff 00 ff 00 dc.b     $aa,$aa,$aa,$aa,$cc,$cc,$cc,$cc,$f0,$f0,$f0,$f0,$ff,$00,$ff,$00  ; ................
   006298:  00 00 00 00          dc.b     $00,$00,$00,$00  ; ....
 * SerialShiftOut  -  shift D1 (top D2 bits, MSB first) serially into the card
-* register at (A4,D4).  Used to program the pixel clock and control ports.
+* register at (A4,D4).  Used for the serial registers $0400'0000/$04/$A0
+* (display start, ?, row bytes/8) and the timing bank's data register
+* $04C0'0000 (timing values and control 0/1/3).
 SerialShiftOut:
   00629c:  48 e7 62 00          movem.l  d1-d2/d6, -(a7)
   0062a0:  7c 20                moveq    #$20, d6

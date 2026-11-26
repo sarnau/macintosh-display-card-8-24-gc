@@ -25,7 +25,7 @@ The Naked Truth", by Guillermo Ortiz, included as a PDF in the parent folder):
              │                   │                    Video
         ┌────┴─────┐        ┌────┴─────┐             connector
         │  RDNC    │        │Config ROM│
-        │ NuBus    │        │(this ROM)│      Programmable pixel clock
+        │ NuBus    │        │(this ROM)│      Serial clock synthesiser
         │controller│        └──────────┘
         └────┬─────┘
           NuBus
@@ -149,7 +149,7 @@ layout, the drive-one-read-the-others extended-sense scheme) and supplies the
 |-------------|-------------|
 | `VideoOpen` / `VideoCtl` / `VideoStatus` / `VideoClose` | driver bottleneck routines |
 | `ChkMode` / `ChkPage` | mode / page validation |
-| `JMFBSetDepth` | program the frame-buffer controller + pixel clock |
+| `JMFBSetDepth` | hand the mode to the Am29000 (`VidComm` at `+$0C00'7300`) and load the timing table (`sub_5fd4`: RAMDAC mode, display start, row bytes, timing registers) |
 | `GrayScreen` / `GrayPatterns` | 50%-gray fill + per-depth patterns |
 | `XtdSense` | extended monitor sense |
 | `GoIODone` | driver IODone tail |

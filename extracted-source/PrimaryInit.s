@@ -33,7 +33,8 @@
 * PrimaryInit  -  sExecBlock run once by the Slot Manager at boot
 * ==================================================================
 * Entry: A0 = seBlock; byte 0 = slot number.  Brings the board out of
-* reset, senses the attached monitor, programs the pixel clock for it,
+* reset, senses the attached monitor, programs the clock synthesiser
+* ($0480'0000, reading) and the video timing for it,
 * and enables exactly the sResources that match the monitor + depth.
 *
 * A1/A4 = slot base F<s>00'0000 (super-slot space).  Card registers are
@@ -262,8 +263,9 @@ L2350:
   002380:  22 3c 00 02 40 9b    move.l   #$2409b, d1
   002386:  74 12                moveq    #$12, d2
   002388:  4e ba 04 f6          jsr      $2880(pc)  ; -> SerialShiftOutReg
-* Add the per-monitor pixel-clock timing (branch on monitor code D5:
-* 1/2/3/6 = specific monitors, else the default 640x480 timing).
+* Finish the clock-synthesiser stream with per-monitor bits (branch on
+* monitor code D5: code 3 shifts 1 (4 bits) and sets $0400'00A8 to -1;
+* codes 1/2/6 and all others shift 2 (4 bits); then 1 (2 bits) for all).
 L238c:
   00238c:  0c 05 00 02          cmpi.b   #$2, d5
   002390:  67 24                beq.b    $23b6  ; -> L23b6
@@ -416,7 +418,7 @@ L24f8:
   0024f8:  41 fa 06 6a          lea.l    $2b64(pc), a0
 L24fc:
   0024fc:  26 49                movea.l  a1, a3
-  0024fe:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; AC842 control port
+  0024fe:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; RAMDAC pixel mode (timing long 0)
   002504:  26 98                move.l   (a0)+, (a3)
   002506:  28 49                movea.l  a1, a4
   002508:  28 3c 04 00 00 80    move.l   #$4000080, d4  ; MFB reg +$80
@@ -459,7 +461,7 @@ L2576:
 L2580:
   002580:  51 ca ff fe          dbra     d2, $2580  ; -> L2580
   002584:  26 49                movea.l  a1, a3
-  002586:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
+  002586:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; timing registers 0-15 (each write latches $04C00000)
   00258c:  36 3c 00 0f          move.w   #$f, d3
   002590:  28 49                movea.l  a1, a4
   002592:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
@@ -632,7 +634,7 @@ L2790:
   00279c:  4e ba 00 e2          jsr      $2880(pc)  ; -> SerialShiftOutReg
   0027a0:  41 fa 03 c2          lea.l    $2b64(pc), a0
   0027a4:  26 49                movea.l  a1, a3
-  0027a6:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; AC842 control port
+  0027a6:  d7 fc 06 c0 00 08    adda.l   #$6c00008, a3  ; RAMDAC pixel mode (timing long 0)
   0027ac:  26 98                move.l   (a0)+, (a3)
   0027ae:  28 49                movea.l  a1, a4
   0027b0:  28 3c 04 00 00 80    move.l   #$4000080, d4  ; MFB reg +$80
@@ -662,7 +664,7 @@ L27fe:
 L2808:
   002808:  51 ca ff fe          dbra     d2, $2808  ; -> L2808
   00280c:  26 49                movea.l  a1, a3
-  00280e:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; MFB IRQ +$0 (IRQ reg base)
+  00280e:  d7 fc 04 40 00 00    adda.l   #$4400000, a3  ; timing registers 0-15 (each write latches $04C00000)
   002814:  36 3c 00 0f          move.w   #$f, d3
   002818:  28 49                movea.l  a1, a4
   00281a:  28 3c 04 c0 00 00    move.l   #$4c00000, d4  ; timing-bank serial data register
@@ -693,8 +695,9 @@ L2820:
   00287a:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   00287c:  60 00 fe 38          bra.w    $26b6  ; -> L26b6
 * SerialShiftOutReg  -  shift D1 (top D2 bits, MSB first) out to the
-* card register at (A4,D4).  Used to clock values into the pixel-clock
-* synthesiser / AC842 serial port.
+* card register at (A4,D4).  Used for the clock-synthesiser port
+* $0480'0000, the serial registers $0400'0000/$04/$08/$A0 and the timing
+* bank's data register $04C0'0000 (the RAMDAC is not written serially).
 SerialShiftOutReg:
   002880:  48 e7 62 00          movem.l  d1-d2/d6, -(a7)
   002884:  7c 20                moveq    #$20, d6
@@ -831,7 +834,7 @@ MonitorSRsrcPairs:
   002a2a:  ac bc                dc.w     $ACBC  ; monitor 7: sRsrc $AC (A) / $BC (B)
 BankAsRsrcList:
   002a2c:  a0 a1 a2 a3 a4 a6 a8 ac dc.b     $A0,$A1,$A2,$A3,$A4,$A6,$A8,$AC
-* per-monitor video-timing / pixel-clock coefficients (mode 3)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 3)
 TimingTable_2a34:
   002a34:  c0 00 00 00 00 00 00 00 00 00 00 f8 00 00 20 00 dc.l     $C0000000,$00000000,$000000F8,$00002000
   002a44:  00 00 00 20 00 00 00 0e 00 00 00 1b 00 00 00 20 dc.l     $00000020,$0000000E,$0000001B,$00000020
@@ -843,7 +846,7 @@ TimingTable_2a34:
   002aa4:  00 00 00 03 00 00 00 00 00 00 06 cc 00 00 00 4e dc.l     $00000003,$00000000,$000006CC,$0000004E
   002ab4:  00 00 00 06 00 00 00 06 00 00 00 00 00 00 01 6c dc.l     $00000006,$00000006,$00000000,$0000016C
   002ac4:  00 00 00 02 03 65 00 3f dc.l     $00000002,$0365003F
-* per-monitor video-timing / pixel-clock coefficients (mode 1)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 1)
 TimingTable_2acc:
   002acc:  c0 00 00 00 00 00 00 00 00 00 00 f8 00 00 20 00 dc.l     $C0000000,$00000000,$000000F8,$00002000
   002adc:  00 00 00 10 00 00 00 0e 00 00 00 17 00 00 00 20 dc.l     $00000010,$0000000E,$00000017,$00000020
@@ -855,7 +858,7 @@ TimingTable_2acc:
   002b3c:  00 00 00 03 00 00 00 00 00 00 06 cc 00 00 00 54 dc.l     $00000003,$00000000,$000006CC,$00000054
   002b4c:  00 00 00 06 00 00 00 06 00 00 00 00 00 00 00 d0 dc.l     $00000006,$00000006,$00000000,$000000D0
   002b5c:  00 00 00 02 03 65 00 1f dc.l     $00000002,$0365001F
-* per-monitor video-timing / pixel-clock coefficients (mode 6)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 6)
 TimingTable_2b64:
   002b64:  80 00 00 00 00 00 00 00 00 00 00 e0 00 00 20 00 dc.l     $80000000,$00000000,$000000E0,$00002000
   002b74:  00 00 00 10 00 00 00 0f 00 00 00 17 00 00 00 20 dc.l     $00000010,$0000000F,$00000017,$00000020
@@ -867,7 +870,7 @@ TimingTable_2b64:
   002bd4:  00 00 00 03 00 00 00 00 00 00 03 c0 00 00 00 4e dc.l     $00000003,$00000000,$000003C0,$0000004E
   002be4:  00 00 00 06 00 00 00 06 00 00 00 00 00 00 03 60 dc.l     $00000006,$00000006,$00000000,$00000360
   002bf4:  00 00 00 02 01 df 00 1f dc.l     $00000002,$01DF001F
-* per-monitor video-timing / pixel-clock coefficients
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs
 TimingTable_2bfc:
   002bfc:  80 00 00 00 00 00 00 00 00 00 00 e0 00 00 20 00 dc.l     $80000000,$00000000,$000000E0,$00002000
   002c0c:  00 00 00 08 00 00 00 0e 00 00 00 15 00 00 00 20 dc.l     $00000008,$0000000E,$00000015,$00000020
@@ -879,7 +882,7 @@ TimingTable_2bfc:
   002c6c:  00 00 00 03 00 00 00 00 00 00 03 00 00 00 00 26 dc.l     $00000003,$00000000,$00000300,$00000026
   002c7c:  00 00 00 06 00 00 00 02 00 00 00 00 00 00 02 60 dc.l     $00000006,$00000002,$00000000,$00000260
   002c8c:  00 00 00 02 01 7f 00 0f dc.l     $00000002,$017F000F
-* per-monitor video-timing / pixel-clock coefficients (modes 2,12)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (modes 2,12)
 TimingTable_2c94:
   002c94:  c1 00 00 00 00 00 00 01 00 00 00 f8 00 00 20 00 dc.l     $C1000000,$00000001,$000000F8,$00002000
   002ca4:  00 00 02 00 00 00 00 0c 00 00 00 11 00 00 00 22 dc.l     $00000200,$0000000C,$00000011,$00000022
@@ -891,7 +894,7 @@ TimingTable_2c94:
   002d04:  00 00 00 03 00 00 00 00 00 00 01 e1 00 00 00 20 dc.l     $00000003,$00000000,$000001E1,$00000020
   002d14:  00 00 00 06 00 00 00 06 00 00 00 6e 00 00 01 4a dc.l     $00000006,$00000006,$0000006E,$0000014A
   002d24:  00 00 00 02 01 df 00 ff dc.l     $00000002,$01DF00FF
-* per-monitor video-timing / pixel-clock coefficients (mode 4)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 4)
 TimingTable_2d2c:
   002d2c:  c1 00 00 00 00 00 00 01 00 00 00 f8 00 00 20 00 dc.l     $C1000000,$00000001,$000000F8,$00002000
   002d3c:  00 00 02 00 00 00 00 0c 00 00 00 11 00 00 00 22 dc.l     $00000200,$0000000C,$00000011,$00000022
@@ -903,7 +906,7 @@ TimingTable_2d2c:
   002d9c:  00 00 00 03 00 00 00 00 00 00 01 b1 00 00 00 50 dc.l     $00000003,$00000000,$000001B1,$00000050
   002dac:  00 00 00 06 00 00 00 06 00 00 00 6e 00 00 01 4a dc.l     $00000006,$00000006,$0000006E,$0000014A
   002dbc:  00 00 00 02 01 7f 00 ff dc.l     $00000002,$017F00FF
-* per-monitor video-timing / pixel-clock coefficients (mode 8)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 8)
 TimingTable_2dc4:
   002dc4:  c1 00 00 00 00 00 00 01 00 00 00 f8 00 00 20 00 dc.l     $C1000000,$00000001,$000000F8,$00002000
   002dd4:  00 00 02 00 00 00 00 0d 00 00 00 19 00 00 00 21 dc.l     $00000200,$0000000D,$00000019,$00000021
@@ -915,7 +918,7 @@ TimingTable_2dc4:
   002e34:  00 00 00 03 00 00 00 00 00 00 02 40 00 00 00 27 dc.l     $00000003,$00000000,$00000240,$00000027
   002e44:  00 00 00 05 00 00 00 05 00 00 00 5e 00 00 01 93 dc.l     $00000005,$00000005,$0000005E,$00000193
   002e54:  00 00 00 02 02 3f 00 ff dc.l     $00000002,$023F00FF
-* per-monitor video-timing / pixel-clock coefficients (mode 0)
+* per-monitor video timing table: RAMDAC mode, layout, MFB serial regs, 15 timing regs (mode 0)
 TimingTable_2e5c:
   002e5c:  c1 00 00 00 00 00 00 01 00 00 00 f8 00 00 20 00 dc.l     $C1000000,$00000001,$000000F8,$00002000
   002e6c:  00 00 02 00 00 00 00 0d 00 00 00 19 00 00 00 21 dc.l     $00000200,$0000000D,$00000019,$00000021

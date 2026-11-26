@@ -3095,9 +3095,9 @@ ClassifyTrapNum:
 * Init29K(unit handle, ACEF handle)  -- the cs2 engine ('GA_DrvrControl: Init29K
 * error' is logged when this fails).  Only card types $2C/$7E are initialised;
 * any other type returns noErr without touching the card.  Sequence:
-*   1. $1D8E(unit): writes 0 to hardware reg $04000028 ($1DDC writes -1 after
-*      the flags word; the card never reads it, so which value holds or releases
-*      the Am29000 is open).
+*   1. $1D8E(unit): writes 0 to hardware reg $04000028 = hold the Am29000
+*      (reading).  It stays held through cs2 and cs3; cs5's $1DDC writes the
+*      flags to image+$18 and then -1, which lets Boot start.
 *   2. SRAM test (128 KB at card offset 0, stride $1000, writes ~addr); needs
 *      >= 64 KB else last-error $FFFFD8EA.
 *   3. DRAM probe: TestRAMLong($0C000000), AliasCheck($0C000000/$0C100000)

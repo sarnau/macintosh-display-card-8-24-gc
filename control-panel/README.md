@@ -53,7 +53,7 @@ their bodies). There are two loaders, not one:
 
 * **`Init29K` (`$23CC`, DoControl cs2)** brings the card up from scratch.
   Only card types `$2C`/`$7E` (the GC) are touched. It writes 0 to hardware
-  register `$04000028`, pattern-tests the card's 128 KB SRAM, probes the DRAM
+  register `$04000028` (holds the Am29000 until cs5 writes -1), pattern-tests the card's 128 KB SRAM, probes the DRAM
   banks at `$0C000000`/`$0D000000` in 1 MB steps (top of RAM → unit `+$138`),
   then runs `ACEFLoad` on the **Runtime** ACEF. `ACEFLoad` special-cases the
   section named `PublicIn`: the out-parameter it returns (unit `+$130`) is

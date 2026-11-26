@@ -72,7 +72,7 @@ the top nibble), reached through service `$C0` (which returns `PublicIn`,
 
 | channel | direction | where | host side | card side |
 |---|---|---|---|---|
-| commands | host → card | `+$14` go, `+$1C` reply, `+$48` selector, `+$4C` sequence, `+$50` count, args after `+$44`; the `$80xx` arguments are read from `[packet+$54]` = `packet+$650` (set by `InitPacket`, `$32A0C`-`$32A18`) | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` in `main` `$31DAC` |
+| commands | host → card | `+$14` go, `+$18` completion, `+$1C` reply, `+$44` = `rec`: `+$48` selector, `+$4C` sequence, `+$50` count, `+$54` pointer to the argument longs (InitPacket sets it to `packet+$650`, `$32A0C`-`$32A18`; the host reads it back after command 1, `gc24.s` `$726E`-`$728E`, and copies every command's arguments there, `$5F26`/`$5F80`-`$6048`). `$15` (StretchBits) and the PQDInit command use fixed blocks at `+$58` and `+$604` instead | `EngineDispatch` (`gc24.s` `$49C4`) | dispatcher `sub_31e20`, main loop at `$31E0C` in `main` `$31DAC` |
 | requests | card → host | `+$24` mailbox: `+$04` code, `+$08` reply, `+$0C` sequence, `+$14` args | `sub_6442`, called from the idle routine and from `EngineDispatch`'s wait loops | `CallBack` `$33EBC` |
 | modules | host → card code | commands `$8001`-`$8004` and request 999 | `sub_1404` (gc24 entry #105) | `sub_37B58`, `sub_379A0` |
 
@@ -172,10 +172,11 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 
 | step | host (`DRVR.s`) | card |
 |---|---|---|
-| 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | runs from `Boot` ($2003000) |
+| 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | held: `$44000028` is 0 (section 11) |
 | 2 | waits until `PublicOu[0]` (image+$400) reads `$32100456` -- a constant of the *uploaded file* (it is the static first word of `PublicOu`), so it only proves the upload landed | - |
 | 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the top of DRAM (+$138), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
-| 4 | reads `image+$40C` (= `PublicOu+$0C`, `$4C007000` HifComm with the top nibble set by Boot) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
+| 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
+| 5 | cs3 uploads and links Antelope and fills `PublicIn+$04`/`$20`-`$2C`/`$40`; cs5 writes the flags to `image+$18` and then -1 to `$44000028` (`$1DDC`) | the Am29000 starts at `Boot`, whose poll passes at once (`$42005300` is already there) |
 
 `PublicIn+$18` is consumed exactly as `DRVR.s` publishes it: bit 11 (`$800`,
 "mailbox not enabled") gates the reports to the host from the HIF service
@@ -2452,9 +2453,10 @@ tests the status word: bit 2 set means a card request is waiting, and
 
 On the card the command arrives at the dispatcher's main loop, which sends
 `(cmd & $FF00) == $8000` to `sub_37B58(cmd, count, p)` and stores the
-result as the reply (`$31F7C`-`$31FE0`). `p` is `[packet+$54]`, which
-`InitPacket` sets to `packet+$650` (`$32A0C`-`$32A18`): the argument
-block. The nested wait (`sub_31e20(6, …)`) does not list `$80xx`, so
+result as the reply (`$31F7C`-`$31FE0`). `p` is `[packet+$54]` (`rec+$10`),
+the argument pointer every command uses: `InitPacket` sets it to
+`packet+$650` (`$32A0C`-`$32A18`; System 6: `packet+$64C`, sw11 `$2E5F0`),
+and the host copies the arguments there. The nested wait (`sub_31e20(6, …)`) does not list `$80xx`, so
 modules run only from the main loop.
 
 | command | card (`sub_37B58`, `.lit $1008`) | host user |
@@ -4035,7 +4037,9 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
 * For selectors below `$0C`, `$6224(cmd, args, n)` writes the packet
   directly (`$77D4`-`$795E`): `+$18` = 0, `+$48` = `cmd`, `+$4C` = the
   sequence number (`+$20` of the unit, incremented), `+$50` = `n`, the
-  arguments from `+$58` on, and `+$14` = -1. It waits until bit 0 or 1 of
+  arguments copied to the area whose address the card publishes at `+$54`
+  (System 6 Antelope: `packet+$64C`; this host's exact store is not yet
+  re-checked), and `+$14` = -1. It waits until bit 0 or 1 of
   the status long (`[unit+$10]`) is set. Then it returns packet `+$1C`
   (`$7A60`). A timeout returns 0 and sets bit 1 of unit `+$1C`
   (`$7A96`). The host never writes `+$1C` itself.
@@ -4099,7 +4103,7 @@ Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 | `$44000008` | serial, 16 | PrimaryInit `$20BC`-`$20D8` (4 × 4 bits of `$A`, i.e. `$AAAA`), at reset only | - | unknown (*reading*: a reset/unlock pattern) |
 | `$4400000C`, `$10`, `$14`, `$18` | bit 31 | Boot writes each value back | Boot `$2003010` loop (4 iterations, bit inverted) | **NuBus slot ID** (est.). Boot builds the 4-bit slot `s` and stores `gr66 = s << 28` at PublicOut+`$2C`. That value is the top nibble of the pointers PublicOut+`$0C`-`$18` and service `$C4`'s result, which IsOnThisCard `$13F54` uses as the slot |
 | `$4400001C`, `$20`, `$24` | bit 31 | PrimaryInit -1 (`$214C`-`$216E`); VideoDriver sets bit 31 after each mode change (`$60D4`-`$60F8`) | - | unknown, always set |
-| `$44000028` | flag | PrimaryInit 0 (`$2176`); DRVR `$1D8E` 0 (`$1DBA`: Init29K start and after the RAM tests, cs6, cs20), DRVR `$1DDC` -1 (`$1E28`, after the flags at image+`$18`; cs5) | - | host-only control. Its sense (0 = Am29000 held or released) is **open**: the "release" note at DRVR `$3083` does not follow from the code |
+| `$44000028` | flag | PrimaryInit 0 (`$2176`, at reset); DRVR `$1D8E` 0 (`$1DBA`; called from BuildUnitRecords `$1FF8`, Init29K start `$241A` and after the RAM tests `$25B8`, cs6 `$B76`, cs20 `$8EC`); DRVR `$1DDC` -1 (`$1E28`, right after it writes the flags to image+`$18`; cs5 `$B4E`) | - | **Am29000 run control** (*reading*, strong): 0 = CPU held, -1 = CPU runs. The host tests and overwrites all of card SRAM/DRAM and uploads Runtime and Antelope (cs2, cs3) while it is 0. Boot (`$2003000`) is part of that upload; it reads PublicIn+`$18` (`$2003050`) and the cs3 fields PublicIn+`$20`-`$2C` (`$2003090`) right after a poll that cs2's `$42005300` has already satisfied, so it can only start at cs5's -1. cs6 and cs20 stop it again. The card never accesses it |
 | `$4400002C`, `$30`, `$34` | flag | PrimaryInit 0 at reset; XtdSense (VideoDriver `$62F6`, PrimaryInit `$28B0`) and Boot `$20033C8`-`$2003548`: -1 to one line per round | - | **sense-line drive** for lines 0/1/2 (est.: each round drives one line and reads the other two) |
 | `$44000038`, `$3C`, `$40` | ? | PrimaryInit 0 (`$20FA`-`$2114`); Boot 0 before its probe (`$20033D4`-`$20033EC`; System 6 also zeroes `$34`-`$48`) | - | cleared before sensing (*reading*: sense-related) |
 | `$44000044`, `$48`, `$4C` | bit 31 | (System 6 Boot writes 0, without effect in the code) | VideoOpen `$532E`-`$5354`, XtdSense, PrimaryInit `$21DE`-`$2204`, Boot `$2003368`-`$20033B0`, DRVR BuildUnitRecords `$2004`-`$205E` | **monitor sense lines** 0/1/2 (est.). `$44` is the code's MSB. DRVR: code 7 with `d5` = 0 sets `+$15E` = `$FFFF` and skips the card |
