@@ -84,7 +84,7 @@ flicker filter optional:
 | 16" Color | 832×624 | 1-8, 16 | 1152 × 667 | 74.5 Hz |
 | 21" Color | 1152×870 | 1-8 | 1456 × 915 (as Two-Page) | 75 Hz |
 | 13", 12", 16", NTSC, PAL | as above | adds 16 bits ("thousands") | | |
-| NTSC, PAL without filter | as above | 1-8, 16, 32 | 780 × 525, 944 × 625 at the dot clock | 30 / 25 Hz frames |
+| NTSC, PAL without filter | as above | 1-8, 16, 32 (PAL 768×576: 1-8, 16) | 780 × 525, 944 × 625 at the dot clock | 30 / 25 Hz frames |
 
 The refresh rates follow from the totals and the pixel clocks the ROM
 programs. The pixel clock comes from a National DP8531 synthesiser (20 MHz
