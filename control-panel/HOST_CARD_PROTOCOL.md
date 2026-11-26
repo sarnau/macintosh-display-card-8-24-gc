@@ -4346,8 +4346,14 @@ through one wrapper: control panel `$1D30`/`$1D68`, INIT `$A54`/`$A8C`,
 **The System 6 start-up.** The System 6 package starts the card the same
 way as System 7, minus two pieces: it has no DSInit, so a second GC is not
 reconciled as a plain display card, and nothing in the package runs `gc24`
-32, which System 7's Boot3 (`Load8Dot24GC`) loads from the file named by
-STR -16454 (what runs it under System 6 is not known). `gc24` 32 does the
+32: under System 7, Boot3's `Load8Dot24GC` loads it from the file named by
+STR -16454; under System 6.0.7 and 6.0.8 the System file's start-up patches
+do the same (PTCH 376 for the Mac II ROM, PTCH 1660 for the IIci-class ROM:
+`_GetString(-16454)`, `_OpenResFile` on that name in the System Folder,
+`_Get1Resource('gc24', 32)`, `jsr` into it, `_CloseResFile`; both System
+files carry STR -16454 "8•24 GC"). Unlike Boot3 they look only in that
+file and test no ROM version, being installed only for the two Color
+QuickDraw ROMs. `gc24` 32 does the
 whole bring-up in both releases: it installs CODE -4048 as the Gestalt
 `'gc24'` function, installs `DRVR` -4048 in the first free unit from 48 up
 (`_DrvrInstall`, `$17C`) and opens it (`$1CC`), whose DoOpen calls
