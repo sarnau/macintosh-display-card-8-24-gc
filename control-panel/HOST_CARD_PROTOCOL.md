@@ -45,10 +45,10 @@ video cards.
 | the cursor | "The cursor: a lock shared by host and card" |
 | the drawing stream, text and fonts, the host-object cache | "DrawMultiObject: the batched drawing stream" |
 | the encryption of the firmware (solved) | section 6, "Antelope: the encryption (solved)" and "`.lit` and `.data`, exact" |
-| the kernel's services | section 8 |
-| the `PupS` resource, Control calls 17-19, the feature flags | section 9 |
-| the System 6 package and its Antelope | section 10 |
-| the card's I/O registers, the RAMDAC, the DP8531 clock, the video modes, where everything sits in memory | section 11 (11.5 RAMDAC, 11.8 video modes, 11.9 memory map) |
+| the kernel's services | section 7 |
+| the `PupS` resource, Control calls 17-19, the feature flags | section 8 |
+| the System 6 package and its Antelope | section 9 |
+| the card's I/O registers, the RAMDAC, the DP8531 clock, the video modes, where everything sits in memory | section 10 (10.5 RAMDAC, 10.8 video modes, 10.9 memory map) |
 | bugs and slips found in the shipping software | the top-level `README.md` |
 
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
@@ -153,7 +153,7 @@ running XOR key per section, see section 6); service `$C0` (returns
 `PublicIn`, `$4C006400`; `InitPacket` adds `$418` to reach the packet
 pointer); the pattern fills `$04110` and `$1C8A8` (called directly from
 BitBlt `$02B3C` and RgnBlt `$1B090`); and the kernel services, whose table
-(section 8) is exact. The ones that were unknown, read in `Hand.asm`:
+(section 7) is exact. The ones that were unknown, read in `Hand.asm`:
 `$BB` returns the flags word `gr64` (`$2001A58`); `$D1` returns
 `PublicOu+$04`, the version `$00700D01` with bits 24-26 filled in by kernel
 init from the board code at `$44000094/98/9C` (bit 31 each) and bits 28-31
@@ -170,24 +170,24 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 
 **Still open:**
 - how the Am29000 gets from reset (address 0, ROM space) to `Boot` at `$2003000`: no code does it, so the hardware must (section 1);
-- the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (11.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded;
+- the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (10.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded;
 - who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`); the best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, not confirmed (DrawMultiObject, "Open points");
-- the kernel's debug switches (flag bits 1, 3, 10, 30, 31; section 9) are traced, but who would write their watch window `$4C0067D8`/`$67DC` and escape address in gr121 is not known;
-- bit 31 of the RAMDAC's pixel bus control byte, always set (11.8), and whether the host's slot offsets 0 (the RAM test) and `$02000000` (the kernel) are the same SRAM (section 1).
+- the kernel's debug switches (flag bits 1, 3, 10, 30, 31; section 8) are traced, but who would write their watch window `$4C0067D8`/`$67DC` and escape address in gr121 is not known;
+- bit 31 of the RAMDAC's pixel bus control byte, always set (10.8), and whether the host's slot offsets 0 (the RAM test) and `$02000000` (the kernel) are the same SRAM (section 1).
 
 **Settled, for orientation:** the System 6 Antelope is exact too (section
 10): 620 of its 769 functions are identical to System 7's; it has
 placeholders for the 16-bit arithmetic modes and an Apple Video (`'rpza'`)
 codec behind commands `$39`-`$3B`, with a QuickTime codec component on the
-host (`gc24_sw11.s` `$9510`). The pixel clock is a DP8531 (11.8); the RAMDAC
-is a Brooktree "RAMDAC 428" on data bits 31-24 (11.5); `$44000028` is the
-Am29000's run control (11.1).
+host (`gc24_sw11.s` `$9510`). The pixel clock is a DP8531 (10.8); the RAMDAC
+is a Brooktree "RAMDAC 428" on data bits 31-24 (10.5); `$44000028` is the
+Am29000's run control (10.1).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
 | step | host (`DRVR.s`) | card |
 |---|---|---|
-| 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | held: `$44000028` is 0 (section 11) |
+| 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | held: `$44000028` is 0 (section 10) |
 | 2 | waits until `PublicOu[0]` (image+$400) reads `$32100456` -- a constant of the *uploaded file* (it is the static first word of `PublicOu`), so it only proves the upload landed | - |
 | 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the last byte of card RAM (+$138: `$0C1FFFFF`, the top of VRAM, without SIMMs; else the top of DRAM), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` (+$134 here is the Runtime's reservation from the same ACEFLoad; Antelope reads it as heapMax) | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
 | 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337'), all only when feature flag `$800` is clear, which it is not by default (section 4) | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
@@ -227,7 +227,7 @@ DRAM top is above `$0D000000`) selects the heap-limit computation of service
 `$C1` (`$20012AC`, free heap = `[PublicIn+$08] - $1000 - break` instead of
 `gr127 - $3000 - break`), which uses `PublicIn+$08` as the end of memory
 (**verified**); the other bits are listed in
-section 9, "The flags word on the card".
+section 8, "The flags word on the card".
 
 Kernel init (`$20020D0`) also stores the signature `$57593160` ('WY1`') at
 `VidComm+$18` (`$4C007318`). `Boot` only reads it (`$2003560`): with the
@@ -1929,7 +1929,7 @@ the pattern, width-table and font entries the stream still holds.
        after a fault with status bit 2 (`$20004A4`-`$200053C`), and the timer
        rewrites the master copy every 65536 ticks (`$20009CC`-`$20009E4`).
        Bits 0-4 are read as bus status and bits 12-15 as the board revision
-       (section 11.4). The host's command `$14` (`$D5(p[0])`, sent from the
+       (section 10.4). The host's command `$14` (`$D5(p[0])`, sent from the
        InitGDevice patch) can drop a slot as well.
 
        `.data+$280`, read by every caller of the fills (`$03838`, `$03A28`,
@@ -1949,7 +1949,7 @@ the pattern, width-table and font entries the stream still holds.
        `SetFeatureFlags` (`DRVR.s` `$2AD2`) when the unit's config word
        `+$128` has bit `$40`. The config word comes from Control call 17
        (cs50 is the same plus `$100`, "mailbox allowed"). Whether the host
-       sets `$200` is described in section 9: it does, by default. So the
+       sets `$200` is described in section 8: it does, by default. So the
        host-memory `storem` path is **on by default**, provided the top
        nibble of `PublicOu+$04` (`$D1`) is not 0.
 
@@ -2608,7 +2608,7 @@ three arguments on to `sub_1404` (`$6C70`). DoOpen clears
 handle (`sub_6442` `$6594`: `sub_1404(999, p, globals+$AA0)`), so the
 module state is the one at `globals+$AA0`. No caller of Control or Status
 54 is in this repo. (Under System 6, slot `$A84` holds the codec entry
-instead; see section 10.)
+instead; see section 9.)
 
 `sub_1404(sel, params, &h)` (C calling convention) creates `h` on first
 use (`NewHandle,SYS,CLEAR($7A)`), locks it for the call, stores the result
@@ -3080,7 +3080,7 @@ returns the comm header at `$4C006400` (`PublicIn`; handler `Hand`
 | `+$1C` | `$00010000` | (Boot overwrites it) |
 
 Boot replaces the top nibble of the four pointers with the slot number it
-reads from `$4400000C`-`$18` (see `Boot.asm`, section 11.1). `PublicOut` also holds, at `+$510`, the
+reads from `$4400000C`-`$18` (see `Boot.asm`, section 10.1). `PublicOut` also holds, at `+$510`, the
 text "(c) 1989 Apple Computer, Inc. All Rights Reserved", then the credits
 "Special Projects Group - SEG", "Hardware: Tony Masterson, Rob Pugh, Dean
 Drako", "Software: Jean-Charles Mourey, Mark Krueger, Rekha Sh…", cut off by
@@ -3101,7 +3101,7 @@ host's packet is at offset `$s08C00` of the slot space, card memory
 neither host program writes into `InpArgs` (`$4C007800`, which only the
 kernel's getargs uses).
 
-## 8. The kernel's service table (vector 66)
+## 7. The kernel's service table (vector 66)
 
 `Hand`'s service dispatcher (`$20011E8`) takes the service number in `gr121`,
 subtracts `$B6` and jumps through the word table at `$4C002500` (up to `$D6`
@@ -3139,7 +3139,7 @@ getargs = `$4C007800`, `$111` clock, `$112` cycles, `$121` set `gr92`/`gr93`).
 | `$D3` | `$2001820` | host access mode: stores `lr2` at `$4C006848`, switches OPS.PD (physical data addressing), returns the old mode | `$390B4`; `TestMMU`, `CopyHostMemory`, `MapVirtual`, the dispatcher |
 | `$D4` | `$2001808` | translates `lr2` through the table walker `$2001C2C`: physical address in `gr96`, length in `gr122` (the stub stores it to `*lr3`) | `$39050`, `$39064`; `TestMMU`, `CopyHostMemory` |
 | `$D5` | `$2001260` | slot burst mask: `lr2 < 0` returns it, else clears bit `lr2` of `[$4C00643C]` and writes the mask to `$46000000` | `$39104`; command `$14` |
-| `$D6` | `$2001888` | clears flags bit 8, sets OPS.TU (trap unaligned accesses, which vector 1 then emulates) and writes 0 to `$4400005C`: the reverse of what kernel init does when bit 8 is set (see section 9, the flags word) | `$390C4` |
+| `$D6` | `$2001888` | clears flags bit 8, sets OPS.TU (trap unaligned accesses, which vector 1 then emulates) and writes 0 to `$4400005C`: the reverse of what kernel init does when bit 8 is set (see section 8, the flags word) | `$390C4` |
 
 The self-test's use of them agrees with the handlers: `TestMMU` reports
 "mapmem failed" after `$CC`, "mmu error" after `$CD`, "get phys size" and
@@ -3186,7 +3186,7 @@ $F0000000`, which is `$F0800000` in both cases: slot 0's NuBus space.
 Mode 2 returns the (dereferenced) source instead of the buffer. The
 callers are the dispatcher's case blocks `$14318`-`$14EF0`.
 
-## 9. Configuration: `PupS` and Control calls 17-19
+## 8. Configuration: `PupS` and Control calls 17-19
 
 The control panel and `gc24` resource 32 configure the driver from the
 `PupS` resource. The config word becomes the feature flags in
@@ -3316,7 +3316,7 @@ address of dispatch #87, `_GetCTSeed`, not through the unit field).
 | 7 | `$6DFE` | `StoreCtxWord_AA6`: trap not in the patch table at `globals+$278` | yes |
 | 9 | `$734E` | no room for the DrawMultiObject record buffer (`sub_73C4` on the packet's free list at `+$10` = packet+`$6D0`); it retries with `$C8` less until the size is exactly 0, and from the default `$1000` (`DRVR` `$13A`) it wraps past 0, so in practice it spins instead of giving up | yes |
 
-## 10. The System 6 package ("8•24 GC SW 1.1")
+## 9. The System 6 package ("8•24 GC SW 1.1")
 
 The System 6 package has the same resource set as the System 7 one,
 with its own `ACEF` 100 (357,228 bytes against 330,316), `ACEF` 1,
@@ -4102,7 +4102,7 @@ come before the decoder's `MapVirtual` calls in any case. With translation off
 (`$D3(0)`) the address is physical anyway. Below `$4C000000`/`$Fs000000`, the
 card's data addresses are NuBus addresses: `CopyHostMemory` reads a host block
 with plain loads at its host address, masked with `$00FFFFFF` in 24-bit mode
-(section 8). So card address `$00000178` is the Mac's address `$178`, read
+(section 7). So card address `$00000178` is the Mac's address `$178`, read
 over NuBus.
 
 **`$178` is `KeyMap+4`.** `SysEqu.a`: `KeyMap EQU $174` ("bitmap of the
@@ -4379,7 +4379,7 @@ releases the host early in StretchBits exactly as System 7's:
 `ReleaseHostEarly` is `$2E69C` (identical code), called from StretchBits
 `sub_28C14` at `$296A4` and `$29BBC`.
 
-## 11. The card's registers
+## 10. The card's registers
 
 This map lists every access to a non-memory card address on both sides.
 Sources: `Boot.asm` and `Hand.asm` (kernel), `text.asm` (Antelope), the same
@@ -4389,7 +4389,7 @@ card-side accesses were found by tracking `const`/`consth` pairs (and
 `add` steps in loops) up to each `load`/`store`. The host side was found
 from the immediate offsets added to the slot base. System 6 touches the
 same registers in the same places. The one difference is in Boot's sense
-probe (section 10).
+probe (section 9).
 
 **Addresses.** Card address = host super-slot offset + `$40000000`. The
 host reaches card `$4xxxxxxx` at `$s0xxxxxx` (`s` = slot). Four pairs
@@ -4413,7 +4413,7 @@ Am29000 address and "host" the offset from the slot base.
 Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 *reading* = what the code suggests.
 
-### 11.1 `$44000000`-`$440000C8` (host `$04000000`-`$040000C8`)
+### 10.1 `$44000000`-`$440000C8` (host `$04000000`-`$040000C8`)
 
 | card | bits | written by | read by | meaning |
 |---|---|---|---|---|
@@ -4450,7 +4450,7 @@ Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 
 No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 
-### 11.2 Timing generator: `$44400000`, `$44C00000` (host `$04400000`, `$04C00000`)
+### 10.2 Timing generator: `$44400000`, `$44C00000` (host `$04400000`, `$04C00000`)
 
 | card | written by | read by | meaning |
 |---|---|---|---|
@@ -4460,14 +4460,14 @@ No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 | `$44400048` | PrimaryInit `$25B6`/`$283E`; VideoDriver's VBL task `$62E2` (`clr.l (a1)`; `a1` = the queue element's `sqParm`, set to base + `$04400048` at `$5A3E`) | - | **acknowledges the host's VBL slot interrupt** (est.) |
 | `$444001C0` / `$444000C0` | - | host WaitForVBlank `$5D6A`-`$5D8C` (`$1C0`, then 10 read/write-backs of `$44C00000`); unused copy PrimaryInit `$299C`; Antelope `$000C4`/`$000F4` (`$0C0`, then 7 read/write-backs; no callers) | the read loads a status into the shift register. The tested bit is bit 31 of the **last `$44C00000` read**, not of this read. The host waits set → clear → set (vertical blank, *reading*) |
 
-### 11.3 Other host-only ports
+### 10.3 Other host-only ports
 
 | card | host | written by | meaning |
 |---|---|---|---|
-| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | a serial port, MSB first, one bit per write from data bit 31 (SerialShiftOutReg `$2880`), the same one-bit-on-D31 scheme as the MFB registers (`$44000008`, `$440000A0`) and the timing generator (`$44C00000`). Not the DP8531 (11.8), not a Xilinx configuration (no `11111111 0010` preamble; 137 bits against XC2000/3000's 12,000+), and no other part on the board can take it. *Reading*: a 137-bit configuration chain inside a custom chip, most likely the MFB (marked "©88 Apple MFB", Toshiba 343S0031-A). The first 100 bits are 25 cells of `1` plus a 3-bit count, then two similar words (`$053`, `$2405B`), a 4-bit field (1 Two-Page, 2 otherwise) and `01`. Board revision 1 adds 1 to two 3-bit cells and to bits 7-6 of both words, which suggests memory/VRAM timing counts. Nothing in the original 8•24's JMFB code is serial like this. The VideoDriver never writes it |
-| `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | **the DP8531 clock synthesiser** (National; U016 on the board, 20.000 MHz reference): 16 writes, each `register << 4 | nibble` in bits 7-0 (that is why the values rise from `$0C` to `$F0`), then a `$D00`-loop settle delay. See 11.8 |
+| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | a serial port, MSB first, one bit per write from data bit 31 (SerialShiftOutReg `$2880`), the same one-bit-on-D31 scheme as the MFB registers (`$44000008`, `$440000A0`) and the timing generator (`$44C00000`). Not the DP8531 (10.8), not a Xilinx configuration (no `11111111 0010` preamble; 137 bits against XC2000/3000's 12,000+), and no other part on the board can take it. *Reading*: a 137-bit configuration chain inside a custom chip, most likely the MFB (marked "©88 Apple MFB", Toshiba 343S0031-A). The first 100 bits are 25 cells of `1` plus a 3-bit count, then two similar words (`$053`, `$2405B`), a 4-bit field (1 Two-Page, 2 otherwise) and `01`. Board revision 1 adds 1 to two 3-bit cells and to bits 7-6 of both words, which suggests memory/VRAM timing counts. Nothing in the original 8•24's JMFB code is serial like this. The VideoDriver never writes it |
+| `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | **the DP8531 clock synthesiser** (National; U016 on the board, 20.000 MHz reference): 16 writes, each `register << 4 | nibble` in bits 7-0 (that is why the values rise from `$0C` to `$F0`), then a `$D00`-loop settle delay. See 10.8 |
 
-### 11.4 `$46000000` (host `$06000000`): bus status, revision, slot burst mask
+### 10.4 `$46000000` (host `$06000000`): bus status, revision, slot burst mask
 
 | bits | access | evidence | meaning |
 |---|---|---|---|
@@ -4477,7 +4477,7 @@ No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 | 12-15 | read | kernel init `$20021E0` → PublicOu+`$04` bits 28-31, flags bit 29 if ≥ 1; PrimaryInit `$2302`/`$2706` (= 1 picks the second clock set); DRVR ProbeCard `$220A`/`$2228` (0 → generation 3, 1 → 4) | **board revision** (est., three readers agree) |
 | 16-31 | write | `[$4C00643C] << 16`: kernel init `$200260C`, `$D5` `$200128C`, the timer every 65536 ticks `$20009E4` (restores the slots that vector 7 dropped); vector 7 read-modify-write `$200053C` | **per-slot burst enable** (est.). The master copy is PublicIn+`$3C`, `$0000FFFF` at load (RuntimeData) |
 
-### 11.5 RAMDAC `$46C00000`-`$46C00008` (host `$06C00000`-`$06C00008`)
+### 10.5 RAMDAC `$46C00000`-`$46C00008` (host `$06C00000`-`$06C00008`)
 
 | card | written by | read by | meaning |
 |---|---|---|---|
@@ -4508,14 +4508,14 @@ is then a per-channel gamma lookup. In indexed modes a new gamma table
 takes effect at the next SetEntries. The default gamma (`$5852`) is the
 identity (entry k = k).
 
-### 11.6 Block-write colour registers `$4CC00000`, `$4CC00004` (host `$0CC00000`, `$0CC00004`)
+### 10.6 Block-write colour registers `$4CC00000`, `$4CC00004` (host `$0CC00000`, `$0CC00004`)
 
 Only Antelope accesses these: FillLongs `$170F4`/`$17100` and Fill2Longs
 `$1737C`/`$17388`. The fill stores go to the bit-22 alias of the frame
 buffer (`dst | $00400000`), and only in the linear layout. See "the
 rectangle case". No host code addresses this range.
 
-### 11.7 Order of the host's mode programming (VideoDriver `sub_5FD4`, after WaitForVBlank)
+### 10.7 Order of the host's mode programming (VideoDriver `sub_5FD4`, after WaitForVBlank)
 
 1. `$46C00008` ← long 0.
 2. `+$80` bit 31 (linear, from GFlags).
@@ -4529,7 +4529,7 @@ rectangle case". No host code addresses this range.
 JMFBSetDepth runs this between `control ← 3` / doorbell and the final
 `VidComm+$04 ← -1`.
 
-### 11.8 The video modes (declaration ROM `341-0812.bin`, file offset = ROM address)
+### 10.8 The video modes (declaration ROM `341-0812.bin`, file offset = ROM address)
 
 Each mode table pointer (`a0`, chosen in VideoOpen `$53AE`-`$545E`) has a
 22-byte header in front of it: pages−1 for 24- and 32-bit addressing
@@ -4648,10 +4648,10 @@ filter that *develop* issue 3 describes (pp. 335-336; *inferred*).
 The 137-bit stream PrimaryInit shifts into `$44800000` (`$22CE`-`$2406`,
 `$26D4`-`$279C`; by board revision `$9ACC`/`$9BCC`, `$88ACAC`/`$88ACBC`,
 `$053`/`$093`, `$2405B`/`$2409B`, then 4 bits that are 1 on Two-Page and 2
-otherwise, then 2 bits = 1) is not the clock; see 11.3 (most likely an
+otherwise, then 2 bits = 1) is not the clock; see 10.3 (most likely an
 MFB configuration chain).
 
-### 11.9 Where everything goes: a stock card and with SIMMs
+### 10.9 Where everything goes: a stock card and with SIMMs
 
 Offsets in the slot's memory (the host sees `$sCxxxxxx`, the card
 `$4Cxxxxxx`). The boundaries are computed as follows:
@@ -4716,16 +4716,16 @@ and where it is argued.
 | a "second mask" on top of the XOR layer, with per-section tables or keystreams | one running 32-bit key per section, removed by DRVR's `ACEFLoad` | section 6, `SECOND_MASK.md` |
 | 103 named Antelope functions, many estimated | all 709 functions named from exact code | `antelope_names.py` |
 | the card can reply 2 | only `EngineDispatch` returns 2 (recording a picture, region or polygon) | Overview |
-| arguments "after `+$44`" or "from `+$58`" | every command's arguments through the pointer at `packet+$54` (`packet+$650`); only `$15` and PQDInit use fixed blocks | Overview, section 10 |
+| arguments "after `+$44`" or "from `+$58`" | every command's arguments through the pointer at `packet+$54` (`packet+$650`); only `$15` and PQDInit use fixed blocks | Overview, section 9 |
 | the host can overwrite a command the card still runs | the next command waits in `sub_624A` for status bit 1, the completion | "Early release", "When the host waits for the card" |
-| `$C6` programs the pixel clock | `$C6` sets the display start and row stride, and nothing calls it | sections 8, 11.1 |
-| `$44000028`: sense open | the Am29000's run control (most likely *RESET): 0 held, -1 runs at cs5 | sections 1, 11.1 |
-| `$44800000` is the clock synthesiser; `$46800000` a TV filter curve | `$46800000` is the DP8531 clock synthesiser; `$44800000` most likely an MFB configuration chain | 11.3, 11.8 |
-| the RAMDAC's byte lanes differ between host and card | both use data bits 31-24; a Bt "RAMDAC 428" | 11.5 |
-| Antelope loaded "into card DRAM" | into the top of card RAM, the VRAM on a stock card (no DRAM fitted) | 11.9 |
+| `$C6` programs the pixel clock | `$C6` sets the display start and row stride, and nothing calls it | sections 7, 10.1 |
+| `$44000028`: sense open | the Am29000's run control (most likely *RESET): 0 held, -1 runs at cs5 | sections 1, 10.1 |
+| `$44800000` is the clock synthesiser; `$46800000` a TV filter curve | `$46800000` is the DP8531 clock synthesiser; `$44800000` most likely an MFB configuration chain | 10.3, 10.8 |
+| the RAMDAC's byte lanes differ between host and card | both use data bits 31-24; a Bt "RAMDAC 428" | 10.5 |
+| Antelope loaded "into card DRAM" | into the top of card RAM, the VRAM on a stock card (no DRAM fitted) | 10.9 |
 | the boot mailbox is armed at bring-up and answered by the host | armed only when flag `$800` is clear, which it is not by default; no host code reads a report | section 4 |
 | Boot starts when the host pokes `$42005300` | Boot starts when cs5 releases the CPU; the go-ahead is already there | section 1 |
 | the `$12E38` text loop is a shadow or outline smear | DrawText.a's underline (`UL1`/`UL2`) | DrawMultiObject, text |
 | a "32×32 multiply" at `$00CC4` | FixMul | "The entry table, named" |
-| flag bits 1, 3, 10, 30, 31 "read in outline" | kernel debug switches nothing sets | section 9 |
-| give-up reasons 4, 6, 9 open | settled; 6 is dead code, 9 spins | section 9 |
+| flag bits 1, 3, 10, 30, 31 "read in outline" | kernel debug switches nothing sets | section 8 |
+| give-up reasons 4, 6, 9 open | settled; 6 is dead code, 9 spins | section 8 |

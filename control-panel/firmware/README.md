@@ -444,4 +444,4 @@ The differences:
 ## What is open
 
 * Flag bits 1, 3, 10, 30 and 31 are kernel debug switches that nothing
-  sets (`../HOST_CARD_PROTOCOL.md` section 9, "The flags word on the card").
+  sets (`../HOST_CARD_PROTOCOL.md` section 8, "The flags word on the card").

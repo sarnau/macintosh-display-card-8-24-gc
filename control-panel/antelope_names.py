@@ -255,7 +255,7 @@ NAMES = {
     0x36C3C: 'NullTest6', 0x36A38: 'ForeignCallCheck',
     0x3B018: 'NullHook2Minus1', 0x3B154: 'StreamPrepareHook', 0x3B160: 'NullHook1Zero',
     0x3B2E8: 'FtellHook', 0x3B2F4: 'FseekHook',
-    # the kernel/HIF service stubs (file 30), by HOST_CARD_PROTOCOL.md section 8
+    # the kernel/HIF service stubs (file 30), by HOST_CARD_PROTOCOL.md section 7
     0x38F24: 'svc_C1_FreeMemory', 0x38F34: 'svc_C4_GetCardNibble', 0x38F44: 'svc_BB_GetHostFlags',
     0x38F54: 'svc_C5_WaitVideoInterrupt', 0x38F64: 'svc_D2_RestartIfRequested',
     0x38F74: 'svc_C6_SetDisplayStart', 0x38F84: 'svc_C7_WriteRAMDAC', 0x38F94: 'svc_C8_ReadCLUTEntry',
@@ -345,7 +345,7 @@ BANNERS = {
         'The storem burst fills and copies.'),
     'svc_C1_FreeMemory': (None,
         'The kernel and HIF service stubs (const gr121, N; asneq V_SYSCALL),',
-        'HOST_CARD_PROTOCOL.md section 8.'),
+        'HOST_CARD_PROTOCOL.md section 7.'),
     'doprnt_fwrite': ('AMD\'S C LIBRARY',
         'stdio, printf, string conversion, ctype, signals, the HIF system-call stubs,',
         'memchr/memcpy/memset and the multiply/divide millicode (from here to the end).'),

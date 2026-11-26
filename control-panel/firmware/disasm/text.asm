@@ -65149,7 +65149,7 @@ L_38ed8:
   38f20:  91949403  and      lr20, lr20, $03   ; [delay slot]
 
 *  The kernel and HIF service stubs (const gr121, N; asneq V_SYSCALL),
-*  HOST_CARD_PROTOCOL.md section 8.
+*  HOST_CARD_PROTOCOL.md section 7.
 file_30:   ; object file 30 (asm): .text starts here
 sub_38f24:   ; svc_C1_FreeMemory
   38f24:  030079c1  const    gr121, $00c1

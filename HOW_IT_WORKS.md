@@ -56,7 +56,7 @@ the monitor's deepest mode), then the heap for the caches and offscreens
 (about 420 KB with a 13" monitor, 650 KB with Two-Page, 180 KB with PAL),
 a 64 KB stack and, at the top, Antelope's 270 KB of code and data. SIMMs
 move Antelope to the top of the DRAM and give the heap the rest
-(`control-panel/HOST_CARD_PROTOCOL.md` 11.9).
+(`control-panel/HOST_CARD_PROTOCOL.md` 10.9).
 
 ## Video modes
 

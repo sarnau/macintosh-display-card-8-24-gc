@@ -13,7 +13,7 @@ in the code.
 | how the drawing stream is played | `text.asm`, `DrawMultiObject` (`$0AD18`), and the "DrawMultiObject" chapter of `control-panel/HOST_CARD_PROTOCOL.md` |
 | how the card is started | `control-panel/DRVR.s` (`Init29K` `$23CC`, `ACEFLoad`), then `control-panel/firmware/disasm/Boot.asm` and `Hand.asm` |
 | what a kernel service does | `control-panel/firmware/disasm/RuntimeData.asm` (the service table), then `Hand.asm` |
-| how a video mode is set | `extracted-source/VideoDriver.s` (`JMFBSetDepth`, `sub_5fd4`) and section 11 of the protocol doc |
+| how a video mode is set | `extracted-source/VideoDriver.s` (`JMFBSetDepth`, `sub_5fd4`) and section 10 of the protocol doc |
 | System 6 | `control-panel/gc24_sw11.s`, `control-panel/firmware/sw11/` |
 
 The protocol document's "Where to read what" table points into its own

@@ -20,7 +20,7 @@ Two worlds — 68k host code and Am29000 coprocessor code:
 | `CODE` -4048 | 548 B | 68k | cdev main-segment stub |
 | **`ACEF` 100** | **322 K** | **Am29000** | the main **"QuickDraw GC" accelerator firmware** |
 | `ACEF` 1 | 18 K | Am29000 | the **Runtime** kernel (`Boot` + `Hand`), loaded first by `Init29K` |
-| `mntr` `card` `gc70` `Gama` `PupS` | small | data | monitor/card tables, gamma; `PupS` is the accelerator's on/off flag and the config words sent with Control 17/18 (`HOST_CARD_PROTOCOL.md` section 9) |
+| `mntr` `card` `gc70` `Gama` `PupS` | small | data | monitor/card tables, gamma; `PupS` is the accelerator's on/off flag and the config words sent with Control 17/18 (`HOST_CARD_PROTOCOL.md` section 8) |
 | `cicn` `icl8` `ICN#` `STR#` `DITL` … | — | data | icons, strings, dialog items |
 
 The `ACEF` blobs carry a plaintext "© Copyright Apple Computer, 1990" header

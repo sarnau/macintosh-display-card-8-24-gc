@@ -87,7 +87,7 @@
 *                    +44/+48/+4C, slot ID +0C..+18, board ID +94/+98/+9C,
 *                    interrupt acks +50/+54/+58, status +64/+68/+70, +7C/+80)
 *    $46000000       bus status, board revision and slot burst mask (see
-*                    ../../HOST_CARD_PROTOCOL.md 11.4);  $40003400 register spill area
+*                    ../../HOST_CARD_PROTOCOL.md 10.4);  $40003400 register spill area
 *
 *  HOST-WRITTEN FIELDS OF PublicIn ($4C006400), cross-checked with DRVR.s
 *  (see ../../HOST_CARD_PROTOCOL.md):
@@ -1456,7 +1456,7 @@ L_20011b0:
 *  VECTOR 66 -- SERVICE CALL.  gr121 = service number; numbers $B6 ..
 *  $D6 index the jump table at $4C002500, which is the PrivNZ section: 33
 *  handler addresses ($B6..$D6), listed exactly in RuntimeData.asm and in
-*  ../../HOST_CARD_PROTOCOL.md section 8; anything else returns
+*  ../../HOST_CARD_PROTOCOL.md section 7; anything else returns
 *  gr96 = $FFFFFFD6 (-42), gr121 = 0.
 *  Arguments in lr2/lr3, result in gr96.  Service stubs that follow:
 *    (stub roles below are from reading the code at each address)

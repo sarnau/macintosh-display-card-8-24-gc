@@ -67,7 +67,7 @@
 *          else its first long nonzero -> Control $0D (13, EnableAccel),
 *          zero -> Control $0E (14, DisableAccel)
 *          (that long is the accelerator on/off setting, PupS +$0;
-*          HOST_CARD_PROTOCOL.md section 9);
+*          HOST_CARD_PROTOCOL.md section 8);
 *        GetKeys: key code $38 = Shift held -> Control $0E again (force
 *          the accelerator off -- the usual hold-Shift-at-boot convention;
 *          inferred from the key code, not otherwise confirmed);

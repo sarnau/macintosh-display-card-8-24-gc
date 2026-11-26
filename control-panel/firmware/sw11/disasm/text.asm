@@ -71786,7 +71786,7 @@ L_3eedc:
   3ef24:  91949403  and      lr20, lr20, $03   ; [delay slot]
 
 *  The kernel and HIF service stubs (const gr121, N; asneq V_SYSCALL),
-*  HOST_CARD_PROTOCOL.md section 8.
+*  HOST_CARD_PROTOCOL.md section 7.
 file_32:   ; object file 32 (asm): .text starts here
 sub_3ef28:   ; svc_C1_FreeMemory
   3ef28:  030079c1  const    gr121, $00c1

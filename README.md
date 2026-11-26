@@ -54,7 +54,7 @@ A guide to the listings (where to start, label and address conventions):
 * **The hardware as the software sees it:** the card's registers (display
   start, row stride, the Am29000's run control, interrupts, the timing
   generator), the RAMDAC, the DP8531 pixel-clock synthesiser and every video
-  mode's timing are mapped (`HOST_CARD_PROTOCOL.md` section 11).
+  mode's timing are mapped (`HOST_CARD_PROTOCOL.md` section 10).
 
 ## Open questions
 
@@ -69,15 +69,15 @@ does not settle (details in
 * **SRAM aliasing.** That the host's slot offsets 0 (RAM test) and
   `$02000000` (kernel) are the same 64 KB SRAM is inferred (§1).
 * **The `$44800000` stream.** 137 bits PrimaryInit shifts into most likely a
-  configuration chain inside the MFB; no field is decoded (§11.3).
+  configuration chain inside the MFB; no field is decoded (§10.3).
 * **RAMDAC bit 31.** Always set in the pixel bus control byte; its meaning
-  is unknown (§11.8).
+  is unknown (§10.8).
 * **Glyphs `$84`-`$9E`.** Which host system rewrites them in non-Roman fonts
   so that the card re-reads them; KanjiTalk 6 is the best fit (DrawMultiObject).
 * **The cursor copy.** Whether the card's never-refreshed copy of the screen
   under the cursor can really show stale pixels (§ "The cursor").
 * **Debug tools.** Who used the mailbox calls (Status cs15/16, Control
-  cs50/51) and the kernel's debug flag bits; no such tool has been found (§4, §9).
+  cs50/51) and the kernel's debug flag bits; no such tool has been found (§4, §8).
 * **Cheetah.** The second board name the driver accepts; unidentified (§1).
 * **Board markings.** The MFB's exact part number, the VRAM's last digit,
   the PAL, the ECL parts and the third oscillator are illegible in the photo.
@@ -91,29 +91,29 @@ tells.
 
 | where | what | effect |
 |---|---|---|
-| `gc24` `$765E` (System 7) | when the host gives up on the card, the loop that restores the original trap addresses indexes `$14(a4,d7.l)` with `d7` counting by 1, not 4 (§9) | only the first patch is restored; the alert asks for a restart anyway |
-| `gc24` `$734E` | the retry for the DrawMultiObject buffer subtracts `$C8` until the size is exactly 0; from the default `$1000` it wraps past 0 (§9) | would spin instead of giving up |
-| `gc24` `$6FC8` | give-up reason 6 depends on `sub_7570`, which returns 0 on every path (§9) | dead code |
-| `gc24` | the give-up reason at unit `+$15C` is written but never read (§9) | none |
-| `Hand` service dispatcher (both builds) | the bound check compares the service *index* with the table size, so numbers up to `$18A`/`$18B` jump through words past the table (§10, reading) | only a wrong service number would hit it |
-| `Hand` `$CD` (System 6) | the error exits of "region remove" jump through `gr69`, which nothing set (§10, reading) | System 7 fixes it with a wrapper |
-| `Hand` `$C6` | display start: ÷8 linear but ÷4 interleaved, where Boot scales ×8 in both; stores a halved value where Boot stores a pointer (§11.1) | no caller, so harmless |
-| Antelope `rpza` decoder | a row header whose length has bit 15 set reads as a 4-colour run (§10) | latent; the card's own encoder never writes one |
-| Antelope `'rle '` encoder `$3A8BC` (System 6) | the repeat-line test compares `lenLongs` *bytes*, a quarter of the line (§10) | a line can be dropped as a repeat when only its first quarter matches |
-| `gc24` codec `$A19A` (System 6) | Close disposes the state handle but not the dither table (§10) | leaks `$20008` bytes per 8-bit codec instance |
-| Antelope TestCLUT | writes the RAMDAC index as a word, so the RAMDAC sees 0, not `$FE` (§11.5) | tests entry 0; passes either way |
-| Hand service `$C1` with 8 MB of SIMMs | the free-memory value ignores Antelope and the stacks at the top of RAM (§11.9) | HeapCreate retries about 340 times, 1000 bytes smaller each time, before its request fits |
+| `gc24` `$765E` (System 7) | when the host gives up on the card, the loop that restores the original trap addresses indexes `$14(a4,d7.l)` with `d7` counting by 1, not 4 (§8) | only the first patch is restored; the alert asks for a restart anyway |
+| `gc24` `$734E` | the retry for the DrawMultiObject buffer subtracts `$C8` until the size is exactly 0; from the default `$1000` it wraps past 0 (§8) | would spin instead of giving up |
+| `gc24` `$6FC8` | give-up reason 6 depends on `sub_7570`, which returns 0 on every path (§8) | dead code |
+| `gc24` | the give-up reason at unit `+$15C` is written but never read (§8) | none |
+| `Hand` service dispatcher (both builds) | the bound check compares the service *index* with the table size, so numbers up to `$18A`/`$18B` jump through words past the table (§9, reading) | only a wrong service number would hit it |
+| `Hand` `$CD` (System 6) | the error exits of "region remove" jump through `gr69`, which nothing set (§9, reading) | System 7 fixes it with a wrapper |
+| `Hand` `$C6` | display start: ÷8 linear but ÷4 interleaved, where Boot scales ×8 in both; stores a halved value where Boot stores a pointer (§10.1) | no caller, so harmless |
+| Antelope `rpza` decoder | a row header whose length has bit 15 set reads as a 4-colour run (§9) | latent; the card's own encoder never writes one |
+| Antelope `'rle '` encoder `$3A8BC` (System 6) | the repeat-line test compares `lenLongs` *bytes*, a quarter of the line (§9) | a line can be dropped as a repeat when only its first quarter matches |
+| `gc24` codec `$A19A` (System 6) | Close disposes the state handle but not the dither table (§9) | leaks `$20008` bytes per 8-bit codec instance |
+| Antelope TestCLUT | writes the RAMDAC index as a word, so the RAMDAC sees 0, not `$FE` (§10.5) | tests entry 0; passes either way |
+| Hand service `$C1` with 8 MB of SIMMs | the free-memory value ignores Antelope and the stacks at the top of RAM (§10.9) | HeapCreate retries about 340 times, 1000 bytes smaller each time, before its request fits |
 | `gc24` QDDone `$BECC` | answers TRUE at once for any port other than the one being streamed, without asking the card (§ DrawMultiObject, "When the host waits for the card") | a program that waits with QDDone before touching pixels can still race an early-released CopyBits into that port |
-| `gc24` (System 6) `$4842`, `$3E3A` | the Std* fallback and BitMapRgn drain the card's drawing stream only for a pixmap the card holds, not for an ordinary port (§10) | the 68K can draw into a port while earlier stream records for it are still being drawn; System 7 drains first |
+| `gc24` (System 6) `$4842`, `$3E3A` | the Std* fallback and BitMapRgn drain the card's drawing stream only for a pixmap the card holds, not for an ordinary port (§9) | the 68K can draw into a port while earlier stream records for it are still being drawn; System 7 drains first |
 | `gc24` `$345A`-`$3474` | replays hidden-cursor calls swallowed during a card command with ShowCursor (`$804`) instead of HideCursor (`$800`) (§ "The cursor") | dormant: QuickDraw never hides the cursor in that window; a custom bitsProc would leave it shown and its shield cancelled |
 | Antelope `$32C10` | restores the screen under the cursor from the card's own copy for as long as `+$1EC` is set, which only the reset path clears (§ "The cursor", *reading*) | after the cursor moves or 68K drawing under it between card draws, stale pixels could reappear |
-| control panel `$134C` (System 7) | after restarting the card, the second probe treats any non-zero answer as failure (`tst`/`beq`), where the first treats 1 as success (`cmp #1`) (§10) | a card that comes back after the restart still gets error `$D8EA` |
-| `gc24` `$6D1E` | hook -2 returns `d7` uninitialised when no device record exists (§10) | the driver ignores this result |
+| control panel `$134C` (System 7) | after restarting the card, the second probe treats any non-zero answer as failure (`tst`/`beq`), where the first treats 1 as success (`cmp #1`) (§9) | a card that comes back after the restart still gets error `$D8EA` |
+| `gc24` `$6D1E` | hook -2 returns `d7` uninitialised when no device record exists (§9) | the driver ignores this result |
 | `DRVR` Control 53 `$85A` | copies the caller's C string into `globals+$AAA` without a length check; 256 bytes are left before the end of the block (§4) | dormant: no program calls it |
 | `DRVR` BuildUnitRecords `$1EA8` | cuts sRsrc 1's name at the first space with strchr and clears the byte it returns, without checking for NULL (§1) | a name without a space would write a 0 to address 0; the shipping name has spaces |
 | `DRVR` DoOpen `$22C`/`$248` | a card record dropped there is disposed but its handle stays in `globals+$214[i]` while `i` still advances (§1) | never happens: the drop for "no display" depends on a revision test the shipping card always passes |
-| declaration ROM `$70B4`, `$70F4` | two mode lists lack the `$FF` terminator and run into the B-bank lists (§11.8) | harmless: the Slot Manager takes the first match |
-| declaration ROM | four unreachable TV timing tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) and two unreferenced mode lists (§11.8) | left-overs |
+| declaration ROM `$70B4`, `$70F4` | two mode lists lack the `$FF` terminator and run into the B-bank lists (§10.8) | harmless: the Slot Manager takes the first match |
+| declaration ROM | four unreachable TV timing tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) and two unreferenced mode lists (§10.8) | left-overs |
 
 ## How the card firmware was built
 
