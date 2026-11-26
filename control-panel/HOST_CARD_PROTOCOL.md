@@ -3206,16 +3206,17 @@ All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
 
 | offset | default | used by |
 |---|---|---|
-| `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
+| `+$0` | 1 | accelerator on/off: the INIT sends Control 13 or 14 by it (`INIT_main` `$2A8`, `$340`/`$35C`); the control panel's `sub_d30` writes it, and `sub_8ca` applies it. `gc24` 32 does not read it: its `$D8DB` comes from a missing or empty `PupS` handle (`tst.l (a4)` at `$39E` tests the master pointer) |
 | `+$4` | `$D2` (210) | not read by either path seen |
 | `+$8` | `$60` | the config word, sent with cs17 (bits `$20`, `$40`, `$100` used by the DRVR; `$80` = never give up, in `gc24`; `$10` unused) |
 | `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002`: the card-response timeout in ticks (below) |
 
-`gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
-each followed by a check that maps a failure to errors
-`$D8DB`-`$D8DF`. Before its cs17 it would XOR the config with `$90`
-if a local flag (`d5`) were set, but `d5` is cleared at entry and
-never set, so this is dead code. So the config word is `$60` by default:
+`gc24` 32 (the startup sequence) checks Status 17, 18 and 19 against its
+`vers` 1 (errors `$D8DD`-`$D8DF`; System 6 `$D8DF`-`$D8E1`), then sends
+Control 17 and 18. Before Control 17 it would XOR the config with `$90`
+if a local flag (`d5`) were set; in System 7 `d5` is cleared at entry and
+never set, so this is dead code (System 6 sets it for the Option key,
+below). So the config word is `$60` by default:
 bits `$20` and `$40` are set, and `SetFeatureFlags` turns them into
 feature flags `$1` and `$200`. No client sends cs50, so `$100` stays
 clear and the "mailbox not enabled" bit `$800` stays set: the card's
@@ -4371,6 +4372,25 @@ Shift for Control 14, and a last Status 5 (Control 21 if the accelerator is
 not active); it reports through Paul Mercer's ShowINIT instead of System
 7's Notification Manager message. The control panel's restart routine
 `$A5C` (System 7 `sub_A8C`) repeats the sequence only on request.
+
+**When `gc24` 32 fails.** It runs no machine checks (its only Gestalt call
+is `'gc24'`). Every failure goes to one exit (System 7 `$63E`, System 6
+`$61C`) that calls `_Close` on the driver and returns -1. That exit removes
+nothing: the Gestalt function, the DCE, the locked DRVR and, because DoClose
+is a no-op, the QuickDraw patches all stay installed. Shift is tested only
+after Gestalt `'gc24'` is installed, and it exits before the driver is
+opened, so `_Close` then gets an uninitialised refnum. A missing `Date`,
+ACEF 1, ACEF 100 or `PupS` (or an empty `PupS` handle) is reported with
+Control 20 `$D8DB` (System 6 `$D8DD`). A Status 17 or 18 version newer than
+`vers` 1 (compared nibble by nibble, so 1.1 fails against 2.0), or a Status
+19 reply of -1 or with a zero second long, is reported with
+`$D8DD`/`$D8DE`/`$D8DF` (System 6 `$D8DF`/`$D8E0`/`$D8E1`); Status 19 is
+never compared with `vers`. A Status 10 answer other than 1 gives Control 14
+and `$D8EA`. A failing call itself (Status 2 count 0, Control
+2/3/4/5/13/17/18/19, Status 2/10/17/18/19) closes the driver without a
+Control 20, and leaves the cursor hidden when the failure is inside the
+per-card loop. In System 6 a failed second Get1Resource in the temporary-zone
+loader (`$6E0`) leaves BufPtr lowered by the resource's size plus 1 KB.
 
 **The control panel's restart routine** is the same code in both releases
 (System 6 `$A5C`, System 7 `sub_A8C`). It sends Control 99 and Status 5,
