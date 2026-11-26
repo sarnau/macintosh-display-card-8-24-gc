@@ -109,7 +109,8 @@ the card) exists in three versions:
   older TV timing and a driver bug (GetBaseAddr returns the slot instead of
   video memory).
 * **1.0** (341-0812), the shipping ROM decoded here.
-* **1.1** (341-0266, September 1991): the 16" and 21" Color displays, 16-bit
+* **1.1** (341-0266, September 1991; Apple's "Rev B" ROM, also sold as an
+  upgrade kit for the 16" display): the 16" and 21" Color displays, 16-bit
   colour on an AC842A RAMDAC, TV modes without the flicker filter, and all
   timing in one shared table. It drops one case 1.0 handled: a monitor that
   senses as RGB Full-Page (code 5), which 1.0 drove as a colour Portrait,

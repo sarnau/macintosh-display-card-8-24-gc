@@ -4797,6 +4797,16 @@ rearranged and extended data.
 | `$CC`/`$EC`, `$C4`/`$E4` | NTSC 640×480, 512×384 unconvolved | 1-8, 16, 32 | 640/64/60/16, 512/120/60/88 | 780 | 525 interlaced | 540/55/4 | 12.273 MHz | 59.94 Hz fields |
 | `$C0`/`$E0`, `$C8`/`$E8` | PAL 640×480, 768×576 unconvolved | 1-8, 16, 32 (768: 1-8, 16) | 640/145/69/90, 768/81/69/26 | 944 | 625 interlaced | 413/70/3 | 14.75 MHz | 50 Hz fields |
 
+**What Apple said about it.** Apple's Tech Info Library calls 1.1 the
+"Rev B" ROM (part number 341-0266; board 661-1642 against Rev A's
+661-0606), sold to Rev A owners as upgrade kit 076-1019 and "ONLY needed
+for the 16-inch display" (TIL 9913, Jan 1992; TIL 10053, Mar 1992). It also
+gives the 21" display "Page-White correction" (TIL 9913); 1.0 already drove
+the 21" through raw sense 0 as a colour Two-Page, which fits. 16 bpp ("up
+to 32,768 colors") needs Rev B's new CLUT/DAC (the AC842A), so an upgraded
+Rev A card drives the 16" without 16-bit colour (TIL 9815, TIL 9858, Feb
+1992). No Apple article mentions the dropped raw sense 5.
+
 **Sense handling.** Raw senses 1-4 and 6 are unchanged; raw 0 → code 7
 (the 21"); raw 7 reads the extended code: `$14` NTSC, `$00` (the old PAL
 box) and `$30` both PAL, `$2D` 16" Color, anything else (no-connect `$3F`,
