@@ -4656,8 +4656,18 @@ unknown). Long 2 goes to the original card's "Load/Sync Register" offset
 (`JMFBLSR`, `+4`): `$FF << (8 − n)` with n = 3 + log2 depth + the multiplex
 field, so its 8 − n low zero bits are log2 of the timing clocks per 32-bit
 VRAM load (32/depth pixels divided by the multiplex factor). The original
-card's 1-bit values `$E0`/`$F0`/`$F8` (13", Portrait, Two-Page) fit the
-same rule.
+card's 1-bit values fit the same rule: `$E0` (12"; 13" in System 7.1's
+driver and in MDC 1.2), `$F0` (Portrait), `$F8` (Two-Page). Its 13" has two
+settings: the declaration ROM MDC 1.0.1 (341-0801-02) and 7.1's PrimaryInit
+boot table run it 4:1 (`$C0`, LSR `$F8`, horizontal active `$9E` = 160−2 in
+4-pixel units), 7.1's `JMFBDriver.a` and MDC 1.2 (341-0868) 1:1 (`$80`, LSR
+`$E0`). The original card's ROMs (in `Mac_ROMs.zip`, "Trident 8-24")
+confirm the 7.1 source's tables: NTSC, Portrait (PBCR `$A0`), Two-Page, the
+13" 24-bit `$9A` and the National clock's 16 nibbles are in their bytes.
+MDC 1.0.1 knows only the National clock chip (register 10 = `$D`) and has
+no PAL modes; MDC 1.2 adds PAL, the 16" and 21" Color monitors and the
+Endeavor's M/N bytes per mode (register 10 = 5). Both carry BoardId `$27`
+and drHwJMFB (25).
 
 **The clock synthesiser** is a National DP8531 (UU16 in the board photo,
 `Macintosh Control Panel/ Macintosh Display Card 8•24 CG.jpg`, next to a

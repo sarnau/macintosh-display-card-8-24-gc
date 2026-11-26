@@ -217,6 +217,7 @@ Outside the repo, read for comparison (not redistributed here):
 | System 6.0.1-6.0.8 System files | from 6.0.5 on, their start-up patches PTCH 376 (Mac II ROM) and PTCH 1660 (IIci-class ROM) load `gc24` 32 from the file named by STR -16454 ("8•24 GC"), the System 6 counterpart of Boot3's loader |
 | the Apple Legacy Recovery CD (1997) and a Misc_Mac_Drivers CD | the only other copies of the software found: "8•24 GC for System 6.0.x" and "for System 7.x" disk images holding 1.1 and 7.0.1, every resource identical to this repo's; no 1.0, 7.0 or later build has turned up |
 | `Mac_ROMs.zip` (`Misc/Video cards/…/Dolphin 8-24GC/`) | three declaration ROMs: `341-0812-02_1.0` (identical to `341-0812.bin`), a later 64 KB `341-0266` "8•24 GC 1.1" (16-Sep-91) and a 32 KB prerelease `Dolphin_1.0A16`; not examined yet |
+| `Mac_ROMs.zip` (`…/Trident 8-24/`) | the original Macintosh Display Card 8•24's declaration ROMs `341-0801-02` "MDC 1.0.1" (National clock only, no PAL) and `341-0868` "MDC 1.2" (adds PAL, 16"/21" Color, Endeavor tables); they confirm the System 7.1 JMFB tables quoted in section 10.8 |
 | AMD Am29000 User's Manual (1987) and Memory Design Handbook (1992), bitsavers | the reset state and ROM/instruction spaces (section 1) |
 | National DP8531 data sheet (1990), Motorola and Toshiba memory data books, bitsavers | the clock synthesiser's registers, the SRAM and VRAM parts |
 
