@@ -80,8 +80,13 @@ does not settle (details in
 * **Debug tools.** Who used the mailbox calls (Status cs15/16, Control
   cs50/51) and the kernel's debug flag bits; no such tool has been found (§4, §8).
 * **Cheetah.** The second board name the driver accepts; unidentified (§1).
+  Apple's service manuals, module-identification manual and Tech Info Library
+  articles don't mention it either.
 * **Board markings.** The MFB's exact part number, the VRAM's last digit,
-  the PAL, the ECL parts and the third oscillator are illegible in the photo.
+  the PAL, the ECL parts and the third oscillator are illegible in the photo,
+  and Apple's service documents list no parts below board level. (The photo
+  shows a Rev A card: its RAMDAC is 357S0010, which the Module
+  Identification manual pairs with ROM 341-0812; Rev B has 343S1075.)
 
 ## Bugs and slips in the shipping software
 

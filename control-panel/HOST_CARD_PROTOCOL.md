@@ -249,9 +249,11 @@ get 0/0 from Status 19. **Tiburon is Apple's codename for the 8•24 GC**
 (System 7.1 `Resources/Sys.r`: STR -16454 "8•24 GC", "name of the Tiburon
 patch file", which `Boot3.a` uses to load `gc24` 32; `PatchIIROM.a` and
 `PatchIIciROM.a` mention "the patch for the tiburon video card"). Cheetah is
-not identified: no Apple source, ROM or codename list on hand names it
-(System 7.1's sources, 329 Mac ROMs, Apple's developer and service
-material searched; Mac OS X 10.0 'Cheetah' is unrelated). Presumably it
+not identified: no Apple source, ROM, codename list or service document on
+hand names it (System 7.1's sources, 329 Mac ROMs, Apple's developer
+material, the Service Technical Procedures, the Module Identification
+manual and about 16,000 Tech Info Library articles searched; Mac OS X 10.0
+'Cheetah' is unrelated). Presumably it
 was a prototype or sibling board of the Am29000 GC family. DoOpen's check for type `$7D` (`$218`) is dead: nothing
 stores `$7D`.
 Every client hard-codes unit 0: InstallPatches (`$1142`), `gc24`
@@ -4803,7 +4805,9 @@ rearranged and extended data.
 for the 16-inch display" (TIL 9913, Jan 1992; TIL 10053, Mar 1992). It also
 gives the 21" display "Page-White correction" (TIL 9913); 1.0 already drove
 the 21" through raw sense 0 as a colour Two-Page, which fits. 16 bpp ("up
-to 32,768 colors") needs Rev B's new CLUT/DAC (the AC842A), so an upgraded
+to 32,768 colors") needs Rev B's new CLUT/DAC (the AC842A, Apple part
+343S1075 against Rev A's 357S0010; Module Identification manual 072-8124,
+p. 4.1.12, which also pairs ROM 341-0812 with Rev A and 341-0266 with Rev B), so an upgraded
 Rev A card drives the 16" without 16-bit colour (TIL 9815, TIL 9858, Feb
 1992). No Apple article mentions the dropped raw sense 5.
 
