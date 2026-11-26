@@ -116,6 +116,7 @@ tells.
 | `DRVR` Control 53 `$85A` | copies the caller's C string into `globals+$AAA` without a length check; 256 bytes are left before the end of the block (§4) | dormant: no program calls it |
 | `DRVR` BuildUnitRecords `$1EA8` | cuts sRsrc 1's name at the first space with strchr and clears the byte it returns, without checking for NULL (§1) | a name without a space would write a 0 to address 0; the shipping name has spaces |
 | `DRVR` DoOpen `$22C`/`$248` | a card record dropped there is disposed but its handle stays in `globals+$214[i]` while `i` still advances (§1) | never happens: the drop for "no display" depends on a revision test the shipping card always passes |
+| declaration ROM 1.1 PrimaryInit `$1D26` | raw sense 5 (RGB Full-Page), which 1.0 drove as a colour Portrait (`$A1`), now goes to the fallback that deletes every video sResource (§10.10) | such a display gets Portrait sync but a black screen and no video device |
 | declaration ROM `$70B4`, `$70F4` | two mode lists lack the `$FF` terminator and run into the B-bank lists (§10.8) | harmless: the Slot Manager takes the first match |
 | declaration ROM | four unreachable TV timing tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) and two unreferenced mode lists (§10.8) | left-overs |
 

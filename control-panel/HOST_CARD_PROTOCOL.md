@@ -4621,7 +4621,9 @@ monitor's sRsrc is kept, its TV sibling (id bit 3) disabled and the rest
 deleted. Sense 1 → `$A1` Portrait, 2 → `$A2` 12", 3 → `$A3` Two-Page, 6 →
 `$A6` 13"; sense 4 or extended `$14` → `$A4`/`$AC` NTSC, extended `$00` →
 `$A0`/`$A8` PAL, bit 3 from the id saved in PRAM (`$2278`, written by the
-driver's cscSetDefaultMode). Senses 0 and 5 match nothing and delete all 8.
+driver's cscSetDefaultMode). Senses 0 and 5 lose bit 2 when bit 0 is set (`$2438`-`$243E`), so raw 5
+(`$A5`) is kept as a colour Portrait `$A1` and raw 0 (`$A7`) as a colour
+Two-Page `$A3`.
 With 32-Bit QuickDraw, SecondaryInit (`$2FAE`-`$307A`) swaps a B-bank
 sRsrc for its A-bank twin (sDeleteSRTRec, sInsertSRTRec, PRAM update), so
 the B bank (without 24 bpp) serves only old QuickDraw.
@@ -4794,6 +4796,20 @@ rearranged and extended data.
 | `$87`/`$A7` | 21" Color 1152×870 | 1-8 | as Two-Page | 1456 | 915 | 190/19/1 | 100 MHz | 75.06 Hz |
 | `$CC`/`$EC`, `$C4`/`$E4` | NTSC 640×480, 512×384 unconvolved | 1-8, 16, 32 | 640/64/60/16, 512/120/60/88 | 780 | 525 interlaced | 540/55/4 | 12.273 MHz | 59.94 Hz fields |
 | `$C0`/`$E0`, `$C8`/`$E8` | PAL 640×480, 768×576 unconvolved | 1-8, 16, 32 (768: 1-8, 16) | 640/145/69/90, 768/81/69/26 | 944 | 625 interlaced | 413/70/3 | 14.75 MHz | 50 Hz fields |
+
+**Sense handling.** Raw senses 1-4 and 6 are unchanged; raw 0 → code 7
+(the 21"); raw 7 reads the extended code: `$14` NTSC, `$00` (the old PAL
+box) and `$30` both PAL, `$2D` 16" Color, anything else (no-connect `$3F`,
+VGA `$17`, the multiscans, 19") → the fallback `$21F6` with the 13" timing.
+Raw 5 (RGB Full-Page) → the same fallback with the Portrait timing. The
+fallback is 1.0's `$26BC`: record 0, CLUT entries 0/1 black, interrupt
+off, all 56 sResources deleted, so the screen is synced but black and only
+the board sResource remains (the card can still accelerate). 1.0 kept raw 5
+as a colour Portrait `$A1` (bit 2 cleared at `$2438`); 1.1 drops it,
+because code 5 now means the 16". The driver's extended-sense copy
+(`$3A1E`, live in 1.0 at `$62F6`), PrimaryInit's WaitForVBlank and
+RegTouchLoop copies (`$2528`, `$242A`, dead in 1.0 too) and the stub at
+`$32C2` are unreferenced 1.0 bytes.
 
 **16 bpp.** "RAMDAC index 1" is PCBR1, the second pixel bus control
 register of the AC842A, the 16-bpp-capable version of the RAMDAC; the AC842
