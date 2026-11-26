@@ -262,7 +262,8 @@ the others stay held and work as plain video cards, and the control panel
 shows STR# 1000 #10 when Status 2 (the count, globals `+$10`) is above 1.
 Nothing lets the user choose another card. The driver's "no display" drop
 (`+$15E` = `$FFFF` when all three sense lines are high, `$2064`-`$207C`)
-depends on a RevLevel test (`$1AAA`/`$1BEC`) that 'MDC 8•24 GC 1.0' always
+depends on a RevLevel test (`$1AAA`/`$1BEC`, written for the prerelease
+ROM's '100a16 …' format, 10.10) that 'MDC 8•24 GC 1.0' always
 passes, so it never happens (it would also leave a disposed handle in
 `$214[i]`). A card without a monitor loses only its video sResources
 (PrimaryInit `$26BC`); the driver needs only the board sResource, so that
@@ -4792,6 +4793,24 @@ rearranged and extended data.
 | `$87`/`$A7` | 21" Color 1152×870 | 1-8 | as Two-Page | 1456 | 915 | 190/19/1 | 100 MHz | 75.06 Hz |
 | `$CC`/`$EC`, `$C4`/`$E4` | NTSC 640×480, 512×384 unconvolved | 1-8, 16, 32 | 640/64/60/16, 512/120/60/88 | 780 | 525 interlaced | 540/55/4 | 12.273 MHz | 59.94 Hz fields |
 | `$C0`/`$E0`, `$C8`/`$E8` | PAL 640×480, 768×576 unconvolved | 1-8, 16, 32 (768: 1-8, 16) | 640/145/69/90, 768/81/69/26 | 944 | 625 interlaced | 413/70/3 | 14.75 MHz | 50 Hz fields |
+
+**The prerelease ROM 1.0A16** (`Dolphin_1.0A16.BIN` in `Mac_ROMs.zip`, 32 KB,
+CRC `$4740028D` valid) has the shipping ROM's board sResource name
+('Macintosh Display Card 8•24 GC'), BoardId `$2C`, sense map and 16 video
+sResources. Its RevLevel is '100a16 2729344499': version 1.0a16 and a Mac
+date in seconds, 27 June 1990 15:14:59. This is the format the driver's
+RevLevel parser (`$1AAA`/`$1BEC`, section 1) was written for (1.0a16 passes
+because an alpha needs a revision of at least `$10`); the shipping
+'MDC 8•24 GC 1.0' passes it only by accident. PartNum is '341-0812'. No
+codename appears in it: "Dolphin" is the ROM collector's folder name.
+Differences from the shipping ROM: driver storage `$2A` bytes (no
+saveVidParms); GetBaseAddr (`$5BFA`) lacks the `+$0C000000` VRAM offset, so
+it returns the slot base (fixed in 1.0); a simpler ChkMode (no RAM512K or
+underscan gate for 24 bpp); NTSC 512×384 porches shifted by 8 pixels; the
+PAL 640×480 boot table is 616 pixels wide ("PAL Display 616*460") while its
+driver table and VPBlocks say 640×480; mPageCnt 0 and one more unterminated
+mode list; no `-1` write to `$44000024`. SecondaryInit, the `$44800000`
+stream and most of the driver are byte-identical.
 
 ## Appendix: what changed since the exact decryption
 
