@@ -3423,9 +3423,10 @@ What changed:
   lines, `$A00`) and `$0F`. System 6 gives `$0F` 560 lines (`$230`); System 7
   gives 576 (`$240`). Only System 7 has `$2DF` (624 lines `$270`, row
   `$680`) and `$30F` (576 lines, row `$A00`). Read as Apple's extended sense
-  codes, `$2D` is the 16" 832×624 display, `$30` is PAL (alternate) and `$00`
-  is PAL (reading). So System 7's kernel adds the 16" monitor and corrects
-  PAL to 576 lines.
+  codes, `$2D` is the 16" 832×624 display (row `$680` is its 16-bpp
+  rowBytes) and `$30` is PAL (alternate); code 0 gives 870 lines, the 21"
+  Color's (sense 0 in the 1.1 ROM, 10.10). So System 7's kernel already
+  knows the 1.1 ROM's monitors and corrects PAL to 576 lines.
 * **Extended sense probe in Boot** (`$20033C8`, System 7 `$20033C8`).
   System 6 first zeroes `$44000034`-`$44000048`; System 7 zeroes only
   `$38`-`$40`. In each round one drive line (`$4400002C/30/34`) is set to −1
@@ -4793,6 +4794,23 @@ rearranged and extended data.
 | `$87`/`$A7` | 21" Color 1152×870 | 1-8 | as Two-Page | 1456 | 915 | 190/19/1 | 100 MHz | 75.06 Hz |
 | `$CC`/`$EC`, `$C4`/`$E4` | NTSC 640×480, 512×384 unconvolved | 1-8, 16, 32 | 640/64/60/16, 512/120/60/88 | 780 | 525 interlaced | 540/55/4 | 12.273 MHz | 59.94 Hz fields |
 | `$C0`/`$E0`, `$C8`/`$E8` | PAL 640×480, 768×576 unconvolved | 1-8, 16, 32 (768: 1-8, 16) | 640/145/69/90, 768/81/69/26 | 944 | 625 interlaced | 413/70/3 | 14.75 MHz | 50 Hz fields |
+
+**16 bpp.** "RAMDAC index 1" is PCBR1, the second pixel bus control
+register of the AC842A, the 16-bpp-capable version of the RAMDAC; the AC842
+has PCBR0 only (System 7.1 `DAFBDriver.a`: `has16bppACDC`, "true if AC842A
+is around"). The probe at `$2598` is DAFB's: `$06` into PCBR0 (indirect
+mode), 0 into PCBR1, read PCBR0 back; `$06` means an AC842A, and sRsrc bit 5
+is set. For mode `$84` the driver writes PCBR0 = `$9E` (`$BE` with the 2:1
+multiplex), then PCBR1 = `$C0` (`$3740`); the depth record sets LSR `$FE`
+(n = 7), `$4400007C` = 0 (linear, also on TV) and `$440000A0` =
+rowBytes/8. The VPBlocks say RGBDirect 16/3/5 (5-5-5), rowBytes 2 × width
+(2560 on PAL). ChkMode sets GFlags bit 10, so SetEntries refuses, and
+SetGamma/GrayPage load 32 entries at `(k<<3)|(k>>2)` (`$3B2C`, DAFB's
+Trans5to8): a sparse gamma table. Without bit 5, `$84` stays 32 bpp
+(`$3B0A`). Antelope 7.0.1 draws 16 bpp fully (its 16-bit arithmetic modes,
+NullReport stubs in System 6's SW 1.1, are real code here, e.g. RBAddOver16
+`$1E508`), `gc24` never declines a depth, and no host program knows mode
+numbers, so the 7.0.1 software works with the 1.1 ROM unchanged.
 
 **The prerelease ROM 1.0A16** (`Dolphin_1.0A16.BIN` in `Mac_ROMs.zip`, 32 KB,
 CRC `$4740028D` valid) has the shipping ROM's board sResource name

@@ -86,6 +86,10 @@ flicker filter optional:
 | 13", 12", 16", NTSC, PAL | as above | adds 16 bits ("thousands") | | |
 | NTSC, PAL without filter | as above | 1-8, 16, 32 (PAL 768×576: 1-8, 16) | 780 × 525, 944 × 625 at the dot clock | 30 / 25 Hz frames |
 
+Sixteen bits need the AC842A version of the RAMDAC, which the 1.1 ROM
+probes for. The System 7.0.1 software draws 16-bit pixels on the card like
+any other depth, and its kernel already knows the 1.1 ROM's monitors.
+
 The refresh rates follow from the totals and the pixel clocks the ROM
 programs. The pixel clock comes from a National DP8531 synthesiser (20 MHz
 reference; 100, 57.27, 30.24 and 15.67 MHz for the four monitors, 4 × the
