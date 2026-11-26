@@ -443,5 +443,5 @@ The differences:
 
 ## What is open
 
-* Some flag bits (1, 3, 10, 30, 31) are read only in outline
-  (`../HOST_CARD_PROTOCOL.md` section 9, "The flags word on the card").
+* Flag bits 1, 3, 10, 30 and 31 are kernel debug switches that nothing
+  sets (`../HOST_CARD_PROTOCOL.md` section 9, "The flags word on the card").

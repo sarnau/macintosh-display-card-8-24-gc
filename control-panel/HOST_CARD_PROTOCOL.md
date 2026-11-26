@@ -354,10 +354,10 @@ package: Control 6, 16, 49, 52-54; Status 6, 8, 9, 11, 13, 14, 54.
 |---|---|
 | Control 6 (`$B64`) | state `&~4`; `$1D8E` writes 0 to `$44000028` (holds the Am29000; undoes cs5) |
 | Control 16 (`$880`) | `globals+$250` <- csParam+2 (default `$D3`); if patched, `$1436` then `$14B0` re-route the trap vectors. Only Status 6 reads `+$250` |
-| Control 49 (`$A96`) | `$2D44`: writes argc/argv (pointer vector, strings, NULL; at most `$1000` bytes) to `InpArgs` = `[image+$410]`, which the entry stub reads through HIF `$104` |
+| Control 49 (`$A96`) | `$2D44`: writes argc/argv (pointer vector, strings, NULL; at most `$1000` bytes) to `InpArgs` = `[image+$410]`, which the entry stub reads through HIF `$104` (counted, then ignored by `main`) |
 | Control 52 (`$872`) | `globals+$AA6` <- word (the current-trap word `gc24`'s `StoreCtxWord_AA6` sets) |
 | Control 53 (`$85A`) | unbounded strcpy of csParam+2 into `globals+$AAA`; nothing reads it |
-| Control 54 (`$F0A`) / Status 54 (`$6D0`) | the hook at `$A84` (gc24's ID -3 entry: System 7 the module API `sub_1404`, System 6 the codec) with `(csParam+2, csParam+6, &globals+$AA0)` and a 2000-tick timeout / with `(-1, 0, …)`, the last result; neither checks the slot |
+| Control 54 (`$F0A`) / Status 54 (`$6D0`) | System 7: the hook at `$A84` (gc24's ID -3 entry, the module API `sub_1404`) with `(csParam+2, csParam+6, &globals+$AA0)` and a 2000-tick timeout / with `(-1, 0, …)`, the last result; neither checks the slot. System 6 (`$F2A`/`$702`) differs: Control 54 passes four longs (csParam+2, +6, +10, +14) to its hook (the codec entry) and stores D0 in `globals+$AA0`; Status 54 only returns that long |
 | Status 6 / 8 / 9 / 11 / 13 / 14 | `globals+$250` / unit `+$002` timeout / `+$000` slot / `+$162` type / `+$168` flags / `+$004` |
 
 Status calls use the unit of the last Control call (`globals+$22E`), not
@@ -486,7 +486,14 @@ What the exact code adds:
   HIF `$104` (the `InpArgs` pointer) and counts its words up to a zero
   (argc/argv), calls an optional hook if its pointer is non-zero, then `main`
   `$31DAC`, then `exit` `$3AC88` with `main`'s result, and loops on HIF
-  service 1 (exit).
+  service 1 (exit). The argc/argv it builds are never used: `main` takes no
+  parameters (tag word `$00020000` at `$31DA8`; `lr1 = gr1+$20` after `sub
+  gr1,$18`, where a two-argument function has `+$28`) and reads only
+  `lr2`-`lr5`. HIF `$104` (`Hand` `$2001B40`) returns the constant
+  `$4C007800`, and nothing else on the card asks for it; host-loaded modules
+  are entered as `entry(buffer, task, sub_379A0)` (`$37B9C`). So the strings
+  Control 49 writes into `InpArgs` are counted once at start-up and then
+  ignored.
 * **Hardware.** Antelope also addresses card registers directly: `$4400007C`
   and `$44000080` in the long fills (`$17040`, `$172A4`), and the CLUT
   (`$46C00000`) and registers `$44000054`-`$440000C8` in the self-test.
@@ -2969,7 +2976,7 @@ Level 2 goes to `$00F84`, a log buffer:
 
 So at level 2 the host sees messages only in batches. Between flushes they
 sit in card memory, where a debugger could read them through the buffer
-pointer. The reporter level starts at 1 (`.data+$284`) and the log size at `$400` (`.data+$298`); see "`.data` decoded".
+pointer. The reporter level starts at 1 (`.data+$284`) and the log size at `$400` (`.data+$298`); see "`.lit` and `.data`, exact".
 
 These are names by role: the library's own names and version are not in
 the file.
@@ -4249,8 +4256,11 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
   csCode 4 stored at its globals `+$12C`, and returns the result. If the
   result is not 1, it sets bit `$100` in the unit's flags (`+8`). Control
   13, 17 and 50 call `$85AA(unit, 0)` after re-initialising the card.
-* The control panel's `$0C08` sends Control 4 with `$FFFFFFFF`, then
-  Status 10. Its caller (`$128E`) accepts the answer 1. Otherwise it
+* The control panel's `$0C08` (System 7's, `cdev.s`: Control 4 at `$C72`,
+  Status 10 at `$C9E`) sends Control 4 with `$FFFFFFFF`, then Status 10. No
+  System 6 client sends any Status call (their Status wrappers, control
+  panel `$1D68`, INIT `$A8C`, `gc24` 32 `$902`, have no callers), so in
+  System 6 this probe never runs. Its caller (`$128E`) accepts the answer 1. Otherwise it
   restarts the accelerator (`$0A5C`: Control 99, Status 5, Control 14,
   Control 2) and asks again. A non-zero answer then gives error `$D8EA`
   (reported through Control 20).
@@ -4298,6 +4308,19 @@ gates (HIF `$2001A44`, fatal `$200290C`) and the bit-16 restart test are
 System 7's instruction for instruction, so the mailbox is never armed by
 default in either release. In both, `gr64` bit 11 also makes the fatal-trap
 path skip the report, not only the HIF path.
+
+**The System 6 driver's calls.** The System 6 driver dispatches the same
+csCodes as System 7's (Status 2, 5-21, 54; Control 2-6, 10-14, 16-21, 48-54,
+99), and apart from register allocation (globals in A4, unit in A3, the
+other way round in System 7) every handler is the same code except three:
+its failure code in `unit+$17C` is `$FFFFD8DC` (System 7 `$FFFFD8DA`),
+Control 54 (`$F2A`) passes four longs to the hook at `globals+$A84` and
+stores its D0 in `globals+$AA0`, and Status 54 (`$702`) only returns that
+long without calling the hook. Its "patches installed" byte is
+`globals+$258` (System 7 `$257`), and it returns with `jmp (a0)` instead of
+`rtd`, so it runs on a 68000. The System 6 clients send only Control calls:
+the control panel 2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5,
+13, 14, 17, 18, 19, 20; the INIT 13, 14, 20, 21, 99.
 
 **When the System 6 host waits.** System 6's `gc24` (`gc24_sw11.s`) waits
 as System 7's does in most patches: QDDone (`$433A`, one `sub_6E14` poll
