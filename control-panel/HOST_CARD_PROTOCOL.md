@@ -163,7 +163,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- the device behind the 137-bit serial stream at `$44800000` (constant except for the board revision and a 4-bit field that is 1 on Two-Page); the pixel clock is settled (a DP8531 at `$46800000`, section 11.8);
+- the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (11.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded. The pixel clock is settled (a DP8531 at `$46800000`, section 11.8);
 - DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
 - flag bits 1, 3, 10, 30 and 31 are traced (section 9): kernel debug switches (FPU, instruction counting, data watchpoint, bus-error escape) that no host code or Antelope sets; only a poke of `PublicIn+$18` before init would. Who writes the watch window `$4C0067D8`/`$67DC` and the escape address in gr121 is not known.
@@ -2176,7 +2176,7 @@ range). That part remains a reading.
   | `$0C000000`-`$0C1FFFFF` | the 2 MB VRAM. The frame buffer starts at `+$10000` (`+$11400` on TV). The kernel's `Vec`, `PrivNZ`, `PublicIn`/`PublicOu`, `HifComm` and `VidComm` lie in the first `$10000`, below the frame buffer | `VideoDriver.s` `$5C3A`-`$5C5A` and `$5E74`-`$5E7E` (base = hardBase + `$0C000000` + `$10000`/`$11400`); Hand's layout conversion covers exactly this 2 MB (`$2000C14`) |
   | bit 22 (`$0C400000`..) | the VRAM's block-write alias | `$1701C`/`$17264` set bit 22 of the destination (`$17394`) and clear it again |
   | `$0CC00000`/`$0CC00004` | the block-write colour registers | `$170F0`, `$17378` |
-  | bit 21: `$0C200000`-`$0C3FFFFF` | DRAM, in two 1 MB windows | `DRVR.s` ProbeCard `$22EA`-`$2332` (`TestRAMLong` at `$0C200000`/`$0C300000`) |
+  | bit 21: `$0C200000`-`$0C3FFFFF` | DRAM, in two 1 MB windows: the two optional SIMM sockets, empty on a stock card (Apple's kit: 2 × 1 MB; product sheet `AppleMAC-DisplayCard-8.24gc.pdf` p. 2/4) | `DRVR.s` ProbeCard `$22EA`-`$2332` (`TestRAMLong` at `$0C200000`/`$0C300000`) |
   | bit 24: `$0D000000`.. | the second DRAM bank | ProbeCard `$2336`-`$2390` (`AliasCheck` against `$0D100000`/`$0D400000`/`$0D500000`); flag bit 20 "DRAM above `$0D000000`" |
 
   Every caller has just checked that the address is on this card
@@ -4193,7 +4193,7 @@ No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 
 | card | host | written by | meaning |
 |---|---|---|---|
-| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | a serial port, MSB first, one bit per write from data bit 31 (SerialShiftOutReg `$2880`). Not the clock synthesiser: the stream does not fit the DP8531's registers. Its device is **unknown** (perhaps a configuration register of one of the custom chips). The VideoDriver never writes it |
+| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | a serial port, MSB first, one bit per write from data bit 31 (SerialShiftOutReg `$2880`), the same one-bit-on-D31 scheme as the MFB registers (`$44000008`, `$440000A0`) and the timing generator (`$44C00000`). Not the DP8531 (11.8), not a Xilinx configuration (no `11111111 0010` preamble; 137 bits against XC2000/3000's 12,000+), and no other part on the board can take it. *Reading*: a 137-bit configuration chain inside a custom chip, most likely the MFB (marked "©88 Apple MFB", Toshiba 343S0031-A). The first 100 bits are 25 cells of `1` plus a 3-bit count, then two similar words (`$053`, `$2405B`), a 4-bit field (1 Two-Page, 2 otherwise) and `01`. Board revision 1 adds 1 to two 3-bit cells and to bits 7-6 of both words, which suggests memory/VRAM timing counts. Nothing in the original 8•24's JMFB code is serial like this. The VideoDriver never writes it |
 | `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | **the DP8531 clock synthesiser** (National; U016 on the board, 20.000 MHz reference): 16 writes, each `register << 4 | nibble` in bits 7-0 (that is why the values rise from `$0C` to `$F0`), then a `$D00`-loop settle delay. See 11.8 |
 
 ### 11.4 `$46000000` (host `$06000000`): bus status, revision, slot burst mask
@@ -4220,8 +4220,8 @@ accessed. Host and card agree: the host's `$C0000000` at `+8` reads back as
 `$C0` at Boot `$2003660`, and the host's GetEntries takes bits 31-24 of a
 long read. There is no separate read-index or pixel-mask register, so the
 part is not a Bt471/478-style one. The board photo shows a Brooktree chip
-marked "RAMDAC 428", "©89 APPLE": an Apple-custom part (the ROM comments
-call it AC842). Antelope writes the
+marked "RAMDAC 428", "357S0010-A", "©88 APPLE": an Apple-custom part,
+the AC842 of the ROM comments and of *develop* 3's block diagram. Antelope writes the
 index as a full word with the index in bits 7-0, so the RAMDAC sees index
 0: TestCLUT tests entry 0, not `$FE`, and passes either way;
 SaveCLUT/RestoreCLUT/WriteCLUT start at 0 and are unaffected.
@@ -4328,14 +4328,25 @@ monitors), 14 the serration point (H − hsync on the 12", H/2 − hsync on TV,
 H where there is none), 13 a composite parameter used only on TV (perhaps
 the equalising-pulse width).
 
-Long 0 is the RAMDAC command byte: bits 28-27 = log2 depth, `$9C` = 24 bpp,
-bit 24 = convolution (JMFB's "C" tables); bit 30, set on Two-Page, Portrait
-and the convolved TV modes, is not understood. Long 2 is `$FF << (8 − n)` with
-n = 3 + log2 depth, plus 2 when long 0 has bit 30.
+Long 0 is the RAMDAC's pixel bus control byte (the original 8•24's
+`CLUTPBCR`, "CLUT Pixel Bus Control Register", at the same offset `+8` in
+System 7.1's `JMFBDepVideoEqu.a`). Bit 24 = convolution. Bits 28-27 = log2
+depth. Bits 26-25 ≠ 0 = direct 24 bpp (`$9C` here, `$9A` on the original
+card); Boot `$200365C` tests both fields. Bits 30-29 = pixel multiplex,
+log2 of the pixels per timing-generator clock: 0 on 13"/12" and in 24 bpp,
+2 (4:1) on Two-Page, Portrait and the convolved TV modes. The original card
+ran Portrait at 2:1 (`$A0`, `JMFBDriver.a` Mode57, horizontal active `$13E`
+= 320−2 in 2-pixel units); the GC uses 4:1. Bit 31 is always set (meaning
+unknown). Long 2 goes to the original card's "Load/Sync Register" offset
+(`JMFBLSR`, `+4`): `$FF << (8 − n)` with n = 3 + log2 depth + the multiplex
+field, so its 8 − n low zero bits are log2 of the timing clocks per 32-bit
+VRAM load (32/depth pixels divided by the multiplex factor). The original
+card's 1-bit values `$E0`/`$F0`/`$F8` (13", Portrait, Two-Page) fit the
+same rule.
 
-**The clock synthesiser** is a National DP8531 (U016 in the board photo,
+**The clock synthesiser** is a National DP8531 (UU16 in the board photo,
 `Macintosh Control Panel/ Macintosh Display Card 8•24 CG.jpg`, next to a
-20.000 MHz oscillator; the RAMDAC beside it is marked "Bt RAMDAC 428 … ©89
+20.000 MHz oscillator; the RAMDAC beside it is marked "Bt RAMDAC 428 … ©88
 APPLE"). It is a parallel part, programmed through `$46800000`: 16 long
 writes, each `register << 4 | nibble` in bits 7-0, then a `$D00`-loop settle
 delay, as System 7.1's JMFB code loads its "National" clock. PCLK = 20 MHz ×
@@ -4356,12 +4367,15 @@ outputs and LPF2 off), 11 = 6 (N mode, SCLK from the S counter), 12 = 4
 (restart the VCO) on the progressive tables and 0 on TV, 13 = 1 (LCLK off);
 S and L are 0, 1/1 on PAL. PrimaryInit loads the clock once, from the boot
 table of the sensed monitor; the VideoDriver reloads it only for TV modes
-(GFlags `Interlaced`), since a depth change keeps the pixel clock. Long 0's
-bit 30 thus marks the modes whose timing generator runs at PCLK/4 (*reading*):
-the ×4-pixel horizontal timing of Two-Page and Portrait and the 4× pixel
-clock of the convolved TV modes.
+(GFlags `Interlaced`), since a depth change keeps the pixel clock. Long 0's bit 30 (multiplex 4:1) thus marks the modes whose timing
+generator runs at PCLK/4: on Two-Page and Portrait the RAMDAC takes 4
+pixels per timing clock, hence the ×4 horizontal units; on the convolved
+TV modes the pixel clock is 4× the pixel rate with unchanged horizontal
+counts, which fits the four samples of the (above + 2·target + below)/4
+filter that *develop* issue 3 describes (pp. 335-336; *inferred*).
 
 The 137-bit stream PrimaryInit shifts into `$44800000` (`$22CE`-`$2406`,
 `$26D4`-`$279C`; by board revision `$9ACC`/`$9BCC`, `$88ACAC`/`$88ACBC`,
 `$053`/`$093`, `$2405B`/`$2409B`, then 4 bits that are 1 on Two-Page and 2
-otherwise, then 2 bits = 1) is not the clock; its target is unknown.
+otherwise, then 2 bits = 1) is not the clock; see 11.3 (most likely an
+MFB configuration chain).

@@ -43,12 +43,39 @@ A one-page summary of how the card works: [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md).
 * **The kernel (`Runtime`: `Boot` + `Hand`)** is disassembled with a reading
   guide and its service table (`control-panel/firmware/`). Its host-visible
   protocol (boot handshake, flags, restart, mailbox, video command block,
-  accelerated-command queue) is written down and cross-checked on both sides
+  the command packet) is written down and cross-checked on both sides
   in [`control-panel/HOST_CARD_PROTOCOL.md`](control-panel/HOST_CARD_PROTOCOL.md).
 * **The 243 KB QuickDraw accelerator (`Antelope`)** has an exact, labelled
   disassembly. The command dispatcher, drawing stream, caches, cursor
   handling, StretchBits, the System 6 `'rpza'` codec and a self-test are
   read. See `control-panel/HOST_CARD_PROTOCOL.md` and `control-panel/firmware/`.
+* **The hardware as the software sees it:** the card's registers (display
+  start, row stride, the Am29000's run control, interrupts, the timing
+  generator), the RAMDAC, the DP8531 pixel-clock synthesiser and every video
+  mode's timing are mapped (`HOST_CARD_PROTOCOL.md` section 11).
+
+## Bugs and slips in the shipping software
+
+Found while reading the code; each is explained, with its evidence, in
+[`control-panel/HOST_CARD_PROTOCOL.md`](control-panel/HOST_CARD_PROTOCOL.md)
+(section in brackets). None of them shows in normal use as far as the code
+tells.
+
+| where | what | effect |
+|---|---|---|
+| `gc24` `$765E` (System 7) | when the host gives up on the card, the loop that restores the original trap addresses indexes `$14(a4,d7.l)` with `d7` counting by 1, not 4 (§9) | only the first patch is restored; the alert asks for a restart anyway |
+| `gc24` `$734E` | the retry for the DrawMultiObject buffer subtracts `$C8` until the size is exactly 0; from the default `$1000` it wraps past 0 (§9) | would spin instead of giving up |
+| `gc24` `$6FC8` | give-up reason 6 depends on `sub_7570`, which returns 0 on every path (§9) | dead code |
+| `gc24` | the give-up reason at unit `+$15C` is written but never read (§9) | none |
+| `Hand` service dispatcher (both builds) | the bound check compares the service *index* with the table size, so numbers up to `$18A`/`$18B` jump through words past the table (§10, reading) | only a wrong service number would hit it |
+| `Hand` `$CD` (System 6) | the error exits of "region remove" jump through `gr69`, which nothing set (§10, reading) | System 7 fixes it with a wrapper |
+| `Hand` `$C6` | display start: ÷8 linear but ÷4 interleaved, where Boot scales ×8 in both; stores a halved value where Boot stores a pointer (§11.1) | no caller, so harmless |
+| Antelope `rpza` decoder | a row header whose length has bit 15 set reads as a 4-colour run (§10) | latent; the card's own encoder never writes one |
+| Antelope `'rle '` encoder `$3A8BC` (System 6) | the repeat-line test compares `lenLongs` *bytes*, a quarter of the line (§10) | a line can be dropped as a repeat when only its first quarter matches |
+| `gc24` codec `$A19A` (System 6) | Close disposes the state handle but not the dither table (§10) | leaks `$20008` bytes per 8-bit codec instance |
+| Antelope TestCLUT | writes the RAMDAC index as a word, so the RAMDAC sees 0, not `$FE` (§11.5) | tests entry 0; passes either way |
+| declaration ROM `$70B4`, `$70F4` | two mode lists lack the `$FF` terminator and run into the B-bank lists (§11.8) | harmless: the Slot Manager takes the first match |
+| declaration ROM | four unreachable TV timing tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) and two unreferenced mode lists (§11.8) | left-overs |
 
 ## How the card firmware was built
 

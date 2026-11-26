@@ -34,7 +34,7 @@
 * ==================================================================
 * Entry: A0 = seBlock; byte 0 = slot number.  Brings the board out of
 * reset, senses the attached monitor, shifts a fixed stream into the serial
-* port $0480'0000 (device unknown), loads the DP8531 clock synthesiser
+* port $0480'0000 (most likely an MFB configuration chain), loads the DP8531 clock synthesiser
 * ($0680'0000) and the video timing for it,
 * and enables exactly the sResources that match the monitor + depth.
 *
@@ -209,12 +209,12 @@ L22bc:
   0022c4:  08 05 00 00          btst.b   #$0, d5
   0022c8:  67 04                beq.b    $22ce  ; -> L22ce
   0022ca:  08 85 00 02          bclr.b   #$2, d5
-* Shift the fixed stream into the serial port $04800000 (device unknown;
+* Shift the fixed stream into the serial port $04800000 (most likely an MFB configuration chain;
 * not the clock synthesiser), reading the board revision (bits 12-15
 * of the card's bus status word $06000000) to pick the coefficient set.
 L22ce:
   0022ce:  28 49                movea.l  a1, a4
-  0022d0:  28 3c 04 80 00 00    move.l   #$4800000, d4  ; clock-synth serial port
+  0022d0:  28 3c 04 80 00 00    move.l   #$4800000, d4  ; serial port $0480'0000 (MFB configuration chain, reading)
   0022d6:  72 00                moveq    #$0, d1
   0022d8:  74 01                moveq    #$1, d2
   0022da:  4e ba 05 a4          jsr      $2880(pc)  ; -> SerialShiftOutReg
@@ -578,7 +578,7 @@ L26c2:
   0026ce:  70 01                moveq    #$1, d0
   0026d0:  a0 5d                dc.w     $a05d  ; _SwapMMUMode ->32-bit mode
   0026d2:  28 49                movea.l  a1, a4
-  0026d4:  28 3c 04 80 00 00    move.l   #$4800000, d4  ; clock-synth serial port
+  0026d4:  28 3c 04 80 00 00    move.l   #$4800000, d4  ; serial port $0480'0000 (MFB configuration chain, reading)
   0026da:  72 00                moveq    #$0, d1
   0026dc:  74 01                moveq    #$1, d2
   0026de:  4e ba 01 a0          jsr      $2880(pc)  ; -> SerialShiftOutReg
@@ -699,7 +699,7 @@ L2820:
   00287c:  60 00 fe 38          bra.w    $26b6  ; -> L26b6
 * SerialShiftOutReg  -  shift D1 (top D2 bits, MSB first) out to the
 * card register at (A4,D4).  Used for the serial port
-* $0480'0000 (device unknown), the serial registers $0400'0000/$04/$08/$A0 and the timing
+* $0480'0000 (most likely an MFB configuration chain), the serial registers $0400'0000/$04/$08/$A0 and the timing
 * bank's data register $04C0'0000 (the RAMDAC is not written serially).
 SerialShiftOutReg:
   002880:  48 e7 62 00          movem.l  d1-d2/d6, -(a7)
