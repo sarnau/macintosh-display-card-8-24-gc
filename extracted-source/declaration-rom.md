@@ -89,7 +89,7 @@ All sixteen share this structure (shown for `$A6`, Mac II High-Res):
 | `0x0b` | | MinorLength -> $63EA |
 | `0x0c` | | MajorBaseOS -> $63EE |
 | `0x0d` | | MajorLength -> $63F6 |
-| `0x40` | | sVidParams -> $6412 |
+| `0x40` | | sGammaDir -> $6412 (the gamma tables; ROMDefs.h id `$40`) |
 | `0x80` | | sVidParmDir (per-depth VPBlocks) @ $6924 |
 | `0x81` | | video mode data @ $6B94 |
 | `0x82` | | video mode data @ $6E04 |

@@ -172,3 +172,11 @@ the driver logic and names carry over.
 * These are *reconstructions* for study — assembling them back to a
   byte-identical ROM would need the original macros, the data tables, and the
   declaration-ROM layout tooling.
+
+## The later ROM 1.1
+
+[`rom-1.1/`](rom-1.1/) holds plain listings of the later declaration ROM
+`341-0266` ("MDC 8•24 GC 1.1", 1991): PrimaryInit, SecondaryInit, the video
+driver and a decoded sResource dump, made by `../control-panel/rom11_dasm.py`
+(the ROM itself is not in the repo). What changed from 1.0 is in
+`../control-panel/HOST_CARD_PROTOCOL.md` section 10.10.

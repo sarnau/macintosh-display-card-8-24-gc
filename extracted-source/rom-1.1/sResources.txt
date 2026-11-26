@@ -1,0 +1,1090 @@
+sResources of the 8*24 GC declaration ROM 341-0266 ("MDC 8*24 GC 1.1")
+Written by control-panel/rom11_dasm.py from the ROM image; decoded, not annotated.
+Offsets are ROM byte offsets (ByteLanes $E1: one ROM byte per NuBus long).
+Video sRsrc id bits and the monitor names: HOST_CARD_PROTOCOL.md section 10.10.
+
+== Format block ($FFEC)
+  DirectoryOffset  $FF0014 -> directory at $0000
+  Length           $00010000
+  CRC              $D722B053
+  RevisionLevel    1
+  Format           1
+  TestPattern      $5A932BC7
+  Reserved         $00
+  ByteLanes        $E1
+
+== sResource directory ($0000, 57 entries)
+  $01 -> $00E8  Macintosh Display Card 8•24 GC
+  $80 -> $1A66  Display_Video_Apple_MDCGC
+  $81 -> $16CE  Display_Video_Apple_MDCGC
+  $82 -> $180A  Display_Video_Apple_MDCGC
+  $83 -> $1606  Display_Video_Apple_MDCGC
+  $84 -> $18DA  Display_Video_Apple_MDCGC
+  $85 -> $1706  Display_Video_Apple_MDCGC
+  $86 -> $179E  Display_Video_Apple_MDCGC
+  $87 -> $166A  Display_Video_Apple_MDCGC
+  $88 -> $1A06  Display_Video_Apple_MDCGC
+  $8C -> $1876  Display_Video_Apple_MDCGC
+  $90 -> $1A9E  Display_Video_Apple_MDCGC
+  $91 -> $173E  Display_Video_Apple_MDCGC
+  $92 -> $1846  Display_Video_Apple_MDCGC
+  $93 -> $163E  Display_Video_Apple_MDCGC
+  $94 -> $1912  Display_Video_Apple_MDCGC
+  $95 -> $176E  Display_Video_Apple_MDCGC
+  $96 -> $17DA  Display_Video_Apple_MDCGC
+  $97 -> $16A2  Display_Video_Apple_MDCGC
+  $98 -> $1A3A  Display_Video_Apple_MDCGC
+  $9C -> $18AE  Display_Video_Apple_MDCGC
+  $A0 -> $158E  Display_Video_Apple_MDCGC
+  $A1 -> $16CE  Display_Video_Apple_MDCGC
+  $A2 -> $13EE  Display_Video_Apple_MDCGC
+  $A3 -> $1606  Display_Video_Apple_MDCGC
+  $A4 -> $14A6  Display_Video_Apple_MDCGC
+  $A5 -> $1372  Display_Video_Apple_MDCGC
+  $A6 -> $13AE  Display_Video_Apple_MDCGC
+  $A7 -> $166A  Display_Video_Apple_MDCGC
+  $A8 -> $151E  Display_Video_Apple_MDCGC
+  $AC -> $142E  Display_Video_Apple_MDCGC
+  $B0 -> $1A9E  Display_Video_Apple_MDCGC
+  $B1 -> $173E  Display_Video_Apple_MDCGC
+  $B2 -> $1846  Display_Video_Apple_MDCGC
+  $B3 -> $163E  Display_Video_Apple_MDCGC
+  $B4 -> $1912  Display_Video_Apple_MDCGC
+  $B5 -> $176E  Display_Video_Apple_MDCGC
+  $B6 -> $17DA  Display_Video_Apple_MDCGC
+  $B7 -> $16A2  Display_Video_Apple_MDCGC
+  $B8 -> $1A3A  Display_Video_Apple_MDCGC
+  $BC -> $18AE  Display_Video_Apple_MDCGC
+  $C0 -> $1B2A  Display_Video_Apple_MDCGC
+  $C4 -> $19A2  Display_Video_Apple_MDCGC
+  $C8 -> $1ACA  Display_Video_Apple_MDCGC
+  $CC -> $193E  Display_Video_Apple_MDCGC
+  $D0 -> $1B62  Display_Video_Apple_MDCGC
+  $D4 -> $19DA  Display_Video_Apple_MDCGC
+  $D8 -> $1AFE  Display_Video_Apple_MDCGC
+  $DC -> $1976  Display_Video_Apple_MDCGC
+  $E0 -> $15CA  Display_Video_Apple_MDCGC
+  $E4 -> $14E2  Display_Video_Apple_MDCGC
+  $E8 -> $1556  Display_Video_Apple_MDCGC
+  $EC -> $146A  Display_Video_Apple_MDCGC
+  $F0 -> $1B62  Display_Video_Apple_MDCGC
+  $F4 -> $19DA  Display_Video_Apple_MDCGC
+  $F8 -> $1AFE  Display_Video_Apple_MDCGC
+  $FC -> $1976  Display_Video_Apple_MDCGC
+
+== Board sRsrc $01 ($00E8)
+  $01 sRsrcType        $0114  cat 1 type 0 DrSW 0 DrHW 0
+  $02 sRsrcName        $011C  'Macintosh Display Card 8•24 GC'
+  $14 vendor-specific  offset $00127A -> $136A, bytes there: c0 7f 80 00 00 00 00 10
+  $15 vendor-specific  offset $00127A -> $136E, bytes there: 00 00 00 10 01 00 08 1c
+  $20 BoardId          immediate $00002C
+  $22 PrimaryInit      $1BB2  sExecBlock len $AD2 rev 2 cpu 2, code at $1BBE (PrimaryInit.s)
+  $24 VendorInfo       $013C
+        VendorId   'Apple Computer, Inc. 1989-91 ©'
+        RevLevel   'MDC 8•24 GC 1.1'
+        PartNum    '341-0266'
+        Date       '16-Sep-91'
+  $26 SecondaryInit    $2684  sExecBlock len $1DC rev 2 cpu 2, code at $2690 (SecondaryInit.s)
+  $41 vendor: names    $0198  monitor-name records (sBlock: length, $02, monitor code, name)
+        $80 -> $12F6  len $1C  $02 code  8  'PAL 640x480 Convolved'
+        $81 -> $1252  len $22  $02 code  3  'Macintosh Portrait Display'
+        $82 -> $12DA  len $1C  $02 code  7  'Macintosh RGB Display'
+        $83 -> $1296  len $22  $02 code  5  'Macintosh Two-Page Display'
+        $84 -> $11D6  len $1E  $02 code  1  'NTSC 512x384 Convolved'
+        $85 -> $1274  len $22  $02 code  4  'Macintosh 16" Color Display'
+        $86 -> $11B4  len $22  $02 code  0  'Macintosh High-Res Display'
+        $87 -> $12B8  len $22  $02 code  6  'Macintosh 21" Color Display'
+        $88 -> $1330  len $1C  $02 code  9  'PAL 768x576 Convolved'
+        $8C -> $1214  len $1E  $02 code  2  'NTSC 640x480 Convolved'
+        $90 -> $12F6  len $1C  $02 code  8  'PAL 640x480 Convolved'
+        $91 -> $1252  len $22  $02 code  3  'Macintosh Portrait Display'
+        $92 -> $12DA  len $1C  $02 code  7  'Macintosh RGB Display'
+        $93 -> $1296  len $22  $02 code  5  'Macintosh Two-Page Display'
+        $94 -> $11D6  len $1E  $02 code  1  'NTSC 512x384 Convolved'
+        $95 -> $1274  len $22  $02 code  4  'Macintosh 16" Color Display'
+        $96 -> $11B4  len $22  $02 code  0  'Macintosh High-Res Display'
+        $97 -> $12B8  len $22  $02 code  6  'Macintosh 21" Color Display'
+        $98 -> $1330  len $1C  $02 code  9  'PAL 768x576 Convolved'
+        $9C -> $1214  len $1E  $02 code  2  'NTSC 640x480 Convolved'
+        $A0 -> $12F6  len $1C  $02 code  8  'PAL 640x480 Convolved'
+        $A1 -> $1252  len $22  $02 code  3  'Macintosh Portrait Display'
+        $A2 -> $12DA  len $1C  $02 code  7  'Macintosh RGB Display'
+        $A3 -> $1296  len $22  $02 code  5  'Macintosh Two-Page Display'
+        $A4 -> $11D6  len $1E  $02 code  1  'NTSC 512x384 Convolved'
+        $A5 -> $1274  len $22  $02 code  4  'Macintosh 16" Color Display'
+        $A6 -> $11B4  len $22  $02 code  0  'Macintosh High-Res Display'
+        $A7 -> $12B8  len $22  $02 code  6  'Macintosh 21" Color Display'
+        $A8 -> $1330  len $1C  $02 code  9  'PAL 768x576 Convolved'
+        $AC -> $1214  len $1E  $02 code  2  'NTSC 640x480 Convolved'
+        $B0 -> $12F6  len $1C  $02 code  8  'PAL 640x480 Convolved'
+        $B1 -> $1252  len $22  $02 code  3  'Macintosh Portrait Display'
+        $B2 -> $12DA  len $1C  $02 code  7  'Macintosh RGB Display'
+        $B3 -> $1296  len $22  $02 code  5  'Macintosh Two-Page Display'
+        $B4 -> $11D6  len $1E  $02 code  1  'NTSC 512x384 Convolved'
+        $B5 -> $1274  len $22  $02 code  4  'Macintosh 16" Color Display'
+        $B6 -> $11B4  len $22  $02 code  0  'Macintosh High-Res Display'
+        $B7 -> $12B8  len $22  $02 code  6  'Macintosh 21" Color Display'
+        $B8 -> $1330  len $1C  $02 code  9  'PAL 768x576 Convolved'
+        $BC -> $1214  len $1E  $02 code  2  'NTSC 640x480 Convolved'
+        $C0 -> $1312  len $1E  $02 code 16  'PAL 640x480 Unconvolved'
+        $C4 -> $11F4  len $20  $02 code 18  'NTSC 512x384 Unconvolved'
+        $C8 -> $134C  len $1E  $02 code 17  'PAL 768x576 Unconvolved'
+        $CC -> $1232  len $20  $02 code 19  'NTSC 640x480 Unconvolved'
+        $D0 -> $1312  len $1E  $02 code 16  'PAL 640x480 Unconvolved'
+        $D4 -> $11F4  len $20  $02 code 18  'NTSC 512x384 Unconvolved'
+        $D8 -> $134C  len $1E  $02 code 17  'PAL 768x576 Unconvolved'
+        $DC -> $1232  len $20  $02 code 19  'NTSC 640x480 Unconvolved'
+        $E0 -> $1312  len $1E  $02 code 16  'PAL 640x480 Unconvolved'
+        $E4 -> $11F4  len $20  $02 code 18  'NTSC 512x384 Unconvolved'
+        $E8 -> $134C  len $1E  $02 code 17  'PAL 768x576 Unconvolved'
+        $EC -> $1232  len $20  $02 code 19  'NTSC 640x480 Unconvolved'
+        $F0 -> $1312  len $1E  $02 code 16  'PAL 640x480 Unconvolved'
+        $F4 -> $11F4  len $20  $02 code 18  'NTSC 512x384 Unconvolved'
+        $F8 -> $134C  len $1E  $02 code 17  'PAL 768x576 Unconvolved'
+        $FC -> $1232  len $20  $02 code 19  'NTSC 640x480 Unconvolved'
+  $7E vendor: timing   $027C  timing sBlocks, one per video sRsrc id (decoded below)
+
+== Video sRsrcs
+  id bits (10.10): 2-0 monitor, 3 other TV size, 4 24-bit bank, 5 16 bpp, 6 unconvolved TV
+
+-- sRsrc $80 ($1A66)  [PAL 640]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4438  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46F6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49B4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C72  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $5022  pages 1 devType 2  VPBlock $5118: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $81 ($16CE)  [Portrait]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B54  $80:'Mac Gray Gamma'
+   $80 mode $80      $4358  pages 1 devType 0  VPBlock $4476: base $10000 rowBytes 128 bounds (0,0,870,640) 640x870  1 bpp (type 0, 1 x 1)  res 80/80 dpi
+   $81 mode $81      $4616  pages 1 devType 0  VPBlock $4734: base $10000 rowBytes 256 bounds (0,0,870,640) 640x870  2 bpp (type 0, 1 x 2)  res 80/80 dpi
+   $82 mode $82      $48D4  pages 1 devType 0  VPBlock $49F2: base $10000 rowBytes 512 bounds (0,0,870,640) 640x870  4 bpp (type 0, 1 x 4)  res 80/80 dpi
+   $83 mode $83      $4B92  pages 1 devType 0  VPBlock $4CB0: base $10000 rowBytes 1024 bounds (0,0,870,640) 640x870  8 bpp (type 0, 1 x 8)  res 80/80 dpi
+
+-- sRsrc $82 ($180A)  [12"]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B5C  $80:'Mac RGB Gamma'
+   $80 mode $80      $43B8  pages 1 devType 0  VPBlock $4500: base $10000 rowBytes 64 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4676  pages 1 devType 0  VPBlock $47BE: base $10000 rowBytes 128 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4934  pages 1 devType 0  VPBlock $4A7C: base $10000 rowBytes 256 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BF2  pages 1 devType 0  VPBlock $4D3A: base $10000 rowBytes 512 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4FE2  pages 1 devType 2  VPBlock $5060: base $10000 rowBytes 2048 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $83 ($1606)  [Two-Page]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B64  $80:'Mac Gray Gamma'
+   $80 mode $80      $4338  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45F6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48B4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+   $83 mode $83      $4B72  pages 1 devType 0  VPBlock $4C82: base $10000 rowBytes 1152 bounds (0,0,870,1152) 1152x870  8 bpp (type 0, 1 x 8)  res 77/77 dpi
+
+-- sRsrc $84 ($18DA)  [NTSC 512]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43F8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46B6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4974  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C32  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $5002  pages 1 devType 2  VPBlock $50BC: base $11400 rowBytes 2560 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $85 ($1706)  [16" Color]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4378  pages 1 devType 0  VPBlock $44A4: base $10000 rowBytes 128 bounds (0,0,624,832) 832x624  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4636  pages 1 devType 0  VPBlock $4762: base $10000 rowBytes 256 bounds (0,0,624,832) 832x624  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $48F4  pages 1 devType 0  VPBlock $4A20: base $10000 rowBytes 512 bounds (0,0,624,832) 832x624  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BB2  pages 1 devType 0  VPBlock $4CDE: base $10000 rowBytes 1024 bounds (0,0,624,832) 832x624  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $86 ($179E)  [13"]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B6C  $80:'Mac Std Gamma'
+   $80 mode $80      $4398  pages 1 devType 0  VPBlock $44D2: base $10000 rowBytes 128 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4656  pages 1 devType 0  VPBlock $4790: base $10000 rowBytes 256 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4914  pages 1 devType 0  VPBlock $4A4E: base $10000 rowBytes 320 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BD2  pages 1 devType 0  VPBlock $4D0C: base $10000 rowBytes 640 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4FD2  pages 1 devType 2  VPBlock $5032: base $10000 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $87 ($166A)  [21" Color]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4338  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45F6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48B4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+   $83 mode $83      $4B72  pages 1 devType 0  VPBlock $4C82: base $10000 rowBytes 1152 bounds (0,0,870,1152) 1152x870  8 bpp (type 0, 1 x 8)  res 77/77 dpi
+
+-- sRsrc $88 ($1A06)  [PAL 640 +TVsize]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4418  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46D6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4994  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C52  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $8C ($1876)  [NTSC 512 +TVsize]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43D8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4696  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4954  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C12  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4FF2  pages 1 devType 2  VPBlock $508E: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $90 ($1A9E)  [PAL 640 bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4428  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46E6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49A4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C62  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $91 ($173E)  [Portrait bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B54  $80:'Mac Gray Gamma'
+   $80 mode $80      $4348  pages 1 devType 0  VPBlock $4476: base $10000 rowBytes 128 bounds (0,0,870,640) 640x870  1 bpp (type 0, 1 x 1)  res 80/80 dpi
+   $81 mode $81      $4606  pages 1 devType 0  VPBlock $4734: base $10000 rowBytes 256 bounds (0,0,870,640) 640x870  2 bpp (type 0, 1 x 2)  res 80/80 dpi
+   $82 mode $82      $48C4  pages 1 devType 0  VPBlock $49F2: base $10000 rowBytes 512 bounds (0,0,870,640) 640x870  4 bpp (type 0, 1 x 4)  res 80/80 dpi
+   $83 mode $83      $4B82  pages 1 devType 0  VPBlock $4CB0: base $10000 rowBytes 1024 bounds (0,0,870,640) 640x870  8 bpp (type 0, 1 x 8)  res 80/80 dpi
+
+-- sRsrc $92 ($1846)  [12" bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B5C  $80:'Mac RGB Gamma'
+   $80 mode $80      $43A8  pages 1 devType 0  VPBlock $4500: base $10000 rowBytes 64 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4666  pages 1 devType 0  VPBlock $47BE: base $10000 rowBytes 128 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4924  pages 1 devType 0  VPBlock $4A7C: base $10000 rowBytes 256 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BE2  pages 1 devType 0  VPBlock $4D3A: base $10000 rowBytes 512 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $93 ($163E)  [Two-Page bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B64  $80:'Mac Gray Gamma'
+   $80 mode $80      $4328  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45E6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48A4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+
+-- sRsrc $94 ($1912)  [NTSC 512 bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43E8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46A6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4964  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C22  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $95 ($176E)  [16" Color bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B44 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4378  pages 1 devType 0  VPBlock $44A4: base $10000 rowBytes 128 bounds (0,0,624,832) 832x624  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4636  pages 1 devType 0  VPBlock $4762: base $10000 rowBytes 256 bounds (0,0,624,832) 832x624  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $48F4  pages 1 devType 0  VPBlock $4A20: base $10000 rowBytes 512 bounds (0,0,624,832) 832x624  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BB2  pages 1 devType 0  VPBlock $4CDE: base $10000 rowBytes 1024 bounds (0,0,624,832) 832x624  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $96 ($17DA)  [13" bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B6C  $80:'Mac Std Gamma'
+   $80 mode $80      $4388  pages 1 devType 0  VPBlock $44D2: base $10000 rowBytes 128 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4646  pages 1 devType 0  VPBlock $4790: base $10000 rowBytes 256 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4904  pages 1 devType 0  VPBlock $4A4E: base $10000 rowBytes 320 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BC2  pages 1 devType 0  VPBlock $4D0C: base $10000 rowBytes 640 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $97 ($16A2)  [21" Color bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4328  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45E6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48A4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+
+-- sRsrc $98 ($1A3A)  [PAL 640 +TVsize bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4408  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46C6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4984  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C42  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $9C ($18AE)  [NTSC 512 +TVsize bank24]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43C8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4686  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4944  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C02  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $A0 ($158E)  [PAL 640 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4438  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46F6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49B4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C72  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E80  pages 1 devType 2  VPBlock $4FA4: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $5022  pages 1 devType 2  VPBlock $5118: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $A1 ($16CE)  [Portrait 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B54  $80:'Mac Gray Gamma'
+   $80 mode $80      $4358  pages 1 devType 0  VPBlock $4476: base $10000 rowBytes 128 bounds (0,0,870,640) 640x870  1 bpp (type 0, 1 x 1)  res 80/80 dpi
+   $81 mode $81      $4616  pages 1 devType 0  VPBlock $4734: base $10000 rowBytes 256 bounds (0,0,870,640) 640x870  2 bpp (type 0, 1 x 2)  res 80/80 dpi
+   $82 mode $82      $48D4  pages 1 devType 0  VPBlock $49F2: base $10000 rowBytes 512 bounds (0,0,870,640) 640x870  4 bpp (type 0, 1 x 4)  res 80/80 dpi
+   $83 mode $83      $4B92  pages 1 devType 0  VPBlock $4CB0: base $10000 rowBytes 1024 bounds (0,0,870,640) 640x870  8 bpp (type 0, 1 x 8)  res 80/80 dpi
+
+-- sRsrc $A2 ($13EE)  [12" 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B5C  $80:'Mac RGB Gamma'
+   $80 mode $80      $43B8  pages 1 devType 0  VPBlock $4500: base $10000 rowBytes 64 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4676  pages 1 devType 0  VPBlock $47BE: base $10000 rowBytes 128 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4934  pages 1 devType 0  VPBlock $4A7C: base $10000 rowBytes 256 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BF2  pages 1 devType 0  VPBlock $4D3A: base $10000 rowBytes 512 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E40  pages 1 devType 2  VPBlock $4EEC: base $10000 rowBytes 1024 bounds (0,0,384,512) 512x384  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $4FE2  pages 1 devType 2  VPBlock $5060: base $10000 rowBytes 2048 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $A3 ($1606)  [Two-Page 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B64  $80:'Mac Gray Gamma'
+   $80 mode $80      $4338  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45F6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48B4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+   $83 mode $83      $4B72  pages 1 devType 0  VPBlock $4C82: base $10000 rowBytes 1152 bounds (0,0,870,1152) 1152x870  8 bpp (type 0, 1 x 8)  res 77/77 dpi
+
+-- sRsrc $A4 ($14A6)  [NTSC 512 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43F8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46B6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4974  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C32  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E60  pages 1 devType 2  VPBlock $4F48: base $11400 rowBytes 1280 bounds (0,0,384,512) 512x384  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $5002  pages 1 devType 2  VPBlock $50BC: base $11400 rowBytes 2560 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $A5 ($1372)  [16" Color 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4378  pages 1 devType 0  VPBlock $44A4: base $10000 rowBytes 128 bounds (0,0,624,832) 832x624  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4636  pages 1 devType 0  VPBlock $4762: base $10000 rowBytes 256 bounds (0,0,624,832) 832x624  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $48F4  pages 1 devType 0  VPBlock $4A20: base $10000 rowBytes 512 bounds (0,0,624,832) 832x624  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BB2  pages 1 devType 0  VPBlock $4CDE: base $10000 rowBytes 1024 bounds (0,0,624,832) 832x624  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E20  pages 1 devType 2  VPBlock $4E90: base $10000 rowBytes 1664 bounds (0,0,624,832) 832x624  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+
+-- sRsrc $A6 ($13AE)  [13" 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B6C  $80:'Mac Std Gamma'
+   $80 mode $80      $4398  pages 1 devType 0  VPBlock $44D2: base $10000 rowBytes 128 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4656  pages 1 devType 0  VPBlock $4790: base $10000 rowBytes 256 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4914  pages 1 devType 0  VPBlock $4A4E: base $10000 rowBytes 320 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BD2  pages 1 devType 0  VPBlock $4D0C: base $10000 rowBytes 640 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E30  pages 1 devType 2  VPBlock $4EBE: base $10000 rowBytes 1280 bounds (0,0,480,640) 640x480  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $4FD2  pages 1 devType 2  VPBlock $5032: base $10000 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $A7 ($166A)  [21" Color 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4338  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45F6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48B4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+   $83 mode $83      $4B72  pages 1 devType 0  VPBlock $4C82: base $10000 rowBytes 1152 bounds (0,0,870,1152) 1152x870  8 bpp (type 0, 1 x 8)  res 77/77 dpi
+
+-- sRsrc $A8 ($151E)  [PAL 640 +TVsize 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4418  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46D6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4994  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C52  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E70  pages 1 devType 2  VPBlock $4F76: base $11400 rowBytes 2560 bounds (0,0,576,768) 768x576  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+
+-- sRsrc $AC ($142E)  [NTSC 512 +TVsize 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43D8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4696  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4954  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C12  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E50  pages 1 devType 2  VPBlock $4F1A: base $11400 rowBytes 1280 bounds (0,0,480,640) 640x480  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $4FF2  pages 1 devType 2  VPBlock $508E: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $B0 ($1A9E)  [PAL 640 bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4428  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46E6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49A4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C62  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $B1 ($173E)  [Portrait bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B54  $80:'Mac Gray Gamma'
+   $80 mode $80      $4348  pages 1 devType 0  VPBlock $4476: base $10000 rowBytes 128 bounds (0,0,870,640) 640x870  1 bpp (type 0, 1 x 1)  res 80/80 dpi
+   $81 mode $81      $4606  pages 1 devType 0  VPBlock $4734: base $10000 rowBytes 256 bounds (0,0,870,640) 640x870  2 bpp (type 0, 1 x 2)  res 80/80 dpi
+   $82 mode $82      $48C4  pages 1 devType 0  VPBlock $49F2: base $10000 rowBytes 512 bounds (0,0,870,640) 640x870  4 bpp (type 0, 1 x 4)  res 80/80 dpi
+   $83 mode $83      $4B82  pages 1 devType 0  VPBlock $4CB0: base $10000 rowBytes 1024 bounds (0,0,870,640) 640x870  8 bpp (type 0, 1 x 8)  res 80/80 dpi
+
+-- sRsrc $B2 ($1846)  [12" bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B5C  $80:'Mac RGB Gamma'
+   $80 mode $80      $43A8  pages 1 devType 0  VPBlock $4500: base $10000 rowBytes 64 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4666  pages 1 devType 0  VPBlock $47BE: base $10000 rowBytes 128 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4924  pages 1 devType 0  VPBlock $4A7C: base $10000 rowBytes 256 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BE2  pages 1 devType 0  VPBlock $4D3A: base $10000 rowBytes 512 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $B3 ($163E)  [Two-Page bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B64  $80:'Mac Gray Gamma'
+   $80 mode $80      $4328  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45E6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48A4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+
+-- sRsrc $B4 ($1912)  [NTSC 512 bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43E8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46A6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4964  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C22  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $B5 ($176E)  [16" Color bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B44 -> $00200000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4378  pages 1 devType 0  VPBlock $44A4: base $10000 rowBytes 128 bounds (0,0,624,832) 832x624  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4636  pages 1 devType 0  VPBlock $4762: base $10000 rowBytes 256 bounds (0,0,624,832) 832x624  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $48F4  pages 1 devType 0  VPBlock $4A20: base $10000 rowBytes 512 bounds (0,0,624,832) 832x624  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BB2  pages 1 devType 0  VPBlock $4CDE: base $10000 rowBytes 1024 bounds (0,0,624,832) 832x624  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $B6 ($17DA)  [13" bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B6C  $80:'Mac Std Gamma'
+   $80 mode $80      $4388  pages 1 devType 0  VPBlock $44D2: base $10000 rowBytes 128 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4646  pages 1 devType 0  VPBlock $4790: base $10000 rowBytes 256 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4904  pages 1 devType 0  VPBlock $4A4E: base $10000 rowBytes 320 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4BC2  pages 1 devType 0  VPBlock $4D0C: base $10000 rowBytes 640 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $B7 ($16A2)  [21" Color bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $40 sGammaDir     $3B74  $80:'Page-White Gamma', $81:'Mac Std Gamma'
+   $80 mode $80      $4328  pages 1 devType 0  VPBlock $4448: base $10000 rowBytes 256 bounds (0,0,870,1152) 1152x870  1 bpp (type 0, 1 x 1)  res 77/77 dpi
+   $81 mode $81      $45E6  pages 1 devType 0  VPBlock $4706: base $10000 rowBytes 512 bounds (0,0,870,1152) 1152x870  2 bpp (type 0, 1 x 2)  res 77/77 dpi
+   $82 mode $82      $48A4  pages 1 devType 0  VPBlock $49C4: base $10000 rowBytes 576 bounds (0,0,870,1152) 1152x870  4 bpp (type 0, 1 x 4)  res 77/77 dpi
+
+-- sRsrc $B8 ($1A3A)  [PAL 640 +TVsize bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4408  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46C6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4984  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C42  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $BC ($18AE)  [NTSC 512 +TVsize bank24 16bpp]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43C8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4686  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4944  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C02  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $C0 ($1B2A)  [PAL 640 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4438  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46F6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49B4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C72  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $5022  pages 1 devType 2  VPBlock $5118: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $C4 ($19A2)  [NTSC 512 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43F8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46B6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4974  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C32  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $5002  pages 1 devType 2  VPBlock $50BC: base $11400 rowBytes 2560 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $C8 ($1ACA)  [PAL 640 +TVsize unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4418  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46D6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4994  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C52  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $CC ($193E)  [NTSC 512 +TVsize unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43D8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4696  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4954  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C12  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4FF2  pages 1 devType 2  VPBlock $508E: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $D0 ($1B62)  [PAL 640 bank24 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4428  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46E6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49A4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C62  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $D4 ($19DA)  [NTSC 512 bank24 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43E8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46A6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4964  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C22  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $D8 ($1AFE)  [PAL 640 +TVsize bank24 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4408  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46C6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4984  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C42  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $DC ($1976)  [NTSC 512 +TVsize bank24 unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43C8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4686  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4944  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C02  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $E0 ($15CA)  [PAL 640 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4438  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46F6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49B4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C72  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E80  pages 1 devType 2  VPBlock $4FA4: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $5022  pages 1 devType 2  VPBlock $5118: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $E4 ($14E2)  [NTSC 512 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43F8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46B6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4974  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C32  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E60  pages 1 devType 2  VPBlock $4F48: base $11400 rowBytes 1280 bounds (0,0,384,512) 512x384  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $5002  pages 1 devType 2  VPBlock $50BC: base $11400 rowBytes 2560 bounds (0,0,384,512) 512x384  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $E8 ($1556)  [PAL 640 +TVsize 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $4418  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46D6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4994  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C52  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E70  pages 1 devType 2  VPBlock $4F76: base $11400 rowBytes 2560 bounds (0,0,576,768) 768x576  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+
+-- sRsrc $EC ($146A)  [NTSC 512 +TVsize 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $07 sRsrcFlags    $6
+   $08 sRsrcHWDevId  $1
+   $0B MinorLength   $3B44 -> $00200000
+   $0C MajorBaseOS   $3B48 -> $0C000000
+   $0D MajorLength   $3B50 -> $00200000
+   $80 mode $80      $43D8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4696  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4954  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C12  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+   $84 mode $84      $4E50  pages 1 devType 2  VPBlock $4F1A: base $11400 rowBytes 1280 bounds (0,0,480,640) 640x480  16 bpp (type 16, 3 x 5)  res 72/72 dpi
+   $85 mode $85      $4FF2  pages 1 devType 2  VPBlock $508E: base $11400 rowBytes 2560 bounds (0,0,480,640) 640x480  32 bpp (type 16, 3 x 8)  res 72/72 dpi
+
+-- sRsrc $F0 ($1B62)  [PAL 640 bank24 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4428  pages 1 devType 0  VPBlock $45B8: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46E6  pages 1 devType 0  VPBlock $4876: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $49A4  pages 1 devType 0  VPBlock $4B34: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C62  pages 1 devType 0  VPBlock $4DF2: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $F4 ($19DA)  [NTSC 512 bank24 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43E8  pages 1 devType 0  VPBlock $455C: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46A6  pages 1 devType 0  VPBlock $481A: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4964  pages 1 devType 0  VPBlock $4AD8: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C22  pages 1 devType 0  VPBlock $4D96: base $11400 rowBytes 1024 bounds (0,0,384,512) 512x384  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $F8 ($1AFE)  [PAL 640 +TVsize bank24 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $4408  pages 1 devType 0  VPBlock $458A: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $46C6  pages 1 devType 0  VPBlock $4848: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4984  pages 1 devType 0  VPBlock $4B06: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C42  pages 1 devType 0  VPBlock $4DC4: base $11400 rowBytes 1024 bounds (0,0,576,768) 768x576  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+-- sRsrc $FC ($1976)  [NTSC 512 +TVsize bank24 16bpp unconv]
+   $01 sRsrcType     cat 3 type 1 DrSW 1 DrHW $1D
+   $02 sRsrcName     'Display_Video_Apple_MDCGC'
+   $04 sRsrcDrvrDir  $2860
+   $08 sRsrcHWDevId  $1
+   $0A MinorBaseOS   $3B3C -> $00000000
+   $0B MinorLength   $3B40 -> $00100000
+   $80 mode $80      $43C8  pages 1 devType 0  VPBlock $452E: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  1 bpp (type 0, 1 x 1)  res 72/72 dpi
+   $81 mode $81      $4686  pages 1 devType 0  VPBlock $47EC: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  2 bpp (type 0, 1 x 2)  res 72/72 dpi
+   $82 mode $82      $4944  pages 1 devType 0  VPBlock $4AAA: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  4 bpp (type 0, 1 x 4)  res 72/72 dpi
+   $83 mode $83      $4C02  pages 1 devType 0  VPBlock $4D68: base $11400 rowBytes 1024 bounds (0,0,480,640) 640x480  8 bpp (type 0, 1 x 8)  res 72/72 dpi
+
+== Driver directory $2860: $02 -> $2868  DRVR sBlock length $12D4 (VideoDriver.s)
+
+== Board id $7E: timing sBlocks
+  header: length, pages (12 bytes: 6 for 32-bit, 6 for 24-bit addressing), 6 rowBytes,
+  vRes, 16 DP8531 clock writes (byte = register<<4 | nibble; N = nibbles 0-3,
+  R = 4-6, P = 9; PCLK = 20 MHz * N / R / 2^P); then one 40-byte record per depth
+  (1, 2, 4, 8, 16, 32 bpp), with 6 more bytes after the first; TV blocks end with a
+  second clock (direct modes).  Record: L0 (RAMDAC mode in the high byte), L1 (reg $7C),
+  L2 (reg $04, 8 bits), L3 (reg $00, 20 bits), L4 (reg $A0, 12 bits), 15 timing words.
+
+-- $0360  len $D4  used by $83 $87 $93 $97 $A3 $A7 $B3 $B7  (Macintosh 21" Color Display; Macintosh Two-Page Display)
+   pages  00 00 00 00 ff ff 00 00 00 ff ff ff
+   rowBytes 256 512 576 1152 0 0   vRes 870
+   clock  0e 1b 20 30 43 51 60 70 80 91 ad b6 c4 d1 e0 f0   N=190 R=19 P=1  PCLK=100.000 MHz
+    1 bpp L0 $C000 L1 $0 L2 $F8 L3 $2000 L4 $020  timing 003 000 090 11e 020 01e 008 003 000 6cc 04e 006 006 000 16c
+          +6 bytes after record 0: $2 $365 $3F
+    2 bpp L0 $C800 L1 $0 L2 $FC L3 $2000 L4 $040  timing 003 000 090 11e 020 01e 008 003 000 6cc 04e 006 006 000 16c
+    4 bpp L0 $D000 L1 $0 L2 $FE L3 $2000 L4 $048  timing 003 000 090 11e 020 01e 008 003 000 6cc 04e 006 006 000 16c
+    8 bpp L0 $D800 L1 $0 L2 $FF L3 $2000 L4 $090  timing 003 000 090 11e 020 01e 008 003 000 6cc 04e 006 006 000 16c
+
+-- $0434  len $D4  used by $81 $91 $A1 $B1  (Macintosh Portrait Display)
+   pages  00 00 00 00 00 ff 00 00 00 00 ff ff
+   rowBytes 128 256 512 1024 0 0   vRes 870
+   clock  0e 17 20 30 46 51 60 70 80 91 ad b6 c4 d1 e0 f0   N=126 R=22 P=1  PCLK=57.273 MHz
+    1 bpp L0 $C000 L1 $0 L2 $F8 L3 $2000 L4 $010  timing 003 000 050 09e 010 012 008 003 000 6cc 054 006 006 000 0d0
+          +6 bytes after record 0: $2 $365 $1F
+    2 bpp L0 $C800 L1 $0 L2 $FC L3 $2000 L4 $020  timing 003 000 050 09e 010 012 008 003 000 6cc 054 006 006 000 0d0
+    4 bpp L0 $D000 L1 $0 L2 $FE L3 $2000 L4 $040  timing 003 000 050 09e 010 012 008 003 000 6cc 054 006 006 000 0d0
+    8 bpp L0 $D800 L1 $0 L2 $FF L3 $2000 L4 $080  timing 003 000 050 09e 010 012 008 003 000 6cc 054 006 006 000 0d0
+
+-- $0508  len $FC  used by $85 $95 $A5 $B5  (Macintosh 16" Color Display)
+   pages  00 00 00 00 00 ff 00 00 00 00 00 ff
+   rowBytes 128 256 512 1024 1664 0   vRes 624
+   clock  0e 17 20 30 46 51 60 70 80 91 ad b6 c4 d1 e0 f0   N=126 R=22 P=1  PCLK=57.273 MHz
+    1 bpp L0 $A000 L1 $0 L2 $F0 L3 $2000 L4 $010  timing 003 000 0cb 19e 067 01e 015 003 000 4e0 04e 006 002 000 100
+          +6 bytes after record 0: $2 $26F $1F
+    2 bpp L0 $A800 L1 $0 L2 $F8 L3 $2000 L4 $020  timing 003 000 0cb 19e 067 01e 015 003 000 4e0 04e 006 002 000 100
+    4 bpp L0 $B000 L1 $0 L2 $FC L3 $2000 L4 $040  timing 003 000 0cb 19e 067 01e 015 003 000 4e0 04e 006 002 000 100
+    8 bpp L0 $B800 L1 $0 L2 $FE L3 $2000 L4 $080  timing 003 000 0cb 19e 067 01e 015 003 000 4e0 04e 006 002 000 100
+   16 bpp L0 $BE00 L1 $0 L2 $FF L3 $2000 L4 $0D0  timing 003 000 0cb 19e 067 01e 015 003 000 4e0 04e 006 002 000 100
+
+-- $0604  len $124  used by $86 $96 $A6 $B6  (Macintosh High-Res Display)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 128 256 320 640 1280 2560   vRes 480
+   clock  0f 17 20 30 45 51 60 70 80 92 ad b6 c4 d1 e0 f0   N=127 R=21 P=2  PCLK=30.238 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $010  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+          +6 bytes after record 0: $2 $1DF $1F
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $020  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $028  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $050  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $0A0  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $140  timing 003 000 140 27e 05e 03e 03e 003 000 3c0 04e 006 006 000 360
+
+-- $0728  len $124  used by $82 $92 $A2 $B2  (Macintosh RGB Display)
+   pages  00 00 00 00 00 00 00 00 00 00 00 00
+   rowBytes 64 128 256 512 1024 2048   vRes 384
+   clock  0e 15 20 30 4f 50 60 70 80 93 ad b6 c4 d1 e0 f0   N=94 R=15 P=3  PCLK=15.667 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $008  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+          +6 bytes after record 0: $2 $17F $F
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $010  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $020  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $040  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $080  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $100  timing 003 000 100 1fe 04e 01e 00e 003 000 300 026 006 002 000 260
+
+-- $084C  len $134  used by $CC $DC $EC $FC  (NTSC 640x480 Unconvolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 1280 2560   vRes 480
+   clock  0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $100  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+          +6 bytes after record 0: $2 $1DF $FF
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $100  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $100  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $100  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $140  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   clock2 0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+
+-- $0980  len $134  used by $8C $9C $AC $BC  (NTSC 640x480 Convolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 1280 2560   vRes 480
+   clock  0c 11 22 30 47 53 60 70 80 92 ad b6 c0 d1 e0 f0   N=540 R=55 P=2  PCLK=49.091 MHz
+    1 bpp L0 $C100 L1 $1 L2 $F8 L3 $2000 L4 $200  timing 003 000 120 27e 024 03a 028 003 000 1e1 020 006 006 06e 14a
+          +6 bytes after record 0: $2 $1DF $FF
+    2 bpp L0 $C900 L1 $1 L2 $FC L3 $2000 L4 $200  timing 003 000 116 27e 032 03a 01a 003 000 1e1 020 006 006 06e 14a
+    4 bpp L0 $D100 L1 $1 L2 $FE L3 $2000 L4 $200  timing 003 000 10f 27e 039 03a 013 003 000 1e1 020 006 006 06e 14a
+    8 bpp L0 $D900 L1 $1 L2 $FF L3 $2000 L4 $200  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $140  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 10a 27e 03e 03a 00e 003 000 1e1 020 006 006 06e 14a
+   clock2 0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+
+-- $0AB4  len $134  used by $C4 $D4 $E4 $F4  (NTSC 512x384 Unconvolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 1280 2560   vRes 384
+   clock  0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $100  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+          +6 bytes after record 0: $2 $17F $FF
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $100  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $100  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $100  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $140  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 0d2 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   clock2 0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+
+-- $0BE8  len $134  used by $84 $94 $A4 $B4  (NTSC 512x384 Convolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 1280 2560   vRes 384
+   clock  0c 11 22 30 47 53 60 70 80 92 ad b6 c0 d1 e0 f0   N=540 R=55 P=2  PCLK=49.091 MHz
+    1 bpp L0 $C100 L1 $1 L2 $F8 L3 $2000 L4 $200  timing 003 000 0e0 1fe 060 03a 06c 003 000 1b1 050 006 006 06e 14a
+          +6 bytes after record 0: $2 $17F $FF
+    2 bpp L0 $C900 L1 $1 L2 $FC L3 $2000 L4 $200  timing 003 000 0d8 1fe 06a 03a 062 003 000 1b1 050 006 006 06e 14a
+    4 bpp L0 $D100 L1 $1 L2 $FE L3 $2000 L4 $200  timing 003 000 0d1 1fe 071 03a 05b 003 000 1b1 050 006 006 06e 14a
+    8 bpp L0 $D900 L1 $1 L2 $FF L3 $2000 L4 $200  timing 003 000 0cc 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $140  timing 003 000 0cc 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 0cc 1fe 076 03a 056 003 000 1b1 050 006 006 06e 14a
+   clock2 0c 11 22 30 47 53 60 70 80 94 ad b6 c0 d1 e0 f0   N=540 R=55 P=4  PCLK=12.273 MHz
+
+-- $0D1C  len $FC  used by $C8 $D8 $E8 $F8  (PAL 768x576 Unconvolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 2560 2560   vRes 576
+   clock  0d 19 21 30 46 54 60 71 81 93 ad b6 c0 d1 e0 f0   N=413 R=70 P=3  PCLK=14.750 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $100  timing 003 000 15e 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+          +6 bytes after record 0: $2 $23F $FF
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $100  timing 003 000 14e 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $100  timing 003 000 146 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $100  timing 003 000 142 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $280  timing 003 000 142 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+
+-- $0E18  len $134  used by $88 $98 $A8 $B8  (PAL 768x576 Convolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 2560 2560   vRes 576
+   clock  0d 19 21 30 46 54 60 71 81 91 ad b6 c0 d1 e0 f0   N=413 R=70 P=1  PCLK=59.000 MHz
+    1 bpp L0 $C100 L1 $1 L2 $F8 L3 $2000 L4 $200  timing 003 000 15e 2fe 033 043 034 003 000 240 027 005 005 05e 193
+          +6 bytes after record 0: $2 $23F $FF
+    2 bpp L0 $C900 L1 $1 L2 $FC L3 $2000 L4 $200  timing 003 000 14e 2fe 043 043 024 003 000 240 027 005 005 05e 193
+    4 bpp L0 $D100 L1 $1 L2 $FE L3 $2000 L4 $200  timing 003 000 146 2fe 04b 043 01c 003 000 240 027 005 005 05e 193
+    8 bpp L0 $D900 L1 $1 L2 $FF L3 $2000 L4 $200  timing 003 000 142 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $280  timing 003 000 142 2fe 04f 043 018 003 000 240 027 005 005 05e 193
+   32 bpp L0 $0000 L1 $0 L2 $00 L3 $0000 L4 $000  timing 000 000 000 000 000 000 000 000 000 000 000 000 000 000 000
+   clock2 0d 19 21 30 46 54 60 71 81 93 ad b6 c0 d1 e0 f0   N=413 R=70 P=3  PCLK=14.750 MHz
+
+-- $0F4C  len $134  used by $C0 $D0 $E0 $F0  (PAL 640x480 Unconvolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 2560 2560   vRes 480
+   clock  0d 19 21 30 46 54 60 71 81 93 ad b6 c0 d1 e0 f0   N=413 R=70 P=3  PCLK=14.750 MHz
+    1 bpp L0 $8000 L1 $0 L2 $E0 L3 $2000 L4 $100  timing 003 000 120 27e 08f 043 058 003 000 210 057 005 005 05e 193
+          +6 bytes after record 0: $2 $1DF $FF
+    2 bpp L0 $8800 L1 $0 L2 $F0 L3 $2000 L4 $100  timing 003 000 110 27e 08f 043 058 003 000 210 057 005 005 05e 193
+    4 bpp L0 $9000 L1 $0 L2 $F8 L3 $2000 L4 $100  timing 003 000 108 27e 08f 043 058 003 000 210 057 005 005 05e 193
+    8 bpp L0 $9800 L1 $0 L2 $FC L3 $2000 L4 $100  timing 003 000 104 27e 08f 043 058 003 000 210 057 005 005 05e 193
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $280  timing 003 000 104 27e 08f 043 058 003 000 210 057 005 005 05e 193
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 101 27e 08f 043 058 003 000 210 057 005 005 05e 193
+   clock2 0d 19 21 30 46 54 60 71 81 93 ad b6 c0 d1 e0 f0   N=413 R=70 P=3  PCLK=14.750 MHz
+
+-- $1080  len $134  used by $80 $90 $A0 $B0  (PAL 640x480 Convolved)
+   pages  00 00 00 00 00 00 00 00 00 00 00 ff
+   rowBytes 1024 1024 1024 1024 2560 2560   vRes 480
+   clock  0d 19 21 30 46 54 60 71 81 91 ad b6 c0 d1 e0 f0   N=413 R=70 P=1  PCLK=59.000 MHz
+    1 bpp L0 $C100 L1 $1 L2 $F8 L3 $2000 L4 $200  timing 003 000 120 27e 073 043 074 003 000 210 057 005 005 05e 193
+          +6 bytes after record 0: $2 $1DF $FF
+    2 bpp L0 $C900 L1 $1 L2 $FC L3 $2000 L4 $200  timing 003 000 110 27e 083 043 064 003 000 210 057 005 005 05e 193
+    4 bpp L0 $D100 L1 $1 L2 $FE L3 $2000 L4 $200  timing 003 000 108 27e 08b 043 05c 003 000 210 057 005 005 05e 193
+    8 bpp L0 $D900 L1 $1 L2 $FF L3 $2000 L4 $200  timing 003 000 104 27e 08f 043 058 003 000 210 057 005 005 05e 193
+   16 bpp L0 $9E00 L1 $0 L2 $FE L3 $2000 L4 $280  timing 003 000 104 27e 08f 043 058 003 000 210 057 005 005 05e 193
+   32 bpp L0 $9C00 L1 $0 L2 $FF L3 $2000 L4 $280  timing 003 000 101 27e 092 043 055 003 000 210 057 005 005 05e 193
+   clock2 0d 19 21 30 46 54 60 71 81 93 ad b6 c0 d1 e0 f0   N=413 R=70 P=3  PCLK=14.750 MHz

@@ -26,7 +26,8 @@ NOTES = {
     0x242a: ('RegTouchLoop', '1.0: RegTouchLoop $289E'),
     0x243c: ('XtdSense', 'extended sense; 1.0: sub_28b0 $28B0'),
     0x2528: ('WaitForVBlankCopy', '1.0: WaitForVBlankCopy $299C'),
-    0x2598: ('RAMDACProbe', 'RAMDAC probe: D1 = 1 if the indexed register 1 reads back (16 bpp sRsrcs; new in 1.1)'),
+    0x2598: ('RAMDACProbe', 'RAMDAC probe (new in 1.1): $06 into PCBR0, 0 into PCBR1, PCBR0 read back; '
+                            '$06 = AC842A -> D1 = 1 (16 bpp sRsrcs, id bit 5)'),
     0x25f0: ('SRsrcPairs', 'sRsrc id pairs deleted by the fallback path; 1.0: MonitorSRsrcPairs $2A1C'),
     0x2628: ('VideoSRsrcList', '28 video sRsrc ids (bit 4 added for the 24-bit bank); 1.0: BankAsRsrcList $2A2C'),
     # SecondaryInit
@@ -394,7 +395,7 @@ def sresources(path):
             timing_dir = u
             L.append('  $%02X %-16s $%04X  timing sBlocks, one per video sRsrc id (decoded below)' % (j, 'vendor: timing', u))
         else:
-            L.append('  $%02X %-16s $%04X  data %s' % (j, n, u, d[u:u + 8].hex(' ')))
+            L.append('  $%02X %-16s offset $%06X -> $%04X, bytes there: %s' % (j, n, raw, u, d[u:u + 8].hex(' ')))
     L.append('')
     # video sRsrcs
     seenvp = {}
@@ -524,12 +525,12 @@ def listed_bytes(ln):
         hb.append(tok)
     return int(m.group(1), 16), bytes.fromhex(''.join(hb))
 
-def check(paths):
+def check(paths, ranges):
     """every listed byte column equals the ROM, and the lines of each file
-    cover their range without gaps or overlaps"""
+    cover their range [start, end) without gaps or overlaps"""
     n = bad = 0
-    for p in paths:
-        prev = None
+    for p, (start, end) in zip(paths, ranges):
+        prev = start
         for ln in open(p):
             r = listed_bytes(ln.rstrip('\n'))
             if not r:
@@ -539,10 +540,13 @@ def check(paths):
             if not b or d[a:a + len(b)] != b:
                 bad += 1
                 print('MISMATCH %s: %s' % (p, ln.rstrip()))
-            if prev is not None and a != prev:
+            if a != prev:
                 bad += 1
                 print('GAP/OVERLAP %s at %06x (expected %06x)' % (p, a, prev))
             prev = a + len(b)
+        if prev != end:
+            bad += 1
+            print('%s ends at %06x, region ends at %06x' % (p, prev, end))
     return n, bad
 
 # ------------------------------------------------------------------ main --
@@ -565,7 +569,7 @@ def main():
     dh = dblk + 4
     drv_entries = [dh + u16(dh + o) for o in (8, 10, 12, 14, 16) if u16(dh + o)]
 
-    files = []
+    files, ranges = [], []
     # PrimaryInit
     R = Region('PrimaryInit', pi_code, pi + u32(pi), [pi_code], 'PrimaryInit')
     apply_notes(R)
@@ -574,6 +578,7 @@ def main():
         % (pi, u32(pi), d[pi + 4], d[pi + 5], pi_code, pi + u32(pi)),
         'Entry: A0 = SEBlock (seSlot at +0).'])
     files.append(('PrimaryInit.s', R.render(hdr)))
+    ranges.append((R.start, R.end))
     # SecondaryInit
     R = Region('SecondaryInit', si_code, si + u32(si), [si_code], 'SecondaryInit')
     apply_notes(R)
@@ -582,6 +587,7 @@ def main():
         % (si, u32(si), d[si + 4], d[si + 5], si_code, si + u32(si)),
         'Entry: A0 = SEBlock.'])
     files.append(('SecondaryInit.s', R.render(hdr)))
+    ranges.append((R.start, R.end))
     # Video driver
     R = Region('VideoDriver', dblk, dblk + dlen, drv_entries, 'VideoDriver')
     ctl, sts = dh + u16(dh + 12), dh + u16(dh + 14)
@@ -594,7 +600,7 @@ def main():
     R.labels[dh] = 'DRVRHeader'
     names = ['drvrFlags', 'drvrDelay', 'drvrEMask', 'drvrMenu', 'drvrOpen', 'drvrPrime',
              'drvrCtl', 'drvrStatus', 'drvrClose']
-    hdr = header('VideoDriver  (.%s)' % d[dh + 19:dh + 18 + d[dh + 18]].decode('mac_roman'), [
+    hdr = header('VideoDriver  (%s)' % d[dh + 19:dh + 19 + d[dh + 18]].decode('mac_roman'), [
         'DRVR sBlock at $%04X (driver directory $%04X, id $02 sMacOS68020), length $%X,'
         % (dblk, ddir, dlen),
         'driver header at $%04X: flags $%04X, Open $%04X, Prime %s, Control $%04X, Status $%04X, Close $%04X.'
@@ -614,6 +620,7 @@ def main():
     R.special[dblk] = (4, ['  %06x:  %-20s %-8s $%08X  ; sBlock length' % (dblk, d[dblk:dblk + 4].hex(' '), 'dc.l', dlen)])
     out = R.render(hdr)
     files.append(('VideoDriver.s', out))
+    ranges.append((R.start, R.end))
     # sResources
     paths = []
     for fn, ls in files:
@@ -621,9 +628,8 @@ def main():
         open(p, 'w').write('\n'.join(ls) + '\n')
         paths.append(p)
     open(os.path.join(outdir, 'sResources.txt'), 'w').write('\n'.join(sresources(rom)) + '\n')
-    n, bad = check(paths)
-    print('check: %d listing lines with bytes, %d mismatches' % (n, bad))
-    # coverage: every byte of each region listed exactly once
+    n, bad = check(paths, ranges)
+    print('check: %d listing lines with bytes, %d mismatches/gaps' % (n, bad))
     return 1 if bad else 0
 
 if __name__ == '__main__':

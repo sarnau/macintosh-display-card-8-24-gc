@@ -184,6 +184,8 @@ for v in "r7 firmware firmware/disasm" "r6 firmware/sw11 firmware/sw11/disasm"; 
 done
 # the System 6 host patches
 python3 -E -P gc24_sw11_dasm.py $OUT/r6/gc24_-4048.bin gc24_sw11_notes.py gc24_sw11.s
+# the later declaration ROM 1.1 (not in the repo; from Mac_ROMs.zip, see extracted-source/rom-1.1/README.md)
+# python3 -E -P rom11_dasm.py 341-0266_1.1.BIN ../extracted-source/rom-1.1
 ```
 
 `Hand.asm` and `Boot.asm` (both releases) and the 68k listings (`gc24.s`,
