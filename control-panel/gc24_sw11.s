@@ -1960,9 +1960,9 @@ L137e:
 L1382:
   001382:  4e fa 2e 7a          jmp      $41fe(pc)  ; -> s7_Lbd76
 L1386:
-  001386:  4e fa 2f 46          jmp      $42ce(pc)  ; -> s7_Lbe74
+  001386:  4e fa 2f 46          jmp      $42ce(pc)  ; -> GA_GetPixBaseAddr
 L138a:
-  00138a:  4e fa 2f 64          jmp      $42f0(pc)  ; -> L42f0
+  00138a:  4e fa 2f 64          jmp      $42f0(pc)  ; -> GA_DisposeScreenBuffer
 L138e:
   00138e:  4e fa 2f aa          jmp      $433a(pc)  ; -> s7_Lbecc
 L1392:
@@ -6738,8 +6738,8 @@ L42b8:
   0042c4:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   0042ca:  4e 5e                unlk     a6
   0042cc:  4e 75                rts
-* s7_Lbe74  -  System 7 $BE74 (similar code, r=0.80).
-s7_Lbe74:
+* GA_GetPixBaseAddr  -  QDExtensions selector $F; System 7 Lbe58 (calls the sub_BD94 counterpart $421A, then spins on the poll).
+GA_GetPixBaseAddr:
   0042ce:  4e 56 00 00          link.w   a6, #$0
   0042d2:  2f 0b                move.l   a3, -(a7)
   0042d4:  26 6e 00 08          movea.l  $8(a6), a3
@@ -6751,7 +6751,8 @@ s7_Lbe74:
   0042e6:  26 6e ff fc          movea.l  -$4(a6), a3
   0042ea:  4e 5e                unlk     a6
   0042ec:  4e 74 00 04          rtd      #$4
-L42f0:
+* GA_DisposeScreenBuffer  -  QDExtensions selector $11; System 7 Lbe74: original UnlockPixels (selector 2), command $33, then the original.
+GA_DisposeScreenBuffer:
   0042f0:  2f 0b                move.l   a3, -(a7)
   0042f2:  26 6f 00 08          movea.l  $8(a7), a3
   0042f6:  2f 0b                move.l   a3, -(a7)
