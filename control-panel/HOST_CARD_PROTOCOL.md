@@ -163,6 +163,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
+- how the Am29000 gets from reset (address 0, ROM space) to `Boot` at `$2003000`: no code does it, so the hardware must (section 1);
 - the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (11.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded. The pixel clock is settled (a DP8531 at `$46800000`, section 11.8);
 - DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
@@ -177,6 +178,19 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 | 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the last byte of card RAM (+$138: `$0C1FFFFF`, the top of VRAM, without SIMMs; else the top of DRAM), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` (+$134 here is the Runtime's reservation from the same ACEFLoad; Antelope reads it as heapMax) | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
 | 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
 | 5 | cs3 uploads and links Antelope and fills `PublicIn+$04`/`$20`-`$2C`/`$40`; cs5 writes the flags to `image+$18` and then -1 to `$44000028` (`$1DDC`) | the Am29000 starts at `Boot`, whose poll passes at once (`$42005300` is already there) |
+
+**How the Am29000 reaches `Boot` is not known.** After reset the Am29000
+fetches from address 0 in ROM space (`CPS.RE` = 1). The word at the
+kernel's base, `$2000000`, is vector 0, `jmp $2002808` (the fatal-trap
+reporter, reason `$91`); it is PC-relative, so fetched at 0 it would land
+at `$2808`. Nothing in Runtime, the driver or the declaration ROM jumps to
+`$2003000`. `Boot` is PC-relative and clears RE in place (`$2003038`, `CPS`
+= `$047F`), so it must already be running at `$2003000` (or `$3000` with a
+64 KB decode) when it starts. The redirect is therefore in hardware,
+perhaps a few words the gate arrays supply in ROM space. That the host's
+slot offsets 0 (the RAM test) and `$02000000` (where the kernel is written)
+are the same SRAM is inferred: the test writes only offsets 0-`$1FF00`,
+never reads `$02000000`, and would fail if offset 0 aliased every 64 KB.
 
 `PublicIn+$18` is consumed exactly as `DRVR.s` publishes it: bit 11 (`$800`,
 "mailbox not enabled") gates the reports to the host from the HIF service
@@ -194,6 +208,25 @@ signature present and `VidComm+$08` non-zero it takes the video parameters
 from `VidComm` instead of probing the registers. `VideoDriver.s` reads that
 word before talking to the Am29000 and falls back to "just retime the clock" if
 it is missing (**verified**, both sides).
+
+**Which card is brought up.** DoOpen (`$1DE`-`$278`) calls BuildUnitRecords
+(`$1E4A`) for slots `$9`-`$E` in ascending order; every GC found (board
+sRsrc BoardId `$2C`, or a 'Cheetah'/'Tiburon' name, type `$7E`) gets unit
+record `+$214[i]`, and `$1D8E` (`$1FF8`) holds its Am29000 (`$44000028` = 0).
+Every client hard-codes unit 0: InstallPatches (`$1142`), `gc24`
+(`$214(a0)`), INIT_main and the control panel's bring-up `sub_A8C` (`$A9E`).
+So only the lowest-slot GC gets cs2/cs3/cs5, as *develop* 3 says (p. 333);
+the others stay held and work as plain video cards, and the control panel
+shows STR# 1000 #10 when Status 2 (the count, globals `+$10`) is above 1.
+Nothing lets the user choose another card. The driver's "no display" drop
+(`+$15E` = `$FFFF` when all three sense lines are high, `$2064`-`$207C`)
+depends on a RevLevel test (`$1AAA`/`$1BEC`) that 'MDC 8•24 GC 1.0' always
+passes, so it never happens (it would also leave a disposed handle in
+`$214[i]`). A card without a monitor loses only its video sResources
+(PrimaryInit `$26BC`); the driver needs only the board sResource, so that
+card can still be the accelerator, drawing to the host's or other cards'
+frame buffers with 64-byte `storem` bursts (FillLongsStorem `$37D68`, gated
+per device by the slot burst mask `$D5` and the burst test `$37000`).
 
 ## 2. `LoadFirmware` (loading Antelope) fields
 
@@ -1012,6 +1045,25 @@ StretchBits. The dispatcher's case for `$15` (`$32148`) calls
 `+$C0`/`+$C4` first (`$2D7F4`). The strings of its neighbour `$22A8C` (entry
 `+$14`), "ScaleBlt/scIndexToAny: unsupported dstShift = %d" and "ScaleBlt:
 unknown scaleNum = %d", name Stretch.a's `ScaleBlt` family.
+
+**Early release.** On the command path (arg1 = 0) `$2D7B8` calls
+`ReleaseHostEarly(1)` (`$32AB8`: waits for `+$18` bit 2 clear, writes status
+1 to `+$18` and `*[+$20]`, leaves `+$14` and the reply 1 in `+$1C`) once no
+pixmap it uses is still in host memory: after the regions are copied to the
+card, sources and masks of ≤ 5000 bytes copied (`CopySmallPixMapToCard`
+`$16148`), and dst, src and mask each on the card or the screen
+(`BitsToPixMap` `+$24` clear or `+$20` set; `$2E2D0`-`$2E338`). It releases at
+once (`$2E3DC`) when no colour translation is needed, or when the GDevice
+has no search procs (indexed sources: also ctFlags bit 14 clear).
+Otherwise, for an indexed source, it releases at `$2EDA4`, after
+`MakeScaleTbl` has run any `Color2Index` callbacks. A direct source under
+search procs, or any destination in host memory, is never released early.
+So card-to-card copies (screen, cached offscreens), small host sources and
+host-ROM data overlap with the 68k; copies into host memory and large host
+sources do not. `EngineDispatch`'s wait (`$6074`-`$6116`) ends on status 1
+and returns the reply; the next command waits in `sub_624A` (`$5EC8`) for
+status bit 1, the completion. Nothing in `gc24` stops the 68k from writing
+directly into card memory during the overlap.
 
 #### The entry table, named
 
@@ -2620,11 +2672,11 @@ making requests, which the host serves from its idle routine. A later
 `$8002` sets state 2 for selector 8. When the entry returns, the
 dispatcher completes normally (`+$14` = 0, status 3).
 
-Reading: during that window the host considers the card idle (`sub_624A`
-waits only for status bits 0-1). A command posted then is not taken until
-the entry returns, and the completion of `$8001` clears `+$14` and posts
-status 3 over it. Nothing in gc24 guards against this. Nothing in this
-repo uses the asynchronous path.
+During that window `EngineDispatch`'s own wait has ended (status 1), but
+the next command does not overwrite the packet: every command first passes
+`sub_624A` (`$5EC8`), whose loop (`$6342`-`$634A`) waits for status bit 1,
+i.e. for the completion (status 3). Nothing in this repo uses the
+asynchronous path for modules.
 
 **Card addresses on the host.** The host writes the `$8002` buffer
 (`+$76`) and reads the 999 `argv` without any translation in 32-bit mode

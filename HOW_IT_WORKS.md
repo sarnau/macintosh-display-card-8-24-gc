@@ -25,17 +25,19 @@ root). Its names: **GC QuickDraw** for the accelerator (Antelope here), the
 `.GraphAccel` driver, and the **asynchronous buffer** for the drawing
 stream; MFB is the frame buffer controller, RDNC the NuBus controller. Apple
 rates the Am29000 at 30 MHz and 22 MIPS; the kernel's timer reload of
-`$7530` (30,000) is exactly 1 ms at that clock. The article also says
-that only one 8•24 GC accelerates, the one in the lowest slot (the others
-work as plain video cards), and that with no monitor attached the card
-stays active and accelerates other screens, reaching them with NuBus block
-transfers; the code was not traced for these.
+`$7530` (30,000) is exactly 1 ms at that clock. As the article
+says, only one 8•24 GC accelerates, the one in the lowest slot: the driver
+builds a record for every GC in slots 9-E and holds each Am29000, but the
+patches, the INIT and the control panel all use the first record, so the
+other cards stay plain video cards (the control panel warns about them). A
+card with no monitor loses only its video sResources, so it can still be
+the accelerator and draw to other screens over NuBus.
 
 ## The hardware, as the software sees it
 
 | card address | host address | what |
 |---|---|---|
-| `$02000000`-`$0200FFFF` (instructions), `$40000000`.. (data) | slot base + `$02000000` (where the kernel is loaded) and slot base + 0 (where the host tests it) | 64 KB SRAM (8 × Motorola MCM6295, 16K×4): the Am29000's instruction memory ("instruction cache" in Apple's papers). The kernel fills it exactly: `Hand` `$2000000`, `Boot` `$2003000`, `Cache` (bss) `$2003800`-`$200FFFF`; the kernel's data accesses reach it at `$40003400`/`$40003800`. Antelope runs from VRAM/DRAM, not from here. That the two host windows are the same chips is inferred |
+| `$02000000`-`$0200FFFF` (instructions), `$40000000`.. (data) | slot base + `$02000000` (where the kernel is loaded) and slot base + 0 (where the host tests it) | 64 KB SRAM (8 × Motorola MCM6295, 16K×4): the Am29000's instruction memory ("instruction cache" in Apple's papers). The kernel fills it exactly: `Hand` `$2000000`, `Boot` `$2003000`, `Cache` (bss) `$2003800`-`$200FFFF`; the kernel's data accesses reach it at `$40003400`/`$40003800`. Antelope runs from VRAM/DRAM, not from here. That the two host windows are the same chips is inferred (the RAM test does rule out offset 0 aliasing every 64 KB) |
 | `$4C000000`-`$4C1FFFFF` | slot base + `$0C000000` | 2 MB video memory (16 × Toshiba TC52425x, 256K×4), also the program memory on a stock card. The first 64 KB hold the kernel's shared areas (vector table, service table, `PublicIn`/`PublicOut`, the mailbox, the video command block, the command packet at `$4C008C00`); the frame buffer starts at `+$10000` |
 | `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM on two optional 64-pin SIMMs (empty on a stock card; Apple's kit adds 2 × 1 MB, up to 8 MB in all; Apple's figures are 0, 2 or 8 MB): more room for off-screen pixel maps, caches and the heap; the host probes how much |
 | `$4C400000`.. | | the video memory's block-write alias (fills with one colour per write) |
@@ -114,7 +116,9 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
 2. It uploads and links Antelope into the top of card memory (the VRAM
    above the frame buffer on a stock card) and records its entry point
    in `PublicIn`.
-3. It writes -1 to `$44000028` and the Am29000 runs: Boot finds the go-ahead,
+3. It writes -1 to `$44000028` and the Am29000 runs Boot (`$2003000`; how
+   reset at address 0 gets there is not known, see section 1 of the
+   protocol doc), which finds the go-ahead,
    sets up the kernel and jumps to Antelope. Its `main` finds the command
    packet through `PublicOut+$18`, the same address (`$s08C00`) the host
    uses, and enters the command loop. Turning the accelerator off writes 0
@@ -134,9 +138,11 @@ in card memory:
   host objects up to date (GDevices, colour tables, inverse tables, pixel
   patterns, offscreens, fonts), the host writes a selector and arguments and
   waits. The card replies "done" (1) or "not handled" (0, the Mac draws it).
-  StretchBits can reply early (`ReleaseHostEarly(1)` at `$2E3DC`, under a
-  condition not traced), so the Mac goes on while the card copies: the
-  overlap *develop* describes for CopyBits.
+  StretchBits replies early once every pixmap it touches is on the card,
+  on the screen or copied there, and no host colour-search callback is left
+  (`ReleaseHostEarly(1)` at `$2E3DC`, or `$2EDA4` after an indexed-colour
+  scale table): the Mac goes on while the card copies, the overlap
+  *develop* describes for CopyBits, and the next command waits for it.
 * **The drawing stream.** Lines, rectangles, ovals, round rectangles, arcs,
   polygons, regions and text are not sent one by one. The host appends
   records to a buffer in card memory, and the card plays them back
