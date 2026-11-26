@@ -4598,3 +4598,31 @@ frame buffer then goes unused (service `$CB`, which would grow
 `$1000` − break, ignoring Antelope and the stacks at the top, so HeapCreate
 retries about 340 times before its request fits. Nothing ties video modes
 or acceleration to the amount of RAM, and the control panel shows none.
+
+## Appendix: what changed since the exact decryption
+
+For readers of copies older than commit `35a63a3` (2026-11-25), when the
+firmware's encryption was solved and every section became exact. Older
+statements to the left are wrong; the right column is the current reading
+and where it is argued.
+
+| older statement | now | where |
+|---|---|---|
+| a "second mask" on top of the XOR layer, with per-section tables or keystreams | one running 32-bit key per section, removed by DRVR's `ACEFLoad` | section 6, `SECOND_MASK.md` |
+| 103 named Antelope functions, many estimated | all 709 functions named from exact code | `antelope_names.py` |
+| the card can reply 2 | only `EngineDispatch` returns 2 (recording a picture, region or polygon) | Overview |
+| arguments "after `+$44`" or "from `+$58`" | every command's arguments through the pointer at `packet+$54` (`packet+$650`); only `$15` and PQDInit use fixed blocks | Overview, section 10 |
+| the host can overwrite a command the card still runs | the next command waits in `sub_624A` for status bit 1, the completion | "Early release", "When the host waits for the card" |
+| CopyBits always synchronous | StretchBits releases the host early once all its pixmaps are on the card | "Early release" |
+| `$C6` programs the pixel clock | `$C6` sets the display start and row stride, and nothing calls it | sections 8, 11.1 |
+| `$44000028`: sense open | the Am29000's run control (most likely *RESET): 0 held, -1 runs at cs5 | sections 1, 11.1 |
+| `$44800000` is the clock synthesiser; `$46800000` a TV filter curve | `$46800000` is the DP8531 clock synthesiser; `$44800000` most likely an MFB configuration chain | 11.3, 11.8 |
+| the RAMDAC's byte lanes differ between host and card | both use data bits 31-24; a Bt "RAMDAC 428" | 11.5 |
+| Antelope loaded "into card DRAM" | into the top of card RAM, the VRAM on a stock card (no DRAM fitted) | 11.9 |
+| the boot mailbox is armed at bring-up and answered by the host | armed only when flag `$800` is clear, which it is not by default; no host code reads a report | section 4 |
+| Boot starts when the host pokes `$42005300` | Boot starts when cs5 releases the CPU; the go-ahead is already there | section 1 |
+| the `$12E38` text loop is a shadow or outline smear | DrawText.a's underline (`UL1`/`UL2`) | DrawMultiObject, text |
+| a "32×32 multiply" at `$00CC4` | FixMul | "The entry table, named" |
+| flag bits 1, 3, 10, 30, 31 "read in outline" | kernel debug switches nothing sets | section 9 |
+| give-up reasons 4, 6, 9 open | settled; 6 is dead code, 9 spins | section 9 |
+| the extended "no display" drop removes a monitorless card | it never fires; a card without a monitor can still accelerate | section 1 |
