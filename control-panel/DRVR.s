@@ -366,8 +366,8 @@ StatusJumpTable:
   0039a:  01 46                dc.w     $0146    ; csCode 12 -> Sts_GetField_164
   0039c:  01 60                dc.w     $0160    ; csCode 13 -> Sts_GetField_168
   0039e:  01 7a                dc.w     $017A    ; csCode 14 -> Sts_GetField_004
-  003a0:  02 1c                dc.w     $021C    ; csCode 15 -> Sts_GetField_168
-  003a2:  02 7a                dc.w     $027A    ; csCode 16 -> Sts_GetField_144
+  003a0:  02 1c                dc.w     $021C    ; csCode 15 -> Sts_ReportReason
+  003a2:  02 7a                dc.w     $027A    ; csCode 16 -> Sts_ReportDumpAddr
   003a4:  00 a0                dc.w     $00A0    ; csCode 17 -> Sts_GetField_14c
   003a6:  00 c2                dc.w     $00C2    ; csCode 18 -> Sts_GetField_154
   003a8:  00 e4                dc.w     $00E4    ; csCode 19 -> Sts_cs19
@@ -543,7 +543,10 @@ Sts_GetField_000:
   00596:  30 10                move.w   (a0), d0
   00598:  27 40 00 02          move.l   d0, $2(a3)
   0059c:  60 00 01 62          bra.w    $700  ; -> StsOK
-Sts_GetField_168:
+* Status cs15: the reason of a posted kernel report: refuses while flag $800 is
+* set; 0 unless the ack word [+$13C] holds $96666669, else PeekHardwareLong(
+* mailbox+$04).  No client in the package calls it.
+Sts_ReportReason:
   005a0:  20 0c                move.l   a4, d0
   005a2:  66 0a                bne.b    $5ae
   005a4:  3d 7c ff ee 00 10    move.w   #$ffee, $10(a6)
@@ -572,7 +575,9 @@ Sts_GetField_168:
   005f4:  27 40 00 02          move.l   d0, $2(a3)
   005f8:  50 4f                addq.w   #$8, a7
   005fa:  60 00 01 04          bra.w    $700  ; -> StsOK
-Sts_GetField_144:
+* Status cs16: the superslot address of the report's register dump
+* (mailbox+$10); refuses while flag $800 is set.  No client calls it.
+Sts_ReportDumpAddr:
   005fe:  20 0c                move.l   a4, d0
   00600:  66 0a                bne.b    $60c
   00602:  3d 7c ff ee 00 10    move.w   #$ffee, $10(a6)

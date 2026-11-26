@@ -341,8 +341,14 @@ address of the register dump at `mailbox+$10`. Both refuse while flag
 `$800` is set. No client (the control panel, INIT_main, INIT_DSInit,
 `gc24`) calls cs15, cs16, cs50 or cs51, and `gc24` never reads the mailbox
 or the ack word. If the mailbox were armed, a posted report would leave
-the card waiting at `$2002700` forever, serving only video commands. The
-mailbox is a debugging channel for a tool that is not in the package.
+the card waiting at `$2002700` forever, serving only video commands. No program outside the package calls them either: the System 7.1
+sources never mention `.GraphAccel`, and *develop* 3 (July 1990) describes
+one developer interface only, an MPW library `GraphAccel.o` with a sample
+FKey for turning acceleration on and off (cs13/cs14); the same article says
+third parties cannot program the Am29000. Status cs15/cs16 and Control
+cs50/cs51 were therefore most likely used by an Apple-internal debugging
+tool, which has not been found. Other csCodes without a client in the
+package: Control 6, 16, 49, 52-54; Status 6, 8, 9, 11, 13, 14, 54.
 
 ## 5. Video command block (`VidComm`, `$4C007300`)
 
