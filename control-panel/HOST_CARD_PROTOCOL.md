@@ -4265,8 +4265,9 @@ handles it:
   System 6, `gc24` 32 runs the same probe at boot (Control 4 at `$596`,
   Status 10 at `$5AE`; an answer other than 1 gives Control 14 and error
   `$D8EA`, `$602`). Its caller (`$128E`) accepts the answer 1. Otherwise it
-  restarts the accelerator (`$0A8C`: Control 99, Status 5, Control 14,
-  Control 2) and asks again. A non-zero answer then gives error `$D8EA`
+  restarts the accelerator (`$0A8C`: Control 99, Status 5, Control 14 if
+  flag `$20`, Control 2/3 with the two ACEFs, Control 5, Control 13; see
+  below) and asks again. A non-zero answer then gives error `$D8EA`
   (reported through Control 20).
 
 **System 7 runs the same probe, and there it is used.** Hook -1 (`gc24`
@@ -4368,6 +4369,20 @@ Shift for Control 14, and a last Status 5 (Control 21 if the accelerator is
 not active); it reports through Paul Mercer's ShowINIT instead of System
 7's Notification Manager message. The control panel's restart routine
 `$A5C` (System 7 `sub_A8C`) repeats the sequence only on request.
+
+**The control panel's restart routine** is the same code in both releases
+(System 6 `$A5C`, System 7 `sub_A8C`). It sends Control 99 and Status 5,
+then Control 14 if Status 5's flag `$20` is set. With a non-zero second
+argument it loads ACEF 1 for Control 2 and ACEF 100 for Control 3 (Get1Resource
+from the control panel's own file into the system zone, no DetachResource),
+then sends Control 5; with 0 it sends Control 48 instead. It ends with
+Control 13 if flag `$20` was set. A failing step shows a numbered alert
+(STR -4047, ALRT -4040) and returns `$D8DC` (System 7 `$D8DA`). The callers
+are the same too: the refresh routine (`$73E`, System 7 `$760`) passes 0
+when `(flags & 6) != 6`, turning acceleration on (`$934`/`$966`) passes 1
+when flag `$2` is clear, and the probe (`$125E`/`$12A2`, System 7
+`$12C4`/`$130E`) passes 1. After a failed second restart System 6 sends
+Control 20 with `$D812` where System 7 sends `$D810`; both return `$D8EA`.
 
 **When the System 6 host waits.** System 6's `gc24` (`gc24_sw11.s`) waits
 as System 7's does in most patches: QDDone (`$433A`, one `sub_6E14` poll
