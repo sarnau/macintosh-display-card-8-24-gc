@@ -249,7 +249,10 @@ get 0/0 from Status 19. **Tiburon is Apple's codename for the 8•24 GC**
 (System 7.1 `Resources/Sys.r`: STR -16454 "8•24 GC", "name of the Tiburon
 patch file", which `Boot3.a` uses to load `gc24` 32; `PatchIIROM.a` and
 `PatchIIciROM.a` mention "the patch for the tiburon video card"). Cheetah is
-not identified. DoOpen's check for type `$7D` (`$218`) is dead: nothing
+not identified: no Apple source, ROM or codename list on hand names it
+(System 7.1's sources, 329 Mac ROMs, Apple's developer and service
+material searched; Mac OS X 10.0 'Cheetah' is unrelated). Presumably it
+was a prototype or sibling board of the Am29000 GC family. DoOpen's check for type `$7D` (`$218`) is dead: nothing
 stores `$7D`.
 Every client hard-codes unit 0: InstallPatches (`$1142`), `gc24`
 (`$214(a0)`), INIT_main and the control panel's bring-up `sub_A8C` (`$A9E`).
@@ -272,12 +275,13 @@ per device by the slot burst mask `$D5` and the burst test `$37000`).
 region, `+$24` end (start + text + data + bss), `+$28`/`+$2C`/`+$30` text,
 data, bss sizes, `+$40` the region start again. The kernel init reads exactly
 `+$20/+$24/+$28/+$2C/+$30`: it copies `[+$2C]` bytes from `[+$24]` to
-`[+$20] + [+$28]`, the data section's place ($20020F0-$200213C), and clears
-the `[+$30]` bytes after it ($2002140-$2002160); `ReserveEngineRegion`
-leaves room for that second copy of the data (it reserves `2*data`), and
-`Boot` ($2003090) copies the same span the other way. It sets its stack from
-`+$40` (`gr125 = [PublicIn+$40]`, `gr127 = gr125 - $10000`, `$2002414`)
-(**reading**: roles inferred from the loads, addresses match).
+`[+$20] + [+$28]`, the data section's place (`$20020F0`-`$200213C`), and clears
+the `[+$30]` bytes after it (`$2002140`-`$2002160`); `ReserveEngineRegion`
+leaves room for that second copy of the data (it reserves `2*data`, DRVR
+`$2B8E`-`$2B9A`), and `Boot` (`$2003090`-`$20030DC`) copies the same span the
+other way. It sets its stack from `+$40` (`gr125 = [PublicIn+$40]`,
+`gr127 = gr125 - $10000`, `$2002414`-`$2002428`) (**verified**: the host's
+stores and the kernel's loads use the same offsets).
 
 ## 3. Starting Antelope, and restart ("PostLoadPoke")
 
@@ -415,15 +419,13 @@ wait for `+$04` runs into its timeout first.
 * The earlier statement that the Am29000-side mailbox code was not in the files
   was wrong: it is `$2002650` in `Hand`.
 
-## 6. What Antelope uses from the kernel (and what is still unknown)
+## 6. What Antelope uses from the kernel
 
-**Correction.** Antelope's sections are encrypted like the Runtime's: DRVR's
-`ACEFLoad` decrypts each with a running 32-bit XOR key (see "Antelope: the
-encryption (solved)"). Everything earlier in this project that read `.text`
-(243 KB, 62,134 words) as plain compiled code used the encrypted bytes (it
-found zero `jmpi lr0` returns and zero `sub gr1,gr1,N` prologues), and the
-later partial decodes are superseded. `firmware/disasm/text.asm` is the
-exact listing: 768 functions, 103 of them named.
+Antelope's sections are encrypted like the Runtime's: DRVR's `ACEFLoad`
+decrypts each with a running 32-bit XOR key (see "Antelope: the encryption
+(solved)"). `firmware/disasm/text.asm` is the exact listing of `.text`
+(243 KB, 62,134 words): 768 labels, 709 functions (all named, from
+`antelope_names.py`) and 59 object-file starts.
 
 What the loader's relocation table showed already, and the exact code
 confirms:
@@ -457,9 +459,6 @@ What the exact code adds:
   and `$44000080` in the long fills (`$17040`, `$172A4`), and the CLUT
   (`$46C00000`) and registers `$44000054`-`$440000C8` in the self-test.
 
-(The earlier attempts to model the `.text` key from the 747 spill/fill
-words and their neighbours are summarised in "Antelope: the encryption
-(solved)".)
 ### Antelope: the encryption (solved)
 
 All section data of a `$012B` ACEF is encrypted with a running 32-bit key,
@@ -625,11 +624,7 @@ calls `sub_31e20(-1)` forever. One call:
 
 The table is `.lit` `$0DE0`-`$0ED0`, 61 relocated words. They are relocated
 against the module's `.text` symbol (`$31DA8`), so each word is the case
-block's offset from `$31DA8`; the default is `$A70` → `$32818`. (Before the
-loader's decryption was found, this table and the other `.lit` switch tables
-were fitted from a partial decode. The exact listing replaces that fit. It
-confirms the DrawMultiObject entries pinned from the host's record layout
-(`.lit $0484`-`$04BC`) and ColorMap's switches (`.lit $0128`-`$01B8`).)
+block's offset from `$31DA8`; the default is `$A70` → `$32818`.
 
 The table, exact (`lit.asm`, case code in `text.asm`):
 
@@ -651,7 +646,7 @@ The table, exact (`lit.asm`, case code in `text.asm`):
 | `$17` | `$320C8` | `$161F8` **PQDInit**(packet `+$604`); reply -1 if it fails (the host's reset routine `sub_6F4E` sends `$17`) |
 | `$19` | `$32570` | one long -> `$14168` **FlushOffscreen** |
 | `$1A` | `$325A0` | one long -> `$141F8` **FlushColorTable** (the host's SetEntries) |
-| `$1B` | `$325D0` | one long -> `$14274`: `CacheFind(1, p[0])`, then `CacheRelease(1, entry)` (the host sends `$1B` from MakeITable) |
+| `$1B` | `$325D0` | one long -> `$14274` **FlushITable**: `CacheFind(1, p[0])`, then `CacheRelease(1, entry)` (the host sends `$1B` from MakeITable) |
 | `$26`, `$38` | `$32234`, `$32284` | identical blocks. In the main loop (`n = -1`): reply 0. In a nested call: store `p[1]` at packet `+$1C0` and return without completing the request |
 | `$29`, `$2B` | `$32468`, `$32498` | one long -> `$15808` **FlushGDevice** (`$29`: the host's AddSearch/…/SetDeviceAttribute) |
 | `$2C` | `$324C8` | one long -> `$158F4` **FlushPixPat** (the host's DisposPixPat) |
@@ -718,8 +713,8 @@ CR read `$28` (`_C|_S`) and for the other control characters, DEL and
 128-255 `$20` (`_C`), as V7/BSD ctype has them.
 
 So the card keeps caches of the host's colour tables (cache type 0),
-GDevices (2), pixel patterns (5) and offscreens (6), plus a type 1 that
-command `$1B` releases. The one-long commands keep those caches in step:
+GDevices (2), pixel patterns (5) and offscreens (6), plus inverse tables
+(type 1, CacheITable `$14D78`), which command `$1B` releases. The one-long commands keep those caches in step:
 flush or dispose an entry when the host's object changes. Drawing itself
 is `DrawMultiObject`.
 
@@ -924,7 +919,7 @@ and complement procs (which are 68k code), inverse tables, and the
 foreground/hilite colours. Codes 15/16 are the interesting ones. Under
 virtual memory they lock a host buffer and give the card its physical
 pages, so the card can read or write host memory directly as a NuBus
-master. That is presumably how it reaches host-side pixel maps.
+master. That is how `MapVirtual` (below) reaches host-side pixel maps.
 
 #### Card: `CallBack` and the request wrappers
 
@@ -1026,8 +1021,8 @@ the transfer; the patch then sets bit 7 of `HiliteMode` (`$938`), as
 QuickDraw does after a drawing call, and skips the original. On the card,
 `$2D7B8` is a large routine that:
 - calls `MapVirtual` three times and `UnmapAll` once;
-- uses the GDevice cache (`$14F64` CacheGDevice, `$14D78` `MakeITable`,
-  `$14BD4`) and `CopyHostMemory` `$16C48` (codes 8 and 18);
+- uses the caches (`$14F64` CacheGDevice, `$14D78` CacheITable, which has
+  the host run `MakeITable`, `$14BD4` CacheColorTable) and `CopyHostMemory` `$16C48` (codes 8 and 18);
 - calls `$01494` RSect and `$01654` TrimRect repeatedly (named from
   DrawMultiObject's region opcode, below) and `$3B600` `memcpy` twice;
 - refers to BitBlt, RgnBlt, scaleBlt, `$3008C`, ColorMap, BitsToPixMap,
@@ -1136,9 +1131,9 @@ anchors:
 | `+$24` | `$11AD8` | **DrawText** (see "Text and fonts") | calls StretchBits and scaleBlt (scaled text goes through StretchBits in QuickDraw) and RgnBlt, not BitBlt; uses `extern#1772+$60`-`$6C` |
 | `+$18` | `$3008C` | **FastStretch32**: a region-clipped scaled copy of a 16- or 32-bit source into a 32 bpp destination (GetSeek, then one row loop per srcShift, `$304D8` for 5, `$3147C` otherwise, with file 2's pixel stretchers `$004FC`/`$00534`); three smoothing variants (`$308F0`, `$30E14`, `$31888`) have no callers. Its object file (`$30088`-`$31DA4`) holds five more routines, each entering an unrolled loop through a 15-entry `.lit` jump table (`$0C30`, `$0C6C`, `$0CA8`, `$0CE4`, `$0D20`; entries are offsets from `$30088`) | |
 | `+$08` | `$0AD18` | **DrawMultiObject** | its strings; calls all of the above |
-| `+$04` | `$13770` | command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
+| `+$04` | `$13770` | **DrawStreamCommand**, command `$2D` | calls DrawMultiObject, `MapVirtual`, the caches |
 | `+$3C`, `+$40` | `$32C10`, `$32EF8` | **ShieldCursor** (before drawing) and its counterpart (after drawing): the cursor lock with the host, see "The cursor" below | |
-| `+$34`, `+$38` | `$153D4`, `$1553C` | set that rectangle: `$1553C(r, origin)` stores `r` minus `origin` as four 16-bit words at `extern#1772+$78`-`$7E`; `$153D4(r1, r2, origin, flag)` stores `r1`, unioned with `r2` minus `origin` when `flag` is set, and returns whether it is non-empty | |
+| `+$34`, `+$38` | `$153D4`, `$1553C` | **SetShieldRectUnion**, **SetShieldRect**: set that rectangle: `$1553C(r, origin)` stores `r` minus `origin` as four 16-bit words at `extern#1772+$78`-`$7E`; `$153D4(r1, r2, origin, flag)` stores `r1`, unioned with `r2` minus `origin` when `flag` is set, and returns whether it is non-empty | |
 | `+$44`-`+$4C` | | `CallBack`, `MapVirtual`, `UnmapAll` | above |
 | `+$50` | `$31E20` | the command dispatcher | |
 | `+$2C`, `+$30`, `+$54`-`+$5C` | `$1701C`, `$17264`, `$00248`, `$00348`, `$00294` | small helpers: `$1701C` the long fill, `$00348` the `storem` burst fill (called by nearly every blitter) | |
@@ -1151,13 +1146,15 @@ instruction mix, data references and callees:
 | words | 770 | 643 | 717 |
 | stores | 19 | 16 | **57** |
 | shifts (`sra`/`srl`/`sll`) | **36**/7/21 | 12/6/14 | 13/6/17 |
-| 32×32 multiply `$00CC4` | **yes (2 refs)** | no | no |
+| FixMul `$00CC4` | **yes (2 refs)** | no | no |
 | calls BitBlt / RgnBlt | no | yes | yes |
 | own switch | none | 6-way on `lr35` (`.lit $0228`) | none |
 | ShieldCursor | once each | `$32C10` twice | once each |
 
 The shared helpers are runtime and support code:
-- `$00CC4` is a 32×32 multiply (31 `mul` steps);
+- `$00CC4` is FixMul: a 32×32 multiply (31 `mul` steps, `mull`) whose
+  64-bit product is shifted down 16 bits; an argument of `$10000` returns
+  the other one at once;
 - `$3BA38` is an unsigned divide (31 `div` steps);
 - `$3B814`/`$3B950` are the multiply and divide millicode entries (called with `calli gr122`);
 - `$1114C` and `$11A34` return the address of a scanline loop chosen by
@@ -1165,20 +1162,16 @@ The shared helpers are runtime and support code:
   tables such as `$0508`), like QuickDraw's mode-case tables;
 - `$0E398` is DrawSlab and `$17500` PatExpand.
 
-Readings:
-- `$19270`, with three times the stores, fits **QuickPolys**, which builds
-  and sorts an edge list.
-- `$075DC` is the only one that multiplies, and the most shift-heavy.
-  It is arcs or lines: in the 68k sources both `DrawArc.a` (`SlopeFromAngle`,
-  `_FixMul`) and `DrawLine.a` (`FixMul`, `MULS`) multiply, and
-  `QuickPolys.a` divides (`FixRatio`).
-- `$08618` is then the other of the two. Its 6-way switch matches the
-  6-way sub-switches in DrawMultiObject (`lr94`), so both probably select
-  by the same kind of value.
-
-So only QuickPolys = `$19270` was a likely name here. DrawMultiObject's
-polygon and line records settled the rest later: `$08618` is DrawLine and
-`$075DC` DrawArc (see "DrawMultiObject: the batched drawing stream").
+The calls settle the names:
+- `$19270` sorts its edges with SortVectors `$19134` (`$1965C`), as
+  `QuickPolys.a` does: **QuickPolys**.
+- `$075DC` calls SlopeFromAngle `$081E0` (`$077AC`, `$077E8`) and FixMul
+  (`$077D4`, `$07808`), as `DrawArc.a` does: **DrawArc**.
+- `$08618` is **DrawLine** (DrawMultiObject's line record, below). Its
+  6-way switch (`$08860`-`$08880`) is on the destination's `dstShift`
+  (`lr35`, 0-5) and picks the vertical-line fill: `$09430`
+  FillColumnMasked for 1, 2, 4 and 16 bpp, `$09578` FillColumn8, `$09660`
+  FillColumn32.
 
 Two more names come from the strings: `$06650` "ITabMatch: Inverse Table is
 not up-to-date", and `$06BEC` "BitsToPix: xm points to a portPixMap" (called
@@ -1869,8 +1862,8 @@ the pattern, width-table and font entries the stream still holds.
        So step 6 runs in supervisor mode with the timer and interrupts off
        and data translation off, and writes host memory at the physical
        address from `$D4`. The locked `storem` with control field `$43`
-       (the address-space bit and option 3) is presumably the cycle the
-       card's bus logic turns into a NuBus block write; `$D3` is the
+       (the address-space bit and option 3) is, as a *reading*, the cycle
+       the card's bus logic turns into a NuBus block write; `$D3` is the
        service that brackets the host-memory mapping (1 on entry, 0 on
        release; see "Card: `MapVirtual` and host memory"). **`$D5`:**
        Hand's `$2001260` returns
@@ -1963,9 +1956,9 @@ if lr93 == 0: next record
 ```
 
 It frames through DrawLine and fills through QuickPolys, as `FramePoly` and
-the filled verbs do in QuickDraw. That case named `$08618` DrawLine and
-`$19270` QuickPolys, and `$075DC` DrawArc by elimination (it is also the one
-that multiplies: `SlopeFromAngle` and `FixMul` in `DrawArc.a`).
+the filled verbs do in QuickDraw. That case names `$08618` DrawLine and
+`$19270` QuickPolys; `$075DC` is DrawArc by its calls to SlopeFromAngle and
+FixMul, as in `DrawArc.a`.
 
 **The region case and the clipping set-up.** Once both region pointers are
 set, the `$6A`/`$6C` case (`$0BBFC` onwards) loops over the devices and runs
@@ -2069,25 +2062,34 @@ organised per kind and keyed by the host handle:
   4. `$15ACC` (CacheUnlock) releases the lock.
 * **`$15FF4(kind, key)`** is find-or-create.
 
-The kinds seen so far:
+The kinds:
 
 | kind | holds |
 |---|---|
-| 2 | GDevice (the cursor code looks up `CrsrDevice` with `$15D28(2, …)`) |
+| 0 | colour table (CacheColorTable `$14BD4`; FlushColorTable, command `$1A`) |
+| 1 | inverse table (CacheITable `$14D78`; FlushITable, command `$1B`) |
+| 2 | GDevice (CacheGDevice `$14F64`; the cursor code looks up `CrsrDevice` with `$15D28(2, …)`) |
 | 3 | bit pattern (record `$73`, created by `$1610C`) |
 | 4 | RGB pattern (record `$73`, keyed by the 24-bit colour) |
 | 5 | PixPat (CachePixPat, command `$0C`) |
-| 6 | used by commands `$0D`/`$0F` |
+| 6 | offscreen (CacheOffscreen `$1437C`; commands `$0D`/`$0F`) |
+| 7 | a host block copied in whole (CacheHostCopy `$142C4`, `CopyHostMemory` mode 3; referenced only from BitsToPixMap, `$06D60`) |
 | 8 | font strike |
 | `$0A` | width table |
 
 **On the card: drawing the text.** `$11AD8`, called from the text case, is a
 7 KB routine with the shape of QuickDraw's `DrawText.a`:
 * the clipping set-up (RSect, TrimRect twice) and the ShieldCursor pair;
-* one buffer from PQDAlloc `$16A04`, or two when a flag (`lr58`) is set,
-  presumably for a shadow mask. Each is cleared, with a leading zero long.
-  The left edge is rounded down to 32 pixels, and the width is counted in
-  longs plus 2;
+* one buffer from PQDAlloc `$16A04` at the font's depth, and a second,
+  1-bit one when `lr58` is set (`$12198`-`$12258`). Each is cleared, with a
+  leading zero long. The left edge is rounded down to 32 pixels, and the
+  width is counted in longs plus 2. `lr58` is `DrawText.a`'s `maskFont`
+  (`$11BD8`-`$11C3C`): a colour font (`fontType & $0200`) turns srcOr into
+  mode `$40` (srcCopy + mask), as `DrawText.a` does; with mode bit 6 set,
+  a strike deeper than 1 bit and the width table's strike
+  (`extern#1772+$6C`) cached, that strike's cells (`+$14`, row bytes
+  `+$40`) become the mask (`lr57`, `lr56`). A 1-bit strike clears bit 6
+  instead;
 * the destination row is `baseAddr + (v − bounds.top) × rowBytes`, from a
   bitmap record whose `rowBytes` is a long (`lr73`: `+0` base, `+4` rowBytes,
   `+8`/`+$A` bounds top/left);
@@ -2269,7 +2271,7 @@ range). That part remains a reading.
   xor test (`$06F7C`). No stream record carries a stream or ratio either
   (see the record table), and no read of grafVars `+$2D` turns up in
   `gc24.s`. So ports that draw with alpha streams are drawn on the card as
-  if `streamMode` were 0 (reading: the host does not seem to filter them).
+  if `streamMode` were 0 (*reading*: the host does not seem to filter them).
   The card's version is the System 7.0-era `ColorMap` without the alpha
   block.
 * Other differences from `QDUtil.a`, all exact:
@@ -2277,7 +2279,7 @@ range). That part remains a reading.
   | `ColorMap` (68K) | `$06F1C` |
   |---|---|
   | srcXor becomes `$32` when `HiliteMode` bit 7 is clear | not done here: the host already sends `$32`/`$3A` (`sub_8E38`) |
-  | `<14>`: with `multColor` set and a direct destination, the default colours are inverted (removed again by `<R21>`, 6/1992) | `$06FAC`-`$06FD0`: if the word at `+$24` of the fourth argument is non-zero and depth ≥ 16, then fg long = 0 and bk long = −1 (reading: that word is `multColor`) |
+  | `<14>`: with `multColor` set and a direct destination, the default colours are inverted (removed again by `<R21>`, 6/1992) | `$06FAC`-`$06FD0`: if the word at `+$24` of the fourth argument is non-zero and depth ≥ 16, then fg long = 0 and bk long = −1 (*reading*: that word is `multColor`) |
   | old port: `mapToColor` turns the planar `fgColor`/`bkColor` into indices | `$07160`-`$071BC`: Color2Index of the RGBs at `+$28`/`+$30`, which the host has already converted (`sub_917E`, record `$64`) |
   | `colrBit` negative → COLOROK | not tested: every non-zero `colrBit` (`+$2E`) takes the planar path at `$07294` (`1 << colrBit`, switch on `mode & 3`, `.lit+$1A8`) |
   | — | an extra result: a black-on-white flag stored at `+$2C` of the second argument (`$075B0`). It is 1 when the RGBs are 0/0/0 on `$FFxx` × 3 (`$07048`-`$07074`), or, for an old port, when `fgColor` = 33 and `bkColor` = 30 (`$07180`-`$07198`) |
@@ -2413,7 +2415,16 @@ block `$32818`:
 2. ORs `$11` into packet word 0;
 3. jumps to the common exit `$3287C`. It stores no reply, so `+$1C` keeps
    the 1 stored on entry; because word 0 now has bit 0 set, the completion
-   code is `$0B` instead of 3. How the host handles `$0B` is not traced here.
+   code is `$0B` instead of 3.
+
+On the host, `$0B` first counts as an ordinary completion: both waits test
+bits 0-1 before anything else (`EngineDispatch` `$610E`, `sub_624A`
+`$6342`), so the unknown command returns its reply 1. The next
+`EngineDispatch` call sees bit 3 before it sends (`$5F32`-`$5F40`): it
+sends nothing, sets bit 4 of its flags `$1C(a4)` and returns -1, so that
+call falls back to the 68K. The next command through the generic send
+path (`L5E6C`) finds bit 4 and runs the reset routine `sub_6F4E`
+(`$5E8E`-`$5EC2`).
 
 The reporter is gated by a level word at `.data+$284`: 0 returns at once,
 1 goes to `printf` `$39284`, anything else to the log buffer `$00F84`. It
@@ -2451,9 +2462,7 @@ keeps reply 1 and is flagged in word 0 instead.
 
 The table has 31 default entries: `$08`-`$0B`, `$0E`, `$10`, `$18`,
 `$1C`-`$25`, `$27`, `$28`, `$2A`, `$2E`, `$2F`, `$31`, `$32`, `$34`-`$37`
-and `$39`-`$3B`. (Before the `.lit` key was known, this was argued from the
-low byte `$70` of these entries and the block layout; the exact table
-agrees.)
+and `$39`-`$3B`.
 
 One oddity remains. `$2A` is sent by the patches of `PicItem1` (`$AB9A`)
 and `OldPatToNew` (`$AB11`), two internal QuickDraw traps (see
@@ -2792,8 +2801,8 @@ is at `.bss+$0000`.
 |---|---|---|---|
 | `$29`, `$2B` | `$32468`, `$32498` | `handler(p[0])`, no reply stored | both `$15808` FlushGDevice |
 | `$2C` | `$324C8` | the same | `$158F4` FlushPixPat |
-| `$33`, `$19`, `$1A`, `$1B` | `$324F8`, `$32570`, `$325A0`, `$325D0` | the same | `$14034` DisposeOffscreen, `$14168` FlushOffscreen, `$141F8` FlushColorTable, `$14274` |
-| `$3C` | `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command | `$140CC` |
+| `$33`, `$19`, `$1A`, `$1B` | `$324F8`, `$32570`, `$325A0`, `$325D0` | the same | `$14034` DisposeOffscreen, `$14168` FlushOffscreen, `$141F8` FlushColorTable, `$14274` FlushITable |
+| `$3C` | `$32528` | copies `p[0]`, `p[1]` into a frame on the memory stack and calls `handler(&frame)`: a two-long command | `$140CC` ReleaseOffscreenPair |
 | `$14` | `$32080` | `handler(p[0])`, then reply 0 | `$39104` (service `$D5`: clear bit `p[0]` of `[$4C00643C]`, mirrored to `$46000000`) |
 | `$0C` | `$32408` | `handler(p[0..5])`: six longs; reply 0 if it returns 0 | `$151C4` CachePixPat |
 | `$30` | `$322D4` | `p[0]` is a bit mask. Bit 0 takes two more longs; then bit 1 (three longs) or, if clear, bit 3 (two); then bit 2 (three) or, if clear, bit 4 (two). A zero result ends the chain with reply 0. | bit 0: `$14B64` UploadWidthTable; bits 1-4: `$14A80` UploadFontStrike |
@@ -2804,10 +2813,10 @@ is at `.bss+$0000`.
 | `$80xx` | `$31F7C` | `reply = handler(cmd, [rec+$0C], [rec+$10])` | `$37B58` |
 | `$01` | `$31FE8` | `InitPacket([rec+$0C])` (`$3299C`), sequence counter `[.bss+8]` = 0, then reply `CallBack(100, 1, 0)` | (local `call`s) |
 | `$04` | `$32040` | `packet+$04 = p[0]`, reply 0 | - |
-| `$11` | `$3210C` | `sub_15D84(i)` for i = 0..10, then `sub_16BA0()` | `$15D84`, `$16BA0` |
-| `$17` | `$320C8` | `PQDInit(packet+$604)`; reply 1 if it returns 0, else -1 | `$161F8` |
-| `$15` | `$32148` | `StretchBits(packet+$58, 0, 0, 0, 0)`; reply 0 if it returns more than 0 | `$2D7B8` |
-| `$2D` | `$32188` | `r = sub_13770(packet+$170)`; reply 1 if `r` = 0, -1 if `r` = -1, else 0; for `r` = 7 it first calls `PQDInit(p[0])` (reply 1 if that returns 0) | `$13770`, `$161F8` |
+| `$11` | `$3210C` | `sub_15D84(i)` for i = 0..10, then `sub_16BA0()` | `$15D84` CacheFlushKind, `$16BA0` PQDReset |
+| `$17` | `$320C8` | `PQDInit(packet+$604)`; reply 1 if it returns 0, else -1 | `$161F8` PQDInit |
+| `$15` | `$32148` | `StretchBits(packet+$58, 0, 0, 0, 0)`; reply 0 if it returns more than 0 | `$2D7B8` StretchBits |
+| `$2D` | `$32188` | `r = sub_13770(packet+$170)`; reply 1 if `r` = 0, -1 if `r` = -1, else 0; for `r` = 7 it first calls `PQDInit(p[0])` (reply 1 if that returns 0) | `$13770` DrawStreamCommand, `$161F8` PQDInit |
 | `$12` | `$326E8` | `$CD(-1)` (clear all page entries), `extern#1772+$88` = 0, `+$8C` = `[extern#1772+$8]`, `$D3(0)`, `+$90` = 0 | `$39028` (`$CD`), `$390B4` (`$D3`) |
 | `$13` | `$32740` | `$CC(p[0], p[1], p[2])` (map a range), then `extern#1772+$88` = `+$8C` = 1 | `$39018` (`$CC`) |
 | `$00`, `$03` | `$327D8`, `$327F8` | only store reply 0: "not handled", so the host runs the original | - |
@@ -2820,13 +2829,13 @@ There are 27: 24 for the vector-66 kernel services (23 numbers, `$D4`
 twice), and three trap-69 HIF calls (`$101` sysalloc, `$111` clock, `$112`
 cycles). The others (`$13770`-`$16BA0`) sit in two object files
 next to each other, `$1376C`-`$13F50` and `$13F50`-`$174FC` (files 14 and 15
-of `antelope_modules.py`; an earlier reading took `$11AD4`-`$174FC` for one
-module). Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
+of `antelope_modules.py`). Five of them (`$14034`, `$140CC`, `$14168`, `$141F8`,
 `$14274`) are consecutive functions of `$50`-`$9C` bytes, each called by one
 one- or two-long block. They are cache flushes: three name themselves by
-their messages, `$14274` releases a type-1 cache entry (`CacheFind(1,
-p[0])`, then `CacheRelease`), and `$140CC` releases the type-6 (offscreen)
-entry whose `+$20`/`+$24` match the two longs.
+their messages, `$14274` FlushITable releases an inverse-table entry
+(`CacheFind(1, p[0])`, then `CacheRelease`), and `$140CC`
+ReleaseOffscreenPair releases the type-6 (offscreen) entry whose
+`+$20`/`+$24` match the two longs.
 
 On the host side (`QUICKDRAW_PATCHES.md`) the commands with one long are
 `$0F` `$10` `$15` `$17` `$20` `$29` `$2C` `$32` `$33` `$35` `$36` `$37`.
@@ -2877,7 +2886,7 @@ readable. It is a Unix-style C library on AMD's HIF system calls:
 | `$3B404` `$3B428` `$3B44C` `$3B470` `$3B494` `$3B4B8` `$3B4DC`, `$3C9EC` | HIF stubs from AMD's HIF library (`antelope_hif_stubs.py`): close (`$12`), exit (`$01`), lseek (`$15`), open (`$11`), read (`$13`), `$21` (tmpnam in the HIF list), write (`$14`), and remove (`$16`) at `$3C9EC` | `const gr121, N` / `asneq 69` / `jmpti gr121, lr0`; on failure store `gr121` to errno and return -1 |
 | `extern#1769` | `errno` | every stub stores to it |
 | `.data+$1580` | `_iob` (20-byte `FILE`s; `stdout` at `+$14`) | |
-| `$39284` | `printf` | spills its varargs; if bit 15 of the flag halfword of `stdout` (`.data+$15A4`) is set (presumably append mode), `$39304(stdout, 0, 2)`; then `$399E0($39118, stdout, fmt, ap)`, where `$39118` is the output routine handed to the formatter |
+| `$39284` | `printf` | spills its varargs; if bit 15 of the flag halfword of `stdout` (`.data+$15A4`) is set, it first seeks to the end, `fseek(stdout, 0, 2)` (`$392A4`-`$392C4`: an append flag); then `$399E0($39118, stdout, fmt, ap)`, where `$39118` is the output routine handed to the formatter |
 | `$39214` | `vprintf` | the same without the spill |
 | `$399E0` | `_doprnt` (the formatting core) | calls memchr (4 times; `%s` with a precision), the `_ctype_` table, and the number converters `$3A5A4`-`$3A768` |
 | `$39304` | `fseek` | calls lseek; `(fp, 0, 2)` is `SEEK_END` |
@@ -2887,7 +2896,7 @@ readable. It is a Unix-style C library on AMD's HIF system calls:
 | `.lit+$1021` | `_ctype_` (+1 for EOF) | |
 | `$3AA9C`-`$3ABB4` | isupper, islower, isalpha, isdigit, isxdigit, isspace, ispunct, isalnum, isgraph, isprint, iscntrl | `_ctype_[c]` masked with 1, 2, 3, 4, `$44`, 8, `$10`, 7, `$17`, `$97`, `$20`: the V7/BSD bits `_U _L _N _S _P _C _X _B` |
 | `$3ABD0` `$3ABE0` `$3ABEC` `$3ABF8` `$3AC24` | isascii (c ≤ `$7F`), `_toupper`, `_tolower`, toupper, tolower | `c - $20` / `c + $20`, the last two only if `_L` / `_U` |
-| `$3AC88` | `exit` | walks a handler table (`.data+$1560`-`$1580`), calls `$3C1D4` (presumably the stdio cleanup), then HIF exit |
+| `$3AC88` | `exit` | stores 1 at `.data+$1578`, calls the hook at `.data+$1560` if it is non-zero, closes all 25 `_iob` entries with fclose `$3C1D4` (`$3ACD0`-`$3ACE8`), then `_exit` `$3B428` (HIF exit) |
 | `$3B16C` `$3B294` `$3B300` `$3B390` | wrappers around open, close, read, write | each calls one stub |
 
 The kernel side agrees with the HIF numbering. Hand's vector-69 handler
@@ -4226,6 +4235,22 @@ calls `$6224` with (`$26`, 0, `$0E`), then sends `$11` and `$00`, clears bit 0
 of unit `+$1F`, and returns whether the `$26` call returned 0. The driver
 calls it first in Status 10, and in Control 14, 17 and 50 before it
 re-initialises.
+
+**When the System 6 host waits.** System 6's `gc24` (`gc24_sw11.s`) waits
+as System 7's does in most patches: QDDone (`$433A`, one `sub_6E14` poll
+for NIL or the stream's port, TRUE otherwise), GetPixBaseAddr
+(`$42CE` → `$421A`, then a spin), GetPixel/GetCPixel (`$3762`/`$3868`) and
+the GWorld calls send the same commands; SetPixelsState (QDExtensions
+selector `$E`) is not patched. Its `sub_624A` (`$7B22`, loop
+`$7BF0`-`$7BF8`) waits for status bit 1 with the same timeout; it and the
+poll `$8710` do not spin on the cursor claim `*[globals+$08]`. The drain
+is weaker: the Std* fallback (`$4842`) sends `$38` only after a `$0D` on a
+pixmap the card holds (state 1 or 2), not up front, and BitMapRgn
+(`$3E3A`) sends only `$19` for such a pixmap, so a fallback or BitMapRgn
+on an ordinary port does not drain the card. The System 6 Antelope
+releases the host early in StretchBits exactly as System 7's:
+`ReleaseHostEarly` is `$2E69C` (identical code), called from StretchBits
+`sub_28C14` at `$296A4` and `$29BBC`.
 
 ## 11. The card's registers
 
