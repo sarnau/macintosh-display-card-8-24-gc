@@ -255,7 +255,8 @@ material searched; Mac OS X 10.0 'Cheetah' is unrelated). Presumably it
 was a prototype or sibling board of the Am29000 GC family. DoOpen's check for type `$7D` (`$218`) is dead: nothing
 stores `$7D`.
 Every client hard-codes unit 0: InstallPatches (`$1142`), `gc24`
-(`$214(a0)`), INIT_main and the control panel's bring-up `sub_A8C` (`$A9E`).
+(`$214(a0)`), INIT_main and the control panel's restart routine `sub_A8C` (`$A9E`; the
+boot-time bring-up is `gc24` 32's).
 So only the lowest-slot GC gets cs2/cs3/cs5, as *develop* 3 says (p. 333);
 the others stay held and work as plain video cards, and the control panel
 shows STR# 1000 #10 when Status 2 (the count, globals `+$10`) is above 1.
@@ -3297,7 +3298,9 @@ deadline when the card makes progress (it posts a request, which
 
 It skips all of this if the config word has bit `$80` (also tested by
 `sub_7570`): a "never give up" debug setting, one of the two bits of
-`gc24` 32's dead `eori.l #$90` (`$524`). The other bit, `$10`, is read by
+`gc24` 32's `eori.l #$90` (`$524`), dead in System 7. In System 6 it is live:
+holding Option at boot (`$D4`-`$E2`) sets the flag, and `$508` XORs the
+config word with `$90` before Control 17. The other bit, `$10`, is read by
 nothing: not by DRVR (`$2AE6`-`$2B06`), `gc24`, the control panel (Status 7
 at `cdev` `$05FE` tests only bit 31) or the card. The reason word is
 write-only: nothing reads unit `+$15C` (the DRVR only clears it, `$1F92`;
@@ -4258,10 +4261,10 @@ handles it:
   result is not 1, it sets bit `$100` in the unit's flags (`+8`). Control
   13, 17 and 50 call `$85AA(unit, 0)` after re-initialising the card.
 * The control panel's `sub_C50` (System 7's, `cdev.s`: Control 4 at `$C72`,
-  Status 10 at `$C9E`) sends Control 4 with `$FFFFFFFF`, then Status 10. No
-  System 6 client sends any Status call (their Status wrappers, control
-  panel `$1D68`, INIT `$A8C`, `gc24` 32 `$902`, have no callers), so in
-  System 6 this probe never runs. Its caller (`$128E`) accepts the answer 1. Otherwise it
+  Status 10 at `$C9E`) sends Control 4 with `$FFFFFFFF`, then Status 10. In
+  System 6, `gc24` 32 runs the same probe at boot (Control 4 at `$596`,
+  Status 10 at `$5AE`; an answer other than 1 gives Control 14 and error
+  `$D8EA`, `$602`). Its caller (`$128E`) accepts the answer 1. Otherwise it
   restarts the accelerator (`$0A8C`: Control 99, Status 5, Control 14,
   Control 2) and asks again. A non-zero answer then gives error `$D8EA`
   (reported through Control 20).
@@ -4336,9 +4339,29 @@ Control 54 (`$F2A`) passes four longs to the hook at `globals+$A84` and
 stores its D0 in `globals+$AA0`, and Status 54 (`$702`) only returns that
 long without calling the hook. Its "patches installed" byte is
 `globals+$258` (System 7 `$257`), and it returns with `jmp (a0)` instead of
-`rtd`, so it runs on a 68000. The System 6 clients send only Control calls:
-the control panel 2, 3, 4, 5, 13, 14, 17, 20, 48, 99; `gc24` 32 2, 3, 4, 5,
-13, 14, 17, 18, 19, 20; the INIT 13, 14, 20, 21, 99.
+`rtd`, so it runs on a 68000. Its clients send both kinds of call (each
+through one wrapper: control panel `$1D30`/`$1D68`, INIT `$A54`/`$A8C`,
+`gc24` 32 `$8CA`/`$902`); see "The System 6 start-up" below.
+
+**The System 6 start-up.** The System 6 package starts the card the same
+way as System 7, minus two pieces: it has no DSInit, so a second GC is not
+reconciled as a plain display card, and nothing in the package runs `gc24`
+32, which System 7's Boot3 (`Load8Dot24GC`) loads from the file named by
+STR -16454 (what runs it under System 6 is not known). `gc24` 32 does the
+whole bring-up in both releases: it installs CODE -4048 as the Gestalt
+`'gc24'` function, installs `DRVR` -4048 in the first free unit from 48 up
+(`_DrvrInstall`, `$17C`) and opens it (`$1CC`), whose DoOpen calls
+InstallPatches (`$101A`) to load `gc24` -4048 and patch QuickDraw. It then
+sends Control 19 with the `Date` resource and Status 2, loads ACEF 1 for
+Control 2 and ACEF 100 for Control 3 (into a temporary heap zone below
+BufPtr), reads `PupS`, checks Status 17/18/19 against `vers` 1, and sends
+Control 17, 18, 5, 13, Control 4 with Status 10 and Control 14. Holding
+Shift skips all of it. The INIT (`$18`-`$22A`) only checks what `gc24` 32
+left: Control 99, Status 21 and 5, then `PupS` 0 for Control 13 or 14,
+Shift for Control 14, and a last Status 5 (Control 21 if the accelerator is
+not active); it reports through Paul Mercer's ShowINIT instead of System
+7's Notification Manager message. The control panel's restart routine
+`$A5C` (System 7 `sub_A8C`) repeats the sequence only on request.
 
 **When the System 6 host waits.** System 6's `gc24` (`gc24_sw11.s`) waits
 as System 7's does in most patches: QDDone (`$433A`, one `sub_6E14` poll

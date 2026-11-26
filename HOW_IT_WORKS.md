@@ -110,7 +110,9 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
 
 ## Start-up
 
-1. The driver (`.GraphAccel`, `DRVR` in the control panel) holds the
+1. At boot, `gc24` 32 (loaded by System 7's Boot3) installs and opens the
+   driver (`.GraphAccel`, `DRVR` in the control panel), which patches
+   QuickDraw; on its Control calls the driver holds the
    Am29000 (0 to `$44000028`), tests the card's memory, uploads Runtime,
    writes its feature flags and memory limits into `PublicIn` and pokes the
    go-ahead `$42005300`. It leaves the kernel's error-report mailbox
