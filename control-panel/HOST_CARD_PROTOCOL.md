@@ -4758,6 +4758,41 @@ frame buffer then goes unused (service `$CB`, which would grow
 retries about 340 times before its request fits. Nothing ties video modes
 or acceleration to the amount of RAM, and the control panel shows none.
 
+### 10.10 The later ROM 341-0266
+
+`341-0266` ("MDC 8•24 GC 1.1", 16-Sep-91, in `Mac_ROMs.zip`) is a 64 KB
+part, but only `$0000`-`$5141` is used (format block at `$FFEC`: directory
+`$0000`, length `$10000`, CRC `$D722B053`, ByteLanes `$E1`): the larger
+EPROM holds no new code (no Am29000 code, no second driver), only
+rearranged and extended data.
+
+* **Timing moves into the board sResource.** Each monitor's timing is one
+  sBlock in board id `$7E`: pages, 6 rowBytes, vRes, the 16 DP8531 writes as
+  bytes, then 40-byte depth records (TV blocks end with a second clock,
+  *reading*: for the direct modes). PrimaryInit (`$1FEA`) and VideoOpen
+  (`$2980`) both read it with sGetBlock, so the driver shrinks from `$2E5A`
+  to `$12D4` bytes and the 8-`lea` compare tree is gone.
+* **56 video sResources** `$80`-`$FC` encode the monitor in bits 2-0 (0 PAL
+  640, 1 Portrait, 2 12", 3 Two-Page, 4 NTSC 512, 5 16" Color, 6 13", 7 21"
+  Color), the other TV size in bit 3, the 24-bit bank in bit 4, 16 bpp in
+  bit 5 (set when a RAMDAC probe at `$2598` finds the indexed register 1)
+  and unconvolved TV in bit 6, chosen from PRAM. The formerly unreachable
+  progressive TV tables (10.8) are now selectable.
+* **New monitors and depths.** Sense 0 → 21" Color (the Two-Page timing),
+  extended `$2D` → 16" Color, extended `$30` → PAL. Mode `$84` is 16 bpp
+  (RAMDAC mode `$9E`/`$BE`, index 1 = `$C0`) on the 13", 12", 16" and TV;
+  32 bpp moves to `$85`. Sense 5 and unknown extended codes program a
+  fallback timing and delete every sResource. All mode lists are
+  terminated; the `$44800000` stream, the old monitors' timings and the
+  driver's Control/Status calls are unchanged.
+
+| sRsrc | monitor | depths | H act/bp/sync/fp | H total | lines | clock N/R/P | PCLK | refresh |
+|---|---|---|---|---|---|---|---|---|
+| `$85`/`$A5` | 16" Color 832×624 | 1-8, 16 | 832/210/64/46 (2:1 multiplex, `$A0`-`$B8`) | 1152 | 667 | 126/22/1 | 57.273 MHz | 74.5 Hz |
+| `$87`/`$A7` | 21" Color 1152×870 | 1-8 | as Two-Page | 1456 | 915 | 190/19/1 | 100 MHz | 75.06 Hz |
+| `$CC`/`$EC`, `$C4`/`$E4` | NTSC 640×480, 512×384 unconvolved | 1-8, 16, 32 | 640/64/60/16, 512/120/60/88 | 780 | 525 interlaced | 540/55/4 | 12.273 MHz | 59.94 Hz fields |
+| `$C0`/`$E0`, `$C8`/`$E8` | PAL 640×480, 768×576 unconvolved | 1-8, 16, 32 (768: 1-8, 16) | 640/145/69/90, 768/81/69/26 | 944 | 625 interlaced | 413/70/3 | 14.75 MHz | 50 Hz fields |
+
 ## Appendix: what changed since the exact decryption
 
 For readers of copies older than commit `35a63a3` (2026-11-25), when the
