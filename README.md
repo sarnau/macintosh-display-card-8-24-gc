@@ -54,6 +54,32 @@ A one-page summary of how the card works: [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md).
   generator), the RAMDAC, the DP8531 pixel-clock synthesiser and every video
   mode's timing are mapped (`HOST_CARD_PROTOCOL.md` section 11).
 
+## Open questions
+
+Everything else is read from exact code. These are what the software alone
+does not settle (details in
+[`control-panel/HOST_CARD_PROTOCOL.md`](control-panel/HOST_CARD_PROTOCOL.md)):
+
+* **Reset to `Boot`.** After reset the Am29000 fetches address 0 in ROM
+  space; nothing in the code jumps to `Boot` at `$2003000`, so the custom
+  chips most likely supply the jump. Whether `$44000028` is the *RESET line
+  is a strong reading, not proven (§1).
+* **SRAM aliasing.** That the host's slot offsets 0 (RAM test) and
+  `$02000000` (kernel) are the same 64 KB SRAM is inferred (§1).
+* **The `$44800000` stream.** 137 bits PrimaryInit shifts into most likely a
+  configuration chain inside the MFB; no field is decoded (§11.3).
+* **RAMDAC bit 31.** Always set in the pixel bus control byte; its meaning
+  is unknown (§11.8).
+* **Glyphs `$84`-`$9E`.** Which host system rewrites them in non-Roman fonts
+  so that the card re-reads them; KanjiTalk 6 is the best fit (DrawMultiObject).
+* **The cursor copy.** Whether the card's never-refreshed copy of the screen
+  under the cursor can really show stale pixels (§ "The cursor").
+* **Debug tools.** Who used the mailbox calls (Status cs15/16, Control
+  cs50/51) and the kernel's debug flag bits; no such tool has been found (§4, §9).
+* **Cheetah.** The second board name the driver accepts; unidentified (§1).
+* **Board markings.** The MFB's exact part number, the VRAM's last digit,
+  the PAL, the ECL parts and the third oscillator are illegible in the photo.
+
 ## Bugs and slips in the shipping software
 
 Found while reading the code; each is explained, with its evidence, in

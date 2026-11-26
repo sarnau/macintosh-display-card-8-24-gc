@@ -95,7 +95,8 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
   waits for the host's go-ahead, sets up the vector table and the board
   parameters and starts `Hand`. `Hand` handles traps and interrupts
   (including a software-managed TLB with a pager), the timer, the video
-  command block, a mailbox for fatal-error reports, and 33 services that the
+  command block, a mailbox for error reports (unused by default), and 33
+  services that the
   accelerator calls (memory regions and address translation, interrupt
   handlers, the RAMDAC, display start and row bytes, the host flags).
 * **Antelope** ("32-Bit Antelope"; its messages call it PQD and Monet), the
@@ -111,16 +112,17 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
 
 1. The driver (`.GraphAccel`, `DRVR` in the control panel) holds the
    Am29000 (0 to `$44000028`), tests the card's memory, uploads Runtime,
-   writes its feature flags and memory limits into `PublicIn`, pokes the
-   go-ahead `$42005300` (the mailbox for the kernel's error reports stays
-   unarmed by default: nothing on the Mac reads it).
+   writes its feature flags and memory limits into `PublicIn` and pokes the
+   go-ahead `$42005300`. It leaves the kernel's error-report mailbox
+   unarmed: by default nothing on the Mac reads it.
 2. It uploads and links Antelope into the top of card memory (the VRAM
    above the frame buffer on a stock card) and records its entry point
    in `PublicIn`.
-3. It writes -1 to `$44000028` and the Am29000 runs Boot (`$2003000`; how
-   reset at address 0 gets there is not known, see section 1 of the
-   protocol doc), which finds the go-ahead,
-   sets up the kernel and jumps to Antelope. Its `main` finds the command
+3. It writes -1 to `$44000028` (most likely the CPU's reset line) and the
+   Am29000 runs Boot at `$2003000`. How it gets there from address 0 is not
+   in the software; the custom chips most likely supply the jump (section 1
+   of the protocol doc). Boot finds the go-ahead, sets up the kernel and
+   jumps to Antelope. Its `main` finds the command
    packet through `PublicOut+$18`, the same address (`$s08C00`) the host
    uses, and enters the command loop. Turning the accelerator off writes 0
    again.
@@ -157,8 +159,10 @@ in card memory:
 The card reads host pixel maps and handles directly over NuBus where it
 can, translating addresses through the host's memory map when virtual
 memory is on, or asks the host to copy them. Card and host share the cursor
-through a lock: the card hides it before drawing over it and asks the host
-to show it again.
+through a lock: before drawing over it the card restores the screen under
+it, afterwards it saves that area again, and it flags both to the Mac, which
+updates its own cursor state and redraws the cursor. The card only reads the
+Mac's cursor data; it writes nothing in host memory.
 
 Because the card draws while the Mac goes on, the patches wait for it only
 where 68K code is about to touch pixels itself: before QuickDraw's own
@@ -198,6 +202,13 @@ changing those structures directly, since the card keeps copies.
 * One give-up reason can never happen (its test routine always returns 0),
   and another, "no room for the drawing-stream buffer", would spin rather
   than give up, because its retry size wraps past 0.
+* HideCursor calls swallowed during a card command are replayed as
+  ShowCursor, and the card's copy of the screen under the cursor is never
+  refreshed between card draws. QuickDraw itself doesn't trigger either.
+* QDDone answers "done" at once for any port but the one being streamed.
+
+The full list, with addresses, is in the top-level
+[`README.md`](README.md) ("Bugs and slips in the shipping software").
 
 ## The two software releases
 
@@ -208,7 +219,10 @@ System 6's accelerator has placeholders for the 16-bit arithmetic transfer
 modes, which System 7 fills in, and carries a QuickTime Apple Video
 (`'rpza'`) codec that runs on the card (decompression and compression of
 16-bit frames, plus a private `'rle '` format), which System 7 dropped in
-favour of the host-loaded modules.
+favour of the host-loaded modules. The Mac side of both releases waits for
+the card in the same places, except that System 6's fallback path drains the
+drawing stream only for pixmaps the card holds; the boot mailbox and its
+flag are handled identically.
 
 ## Who built it
 
