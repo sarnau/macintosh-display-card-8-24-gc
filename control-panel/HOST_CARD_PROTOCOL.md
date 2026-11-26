@@ -4256,14 +4256,31 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
   csCode 4 stored at its globals `+$12C`, and returns the result. If the
   result is not 1, it sets bit `$100` in the unit's flags (`+8`). Control
   13, 17 and 50 call `$85AA(unit, 0)` after re-initialising the card.
-* The control panel's `$0C08` (System 7's, `cdev.s`: Control 4 at `$C72`,
+* The control panel's `sub_C50` (System 7's, `cdev.s`: Control 4 at `$C72`,
   Status 10 at `$C9E`) sends Control 4 with `$FFFFFFFF`, then Status 10. No
   System 6 client sends any Status call (their Status wrappers, control
   panel `$1D68`, INIT `$A8C`, `gc24` 32 `$902`, have no callers), so in
   System 6 this probe never runs. Its caller (`$128E`) accepts the answer 1. Otherwise it
-  restarts the accelerator (`$0A5C`: Control 99, Status 5, Control 14,
+  restarts the accelerator (`$0A8C`: Control 99, Status 5, Control 14,
   Control 2) and asks again. A non-zero answer then gives error `$D8EA`
   (reported through Control 20).
+
+**System 7 runs the same probe, and there it is used.** Hook -1 (`gc24`
+entry #103, `$1378` → `$6C8A`) is `$85AA` instruction for instruction, and
+hook -2 (#104, `$13A8` → `$6D1E`) is `$8638` (`$26`, `$11`, `$00`; it
+returns `d7` uninitialised if the device at `globals+$214` is NIL); the
+System 7 Antelope also takes `$02` to the epilogue `$3287C`, so Status 10
+again returns 1. The control panel's probe `sub_C50` is called from
+`sub_FBE` (`$12FA`, and `$1346` after the restart `sub_A8C`); the
+`$FFFFFFFF` it sends with Control 4 only makes `$02` go out, and the card
+never reads it. Only the control panel reads flag `$100`, through Status 5
+(unit `+8`), and it reads it before the probe (`$128E`/`$12D6`, tested at
+`$137C`), so its error `$D8EA` reports the previous Status 10's failure.
+After the restart the second probe's result is tested with `tst`/`beq`
+(`$134C`-`$1350`) instead of the first one's `cmp #1` (`$1300`-`$1306`):
+any non-zero answer, including the 1 every running card gives, is reported
+as `$D8EA`. In both releases the probe only shows that the dispatcher
+answers.
 
 **The probe answers 1.** Both ends are now read:
 * Selectors below `$0C`, and every selector the switch at `$628E`
