@@ -4239,8 +4239,9 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
 (Earlier versions of this section fitted System 6's `.lit` key from System
 7's strings and tables; the exact table confirms what that fit concluded.)
 
-**The System 6-only probe: `$00`, then `$02`.** System 6's host does send
-`$02`, although no Antelope of either version handles it:
+**The probe: `$00`, then `$02`.** The host sends `$02` (System 6 here;
+System 7 the same way, below), although no Antelope of either version
+handles it:
 * `gc24` ID -4048 begins with a table of 44-byte entries, each a long ID,
   a stub, and at `+$28` a `bra.w` to the routine. The driver (`DRVR`
   -4048, `$10B0`) walks it. A positive ID is a trap to patch. A negative
