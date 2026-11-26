@@ -28,7 +28,9 @@ send the card work in three ways:
    colour searches and host memory.
 
 Card and host share the cursor through a lock. The card removes the cursor
-before drawing over it and asks the host to redraw it afterwards.
+before drawing over it and asks the host to redraw it afterwards. Only the
+GC in the lowest slot is brought up (section 1); the others stay plain
+video cards.
 
 **Where to read what:**
 
@@ -46,7 +48,8 @@ before drawing over it and asks the host to redraw it afterwards.
 | the kernel's services | section 8 |
 | the `PupS` resource, Control calls 17-19, the feature flags | section 9 |
 | the System 6 package and its Antelope | section 10 |
-| the card's I/O registers | section 11 |
+| the card's I/O registers, the RAMDAC, the DP8531 clock, the video modes, where everything sits in memory | section 11 (11.5 RAMDAC, 11.8 video modes, 11.9 memory map) |
+| bugs and slips found in the shipping software | the top-level `README.md` |
 
 **How sure is it?** The 68K side (`DRVR.s`, `gc24.s`) is plain code.
 The card firmware is encrypted with a running 32-bit XOR key per section,
@@ -82,7 +85,9 @@ loop). Separate from all of this are the boot mailbox (section 4) and the
 video command block (section 5).
 
 **Commands and replies.** The host sends a selector (`$0C`-`$3C` for drawing
-and caches, `$80xx` for modules). A reply of 1 means "done". 0 means "not
+and caches, `$80xx` for modules). A reply of 1 means "done"; StretchBits may
+post it early, once every pixmap it touches is on the card ("Early
+release"), and the next command then waits for the completion. 0 means "not
 handled", and the host runs the original 68k QuickDraw routine. EngineDispatch
 itself returns 2 ("run the original without drawing") while a picture,
 region or polygon is being recorded; the card never sends 2. Command `$01` resets the
@@ -139,8 +144,9 @@ buffer`, `PQDAlloc: …`; earlier read as "PRInit"/"PRAlloc"); CopyHostMemory
 `$372D0`-`$3772C`; the `storem` fill `$37D68` and its family
 `$37C10`-`$38C3C`; the reporter `$00140` and its log writer `$00F84`; the kernel service
 stubs `$38F24`-`$39110` (section 6); the C library from `$39114` to the end
-of `.text` (`$3CAD4`; see "The C library"). `antelope_dasm.py` prints these
-names (from `antelope_names.py`) in `firmware/disasm/text.asm`.
+of `.text` (`$3CAD4`; see "The C library"). All 709 functions are named in
+`antelope_names.py`, and `antelope_dasm.py` prints the names, with banners
+per subsystem, in `firmware/disasm/text.asm`.
 
 **Answered by the exact listings** (formerly open): the encryption (a
 running XOR key per section, see section 6); service `$C0` (returns
@@ -164,10 +170,18 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 
 **Still open:**
 - how the Am29000 gets from reset (address 0, ROM space) to `Boot` at `$2003000`: no code does it, so the hardware must (section 1);
-- the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (11.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded. The pixel clock is settled (a DP8531 at `$46800000`, section 11.8);
-- DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
-- the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
-- flag bits 1, 3, 10, 30 and 31 are traced (section 9): kernel debug switches (FPU, instruction counting, data watchpoint, bus-error escape) that no host code or Antelope sets; only a poke of `PublicIn+$18` before init would. Who writes the watch window `$4C0067D8`/`$67DC` and the escape address in gr121 is not known.
+- the meaning of the 137-bit stream at `$44800000`: most likely a configuration chain inside the MFB (11.3), 25 four-bit `1xxx` cells, two similar words and a 4-bit Two-Page field; board revision 1 adds 1 to four small fields, which suggests VRAM timing counts. No field is decoded;
+- who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`); the best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, not confirmed (DrawMultiObject, "Open points");
+- the kernel's debug switches (flag bits 1, 3, 10, 30, 31; section 9) are traced, but who would write their watch window `$4C0067D8`/`$67DC` and escape address in gr121 is not known;
+- bit 31 of the RAMDAC's pixel bus control byte, always set (11.8), and whether the host's slot offsets 0 (the RAM test) and `$02000000` (the kernel) are the same SRAM (section 1).
+
+**Settled, for orientation:** the System 6 Antelope is exact too (section
+10): 620 of its 769 functions are identical to System 7's; it has
+placeholders for the 16-bit arithmetic modes and an Apple Video (`'rpza'`)
+codec behind commands `$39`-`$3B`, with a QuickTime codec component on the
+host (`gc24_sw11.s` `$9510`). The pixel clock is a DP8531 (11.8); the RAMDAC
+is a Brooktree "RAMDAC 428" on data bits 31-24 (11.5); `$44000028` is the
+Am29000's run control (11.1).
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -179,15 +193,28 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 | 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
 | 5 | cs3 uploads and links Antelope and fills `PublicIn+$04`/`$20`-`$2C`/`$40`; cs5 writes the flags to `image+$18` and then -1 to `$44000028` (`$1DDC`) | the Am29000 starts at `Boot`, whose poll passes at once (`$42005300` is already there) |
 
-**How the Am29000 reaches `Boot` is not known.** After reset the Am29000
-fetches from address 0 in ROM space (`CPS.RE` = 1). The word at the
-kernel's base, `$2000000`, is vector 0, `jmp $2002808` (the fatal-trap
-reporter, reason `$91`); it is PC-relative, so fetched at 0 it would land
-at `$2808`. Nothing in Runtime, the driver or the declaration ROM jumps to
-`$2003000`. `Boot` is PC-relative and clears RE in place (`$2003038`, `CPS`
-= `$047F`), so it must already be running at `$2003000` (or `$3000` with a
-64 KB decode) when it starts. The redirect is therefore in hardware,
-perhaps a few words the gate arrays supply in ROM space. That the host's
+**How the Am29000 reaches `Boot` is still open; AMD's manuals narrow it
+down.** At reset (Am29000 User's Manual, 1987, 3.8, p. 3-73; 5.5, pp.
+5-31/32) CPS is `$0573` (FZ, RE, PD, PI, SM, DI, DA set), CFG's
+cache-disable bit is set, and VAB and the other registers are undefined.
+When *RESET goes away the CPU fetches address 0 in ROM space (IREQT = 1),
+which some device must answer. Halt and Step resume where the CPU stopped;
+Load Test Instruction cannot be entered from Reset (pp. 5-25 to 5-28);
+absolute jumps reach only below `$40000`. The word at `$2000000` is vector
+0, `jmp $2002808` (PC-relative, so fetched at 0 it lands at `$2808`): a
+reset that ran it would start the fatal-trap reporter with undefined
+`gr64`, then report reason `$91` or enter init `$2001FFC`, which never sets
+VAB; Boot does that, and also stamps the slot into PublicOut and copies the
+data section. Nothing in Runtime, the driver or the declaration ROM jumps
+to `$2003000`. `Boot` is PC-relative and runs 14 instructions with RE = 1
+before clearing it in place (`$2003038`, `CPS` = `$047F`) and continuing
+without a jump, so ROM space and instruction space must reach the same
+SRAM: the card ignores IREQT there. The redirect is therefore most likely
+in the gate arrays: a few words they supply for the first fetch after reset
+(`const`/`consth`/`jmpi`, or `jmp $3000` with a 64 KB decode).
+`$44000028` most likely drives *RESET rather than the CNTL pins, because a
+halted CPU would resume its old PC after Init29K uploads a fresh image.
+That the host's
 slot offsets 0 (the RAM test) and `$02000000` (where the kernel is written)
 are the same SRAM is inferred: the test writes only offsets 0-`$1FF00`,
 never reads `$02000000`, and would fail if offset 0 aliased every 64 KB.
@@ -213,6 +240,17 @@ it is missing (**verified**, both sides).
 (`$1E4A`) for slots `$9`-`$E` in ascending order; every GC found (board
 sRsrc BoardId `$2C`, or a 'Cheetah'/'Tiburon' name, type `$7E`) gets unit
 record `+$214[i]`, and `$1D8E` (`$1FF8`) holds its Am29000 (`$44000028` = 0).
+The name test (`$1E7C`-`$1F60`) takes the first word of sRsrc 1's name
+(sReadDrvrName, cut at the first space, prefix-compared); the stock ROM's
+'Macintosh Display Card 8•24 GC' never matches. Every later test treats
+`$7E` exactly like `$2C`, except the RevLevel test `$1AAA`, which needs
+BoardId = type, so a name-matched card would take the no-display drop and
+get 0/0 from Status 19. **Tiburon is Apple's codename for the 8•24 GC**
+(System 7.1 `Resources/Sys.r`: STR -16454 "8•24 GC", "name of the Tiburon
+patch file", which `Boot3.a` uses to load `gc24` 32; `PatchIIROM.a` and
+`PatchIIciROM.a` mention "the patch for the tiburon video card"). Cheetah is
+not identified. DoOpen's check for type `$7D` (`$218`) is dead: nothing
+stores `$7D`.
 Every client hard-codes unit 0: InstallPatches (`$1142`), `gc24`
 (`$214(a0)`), INIT_main and the control panel's bring-up `sub_A8C` (`$A9E`).
 So only the lowest-slot GC gets cs2/cs3/cs5, as *develop* 3 says (p. 333);
@@ -1062,8 +1100,10 @@ So card-to-card copies (screen, cached offscreens), small host sources and
 host-ROM data overlap with the 68k; copies into host memory and large host
 sources do not. `EngineDispatch`'s wait (`$6074`-`$6116`) ends on status 1
 and returns the reply; the next command waits in `sub_624A` (`$5EC8`) for
-status bit 1, the completion. Nothing in `gc24` stops the 68k from writing
-directly into card memory during the overlap.
+status bit 1, the completion. Only GetPixBaseAddr, GetPixel/GetCPixel and
+the patches' own 68K fallbacks wait for the card (see "When the host waits
+for the card"); a program that writes through a saved `baseAddr` gets no
+protection.
 
 #### The entry table, named
 
@@ -1388,6 +1428,33 @@ has grown. The card's `$26` case (`$32234`) is the same code.
   flushes with `sub_4822(reason)`, that is `EngineDispatch($26, reason)`.
   The reasons seen are 5, 8, 9, `$10`, `$12`, `$13`, `$14`, `$15` and `$18`.
 * `$26` (`L5D84`) first sends a final `$38` if needed, then ends the batch.
+
+**When the host waits for the card.** `$2D` returns at once
+(`DrawStreamCommand` replies before DrawMultiObject runs, `$13BE8`). Inside
+a stream, `$38` is completed only at the next end of the bytes (`$0AEF4`),
+so it is a full drain; `$26` is released at once (`$0AF3C`) and the unread
+records are drawn afterwards. Every command sent waits in `sub_624A` for
+status 3. `sub_6E14` is a non-blocking poll: with a stream active it
+compares the card's read pointer (packet `+$1C8`) with the host's write end
+(`$B8(a4)`), otherwise it returns status bit 1.
+
+| patch | waits? |
+|---|---|
+| Std* fallback when the card declines (`sub_86D6`) | drains with `$38` (or waits in `sub_624A`), then `$0D` |
+| CopyBits `$483C`, BitMapRgn `$BF0C` | drain first |
+| GetPixBaseAddr (`Lbe58` → `sub_BD94`), GetPixel/GetCPixel (`$B23E`/`$B34C`) | yes: a command, then spin on `sub_6E14` (no timeout) |
+| UpdateGWorld `Lba64`, DisposeGWorld `Lbb14`, UnlockPixels `Lb9b4` | a command (`$19`/`$33`), i.e. `sub_624A` |
+| LockPixels `Lb940`, NewGWorld `Lb9fc`, the cursor patches | no (only the cursor lock `*[+$0C]`) |
+| DisposeScreenBuffer `Lbe74` | runs the original first, then tells the card (`$33`) |
+| QDDone `Lbecc` (`$AB1D` selector `$13`) | one `sub_6E14` poll, only for NIL or the stream's port; any other port gets TRUE at once (`$BEE4`-`$BEFA`) |
+| GetCTSeed `$8098`, DrawPicture and the port/colour state calls | `$26`: the last records may still be drawing |
+
+Possible races, from the code (none observed on hardware): direct writes
+through a saved `baseAddr` (screen, `gdPMap`, a GWorld) or after LockPixels
+alone, which *develop* 3 warns about (p. 346); QDDone(port) answering TRUE
+while an early-released StretchBits still draws into that port's pixels;
+a `sub_624A` timeout (-1) after which the 68K draws while the card may
+still run; DisposeScreenBuffer freeing memory before the card is told.
 
 **The reply.** EngineDispatch returns 1 ("done": the 68K skips the call).
 When the port is recording a picture, region or polygon, it returns 2
@@ -4203,7 +4270,7 @@ Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 | `$44000008` | serial, 16 | PrimaryInit `$20BC`-`$20D8` (4 × 4 bits of `$A`, i.e. `$AAAA`), at reset only | - | unknown (*reading*: a reset/unlock pattern) |
 | `$4400000C`, `$10`, `$14`, `$18` | bit 31 | Boot writes each value back | Boot `$2003010` loop (4 iterations, bit inverted) | **NuBus slot ID** (est.). Boot builds the 4-bit slot `s` and stores `gr66 = s << 28` at PublicOut+`$2C`. That value is the top nibble of the pointers PublicOut+`$0C`-`$18` and service `$C4`'s result, which IsOnThisCard `$13F54` uses as the slot |
 | `$4400001C`, `$20`, `$24` | bit 31 | PrimaryInit -1 (`$214C`-`$216E`); VideoDriver sets bit 31 after each mode change (`$60D4`-`$60F8`) | - | unknown, always set |
-| `$44000028` | flag | PrimaryInit 0 (`$2176`, at reset); DRVR `$1D8E` 0 (`$1DBA`; called from BuildUnitRecords `$1FF8`, Init29K start `$241A` and after the RAM tests `$25B8`, cs6 `$B76`, cs20 `$8EC`); DRVR `$1DDC` -1 (`$1E28`, right after it writes the flags to image+`$18`; cs5 `$B4E`) | - | **Am29000 run control** (*reading*, strong): 0 = CPU held, -1 = CPU runs. The host tests and overwrites all of card SRAM/DRAM and uploads Runtime and Antelope (cs2, cs3) while it is 0. Boot (`$2003000`) is part of that upload; it reads PublicIn+`$18` (`$2003050`) and the cs3 fields PublicIn+`$20`-`$2C` (`$2003090`) right after a poll that cs2's `$42005300` has already satisfied, so it can only start at cs5's -1. cs6 and cs20 stop it again. The card never accesses it |
+| `$44000028` | flag | PrimaryInit 0 (`$2176`, at reset); DRVR `$1D8E` 0 (`$1DBA`; called from BuildUnitRecords `$1FF8`, Init29K start `$241A` and after the RAM tests `$25B8`, cs6 `$B76`, cs20 `$8EC`); DRVR `$1DDC` -1 (`$1E28`, right after it writes the flags to image+`$18`; cs5 `$B4E`) | - | **Am29000 run control** (*reading*, strong): 0 = CPU held, -1 = CPU runs; most likely the *RESET line rather than CNTL/Halt (section 1). The host tests and overwrites all of card SRAM/DRAM and uploads Runtime and Antelope (cs2, cs3) while it is 0. Boot (`$2003000`) is part of that upload; it reads PublicIn+`$18` (`$2003050`) and the cs3 fields PublicIn+`$20`-`$2C` (`$2003090`) right after a poll that cs2's `$42005300` has already satisfied, so it can only start at cs5's -1. cs6 and cs20 stop it again. The card never accesses it |
 | `$4400002C`, `$30`, `$34` | flag | PrimaryInit 0 at reset; XtdSense (VideoDriver `$62F6`, PrimaryInit `$28B0`) and Boot `$20033C8`-`$2003548`: -1 to one line per round | - | **sense-line drive** for lines 0/1/2 (est.: each round drives one line and reads the other two) |
 | `$44000038`, `$3C`, `$40` | ? | PrimaryInit 0 (`$20FA`-`$2114`); Boot 0 before its probe (`$20033D4`-`$20033EC`; System 6 also zeroes `$34`-`$48`) | - | cleared before sensing (*reading*: sense-related) |
 | `$44000044`, `$48`, `$4C` | bit 31 | (System 6 Boot writes 0, without effect in the code) | VideoOpen `$532E`-`$5354`, XtdSense, PrimaryInit `$21DE`-`$2204`, Boot `$2003368`-`$20033B0`, DRVR BuildUnitRecords `$2004`-`$205E` | **monitor sense lines** 0/1/2 (est.). `$44` is the code's MSB. DRVR: code 7 with `d5` = 0 sets `+$15E` = `$FFFF` and skips the card |

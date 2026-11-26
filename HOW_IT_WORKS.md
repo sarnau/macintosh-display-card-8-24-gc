@@ -10,7 +10,7 @@ Mac-side programs).
 
 ## The idea
 
-The 8·24 GC is a NuBus video card that also draws. It carries an AMD
+The 8·24 GC (Apple's codename: Tiburon) is a NuBus video card that also draws. It carries an AMD
 Am29000 RISC processor running a C port of 32-Bit QuickDraw. When the card's
 software is active, the Mac's QuickDraw hands it the work behind CopyBits and
 the shape and text calls. The card draws into its own frame buffer, or into
@@ -158,6 +158,16 @@ can, translating addresses through the host's memory map when virtual
 memory is on, or asks the host to copy them. Card and host share the cursor
 through a lock: the card hides it before drawing over it and asks the host
 to show it again.
+
+Because the card draws while the Mac goes on, the patches wait for it only
+where 68K code is about to touch pixels itself: before QuickDraw's own
+routine draws something the card declined, the stream is played to the end;
+GetPixBaseAddr and GetPixel wait until the card is idle; every new card
+command waits for the previous one. QDDone only reports whether the card is
+done; it never waits, and for a port other than the one being streamed it
+always says yes. Nothing stops a program that writes to the screen or to a
+GWorld through an address it saved earlier, which is why Apple told
+developers not to draw to the screen directly.
 
 Programs on the Mac can also load their own code onto the card through the
 patches' module interface and run it as tasks; such code gets the
