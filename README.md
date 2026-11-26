@@ -32,6 +32,7 @@ disassembler** used to lift the coprocessor's own code.
 A one-page summary of how the card works: [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md).
 A guide to the listings (where to start, label and address conventions):
 [`READING_THE_LISTINGS.md`](READING_THE_LISTINGS.md).
+What the latest round of work changed: [`CHANGES.md`](CHANGES.md).
 
 
 * **Host side (68k): fully decoded** -- the declaration ROM, the control panel,
@@ -198,6 +199,17 @@ keeps the data fork); on a fresh clone, take it from
 | `Apple 8•24 GC Software/`, `Apple 8•24 GC Software.img` | the original control-panel software (subject of `control-panel/`) |
 | `AppleMAC-DisplayCard-8.24gc.pdf` | Apple's product documentation for the card |
 | `develop-03_9007_July_1990.pdf` | *develop* magazine issue 3 (July 1990), containing "8•24 GC: The Naked Truth," Apple's own technical writeup of the card |
+| `Macintosh Control Panel/824GC.rsrc` | the System 7 package's resource fork (the same resources as `8•24 GC.app`'s) |
+| `Macintosh Control Panel/ Macintosh Display Card 8•24 CG.jpg` | a photo of the board, used to identify the chips (DP8531, Bt RAMDAC 428, MFB, RDNC, the memories) |
+
+Outside the repo, read for comparison (not redistributed here):
+
+| Source | Used for |
+|------|------------|
+| Apple's System 7.1 source code | QuickDraw's routines (names and table order in Antelope), `JMFB*.a` for the original 8•24's timing chip and RAMDAC register names, Boot3.a's `Load8Dot24GC`, `Sys.r` (the "Tiburon" codename), the Slot Manager selectors |
+| System 6.0.7 and 6.0.8 System files | their start-up patches PTCH 376 (Mac II ROM) and PTCH 1660 (IIci-class ROM) load `gc24` 32 from the file named by STR -16454 ("8•24 GC"), the System 6 counterpart of Boot3's loader |
+| AMD Am29000 User's Manual (1987) and Memory Design Handbook (1992), bitsavers | the reset state and ROM/instruction spaces (section 1) |
+| National DP8531 data sheet (1990), Motorola and Toshiba memory data books, bitsavers | the clock synthesiser's registers, the SRAM and VRAM parts |
 
 ## Method
 
