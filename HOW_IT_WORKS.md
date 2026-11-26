@@ -112,7 +112,8 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
 1. The driver (`.GraphAccel`, `DRVR` in the control panel) holds the
    Am29000 (0 to `$44000028`), tests the card's memory, uploads Runtime,
    writes its feature flags and memory limits into `PublicIn`, pokes the
-   go-ahead `$42005300` and arms the mailbox with `'s337'`.
+   go-ahead `$42005300` (the mailbox for the kernel's error reports stays
+   unarmed by default: nothing on the Mac reads it).
 2. It uploads and links Antelope into the top of card memory (the VRAM
    above the frame buffer on a stock card) and records its entry point
    in `PublicIn`.

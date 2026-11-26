@@ -190,7 +190,7 @@ Am29000's run control (11.1).
 | 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | held: `$44000028` is 0 (section 11) |
 | 2 | waits until `PublicOu[0]` (image+$400) reads `$32100456` -- a constant of the *uploaded file* (it is the static first word of `PublicOu`), so it only proves the upload landed | - |
 | 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the last byte of card RAM (+$138: `$0C1FFFFF`, the top of VRAM, without SIMMs; else the top of DRAM), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` (+$134 here is the Runtime's reservation from the same ACEFLoad; Antelope reads it as heapMax) | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
-| 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
+| 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337'), all only when feature flag `$800` is clear, which it is not by default (section 4) | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
 | 5 | cs3 uploads and links Antelope and fills `PublicIn+$04`/`$20`-`$2C`/`$40`; cs5 writes the flags to `image+$18` and then -1 to `$44000028` (`$1DDC`) | the Am29000 starts at `Boot`, whose poll passes at once (`$42005300` is already there) |
 
 **How the Am29000 reaches `Boot` is still open; AMD's manuals narrow it
@@ -313,7 +313,11 @@ then `'s337'` (`$73333337`) to `mailbox+$00`. Card (`$2002650`, the one
 reporter, used by the HIF services the kernel does not handle itself and by
 fatal traps): the mailbox carries card-to-host reports, and `'s337'` is the
 host's "ready"/answer. The card posts only when `mailbox+$00` reads
-`'s337'` (bring-up step 4 arms it, each `cs51` re-arms it): it writes the
+`'s337'` (bring-up step 4 arms it and each `cs51` re-arms it, but only when
+feature flag `$800` is clear, DRVR `$26CC`; SetFeatureFlags starts from `$800`
+(`$2ADE`) and clears it only for config bit `$100`, which only cs50 sets, so
+by default the mailbox is never armed and `$2002650` returns at once through
+`$2002770`, besides `$2001BC0`'s own bit-11 gate): it writes the
 reason (`gr77`) to `+$04`, a 16-word register dump to `+$10`, and the posted
 marker `$96666669` to `mailbox+$00` and to the host's ack address stored at
 `mailbox+$0C`. It then waits, serving video commands meanwhile, until the
@@ -327,9 +331,18 @@ HIF path (`$2001BC0`) returns it in `gr96` as the service's result (service
 used, and the kernel restarts unless flags bit 16 is set.
 
 The reason codes are listed in `Hand.asm`'s header (traps `$8F`-`$A6`,
-report overflows `$B4`/`$B5`; for the HIF path the service number). The
-host's handling of a posted report is `INIT_main.s`/`gc24.s` territory and
-was not traced.
+report overflows `$B4`/`$B5`; for the HIF path the service number).
+
+**No host code acts on a report.** The driver has no interrupt handler or
+periodic task. Status cs15 (`$5A0`) is the only reader: it returns the
+reason from `mailbox+$04` when the ack word (`unit+$13C`) holds
+`$96666669`, and 0 otherwise. Status cs16 (`$5FE`) returns the superslot
+address of the register dump at `mailbox+$10`. Both refuse while flag
+`$800` is set. No client (the control panel, INIT_main, INIT_DSInit,
+`gc24`) calls cs15, cs16, cs50 or cs51, and `gc24` never reads the mailbox
+or the ack word. If the mailbox were armed, a posted report would leave
+the card waiting at `$2002700` forever, serving only video commands. The
+mailbox is a debugging channel for a tool that is not in the package.
 
 ## 5. Video command block (`VidComm`, `$4C007300`)
 
@@ -1463,7 +1476,9 @@ call. That is the meaning of reply 2.
   * StdLine checks only the pen (`sub_8DA4`).
   * StdText runs the font work (`sub_88E6`, below).
   * StdRRect with a zero oval width or height is sent as StdRect (`$24`).
-  * StdPoly and StdRgn reserve their record size.
+  * StdPoly and StdRgn reserve their record size, except that a StdRgn whose
+    region has `rgnSize` = 10 is sent as StdRect (`$24`) with its `rgnBBox`
+    (`$4D86`).
 * **Mode and pattern** come from `sub_8E38(verb, &mode, &frame, &slot)`,
   QuickDraw's own verb table:
 
@@ -2153,12 +2168,17 @@ right = left + width
 if lr48: height = half[lr48 + 2c]
 ```
 
-After the glyphs are built into the buffer, a row loop (`$12E8C`-`$12EB8`)
-walks a row from right to left, forms each long OR'd with itself shifted
-left by one, plus the top bit carried from the long to its right, and ORs
-the complement of that into a second buffer (pointer in `lr70` there):
-`dst |= ~(x | x<<1 | carry)`. That is a one-pixel smear of the glyph image, as bold, outline
-and shadow use it in `DrawText.a`; which style takes this loop is not read.
+After the glyphs are built (and made bold, `$12CB8`, repeating
+`x | x>>1 | carry` boldPixels (`lr60+6`) times, and italic, `$12CF8`, gated by
+italicPixels `lr60+7`), `$12DC8`-`$12EB8` draws the underline, as
+`CHECKUL`/`UL1`/`UL2` in `DrawText.a`, instruction for instruction. It runs only
+when `ulThick` (`lr60+$0A`, the FMOutput copy) is non-zero and `descent`
+(`lr41+$3C`) is at least 2. It ORs the baseline row (`ascent`·rowBytes into
+the buffer) with the next one or two rows (two only when `descent` = 2) into
+a one-row temp (PQDAlloc), smears that right by one pixel (`x | x>>1 |
+carry`), then, right to left, smears left and ORs the complement into
+baseline+1: `row |= ~(t | t<<1 | carry)`. The underline is drawn everywhere
+except one pixel around descenders.
 
 The width table is indexed by the character code (as QuickDraw's is),
 `lr48` is the optional height table, and the space has a fast path. The
@@ -2380,9 +2400,11 @@ code is 3, or `$0B` when bit 0 or 1 of packet word 0 is set.
   `$5F54`-`$5F78`) writes the selector to `+$48`, a running sequence number
   to `+$4C`, the argument count to `+$50`, and `$FFFFFFFF` to `+$14`. So the
   card's `rec` is packet `+$44`, and the switch index is the host's
-  selector itself (`$0C`-`$38`; the table covers `$00`-`$3C`). The host rewrites some selectors only to
-  `$24` StdRect: a rounded rectangle with zero radius, or a rectangular
-  region.
+  selector itself (`$0C`-`$38`; the table covers `$00`-`$3C`). The host rewrites two selectors to `$24`
+  StdRect before writing the stream record: StdRRect with a zero oval width
+  or height, and StdRgn (`$18`) when `rgnSize` = 10 (`gc24.s` `$4D86`-`$4DBE`,
+  which copies `rgnBBox` to a local rect and passes it in place of the
+  region). The card never rewrites a selector.
 * **`sub_31e20(n, cmd1, …, cmdn)` is varargs.** The frame is 10 registers,
   so the incoming arguments start at `lr12`, and `storem lr12, gr125`
   spills them to the memory stack. The main loop passes `-1` (every command).
