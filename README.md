@@ -74,7 +74,10 @@ does not settle (details in
 * **RAMDAC bit 31.** Always set in the pixel bus control byte; its meaning
   is unknown (§10.8).
 * **Glyphs `$84`-`$9E`.** Which host system rewrites them in non-Roman fonts
-  so that the card re-reads them; KanjiTalk 6 is the best fit (DrawMultiObject).
+  so that the card re-reads them. KanjiTalk 6 is the best fit: its Kanji
+  bitmap fonts were drawn by `'fdef'` code outside the NFNT path (TIL 11960).
+  No KanjiTalk 6, ChineseTalk or HangulTalk software is on hand to check
+  (DrawMultiObject).
 * **The cursor copy.** Whether the card's never-refreshed copy of the screen
   under the cursor can really show stale pixels (§ "The cursor").
 * **Debug tools.** Who used the mailbox calls (Status cs15/16, Control

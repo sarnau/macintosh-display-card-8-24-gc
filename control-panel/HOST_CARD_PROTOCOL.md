@@ -2404,9 +2404,14 @@ range). That part remains a reading.
   somewhere StdText could draw them. `$84`-`$9E` is a strict subset of the
   Shift-JIS lead bytes (`$81`-`$9F`, `$E0`-`$FC`; `DoubleByteSupport.a`
   `sjisHighBytes`); why `$81`-`$83` and `$9F` are left out is not known. This is
-  not confirmed (about 60%; another CJK script kit is possible): no KanjiTalk
-  code or font is on hand, and the local Tech Info Library notes on KanjiTalk and
-  on the 8•24 GC say nothing about drawing.
+  not confirmed (about 60%; another CJK script kit is possible). No KanjiTalk
+  6, ChineseTalk or HangulTalk system, Osaka strike or `'fdef'` code is on
+  hand: the Legacy Recovery CD and the 1997 Developer CDs hold only System
+  7.5+ WorldScript pieces and empty "Kanji 8.0" placeholders. TIL 11960 says
+  the 6.x Kanji bitmap fonts were "fbit/fdef" fonts, with their drawing code
+  in an `'fdef'` resource outside QuickDraw's NFNT path, and that without
+  InputBackSupport they draw garbled on System 7; that fits code feeding
+  glyph images into a strike, but does not show it.
    (Test: dump a KanjiTalk 6 Osaka strike, or disassemble its text patch.)
 
 #### The dispatcher prologue and packet layout
