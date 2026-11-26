@@ -100,6 +100,24 @@ output, (above + 2 × pixel + below) / 4, used at 1-8 bits and never at 24
 (*develop* 3, pp. 335-336). In 24-bit modes the RAMDAC's colour
 table acts as a gamma lookup per channel.
 
+## Three declaration ROMs
+
+The card's own ROM (the video driver and start-up code the Mac reads from
+the card) exists in three versions:
+
+* **1.0a16**, a prerelease from June 1990: the shipping ROM's layout, with
+  older TV timing and a driver bug (GetBaseAddr returns the slot instead of
+  video memory).
+* **1.0** (341-0812), the shipping ROM decoded here.
+* **1.1** (341-0266, September 1991): the 16" and 21" Color displays, 16-bit
+  colour on an AC842A RAMDAC, TV modes without the flicker filter, and all
+  timing in one shared table. It drops one case 1.0 handled: a monitor that
+  senses as RGB Full-Page (code 5), which 1.0 drove as a colour Portrait,
+  now gets a black screen.
+
+The original 8•24 (without the accelerator) has its own ROMs, MDC 1.0.1 and
+1.2; they share the timing chip and confirm the System 7.1 source used here.
+
 ## Two programs on the card
 
 Both are stored in the control panel's `ACEF` resources, a repacked AMD 29K

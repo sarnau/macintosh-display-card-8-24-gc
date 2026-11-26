@@ -52,6 +52,18 @@ lists the earlier statements this work corrected.
 * How the Am29000 gets from reset to `Boot` is narrowed with AMD's manuals
   but not settled.
 
+## The ROMs and the releases
+
+* No other software release exists on this disk: the Legacy Recovery CD's
+  copies of 1.1 and 7.0.1 are identical to the repo's. System 6.0.5 and
+  later load `gc24` 32 themselves, like System 7's Boot3.
+* Three more declaration ROMs were compared: the prerelease 1.0a16 (June
+  1990), the later 1.1 (341-0266, 1991: 16" and 21" Color, 16 bpp on an
+  AC842A, unfiltered TV; listed in `extracted-source/rom-1.1/`) and the
+  original 8•24's MDC 1.0.1 and 1.2, which confirm the System 7.1 JMFB tables.
+* The System 7.0.1 software works with the 1.1 ROM unchanged: Antelope draws
+  16 bpp, and the kernel already knows the new monitors.
+
 ## Bugs, documentation
 
 * 27 entries of bugs and slips in the shipping software are listed in the
