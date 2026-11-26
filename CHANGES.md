@@ -30,7 +30,7 @@ lists the earlier statements this work corrected.
 * Only the GC in the lowest slot is brought up; a card without a monitor can
   still accelerate.
 * `gc24` 32 does the whole boot-time bring-up in both releases. System 7's
-  Boot3 and System 6.0.7/6.0.8's start-up patches load it. The control
+  Boot3 and the start-up patches of System 6.0.5 and later load it. The control
   panel's restart routine and the probe behind Status 10 are the same code
   in both.
 * The driver's Control and Status calls, including the ones no program

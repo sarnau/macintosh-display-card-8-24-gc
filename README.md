@@ -207,7 +207,7 @@ Outside the repo, read for comparison (not redistributed here):
 | Source | Used for |
 |------|------------|
 | Apple's System 7.1 source code | QuickDraw's routines (names and table order in Antelope), `JMFB*.a` for the original 8•24's timing chip and RAMDAC register names, Boot3.a's `Load8Dot24GC`, `Sys.r` (the "Tiburon" codename), the Slot Manager selectors |
-| System 6.0.7 and 6.0.8 System files | their start-up patches PTCH 376 (Mac II ROM) and PTCH 1660 (IIci-class ROM) load `gc24` 32 from the file named by STR -16454 ("8•24 GC"), the System 6 counterpart of Boot3's loader |
+| System 6.0.1-6.0.8 System files | from 6.0.5 on, their start-up patches PTCH 376 (Mac II ROM) and PTCH 1660 (IIci-class ROM) load `gc24` 32 from the file named by STR -16454 ("8•24 GC"), the System 6 counterpart of Boot3's loader |
 | AMD Am29000 User's Manual (1987) and Memory Design Handbook (1992), bitsavers | the reset state and ROM/instruction spaces (section 1) |
 | National DP8531 data sheet (1990), Motorola and Toshiba memory data books, bitsavers | the clock synthesiser's registers, the SRAM and VRAM parts |
 

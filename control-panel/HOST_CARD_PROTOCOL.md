@@ -4348,7 +4348,9 @@ through one wrapper: control panel `$1D30`/`$1D68`, INIT `$A54`/`$A8C`,
 way as System 7, minus two pieces: it has no DSInit, so a second GC is not
 reconciled as a plain display card, and nothing in the package runs `gc24`
 32: under System 7, Boot3's `Load8Dot24GC` loads it from the file named by
-STR -16454; under System 6.0.7 and 6.0.8 the System file's start-up patches
+STR -16454; under System 6.0.5 and later (6.0.5, 6.0.7, 6.0.8 and 6.0.8L
+checked; 6.0.1 and 6.0.3 lack it, which matches the control panel's
+"System 6.0.5 or later required") the System file's start-up patches
 do the same (PTCH 376 for the Mac II ROM, PTCH 1660 for the IIci-class ROM:
 `_GetString(-16454)`, `_OpenResFile` on that name in the System Folder,
 `_Get1Resource('gc24', 32)`, `jsr` into it, `_CloseResFile`; both System
