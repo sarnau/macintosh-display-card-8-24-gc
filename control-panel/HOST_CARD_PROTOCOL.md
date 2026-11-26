@@ -1272,9 +1272,14 @@ CopyBits ends up in StretchBits, which `GA_TrapAB27` sends to the card
   * then it puts the rectangle back and clears `+$18`, so the calls that
     follow, inside CopyBits, run normally.
 
-Replaying net hides as ShowCursor calls looks inverted. Since ShowCursor
-stops at level 0, the extra calls may simply be harmless. The code is as
-read, but the intent is not settled.
+The replay is inverted. Swallowed HideCursor calls (`$42D4`) leave `+$44`
+negative, and `$345A`-`$3474` answers them through `JShowCursor` (`$804`)
+instead of `JHideCursor` (`$800`). That raises the cursor level and, on 7.1,
+also cancels the ShieldCursor just replayed (`CCrsrCore.a` decrements
+`ShieldDepth` first). QuickDraw itself never triggers it: CopyBits' only
+cursor call before StretchBits is ShieldCursor, and its ShowCursor runs
+after the replay has ended. Only a custom bitsProc calling HideCursor in
+that window would. System 6's `gc24` has no `+$44` counting.
 
 `EngineDispatch` and `sub_6442` also wait for `*[+$08]` to be 0 before they
 touch the packet (`$5F04`, `$646C`). `JHideCursor`/`JShowCursor` only count
@@ -1358,10 +1363,16 @@ The card's copy is used in two places. The card's next ShieldCursor restores
 from it instead of the host's save area. And the host's reset routine
 (`gc24` `sub_6F4E`, `$7046`) `_BlockMove`s `(n+1)*4` bytes of it into the
 host's `CCSAVE` bits (engine global `+$04`, set by `DRVR.s` `$121E`) and
-clears `+$1EC`. Why the card keeps its own copy rather than writing the
-host's save area directly is not stated anywhere. Its save area is host
-memory reached through a mapping, the packet is local, and a reset is the
-point where the host takes over the cursor again; those may be the reasons.
+clears `+$1EC`. The card never writes host memory here. It reads the host's cursor state
+(`CrsrRect`, `CrsrVis`, `CrsrDevice`, `CCSAVEREC`, `CCSAVE`) through the
+mappings and writes only the screen and the packet (`+$5F0`, `+$5F4`,
+`+$1EC`/`+$1F0`); the host applies each result itself (clears `CrsrVis`,
+sets `CrsrNew`, and `sub_6F4E` `$7046`-`$7074` BlockMoves the copy into
+`CCSAVE`). The code does not say why. As read, nothing but `sub_6F4E`
+clears `+$1EC`, so every later `$32C10` restores from the card's copy,
+although BlitCursor re-saves `CCSAVE` at each host redraw: after the cursor
+moves, or after 68K drawing under it, between two card draws, that copy is
+stale (*reading*; System 6 has the same logic, `$2E9C4`).
 
 These readings are from the exact listing. `$38218` is
 `(destination, source, longs)`: it `loadm`s from its second argument and
@@ -4257,6 +4268,17 @@ calls `$6224` with (`$26`, 0, `$0E`), then sends `$11` and `$00`, clears bit 0
 of unit `+$1F`, and returns whether the `$26` call returned 0. The driver
 calls it first in Status 10, and in Control 14, 17 and 50 before it
 re-initialises.
+
+**The System 6 mailbox.** The System 6 driver handles the mailbox exactly
+as System 7's (section 4). SetFeatureFlags (`$2A54`, the store at `$2A5E`)
+also starts from `$800` and clears it only for config bit `$100`, which only
+cs50 (`$C66`) sets, and Init29K arms the mailbox only when `$800` is clear
+(`$26AA`-`$26F6`). Status cs15 (`$5D0`) and cs16 (`$62E`) and Control cs51
+(`$BFA`) are the same code. The kernel's reporter (`$20024B0`), its bit-11
+gates (HIF `$2001A44`, fatal `$200290C`) and the bit-16 restart test are
+System 7's instruction for instruction, so the mailbox is never armed by
+default in either release. In both, `gr64` bit 11 also makes the fatal-trap
+path skip the report, not only the HIF path.
 
 **When the System 6 host waits.** System 6's `gc24` (`gc24_sw11.s`) waits
 as System 7's does in most patches: QDDone (`$433A`, one `sub_6E14` poll
