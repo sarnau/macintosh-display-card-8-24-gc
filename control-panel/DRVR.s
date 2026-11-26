@@ -291,10 +291,11 @@ DoPrime:
 * A0=DCE ($8(a6)), A1/ParamBlock ($c(a6)), A3 = &ParamBlock.csParam
 * ($1c(a0)).  Bails statusErr if DCE.dCtlStorage is unset.  Reads the
 * engine globals pointer (dCtlStorage Handle -> deref -> A4), does a
-* bounds/liveness check against globals fields, then dispatches on
+* unit check (globals+$22E, the unit index of the last Control call, copied
+* into csParam+0 and checked against globals+$10), then dispatches on
 * csCode ($1A of the ParamBlock, range 2..54) via StatusJumpTable.
 *
-* Every implemented csCode is a plain getter:
+* Most implemented csCodes are plain getters (cs10, 15, 16, 19 and 54 are not):
 *   move.l a4,d0 ; bne.b ok ; <statusErr> ; ok: movea.l (a4),a0
 *   move.l <FIELD>(a0), $2(a3)   ; copy one globals field to csParam+2
 *   bra.w StsOK
@@ -646,7 +647,8 @@ Sts_GetField_a7c:
   006ce:  60 30                bra.b    $700  ; -> StsOK
 * Sts_InvokeHook3 (csCode 54)  -  calls the client-installable
 * callback at globals+$A84 (see DoOpen's $A78 8-slot table) with
-* (globals+$AA0, 0, $FF), returning its D0 result via csParam+2.
+* (-1, 0, &globals+$AA0) -- sub_1404 selector -1 = the module API's last
+* result -- returning its D0 via csParam+2; no NULL check.
 Sts_InvokeHook3:
   006d0:  20 6e ff fc          movea.l  -$4(a6), a0
   006d4:  20 50                movea.l  (a0), a0
@@ -757,14 +759,15 @@ DoControl:
 *                             type A4+$162); runs Init29K ($23CC)
 *     cs3  Ctl_LoadFirmware   LoadFirmware(unitRec, csParam+2)
 *     cs4  A4+$12C <- csParam+2
-*     cs5  state |= 4   cs6  state &= ~4
+*     cs5  state |= 4   cs6  state &= ~4, $44000028 <- 0 (holds the Am29000)
 *     cs13 EnableAccel   cs14 DisableAccel   cs17/cs50 reconfigure variants
 *     cs16 globals+$250 <- arg    cs18 A4+$2 <- csParam+4 (word: gc24's
 *                                 card-response timeout in ticks)
 *     cs19 globals+$24C <- arg
 *     cs20 A4+$17C <- arg (report an error code), state |= $400
 *     cs21 state |= $800
-*     cs48 / cs52 / cs53  small setters (see each)   cs49  $2D44(...) helper
+*     cs48 $2AD2+$2A38   cs52 globals+$AA6 <- word   cs53 strcpy to globals+$AAA
+*     cs49 writes argc/argv to the card's InpArgs
 *     cs51 answer the card's mailbox report   cs54 invoke client hook #3
 *     cs99 ($63) ping -> noErr;  cs10/11/12 and everything else -> -17
 *   Decoded from how INIT_main.s drives them (its boot handshake is mapped
@@ -819,15 +822,16 @@ DoControl:
   0084e:  04 40 00 2d          subi.w   #$2d, d0
   00852:  67 00 07 1a          beq.w    $f6e
   00856:  60 00 07 0c          bra.w    $f64
-* cs53 helper $18AE(&globals+$AAA, csParam+2).
+* cs53 strcpy(&globals+$AAA, (char*)csParam+2) via $18AE; unbounded (256
+* bytes left before the block's end); nothing reads it.
   0085a:  20 6e ff f4          movea.l  -$c(a6), a0
   0085e:  2f 28 00 02          move.l   $2(a0), -(a7)
   00862:  48 6b 0a aa          pea.l    $aaa(a3)
   00866:  61 ff 00 00 10 46    bsr.l    $18ae
   0086c:  50 4f                addq.w   #$8, a7
   0086e:  60 00 06 fe          bra.w    $f6e
-* cs52 globals+$AA6 <- csParam+4 (word) -- the same per-op scratch word
-* gc24.s calls StoreCtxWord_AA6.
+* cs52 globals+$AA6 <- csParam+4 (word) -- the current-trap word that gc24's
+* StoreCtxWord_AA6 sets; only DoOpen's dead test reads it here.
   00872:  20 6e ff f4          movea.l  -$c(a6), a0
   00876:  37 68 00 04 0a a6    move.w   $4(a0), $aa6(a3)
   0087c:  60 00 06 f0          bra.w    $f6e
@@ -998,8 +1002,10 @@ DoControl:
   00a8a:  61 ff 00 00 26 10    bsr.l    $309c
   00a90:  58 4f                addq.w   #$4, a7
   00a92:  60 00 04 e0          bra.w    $f74
-* cs49 helper $2D44(csParam+2, csParam+6, unit index word, A4+$130 =
-* the loaded image's base address) -- operates on the loaded firmware image.
+* cs49 helper $2D44(argc = csParam+2, argv = csParam+6, slot word unit+$000,
+* A4+$130 = image base): writes an argv pointer vector, the strings and a NULL
+* into InpArgs = [image+$410] ($4C007800, at most $1000 bytes), which the
+* program's entry stub reads through HIF $104.
   00a96:  20 0c                move.l   a4, d0
   00a98:  67 00 04 e2          beq.w    $f7c
   00a9c:  2f 2c 01 30          move.l   $130(a4), -(a7)
@@ -1060,7 +1066,7 @@ DoControl:
   00b54:  00 ac 00 00 00 04 00 08 ori.l    #$4, $8(a4)
   00b5c:  4f ef 00 0c          lea.l    $c(a7), a7
   00b60:  60 00 04 0c          bra.w    $f6e
-* cs6  state &= ~4, then helper $1D8E(unit).
+* cs6  state &= ~4, then $1D8E(unit): $44000028 <- 0 on a GC (Am29000 held).
   00b64:  20 0c                move.l   a4, d0
   00b66:  67 00 04 14          beq.w    $f7c
   00b6a:  02 ac ff ff ff fb 00 08 andi.l   #$fffffffb, $8(a4)

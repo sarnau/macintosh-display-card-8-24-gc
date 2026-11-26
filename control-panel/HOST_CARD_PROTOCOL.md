@@ -350,6 +350,19 @@ cs50/cs51 were therefore most likely used by an Apple-internal debugging
 tool, which has not been found. Other csCodes without a client in the
 package: Control 6, 16, 49, 52-54; Status 6, 8, 9, 11, 13, 14, 54.
 
+| call | does |
+|---|---|
+| Control 6 (`$B64`) | state `&~4`; `$1D8E` writes 0 to `$44000028` (holds the Am29000; undoes cs5) |
+| Control 16 (`$880`) | `globals+$250` <- csParam+2 (default `$D3`); if patched, `$1436` then `$14B0` re-route the trap vectors. Only Status 6 reads `+$250` |
+| Control 49 (`$A96`) | `$2D44`: writes argc/argv (pointer vector, strings, NULL; at most `$1000` bytes) to `InpArgs` = `[image+$410]`, which the entry stub reads through HIF `$104` |
+| Control 52 (`$872`) | `globals+$AA6` <- word (the current-trap word `gc24`'s `StoreCtxWord_AA6` sets) |
+| Control 53 (`$85A`) | unbounded strcpy of csParam+2 into `globals+$AAA`; nothing reads it |
+| Control 54 (`$F0A`) / Status 54 (`$6D0`) | the hook at `$A84` (gc24's ID -3 entry: System 7 the module API `sub_1404`, System 6 the codec) with `(csParam+2, csParam+6, &globals+$AA0)` and a 2000-tick timeout / with `(-1, 0, …)`, the last result; neither checks the slot |
+| Status 6 / 8 / 9 / 11 / 13 / 14 | `globals+$250` / unit `+$002` timeout / `+$000` slot / `+$162` type / `+$168` flags / `+$004` |
+
+Status calls use the unit of the last Control call (`globals+$22E`), not
+csParam+0.
+
 ## 5. Video command block (`VidComm`, `$4C007300`)
 
 `VideoDriver.s` (mode set) fills: `+$08` frame-buffer base (superslot form),
