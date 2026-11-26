@@ -1339,9 +1339,10 @@ L5fca:
 * (1/2/4/8/24 bpp select table offset $00/$50/$A0/$F0/$140), after
 * WaitForVBlank: long 0 -> RAMDAC pixel mode $06C0'0008, layout bits
 * $0400'0080/$7C, longs 2-4 shifted into $0400'0004/$00/$A0 (display start,
-* row bytes/8), TV-only 16 longs to $0680'0000, then longs 5-19 through
+* row bytes/8), TV only: 16 DP8531 clock-synthesiser writes to $0680'0000, then longs 5-19 through
 * $04C0'0000 into timing registers $0440'0000+4n, timing control 0 -> 1.
-* It does not touch the clock synthesiser ($0480'0000).
+* It never writes the serial port $0480'0000; progressive modes keep the
+* pixel clock PrimaryInit loaded.
 sub_5fd4:
   005fd4:  48 e7 fc d8          movem.l  d0-d5/a0-a1/a3-a4, -(a7)
   005fd8:  36 92                move.w   (a2), (a3)  ; [saveMode]
@@ -1423,7 +1424,7 @@ L6076:
   0060b4:  08 05 00 0b          btst.b   #$b, d5
   0060b8:  67 1a                beq.b    $60d4  ; -> L60d4
   0060ba:  26 49                movea.l  a1, a3
-  0060bc:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
+  0060bc:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; DP8531 clock synthesiser: 16 writes of register<<4|nibble
   0060c2:  34 3c 00 0f          move.w   #$f, d2
 L60c6:
   0060c6:  26 98                move.l   (a0)+, (a3)  ; [saveMode]

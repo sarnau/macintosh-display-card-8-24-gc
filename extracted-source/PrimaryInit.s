@@ -16,7 +16,7 @@
 *
 *     A stack-allocated SpBlock ($38 bytes; suba.w #$38,a7 ; movea.l a7,a0)
 *     is used for Slot Manager calls (sReadPRAMRec/sPutPRAMRec/
-*     sSetSRsrcState).  While A0 points into that frame the accesses below
+*     sDeleteSRTRec/sSetsRsrcState).  While A0 points into that frame the accesses below
 *     are tagged [sp*]; before that, [se*].  SpBlock fields:
 *       $00 spResult    $04 spsPointer  $08 spSize      $0C spOffsetData
 *       $10 spIOFileName $14 spsExecPBlk $18 spParamData $1C spMisc
@@ -33,8 +33,9 @@
 * PrimaryInit  -  sExecBlock run once by the Slot Manager at boot
 * ==================================================================
 * Entry: A0 = seBlock; byte 0 = slot number.  Brings the board out of
-* reset, senses the attached monitor, programs the clock synthesiser
-* ($0480'0000, reading) and the video timing for it,
+* reset, senses the attached monitor, shifts a fixed stream into the serial
+* port $0480'0000 (device unknown), loads the DP8531 clock synthesiser
+* ($0680'0000) and the video timing for it,
 * and enables exactly the sResources that match the monitor + depth.
 *
 * A1/A4 = slot base F<s>00'0000 (super-slot space).  Card registers are
@@ -208,8 +209,8 @@ L22bc:
   0022c4:  08 05 00 00          btst.b   #$0, d5
   0022c8:  67 04                beq.b    $22ce  ; -> L22ce
   0022ca:  08 85 00 02          bclr.b   #$2, d5
-* Program the clock synthesiser ($04800000, reading) through the serial
-* port with the base coefficients, reading the board revision (bits 12-15
+* Shift the fixed stream into the serial port $04800000 (device unknown;
+* not the clock synthesiser), reading the board revision (bits 12-15
 * of the card's bus status word $06000000) to pick the coefficient set.
 L22ce:
   0022ce:  28 49                movea.l  a1, a4
@@ -263,7 +264,7 @@ L2350:
   002380:  22 3c 00 02 40 9b    move.l   #$2409b, d1
   002386:  74 12                moveq    #$12, d2
   002388:  4e ba 04 f6          jsr      $2880(pc)  ; -> SerialShiftOutReg
-* Finish the clock-synthesiser stream with per-monitor bits (branch on
+* Finish the $04800000 stream with per-monitor bits (branch on
 * monitor code D5: code 3 shifts 1 (4 bits) and sets $0400'00A8 to -1;
 * codes 1/2/6 and all others shift 2 (4 bits); then 1 (2 bits) for all).
 L238c:
@@ -315,9 +316,11 @@ L23fa:
   002402:  72 01                moveq    #$1, d1
   002404:  74 02                moveq    #$2, d2
   002406:  4e ba 04 78          jsr      $2880(pc)  ; -> SerialShiftOutReg
-* Enable/disable the sResources that match this monitor + depth by
-* walking the mode table at $2A2C and calling Slot Manager sSetSRsrcState
-* ($31); the unmatched modes are left disabled.
+* Delete one whole bank of video sResources: walk the 8 ids at $2A2C and
+* call sDeleteSRTRec ($31) on each: the B bank (id bit 4 set) when d6 = 0,
+* else the A bank. Within the kept bank the code below keeps the sensed
+* monitor's sRsrc, disables its TV sibling (sSetsRsrcState $09) and deletes
+* the rest.
 L240a:
   00240a:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   00240c:  28 1f                move.l   (a7)+, d4
@@ -335,7 +338,7 @@ L2420:
 L242a:
   00242a:  11 42 00 32          move.b   d2, $32(a0)  ; [spID]
   00242e:  70 31                moveq    #$31, d0
-  002430:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sSetSRsrcState: set state of one sResource
+  002430:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sDeleteSRTRec: delete one sResource
   002432:  51 c9 ff ec          dbra     d1, $2420  ; -> L2420
   002436:  42 47                clr.w    d7
   002438:  08 04 00 00          btst.b   #$0, d4
@@ -356,7 +359,7 @@ L2452:
   00245a:  21 7c 00 00 00 01 00 18 move.l   #$1, $18(a0)  ; [spParamData]
   002462:  42 28 00 33          clr.b    $33(a0)  ; [spExtDev]
   002466:  70 09                moveq    #$9, d0
-  002468:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x9
+  002468:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x9  sSetsRsrcState
   00246a:  42 a8 00 18          clr.l    $18(a0)  ; [spParamData]
   00246e:  60 0e                bra.b    $247e  ; -> L247e
 L2470:
@@ -364,7 +367,7 @@ L2470:
   002472:  67 0a                beq.b    $247e  ; -> L247e
   002474:  11 42 00 32          move.b   d2, $32(a0)  ; [spID]
   002478:  70 31                moveq    #$31, d0
-  00247a:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31
+  00247a:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sDeleteSRTRec
   00247c:  52 47                addq.w   #$1, d7
 L247e:
   00247e:  51 c9 ff c8          dbra     d1, $2448  ; -> L2448
@@ -452,7 +455,7 @@ L252c:
   002564:  74 0c                moveq    #$c, d2
   002566:  4e ba 03 18          jsr      $2880(pc)  ; -> SerialShiftOutReg
   00256a:  26 49                movea.l  a1, a3
-  00256c:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
+  00256c:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; DP8531 clock synthesiser: 16 writes of register<<4|nibble
   002572:  34 3c 00 0f          move.w   #$f, d2
 L2576:
   002576:  26 98                move.l   (a0)+, (a3)
@@ -570,7 +573,7 @@ L26bc:
 L26c2:
   0026c2:  11 5c 00 32          move.b   (a4)+, $32(a0)
   0026c6:  70 31                moveq    #$31, d0
-  0026c8:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31
+  0026c8:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sDeleteSRTRec
   0026ca:  51 cc ff f6          dbra     d4, $26c2  ; -> L26c2
   0026ce:  70 01                moveq    #$1, d0
   0026d0:  a0 5d                dc.w     $a05d  ; _SwapMMUMode ->32-bit mode
@@ -655,7 +658,7 @@ L2790:
   0027ec:  74 0c                moveq    #$c, d2
   0027ee:  4e ba 00 90          jsr      $2880(pc)  ; -> SerialShiftOutReg
   0027f2:  26 49                movea.l  a1, a3
-  0027f4:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; 16-entry table port (TV filter curve, reading)
+  0027f4:  d7 fc 06 80 00 00    adda.l   #$6800000, a3  ; DP8531 clock synthesiser: 16 writes of register<<4|nibble
   0027fa:  34 3c 00 0f          move.w   #$f, d2
 L27fe:
   0027fe:  26 98                move.l   (a0)+, (a3)
@@ -695,8 +698,8 @@ L2820:
   00287a:  a0 5d                dc.w     $a05d  ; _SwapMMUMode
   00287c:  60 00 fe 38          bra.w    $26b6  ; -> L26b6
 * SerialShiftOutReg  -  shift D1 (top D2 bits, MSB first) out to the
-* card register at (A4,D4).  Used for the clock-synthesiser port
-* $0480'0000, the serial registers $0400'0000/$04/$08/$A0 and the timing
+* card register at (A4,D4).  Used for the serial port
+* $0480'0000 (device unknown), the serial registers $0400'0000/$04/$08/$A0 and the timing
 * bank's data register $04C0'0000 (the RAMDAC is not written serially).
 SerialShiftOutReg:
   002880:  48 e7 62 00          movem.l  d1-d2/d6, -(a7)

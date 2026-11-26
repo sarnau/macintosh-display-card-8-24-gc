@@ -26,13 +26,40 @@ everything.
 | `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM (off-screen pixel maps, caches, the heap); the host probes how much |
 | `$4C400000`.. | | the video memory's block-write alias (fills with one colour per write) |
 | `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, display start and row bytes (`$44000000`, `$440000A0`), the Am29000's run control (`$44000028`) |
-| `$46C00000` | | the RAMDAC (colour table) |
+| `$46800000` | slot base + `$06800000` | the DP8531 clock synthesiser |
+| `$46C00000` | slot base + `$06C00000` | the RAMDAC (a Brooktree part marked "RAMDAC 428", ©89 Apple): colour-table index, data (R, G, B in turn) and pixel mode, on data bits 31-24 |
 | `$02000000`.. | | the kernel's code (`Hand` at `$2000000`, `Boot` at `$2003000`) |
 | low addresses | the Mac's memory | read and written over NuBus (host pixel maps, handles) |
 
 The frame buffer has two layouts, linear and 4-way word-interleaved; the
 video driver picks one per monitor and depth, and the card's fills and
 copies take faster paths in the linear one.
+
+## Video modes
+
+The declaration ROM's video driver sets each mode up from a table: the
+RAMDAC's pixel mode, the layout, the display start and row stride, and 15
+values for the timing chip (horizontal active, back porch, sync and front
+porch; the same four vertically, in half-lines; and a few composite-sync
+values for TV). It is the same timing chip layout as the original 8•24's.
+
+| monitor | resolution | depths | total (pixels × lines) | refresh |
+|---|---|---|---|---|
+| Two-Page | 1152×870 | 1-8 | 1456 × 915 | 75 Hz |
+| Portrait | 640×870 | 1-8 | 832 × 918 | 75 Hz |
+| 13" | 640×480 | 1-24 | 864 × 525 | 66.7 Hz |
+| 12" | 512×384 | 1-24 | 640 × 407 | 60 Hz |
+| NTSC | 640×480, 512×384 | 1-24 | 780 × 525, interlaced | 30 Hz frames |
+| PAL | 768×576, 640×480 | 1-8 (768×576), 1-24 (640×480) | 944 × 625, interlaced | 25 Hz frames |
+
+The refresh rates follow from the totals and the pixel clocks the ROM
+programs. The pixel clock comes from a National DP8531 synthesiser (20 MHz
+reference; 100, 57.27, 30.24 and 15.67 MHz for the four monitors, 4 × the
+dot clock on TV): PrimaryInit loads it for the sensed monitor, and TV modes
+reload it. At 1-8 bits TV modes use the interleaved layout and set the
+RAMDAC mode's bit that System 7.1's source for the original 8•24 calls
+convolution, its anti-flicker filter. In 24-bit modes the RAMDAC's colour
+table acts as a gamma lookup per channel.
 
 ## Two programs on the card
 
@@ -104,6 +131,22 @@ Programs on the Mac can also load their own code onto the card through the
 patches' module interface and run it as tasks; such code gets the
 accelerator's entry table (BitBlt, RgnBlt, the shape drawers, text,
 DrawMultiObject, address mapping).
+
+## Debug switches, dead code and bugs
+
+* Five of the kernel's feature-flag bits are debug switches that nothing
+  sets: a floating-point coprocessor (initialised or not), instruction
+  counting by tracing, a data watchpoint on unmapped memory, and giving up
+  a failed bus access instead of retrying it.
+* The kernel service that moves the display start (`$C6`) has no caller;
+  it would disagree with Boot by a factor of 2 in the interleaved layout.
+* When the host gives up on the card it records a reason that nothing reads,
+  and the loop that puts the original QuickDraw routines back advances its
+  index by 1 instead of 4, so only the first one is restored correctly
+  (`gc24` `$765E`). Its alert asks for a restart anyway.
+* One give-up reason can never happen (its test routine always returns 0),
+  and another, "no room for the drawing-stream buffer", would spin rather
+  than give up, because its retry size wraps past 0.
 
 ## The two software releases
 

@@ -18,14 +18,14 @@ The Naked Truth", by Guillermo Ortiz, included as a PDF in the parent folder):
         DRAM (≤8 MB)        VRAM (2 MB)
              │                   │
    ┌─────────┴───────┐   ┌───────┴────────┐
-   │  Am29000 RISC   │   │  MFB frame-     │      AC842 custom chip
+   │  Am29000 RISC   │   │  MFB frame-     │      Bt RAMDAC 428 (AC842)
    │  @30 MHz, 22MIPS│───│  buffer ctrl /  │──────(3× DAC + 3× 256-entry
    │  +64K SRAM cache│   │  Am29000 MMU    │       colour tables)
    └─────────────────┘   └────────────────┘             │
              │                   │                    Video
         ┌────┴─────┐        ┌────┴─────┐             connector
         │  RDNC    │        │Config ROM│
-        │ NuBus    │        │(this ROM)│      Serial clock synthesiser
+        │ NuBus    │        │(this ROM)│      DP8531 clock synthesiser
         │controller│        └──────────┘
         └────┬─────┘
           NuBus

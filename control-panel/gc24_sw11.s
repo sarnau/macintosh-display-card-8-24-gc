@@ -5651,7 +5651,7 @@ GA_GetPixel:
   0037dc:  2d 40 ff fc          move.l   d0, -$4(a6)
   0037e0:  1d 7c 00 01 ff fb    move.b   #$1, -$5(a6)
   0037e6:  48 6e ff fb          pea.l    -$5(a6)
-  0037ea:  4e ba 6d 32          jsr      $a51e(pc)  ; -> sub_a51e
+  0037ea:  4e ba 6d 32          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   0037ee:  2f 06                move.l   d6, -(a7)
   0037f0:  48 c5                ext.l    d5
   0037f2:  20 05                move.l   d5, d0
@@ -5662,7 +5662,7 @@ GA_GetPixel:
   003802:  4e ba 17 40          jsr      $4f44(pc)  ; -> BitFieldExtract
   003806:  2e 00                move.l   d0, d7
   003808:  48 6e ff fb          pea.l    -$5(a6)
-  00380c:  4e ba 6d 10          jsr      $a51e(pc)  ; -> sub_a51e
+  00380c:  4e ba 6d 10          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   003810:  30 2b 00 1e          move.w   $1e(a3), d0
   003814:  48 c0                ext.l    d0
   003816:  72 10                moveq    #$10, d1
@@ -5744,7 +5744,7 @@ GA_GetCPixel:
   0038e2:  28 00                move.l   d0, d4
   0038e4:  1d 7c 00 01 ff fb    move.b   #$1, -$5(a6)
   0038ea:  48 6e ff fb          pea.l    -$5(a6)
-  0038ee:  4e ba 6c 2e          jsr      $a51e(pc)  ; -> sub_a51e
+  0038ee:  4e ba 6c 2e          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   0038f2:  2f 07                move.l   d7, -(a7)
   0038f4:  48 c6                ext.l    d6
   0038f6:  20 06                move.l   d6, d0
@@ -5755,7 +5755,7 @@ GA_GetCPixel:
   003904:  4e ba 16 3e          jsr      $4f44(pc)  ; -> BitFieldExtract
   003908:  2d 40 ff fc          move.l   d0, -$4(a6)
   00390c:  48 6e ff fb          pea.l    -$5(a6)
-  003910:  4e ba 6c 0c          jsr      $a51e(pc)  ; -> sub_a51e
+  003910:  4e ba 6c 0c          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   003914:  2f 2e ff fc          move.l   -$4(a6), -(a7)
   003918:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00391c:  aa 34                dc.w     $aa34
@@ -6295,7 +6295,7 @@ L3e5e:
   003e66:  66 0e                bne.b    $3e76  ; -> L3e76
   003e68:  59 8f                subq.l   #$4, a7
   003e6a:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  003e6e:  4e ba 66 22          jsr      $a492(pc)  ; -> sub_a492
+  003e6e:  4e ba 66 22          jsr      $a492(pc)  ; -> glue_RecoverHandle
   003e72:  2d 5f ff fc          move.l   (a7)+, -$4(a6)
 L3e76:
   003e76:  70 01                moveq    #$1, d0
@@ -6443,7 +6443,7 @@ s7_Lba64:
   003ff0:  66 0e                bne.b    $4000  ; -> L4000
   003ff2:  59 8f                subq.l   #$4, a7
   003ff4:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  003ff8:  4e ba 64 98          jsr      $a492(pc)  ; -> sub_a492
+  003ff8:  4e ba 64 98          jsr      $a492(pc)  ; -> glue_RecoverHandle
   003ffc:  2d 5f ff fc          move.l   (a7)+, -$4(a6)
 L4000:
   004000:  70 01                moveq    #$1, d0
@@ -6488,7 +6488,7 @@ s7_Lbb14:
   004072:  66 0e                bne.b    $4082  ; -> L4082
   004074:  59 8f                subq.l   #$4, a7
   004076:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00407a:  4e ba 64 16          jsr      $a492(pc)  ; -> sub_a492
+  00407a:  4e ba 64 16          jsr      $a492(pc)  ; -> glue_RecoverHandle
   00407e:  2d 5f ff fc          move.l   (a7)+, -$4(a6)
 L4082:
   004082:  70 01                moveq    #$1, d0
@@ -6701,14 +6701,14 @@ L425a:
 L4270:
   004270:  59 8f                subq.l   #$4, a7
   004272:  2f 0b                move.l   a3, -(a7)
-  004274:  4e ba 62 1c          jsr      $a492(pc)  ; -> sub_a492
+  004274:  4e ba 62 1c          jsr      $a492(pc)  ; -> glue_RecoverHandle
   004278:  28 5f                movea.l  (a7)+, a4
   00427a:  2d 4c ff f8          move.l   a4, -$8(a6)
   00427e:  4a 2e 00 0f          tst.b    $f(a6)
   004282:  67 0e                beq.b    $4292  ; -> L4292
   004284:  55 8f                subq.l   #$2, a7
   004286:  2f 0c                move.l   a4, -(a7)
-  004288:  4e ba 62 8a          jsr      $a514(pc)  ; -> sub_a514
+  004288:  4e ba 62 8a          jsr      $a514(pc)  ; -> glue_HGetState
   00428c:  10 1f                move.b   (a7)+, d0
   00428e:  49 c0                extb.l   d0
   004290:  60 02                bra.b    $4294  ; -> L4294
@@ -6875,7 +6875,7 @@ L4400:
 L440c:
   00440c:  59 8f                subq.l   #$4, a7
   00440e:  2f 14                move.l   (a4), -(a7)
-  004410:  4e ba 60 80          jsr      $a492(pc)  ; -> sub_a492
+  004410:  4e ba 60 80          jsr      $a492(pc)  ; -> glue_RecoverHandle
   004414:  20 1f                move.l   (a7)+, d0
 L4416:
   004416:  27 40 00 9c          move.l   d0, $9c(a3)
@@ -6954,7 +6954,7 @@ L44cc:
   0044cc:  59 8f                subq.l   #$4, a7
   0044ce:  20 6e 00 10          movea.l  $10(a6), a0
   0044d2:  2f 10                move.l   (a0), -(a7)
-  0044d4:  4e ba 5f bc          jsr      $a492(pc)  ; -> sub_a492
+  0044d4:  4e ba 5f bc          jsr      $a492(pc)  ; -> glue_RecoverHandle
   0044d8:  20 5f                movea.l  (a7)+, a0
 L44da:
   0044da:  27 48 00 a4          move.l   a0, $a4(a3)
@@ -7105,7 +7105,7 @@ L4674:
   004674:  59 8f                subq.l   #$4, a7
   004676:  20 6e 00 0c          movea.l  $c(a6), a0
   00467a:  2f 10                move.l   (a0), -(a7)
-  00467c:  4e ba 5e 14          jsr      $a492(pc)  ; -> sub_a492
+  00467c:  4e ba 5e 14          jsr      $a492(pc)  ; -> glue_RecoverHandle
   004680:  20 5f                movea.l  (a7)+, a0
 L4682:
   004682:  27 48 00 a0          move.l   a0, $a0(a3)
@@ -7260,7 +7260,7 @@ L47ee:
 L47fa:
   0047fa:  59 8f                subq.l   #$4, a7
   0047fc:  2f 13                move.l   (a3), -(a7)
-  0047fe:  4e ba 5c 92          jsr      $a492(pc)  ; -> sub_a492
+  0047fe:  4e ba 5c 92          jsr      $a492(pc)  ; -> glue_RecoverHandle
   004802:  20 1f                move.l   (a7)+, d0
 L4804:
   004804:  29 40 00 04          move.l   d0, $4(a4)
@@ -7313,7 +7313,7 @@ L4872:
   00487e:  66 0c                bne.b    $488c  ; -> L488c
   004880:  59 8f                subq.l   #$4, a7
   004882:  2f 13                move.l   (a3), -(a7)
-  004884:  4e ba 5c 0c          jsr      $a492(pc)  ; -> sub_a492
+  004884:  4e ba 5c 0c          jsr      $a492(pc)  ; -> glue_RecoverHandle
   004888:  28 5f                movea.l  (a7)+, a4
   00488a:  60 0e                bra.b    $489a  ; -> L489a
 L488c:
@@ -7391,7 +7391,7 @@ s7_sub_87cc:
   00493a:  28 6e 00 08          movea.l  $8(a6), a4
   00493e:  1d 7c 00 01 ff ff    move.b   #$1, -$1(a6)
   004944:  48 6e ff ff          pea.l    -$1(a6)
-  004948:  4e ba 5b d4          jsr      $a51e(pc)  ; -> sub_a51e
+  004948:  4e ba 5b d4          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
 L494c:
   00494c:  4a ac 00 04          tst.l    $4(a4)
   004950:  66 fa                bne.b    $494c  ; -> L494c
@@ -7429,7 +7429,7 @@ L4996:
   004996:  70 00                moveq    #$0, d0
   004998:  28 80                move.l   d0, (a4)
   00499a:  48 6e ff ff          pea.l    -$1(a6)
-  00499e:  4e ba 5b 7e          jsr      $a51e(pc)  ; -> sub_a51e
+  00499e:  4e ba 5b 7e          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   0049a2:  10 07                move.b   d7, d0
   0049a4:  4c ee 18 c8 ff ea    movem.l  -$16(a6), d3/d6-d7/a3-a4
   0049aa:  4e 5e                unlk     a6
@@ -7443,7 +7443,7 @@ s7_sub_884e:
   0049be:  28 6e 00 08          movea.l  $8(a6), a4
   0049c2:  1d 7c 00 01 ff fb    move.b   #$1, -$5(a6)
   0049c8:  48 6e ff fb          pea.l    -$5(a6)
-  0049cc:  4e ba 5b 50          jsr      $a51e(pc)  ; -> sub_a51e
+  0049cc:  4e ba 5b 50          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
 L49d0:
   0049d0:  4a ac 00 04          tst.l    $4(a4)
   0049d4:  66 fa                bne.b    $49d0  ; -> L49d0
@@ -7487,7 +7487,7 @@ L4a2c:
   004a2c:  70 00                moveq    #$0, d0
   004a2e:  28 80                move.l   d0, (a4)
   004a30:  48 6e ff fb          pea.l    -$5(a6)
-  004a34:  4e ba 5a e8          jsr      $a51e(pc)  ; -> sub_a51e
+  004a34:  4e ba 5a e8          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   004a38:  10 07                move.b   d7, d0
   004a3a:  4c ee 18 e8 ff e2    movem.l  -$1e(a6), d3/d5-d7/a3-a4
   004a40:  4e 5e                unlk     a6
@@ -10059,7 +10059,7 @@ L6562:
   00658a:  48 6e ff e6          pea.l    -$1a(a6)
   00658e:  72 08                moveq    #$8, d1
   006590:  2f 01                move.l   d1, -(a7)
-  006592:  4e ba 3f 2a          jsr      $a4be(pc)  ; -> sub_a4be
+  006592:  4e ba 3f 2a          jsr      $a4be(pc)  ; -> glue_BlockMove
   006596:  41 ee ff e6          lea.l    -$1a(a6), a0
   00659a:  22 6e 00 0c          movea.l  $c(a6), a1
   00659e:  23 48 00 04          move.l   a0, $4(a1)
@@ -10755,7 +10755,7 @@ L6dcc:
   006dfa:  30 10                move.w   (a0), d0
   006dfc:  48 c0                ext.l    d0
   006dfe:  2f 00                move.l   d0, -(a7)
-  006e00:  4e ba 36 bc          jsr      $a4be(pc)  ; -> sub_a4be
+  006e00:  4e ba 36 bc          jsr      $a4be(pc)  ; -> glue_BlockMove
   006e04:  4a 6e ff aa          tst.w    -$56(a6)
   006e08:  67 2e                beq.b    $6e38  ; -> L6e38
   006e0a:  20 6e 00 0c          movea.l  $c(a6), a0
@@ -10906,7 +10906,7 @@ L6f9a:
   007002:  48 68 00 24          pea.l    $24(a0)
   007006:  20 6e 00 0c          movea.l  $c(a6), a0
   00700a:  2f 10                move.l   (a0), -(a7)
-  00700c:  4e ba 34 b0          jsr      $a4be(pc)  ; -> sub_a4be
+  00700c:  4e ba 34 b0          jsr      $a4be(pc)  ; -> glue_BlockMove
   007010:  20 6b 00 b0          movea.l  $b0(a3), a0
   007014:  41 e8 00 24          lea.l    $24(a0), a0
   007018:  22 6b 00 b0          movea.l  $b0(a3), a1
@@ -10971,7 +10971,7 @@ L70b2:
   0070ce:  30 10                move.w   (a0), d0
   0070d0:  48 c0                ext.l    d0
   0070d2:  2f 00                move.l   d0, -(a7)
-  0070d4:  4e ba 33 e8          jsr      $a4be(pc)  ; -> sub_a4be
+  0070d4:  4e ba 33 e8          jsr      $a4be(pc)  ; -> glue_BlockMove
   0070d8:  2f 2e ff 98          move.l   -$68(a6), -(a7)
   0070dc:  a8 d9                dc.w     $a8d9
   0070de:  60 00 01 24          bra.w    $7204  ; -> L7204
@@ -10993,7 +10993,7 @@ L70f0:
   00710c:  30 10                move.w   (a0), d0
   00710e:  48 c0                ext.l    d0
   007110:  2f 00                move.l   d0, -(a7)
-  007112:  4e ba 33 aa          jsr      $a4be(pc)  ; -> sub_a4be
+  007112:  4e ba 33 aa          jsr      $a4be(pc)  ; -> glue_BlockMove
   007116:  20 6e 00 0c          movea.l  $c(a6), a0
   00711a:  20 68 00 04          movea.l  $4(a0), a0
   00711e:  20 50                movea.l  (a0), a0
@@ -11013,7 +11013,7 @@ L712e:
   007144:  48 68 00 02          pea.l    $2(a0)
   007148:  70 1a                moveq    #$1a, d0
   00714a:  2f 00                move.l   d0, -(a7)
-  00714c:  4e ba 33 70          jsr      $a4be(pc)  ; -> sub_a4be
+  00714c:  4e ba 33 70          jsr      $a4be(pc)  ; -> glue_BlockMove
   007150:  20 6b 00 b0          movea.l  $b0(a3), a0
   007154:  21 6b 01 06 00 1c    move.l   $106(a3), $1c(a0)
   00715a:  27 6b 00 b0 00 b4    move.l   $b0(a3), $b4(a3)
@@ -11054,7 +11054,7 @@ L71aa:
   0071e2:  20 6b 00 b0          movea.l  $b0(a3), a0
   0071e6:  48 68 00 10          pea.l    $10(a0)
   0071ea:  2f 2e ff bc          move.l   -$44(a6), -(a7)
-  0071ee:  4e ba 32 ce          jsr      $a4be(pc)  ; -> sub_a4be
+  0071ee:  4e ba 32 ce          jsr      $a4be(pc)  ; -> glue_BlockMove
   0071f2:  27 6b 00 b0 00 b4    move.l   $b0(a3), $b4(a3)
   0071f8:  20 2e ff bc          move.l   -$44(a6), d0
   0071fc:  72 13                moveq    #$13, d1
@@ -11146,7 +11146,7 @@ L72ce:
   0072ea:  30 10                move.w   (a0), d0
   0072ec:  48 c0                ext.l    d0
   0072ee:  2f 00                move.l   d0, -(a7)
-  0072f0:  4e ba 31 cc          jsr      $a4be(pc)  ; -> sub_a4be
+  0072f0:  4e ba 31 cc          jsr      $a4be(pc)  ; -> glue_BlockMove
   0072f4:  27 6b 00 b0 00 b4    move.l   $b0(a3), $b4(a3)
   0072fa:  20 04                move.l   d4, d0
   0072fc:  d0 ab 00 b0          add.l    $b0(a3), d0
@@ -11205,7 +11205,7 @@ L7380:
   00739c:  30 10                move.w   (a0), d0
   00739e:  48 c0                ext.l    d0
   0073a0:  2f 00                move.l   d0, -(a7)
-  0073a2:  4e ba 31 1a          jsr      $a4be(pc)  ; -> sub_a4be
+  0073a2:  4e ba 31 1a          jsr      $a4be(pc)  ; -> glue_BlockMove
   0073a6:  27 6b 00 b0 00 b4    move.l   $b0(a3), $b4(a3)
   0073ac:  20 04                move.l   d4, d0
   0073ae:  d0 ab 00 b0          add.l    $b0(a3), d0
@@ -12098,7 +12098,7 @@ L7e28:
   007e38:  67 12                beq.b    $7e4c  ; -> L7e4c
   007e3a:  59 8f                subq.l   #$4, a7
   007e3c:  2f 0b                move.l   a3, -(a7)
-  007e3e:  4e ba 27 5e          jsr      $a59e(pc)  ; -> sub_a59e
+  007e3e:  4e ba 27 5e          jsr      $a59e(pc)  ; -> glue_StripAddress
   007e42:  26 5f                movea.l  (a7)+, a3
   007e44:  20 6e ff 8e          movea.l  -$72(a6), a0
   007e48:  21 4b 00 08          move.l   a3, $8(a0)
@@ -12138,7 +12138,7 @@ L7e88:
   007eb0:  67 0a                beq.b    $7ebc  ; -> L7ebc
   007eb2:  59 8f                subq.l   #$4, a7
   007eb4:  2f 0b                move.l   a3, -(a7)
-  007eb6:  4e ba 26 e6          jsr      $a59e(pc)  ; -> sub_a59e
+  007eb6:  4e ba 26 e6          jsr      $a59e(pc)  ; -> glue_StripAddress
   007eba:  26 5f                movea.l  (a7)+, a3
 L7ebc:
   007ebc:  20 2e ff 88          move.l   -$78(a6), d0
@@ -12172,7 +12172,7 @@ L7eec:
   007ef6:  67 00 06 62          beq.w    $855a  ; -> L855a
   007efa:  59 8f                subq.l   #$4, a7
   007efc:  2f 0c                move.l   a4, -(a7)
-  007efe:  4e ba 26 9e          jsr      $a59e(pc)  ; -> sub_a59e
+  007efe:  4e ba 26 9e          jsr      $a59e(pc)  ; -> glue_StripAddress
   007f02:  28 5f                movea.l  (a7)+, a4
   007f04:  20 6e ff 88          movea.l  -$78(a6), a0
   007f08:  26 68 00 04          movea.l  $4(a0), a3
@@ -12252,28 +12252,28 @@ L7fc4:
   007fc4:  59 8f                subq.l   #$4, a7
   007fc6:  20 6e ff 88          movea.l  -$78(a6), a0
   007fca:  2f 10                move.l   (a0), -(a7)
-  007fcc:  4e ba 24 8e          jsr      $a45c(pc)  ; -> sub_a45c
+  007fcc:  4e ba 24 8e          jsr      $a45c(pc)  ; -> glue_NewHandle
   007fd0:  20 6e ff 8e          movea.l  -$72(a6), a0
   007fd4:  21 5f 00 08          move.l   (a7)+, $8(a0)
   007fd8:  60 00 05 80          bra.w    $855a  ; -> L855a
 L7fdc:
   007fdc:  20 6e ff 88          movea.l  -$78(a6), a0
   007fe0:  2f 10                move.l   (a0), -(a7)
-  007fe2:  4e ba 24 84          jsr      $a468(pc)  ; -> sub_a468
+  007fe2:  4e ba 24 84          jsr      $a468(pc)  ; -> glue_DisposHandle
   007fe6:  60 00 05 72          bra.w    $855a  ; -> L855a
 L7fea:
   007fea:  20 6e ff 88          movea.l  -$78(a6), a0
   007fee:  2f 10                move.l   (a0), -(a7)
   007ff0:  20 6e ff 88          movea.l  -$78(a6), a0
   007ff4:  2f 28 00 04          move.l   $4(a0), -(a7)
-  007ff8:  4e ba 24 a4          jsr      $a49e(pc)  ; -> sub_a49e
+  007ff8:  4e ba 24 a4          jsr      $a49e(pc)  ; -> glue_ReallocHandle
   007ffc:  60 00 05 5c          bra.w    $855a  ; -> L855a
 L8000:
   008000:  20 6e ff 88          movea.l  -$78(a6), a0
   008004:  2f 10                move.l   (a0), -(a7)
   008006:  20 6e ff 88          movea.l  -$78(a6), a0
   00800a:  2f 28 00 04          move.l   $4(a0), -(a7)
-  00800e:  4e ba 24 76          jsr      $a486(pc)  ; -> sub_a486
+  00800e:  4e ba 24 76          jsr      $a486(pc)  ; -> glue_SetHandleSize
   008012:  60 00 05 46          bra.w    $855a  ; -> L855a
 L8016:
   008016:  59 8f                subq.l   #$4, a7
@@ -12484,7 +12484,7 @@ L8278:
   00827e:  55 8f                subq.l   #$2, a7
   008280:  2f 06                move.l   d6, -(a7)
   008282:  2f 05                move.l   d5, -(a7)
-  008284:  4e ba 21 82          jsr      $a408(pc)  ; -> sub_a408
+  008284:  4e ba 21 82          jsr      $a408(pc)  ; -> glue_UnlockMemory
   008288:  30 1f                move.w   (a7)+, d0
   00828a:  48 c0                ext.l    d0
   00828c:  20 6e ff 8e          movea.l  -$72(a6), a0
@@ -12495,7 +12495,7 @@ L8278:
   0082a0:  55 8f                subq.l   #$2, a7
   0082a2:  2f 06                move.l   d6, -(a7)
   0082a4:  2f 05                move.l   d5, -(a7)
-  0082a6:  4e ba 21 58          jsr      $a400(pc)  ; -> sub_a400
+  0082a6:  4e ba 21 58          jsr      $a400(pc)  ; -> glue_UnholdMemory
   0082aa:  30 1f                move.w   (a7)+, d0
   0082ac:  48 c0                ext.l    d0
   0082ae:  20 6e ff 8e          movea.l  -$72(a6), a0
@@ -12507,7 +12507,7 @@ L82ba:
   0082c2:  55 8f                subq.l   #$2, a7
   0082c4:  2f 2e ff 9c          move.l   -$64(a6), -(a7)
   0082c8:  2f 2e ff a0          move.l   -$60(a6), -(a7)
-  0082cc:  4e ba 21 2e          jsr      $a3fc(pc)  ; -> sub_a3fc
+  0082cc:  4e ba 21 2e          jsr      $a3fc(pc)  ; -> glue_HoldMemory
   0082d0:  30 1f                move.w   (a7)+, d0
   0082d2:  48 c0                ext.l    d0
   0082d4:  28 00                move.l   d0, d4
@@ -12519,7 +12519,7 @@ L82e4:
   0082e4:  55 8f                subq.l   #$2, a7
   0082e6:  2f 2e ff 9c          move.l   -$64(a6), -(a7)
   0082ea:  2f 2e ff a0          move.l   -$60(a6), -(a7)
-  0082ee:  4e ba 21 14          jsr      $a404(pc)  ; -> sub_a404
+  0082ee:  4e ba 21 14          jsr      $a404(pc)  ; -> glue_LockMemory
   0082f2:  30 1f                move.w   (a7)+, d0
   0082f4:  48 c0                ext.l    d0
   0082f6:  28 00                move.l   d0, d4
@@ -12527,7 +12527,7 @@ L82e4:
   0082fa:  55 8f                subq.l   #$2, a7
   0082fc:  2f 06                move.l   d6, -(a7)
   0082fe:  2f 05                move.l   d5, -(a7)
-  008300:  4e ba 20 fe          jsr      $a400(pc)  ; -> sub_a400
+  008300:  4e ba 20 fe          jsr      $a400(pc)  ; -> glue_UnholdMemory
   008304:  20 6e ff 8e          movea.l  -$72(a6), a0
   008308:  21 44 00 08          move.l   d4, $8(a0)
   00830c:  54 8f                addq.l   #$2, a7
@@ -12548,11 +12548,11 @@ L8312:
   008334:  55 8f                subq.l   #$2, a7
   008336:  2f 06                move.l   d6, -(a7)
   008338:  2f 05                move.l   d5, -(a7)
-  00833a:  4e ba 20 cc          jsr      $a408(pc)  ; -> sub_a408
+  00833a:  4e ba 20 cc          jsr      $a408(pc)  ; -> glue_UnlockMemory
   00833e:  55 8f                subq.l   #$2, a7
   008340:  2f 06                move.l   d6, -(a7)
   008342:  2f 05                move.l   d5, -(a7)
-  008344:  4e ba 20 ba          jsr      $a400(pc)  ; -> sub_a400
+  008344:  4e ba 20 ba          jsr      $a400(pc)  ; -> glue_UnholdMemory
   008348:  20 6e ff 8e          movea.l  -$72(a6), a0
   00834c:  21 44 00 08          move.l   d4, $8(a0)
   008350:  58 8f                addq.l   #$4, a7
@@ -12614,11 +12614,11 @@ L83a0:
   0083ec:  55 8f                subq.l   #$2, a7
   0083ee:  2f 06                move.l   d6, -(a7)
   0083f0:  2f 05                move.l   d5, -(a7)
-  0083f2:  4e ba 20 14          jsr      $a408(pc)  ; -> sub_a408
+  0083f2:  4e ba 20 14          jsr      $a408(pc)  ; -> glue_UnlockMemory
   0083f6:  55 8f                subq.l   #$2, a7
   0083f8:  2f 06                move.l   d6, -(a7)
   0083fa:  2f 05                move.l   d5, -(a7)
-  0083fc:  4e ba 20 02          jsr      $a400(pc)  ; -> sub_a400
+  0083fc:  4e ba 20 02          jsr      $a400(pc)  ; -> glue_UnholdMemory
   008400:  20 6e ff 8e          movea.l  -$72(a6), a0
   008404:  21 44 00 08          move.l   d4, $8(a0)
   008408:  58 8f                addq.l   #$4, a7
@@ -12755,7 +12755,7 @@ GA_ControlFFFFFFFD:
   008592:  2f 2e 00 10          move.l   $10(a6), -(a7)
   008596:  2f 0b                move.l   a3, -(a7)
   008598:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  00859c:  4e ba 0f 72          jsr      $9510(pc)  ; -> sub_9510
+  00859c:  4e ba 0f 72          jsr      $9510(pc)  ; -> Codec_Dispatch
   0085a0:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   0085a6:  4e 5e                unlk     a6
   0085a8:  4e 75                rts
@@ -12983,7 +12983,10 @@ L87be:
 L87c0:
   0087c0:  4c df 18 e0          movem.l  (a7)+, d5-d7/a3-a4
   0087c4:  4e 75                rts
-sub_87c6:
+* Codec_GetReply()  -  returns the reply long packet+$1C of the unit at
+* [[globals+$214]] (-1 if there is none).  Codec_Compress's only use:
+* the compressed byte count.
+Codec_GetReply:
   0087c6:  2f 0b                move.l   a3, -(a7)
   0087c8:  20 38 08 88          move.l   $888.w, d0
   0087cc:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -13002,7 +13005,11 @@ L87e4:
 L87ee:
   0087ee:  26 5f                movea.l  (a7)+, a3
   0087f0:  4e 75                rts
-sub_87f2:
+* Codec_SetReplyTarget(p)  -  unit+$5E0 = p.  When s7_sub_6e14 sees the
+* command finish it stores packet+$1C to *p and clears unit+$5E0.  Only
+* Codec_Compress's asynchronous path calls it, and that path is dead
+* (the routine clears its own async flag at $9A60).
+Codec_SetReplyTarget:
   0087f2:  48 e7 00 18          movem.l  a3-a4, -(a7)
   0087f6:  28 6f 00 0c          movea.l  $c(a7), a4
   0087fa:  20 38 08 88          move.l   $888.w, d0
@@ -13125,7 +13132,7 @@ L88d2:
   00894c:  52 80                addq.l   #$1, d0
   00894e:  e5 88                lsl.l    #$2, d0
   008950:  2f 00                move.l   d0, -(a7)
-  008952:  4e ba 1b 6a          jsr      $a4be(pc)  ; -> sub_a4be
+  008952:  4e ba 1b 6a          jsr      $a4be(pc)  ; -> glue_BlockMove
 L8956:
   008956:  20 6e ff f0          movea.l  -$10(a6), a0
   00895a:  20 68 00 28          movea.l  $28(a0), a0
@@ -13462,24 +13469,24 @@ s7_sub_74be:
   008d20:  48 e7 03 10          movem.l  d6-d7/a3, -(a7)
   008d24:  2c 2f 00 10          move.l   $10(a7), d6
   008d28:  59 8f                subq.l   #$4, a7
-  008d2a:  4e ba 16 f8          jsr      $a424(pc)  ; -> sub_a424
+  008d2a:  4e ba 16 f8          jsr      $a424(pc)  ; -> glue_GetZone
   008d2e:  26 5f                movea.l  (a7)+, a3
   008d30:  59 8f                subq.l   #$4, a7
   008d32:  2e b8 02 a6          move.l   $2a6.w, (a7)
-  008d36:  4e ba 16 f6          jsr      $a42e(pc)  ; -> sub_a42e
+  008d36:  4e ba 16 f6          jsr      $a42e(pc)  ; -> glue_SetZone
   008d3a:  4a 86                tst.l    d6
   008d3c:  67 14                beq.b    $8d52  ; -> L8d52
   008d3e:  59 8f                subq.l   #$4, a7
   008d40:  2f 06                move.l   d6, -(a7)
-  008d42:  4e ba 17 0c          jsr      $a450(pc)  ; -> sub_a450
+  008d42:  4e ba 17 0c          jsr      $a450(pc)  ; -> glue_NewPtr
   008d46:  2e 1f                move.l   (a7)+, d7
   008d48:  2f 0b                move.l   a3, -(a7)
-  008d4a:  4e ba 16 e2          jsr      $a42e(pc)  ; -> sub_a42e
+  008d4a:  4e ba 16 e2          jsr      $a42e(pc)  ; -> glue_SetZone
   008d4e:  20 07                move.l   d7, d0
   008d50:  60 08                bra.b    $8d5a  ; -> L8d5a
 L8d52:
   008d52:  2f 0b                move.l   a3, -(a7)
-  008d54:  4e ba 16 d8          jsr      $a42e(pc)  ; -> sub_a42e
+  008d54:  4e ba 16 d8          jsr      $a42e(pc)  ; -> glue_SetZone
   008d58:  70 00                moveq    #$0, d0
 L8d5a:
   008d5a:  4c df 08 c0          movem.l  (a7)+, d6-d7/a3
@@ -13517,10 +13524,10 @@ s7_sub_7534:
   008daa:  4e ba ff b4          jsr      $8d60(pc)  ; -> s7_sub_74f6
   008dae:  26 40                movea.l  d0, a3
   008db0:  48 6e ff ff          pea.l    -$1(a6)
-  008db4:  4e ba 17 68          jsr      $a51e(pc)  ; -> sub_a51e
+  008db4:  4e ba 17 68          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   008db8:  26 ae 00 0c          move.l   $c(a6), (a3)
   008dbc:  48 6e ff ff          pea.l    -$1(a6)
-  008dc0:  4e ba 17 5c          jsr      $a51e(pc)  ; -> sub_a51e
+  008dc0:  4e ba 17 5c          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   008dc4:  26 6e ff fa          movea.l  -$6(a6), a3
   008dc8:  4e 5e                unlk     a6
   008dca:  4e 75                rts
@@ -13727,7 +13734,7 @@ s7_sub_77a6:
   008ffc:  55 8f                subq.l   #$2, a7
   008ffe:  2f 3c 68 64 77 72    move.l   #$68647772, -(a7)
   009004:  48 6e ff e4          pea.l    -$1c(a6)
-  009008:  4e ba 15 42          jsr      $a54c(pc)  ; -> sub_a54c
+  009008:  4e ba 15 42          jsr      $a54c(pc)  ; -> glue_Gestalt
   00900c:  30 1f                move.w   (a7)+, d0
   00900e:  48 c0                ext.l    d0
   009010:  4f ef 00 0c          lea.l    $c(a7), a7
@@ -13740,13 +13747,13 @@ s7_sub_77a6:
   009028:  55 8f                subq.l   #$2, a7
   00902a:  2f 3c 70 67 73 7a    move.l   #$7067737a, -(a7)
   009030:  48 6e ff f0          pea.l    -$10(a6)
-  009034:  4e ba 15 16          jsr      $a54c(pc)  ; -> sub_a54c
+  009034:  4e ba 15 16          jsr      $a54c(pc)  ; -> glue_Gestalt
   009038:  70 00                moveq    #$0, d0
   00903a:  2d 40 ff e0          move.l   d0, -$20(a6)
   00903e:  55 8f                subq.l   #$2, a7
   009040:  2f 3c 72 61 6d 20    move.l   #$72616d20, -(a7)
   009046:  48 6e ff e0          pea.l    -$20(a6)
-  00904a:  4e ba 15 00          jsr      $a54c(pc)  ; -> sub_a54c
+  00904a:  4e ba 15 00          jsr      $a54c(pc)  ; -> glue_Gestalt
   00904e:  70 00                moveq    #$0, d0
   009050:  2d 40 ff 94          move.l   d0, -$6c(a6)
   009054:  2d 6e ff e0 ff 98    move.l   -$20(a6), -$68(a6)
@@ -13876,7 +13883,7 @@ L91c0:
   0091c0:  55 8f                subq.l   #$2, a7
   0091c2:  2f 3c 6d 61 63 68    move.l   #$6d616368, -(a7)
   0091c8:  48 6e ff e4          pea.l    -$1c(a6)
-  0091cc:  4e ba 13 7e          jsr      $a54c(pc)  ; -> sub_a54c
+  0091cc:  4e ba 13 7e          jsr      $a54c(pc)  ; -> glue_Gestalt
   0091d0:  70 0b                moveq    #$b, d0
   0091d2:  b0 ae ff e4          cmp.l    -$1c(a6), d0
   0091d6:  54 8f                addq.l   #$2, a7
@@ -13974,7 +13981,7 @@ L92d4:
   0092e6:  1d 7c 00 03 ff 84    move.b   #$3, -$7c(a6)
   0092ec:  55 8f                subq.l   #$2, a7
   0092ee:  48 6e ff 54          pea.l    -$ac(a6)
-  0092f2:  4e ba 12 9e          jsr      $a592(pc)  ; -> sub_a592
+  0092f2:  4e ba 12 9e          jsr      $a592(pc)  ; -> glue_SNextTypeSRsrc
   0092f6:  30 1f                move.w   (a7)+, d0
   0092f8:  48 c0                ext.l    d0
   0092fa:  66 00 01 ae          bne.w    $94aa  ; -> L94aa
@@ -13988,7 +13995,7 @@ L930e:
   00930e:  1d 7c 00 20 ff 86    move.b   #$20, -$7a(a6)
   009314:  55 8f                subq.l   #$2, a7
   009316:  48 6e ff 54          pea.l    -$ac(a6)
-  00931a:  4e ba 12 46          jsr      $a562(pc)  ; -> sub_a562
+  00931a:  4e ba 12 46          jsr      $a562(pc)  ; -> glue_SReadWord
   00931e:  30 1f                move.w   (a7)+, d0
   009320:  48 c0                ext.l    d0
   009322:  66 00 01 86          bne.w    $94aa  ; -> L94aa
@@ -14000,7 +14007,7 @@ L930e:
   009334:  1d 7c 00 24 ff 86    move.b   #$24, -$7a(a6)
   00933a:  55 8f                subq.l   #$2, a7
   00933c:  48 6e ff 54          pea.l    -$ac(a6)
-  009340:  4e ba 12 44          jsr      $a586(pc)  ; -> sub_a586
+  009340:  4e ba 12 44          jsr      $a586(pc)  ; -> glue_SFindStruct
   009344:  30 1f                move.w   (a7)+, d0
   009346:  48 c0                ext.l    d0
   009348:  66 00 01 60          bne.w    $94aa  ; -> L94aa
@@ -14008,13 +14015,13 @@ L930e:
   009350:  1d 7c 00 03 ff 86    move.b   #$3, -$7a(a6)
   009356:  55 8f                subq.l   #$2, a7
   009358:  48 6e ff 54          pea.l    -$ac(a6)
-  00935c:  4e ba 12 1c          jsr      $a57a(pc)  ; -> sub_a57a
+  00935c:  4e ba 12 1c          jsr      $a57a(pc)  ; -> glue_SGetCString
   009360:  30 1f                move.w   (a7)+, d0
   009362:  48 c0                ext.l    d0
   009364:  66 00 01 44          bne.w    $94aa  ; -> L94aa
   009368:  48 7a 01 70          pea.l    $94da(pc)
   00936c:  2f 2e ff 54          move.l   -$ac(a6), -(a7)
-  009370:  4e ba 01 72          jsr      $94e4(pc)  ; -> sub_94e4
+  009370:  4e ba 01 72          jsr      $94e4(pc)  ; -> strcmp
   009374:  4a 80                tst.l    d0
   009376:  50 8f                addq.l   #$8, a7
   009378:  66 40                bne.b    $93ba  ; -> L93ba
@@ -14025,11 +14032,11 @@ L930e:
   009386:  82 bc f0 20 02 08    or.l     #$f0200208, d1
   00938c:  2d 41 ff 48          move.l   d1, -$b8(a6)
   009390:  48 6e ff 43          pea.l    -$bd(a6)
-  009394:  4e ba 11 88          jsr      $a51e(pc)  ; -> sub_a51e
+  009394:  4e ba 11 88          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   009398:  20 6e ff 48          movea.l  -$b8(a6), a0
   00939c:  2d 50 ff 44          move.l   (a0), -$bc(a6)
   0093a0:  48 6e ff 43          pea.l    -$bd(a6)
-  0093a4:  4e ba 11 78          jsr      $a51e(pc)  ; -> sub_a51e
+  0093a4:  4e ba 11 78          jsr      $a51e(pc)  ; -> glue_SwapMMUMode
   0093a8:  70 00                moveq    #$0, d0
   0093aa:  72 01                moveq    #$1, d1
   0093ac:  c2 ae ff 44          and.l    -$bc(a6), d1
@@ -14045,7 +14052,7 @@ L93ba:
   0093cc:  1d 7c 00 03 ff 84    move.b   #$3, -$7c(a6)
   0093d2:  55 8f                subq.l   #$2, a7
   0093d4:  48 6e ff 54          pea.l    -$ac(a6)
-  0093d8:  4e ba 11 b8          jsr      $a592(pc)  ; -> sub_a592
+  0093d8:  4e ba 11 b8          jsr      $a592(pc)  ; -> glue_SNextTypeSRsrc
   0093dc:  30 1f                move.w   (a7)+, d0
   0093de:  48 c0                ext.l    d0
   0093e0:  66 00 00 c8          bne.w    $94aa  ; -> L94aa
@@ -14059,7 +14066,7 @@ L93f4:
   0093f4:  1d 7c 00 14 ff 86    move.b   #$14, -$7a(a6)
   0093fa:  55 8f                subq.l   #$2, a7
   0093fc:  48 6e ff 54          pea.l    -$ac(a6)
-  009400:  4e ba 11 6c          jsr      $a56e(pc)  ; -> sub_a56e
+  009400:  4e ba 11 6c          jsr      $a56e(pc)  ; -> glue_SReadLong
   009404:  30 1f                move.w   (a7)+, d0
   009406:  48 c0                ext.l    d0
   009408:  67 00 00 8c          beq.w    $9496  ; -> L9496
@@ -14071,7 +14078,7 @@ L93f4:
   009428:  1d 47 ff 85          move.b   d7, -$7b(a6)
   00942c:  55 8f                subq.l   #$2, a7
   00942e:  48 6e ff 54          pea.l    -$ac(a6)
-  009432:  4e ba 11 5e          jsr      $a592(pc)  ; -> sub_a592
+  009432:  4e ba 11 5e          jsr      $a592(pc)  ; -> glue_SNextTypeSRsrc
   009436:  30 1f                move.w   (a7)+, d0
   009438:  48 c0                ext.l    d0
   00943a:  66 6e                bne.b    $94aa  ; -> L94aa
@@ -14087,14 +14094,14 @@ L944a:
   009450:  1d 68 00 2d ff 86    move.b   $2d(a0), -$7a(a6)
   009456:  55 8f                subq.l   #$2, a7
   009458:  48 6e ff 54          pea.l    -$ac(a6)
-  00945c:  4e ba 11 28          jsr      $a586(pc)  ; -> sub_a586
+  00945c:  4e ba 11 28          jsr      $a586(pc)  ; -> glue_SFindStruct
   009460:  30 1f                move.w   (a7)+, d0
   009462:  48 c0                ext.l    d0
   009464:  66 44                bne.b    $94aa  ; -> L94aa
   009466:  1d 7c 00 05 ff 86    move.b   #$5, -$7a(a6)
   00946c:  55 8f                subq.l   #$2, a7
   00946e:  48 6e ff 54          pea.l    -$ac(a6)
-  009472:  4e ba 10 fa          jsr      $a56e(pc)  ; -> sub_a56e
+  009472:  4e ba 10 fa          jsr      $a56e(pc)  ; -> glue_SReadLong
   009476:  30 1f                move.w   (a7)+, d0
   009478:  48 c0                ext.l    d0
   00947a:  67 04                beq.b    $9480  ; -> L9480
@@ -14136,7 +14143,10 @@ L94c4:
   0094d8:  4e 75                rts
   0094da:  4d 44 43 20 31 2e 30 2e dc.b     $4D, $44, $43, $20, $31, $2E, $30, $2E  ; MDC 1.0.
   0094e2:  31 00                dc.b     $31, $00  ; 1.
-sub_94e4:
+* strcmp(a, b)  -  C-string compare, returns a[i] - b[i] at the first
+* difference.  Its one caller tests the card's sGetcString against
+* "MDC 1.0.1" ($94DA).
+strcmp:
   0094e4:  48 e7 00 18          movem.l  a3-a4, -(a7)
   0094e8:  28 6f 00 10          movea.l  $10(a7), a4
   0094ec:  26 6f 00 0c          movea.l  $c(a7), a3
@@ -14157,7 +14167,23 @@ L9500:
   009508:  90 81                sub.l    d1, d0
   00950a:  4c df 18 00          movem.l  (a7)+, a3-a4
   00950e:  4e 75                rts
-sub_9510:
+* Codec_Dispatch(type, params, selector, storage)  -  the codec entry.
+* Reached from GA_ControlFFFFFFFD ($8580, driver slot $A84), which the
+* DRVR's Control case at DRVR $0F2A calls with csParam +2 type, +6
+* params, +$A selector, +$E storage (unit timeout raised to 2000 ticks
+* meanwhile).  type must be 'rpza' or 'rle ' (else -8939); selector
+* $10-$19 (else -50).  The case blocks unpack the parameter block into
+* C arguments:
+*   $10 Codec_Decompress             $15 returns 0 (no routine)
+*   $11 Codec_Decompress, estimate   $16 Codec_GetInfo
+*       only (size and time)         $17 Codec_ReturnMinus1
+*   $12 Codec_Compress               $18 Codec_Unimplemented (-8939)
+*   $13 Codec_Compress, estimate     $19 Codec_Close
+*   $14 Codec_Compress with a previous frame (card $3B)
+* Not QuickTime 1.0's codec selector order (0 GetCodecInfo .. 10
+* TrimImage); of the errors only $DD00 = -8960 (codecErr) is a
+* QuickTime 1.0 code, $DD02/$DD04/$DD08/$DD15 are pre-release ones.
+Codec_Dispatch:
   009510:  4e 56 00 00          link.w   a6, #$0
   009514:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   009518:  2c 2e 00 08          move.l   $8(a6), d6
@@ -14208,7 +14234,7 @@ L9572:
   00959e:  2f 2b 00 20          move.l   $20(a3), -(a7)
   0095a2:  2f 2b 00 1c          move.l   $1c(a3), -(a7)
   0095a6:  2f 2b 00 24          move.l   $24(a3), -(a7)
-  0095aa:  4e ba 06 0e          jsr      $9bba(pc)  ; -> sub_9bba
+  0095aa:  4e ba 06 0e          jsr      $9bba(pc)  ; -> Codec_Decompress
   0095ae:  48 c0                ext.l    d0
   0095b0:  2e 00                move.l   d0, d7
   0095b2:  4f ef 00 38          lea.l    $38(a7), a7
@@ -14233,7 +14259,7 @@ L95ba:
   0095ea:  2f 2b 00 28          move.l   $28(a3), -(a7)
   0095ee:  2f 2b 00 24          move.l   $24(a3), -(a7)
   0095f2:  2f 2b 00 2c          move.l   $2c(a3), -(a7)
-  0095f6:  4e ba 05 c2          jsr      $9bba(pc)  ; -> sub_9bba
+  0095f6:  4e ba 05 c2          jsr      $9bba(pc)  ; -> Codec_Decompress
   0095fa:  48 c0                ext.l    d0
   0095fc:  2e 00                move.l   d0, d7
   0095fe:  4f ef 00 38          lea.l    $38(a7), a7
@@ -14258,7 +14284,7 @@ L9606:
   009632:  2f 00                move.l   d0, -(a7)
   009634:  2f 2b 00 20          move.l   $20(a3), -(a7)
   009638:  2f 2b 00 28          move.l   $28(a3), -(a7)
-  00963c:  4e ba 01 14          jsr      $9752(pc)  ; -> sub_9752
+  00963c:  4e ba 01 14          jsr      $9752(pc)  ; -> Codec_Compress
   009640:  48 c0                ext.l    d0
   009642:  2e 00                move.l   d0, d7
   009644:  4f ef 00 40          lea.l    $40(a7), a7
@@ -14284,7 +14310,7 @@ L964c:
   009680:  2f 2b 00 22          move.l   $22(a3), -(a7)
   009684:  2f 2b 00 30          move.l   $30(a3), -(a7)
   009688:  2f 2b 00 38          move.l   $38(a3), -(a7)
-  00968c:  4e ba 00 c4          jsr      $9752(pc)  ; -> sub_9752
+  00968c:  4e ba 00 c4          jsr      $9752(pc)  ; -> Codec_Compress
   009690:  48 c0                ext.l    d0
   009692:  2e 00                move.l   d0, d7
   009694:  4f ef 00 40          lea.l    $40(a7), a7
@@ -14309,7 +14335,7 @@ L969c:
   0096cc:  2f 2b 00 1e          move.l   $1e(a3), -(a7)
   0096d0:  2f 2b 00 2c          move.l   $2c(a3), -(a7)
   0096d4:  2f 2b 00 34          move.l   $34(a3), -(a7)
-  0096d8:  4e ba 00 78          jsr      $9752(pc)  ; -> sub_9752
+  0096d8:  4e ba 00 78          jsr      $9752(pc)  ; -> Codec_Compress
   0096dc:  48 c0                ext.l    d0
   0096de:  2e 00                move.l   d0, d7
   0096e0:  4f ef 00 40          lea.l    $40(a7), a7
@@ -14320,7 +14346,7 @@ L96e6:
 L96ea:
   0096ea:  2f 0c                move.l   a4, -(a7)
   0096ec:  2f 2b 00 08          move.l   $8(a3), -(a7)
-  0096f0:  4e ba 09 c2          jsr      $a0b4(pc)  ; -> sub_a0b4
+  0096f0:  4e ba 09 c2          jsr      $a0b4(pc)  ; -> Codec_GetInfo
   0096f4:  48 c0                ext.l    d0
   0096f6:  2e 00                move.l   d0, d7
   0096f8:  50 8f                addq.l   #$8, a7
@@ -14330,7 +14356,7 @@ L96fc:
   0096fe:  2f 2b 00 08          move.l   $8(a3), -(a7)
   009702:  2f 2b 00 0c          move.l   $c(a3), -(a7)
   009706:  2f 2b 00 10          move.l   $10(a3), -(a7)
-  00970a:  4e ba 0a 18          jsr      $a124(pc)  ; -> sub_a124
+  00970a:  4e ba 0a 18          jsr      $a124(pc)  ; -> Codec_ReturnMinus1
   00970e:  48 c0                ext.l    d0
   009710:  2e 00                move.l   d0, d7
   009712:  4f ef 00 10          lea.l    $10(a7), a7
@@ -14340,14 +14366,14 @@ L9718:
   00971a:  2f 2b 00 08          move.l   $8(a3), -(a7)
   00971e:  2f 2b 00 0c          move.l   $c(a3), -(a7)
   009722:  2f 2b 00 10          move.l   $10(a3), -(a7)
-  009726:  4e ba 09 e8          jsr      $a110(pc)  ; -> sub_a110
+  009726:  4e ba 09 e8          jsr      $a110(pc)  ; -> Codec_Unimplemented
   00972a:  48 c0                ext.l    d0
   00972c:  2e 00                move.l   d0, d7
   00972e:  4f ef 00 10          lea.l    $10(a7), a7
   009732:  60 12                bra.b    $9746  ; -> L9746
 L9734:
   009734:  2f 0c                move.l   a4, -(a7)
-  009736:  4e ba 0a 62          jsr      $a19a(pc)  ; -> sub_a19a
+  009736:  4e ba 0a 62          jsr      $a19a(pc)  ; -> Codec_Close
   00973a:  48 c0                ext.l    d0
   00973c:  2e 00                move.l   d0, d7
   00973e:  58 8f                addq.l   #$4, a7
@@ -14361,7 +14387,19 @@ L9748:
   009748:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00974e:  4e 5e                unlk     a6
   009750:  4e 75                rts
-sub_9752:
+* Codec_Compress(srcPM, srcRect, prevPM, dstDesc, dstRect, data, quality,
+*   thresholds, -, estimate, &size, &time, ...)  -  pixels -> 'rpza'/'rle '.
+* 'rpza' wants dstDesc depth 16 (else -9); source depth 8/16/32 for
+* 'rpza', 32 for 'rle ' (-8956); srcRect and dstRect the same width (-6),
+* dst at least as tall (-7).  estimate (selector $13): a maximum size
+* ('rle ' 4*w*h; 'rpza' (w+4)(h+4)/2 or *2 by threshold, + 4h + $40) and
+* a time figure (10, +25% at quality <= 2, -25% with a previous frame),
+* no card call.  Otherwise locks the PixMaps (_QDExtensions
+* GetPixelsState/LockPixels/GetPixBaseAddr), passes the CLUT at 8 bpp,
+* posts $3A (11 longs, $9B4E) or, with a previous frame (32 bpp,
+* pixelType 16, else -17/-18), $3B (16 longs, $9AF2), waits, and stores
+* the reply (byte count) to &size.
+Codec_Compress:
   009752:  4e 56 ff 76          link.w   a6, #$ff76
   009756:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00975a:  2c 2e 00 44          move.l   $44(a6), d6
@@ -14541,7 +14579,7 @@ L991e:
   009928:  20 68 00 2a          movea.l  $2a(a0), a0
   00992c:  20 50                movea.l  (a0), a0
   00992e:  48 68 00 08          pea.l    $8(a0)
-  009932:  4e ba 0c 6a          jsr      $a59e(pc)  ; -> sub_a59e
+  009932:  4e ba 0c 6a          jsr      $a59e(pc)  ; -> glue_StripAddress
   009936:  2d 5f ff fc          move.l   (a7)+, -$4(a6)
 L993a:
   00993a:  59 8f                subq.l   #$4, a7
@@ -14568,7 +14606,7 @@ L993a:
   00996e:  2d 40 ff 8e          move.l   d0, -$72(a6)
   009972:  59 8f                subq.l   #$4, a7
   009974:  2f 2e 00 1c          move.l   $1c(a6), -(a7)
-  009978:  4e ba 0c 24          jsr      $a59e(pc)  ; -> sub_a59e
+  009978:  4e ba 0c 24          jsr      $a59e(pc)  ; -> glue_StripAddress
   00997c:  2d 5f ff 9a          move.l   (a7)+, -$66(a6)
   009980:  20 6e 00 0c          movea.l  $c(a6), a0
   009984:  30 28 00 02          move.w   $2(a0), d0
@@ -14736,7 +14774,7 @@ L9b66:
   009b6a:  72 00                moveq    #$0, d1
   009b6c:  12 00                move.b   d0, d1
   009b6e:  67 f6                beq.b    $9b66  ; -> L9b66
-  009b70:  4e ba ec 54          jsr      $87c6(pc)  ; -> sub_87c6
+  009b70:  4e ba ec 54          jsr      $87c6(pc)  ; -> Codec_GetReply
   009b74:  2d 40 ff f0          move.l   d0, -$10(a6)
   009b78:  4a ae 00 30          tst.l    $30(a6)
   009b7c:  67 14                beq.b    $9b92  ; -> L9b92
@@ -14745,7 +14783,7 @@ L9b66:
   009b86:  60 0a                bra.b    $9b92  ; -> L9b92
 L9b88:
   009b88:  2f 2e 00 30          move.l   $30(a6), -(a7)
-  009b8c:  4e ba ec 64          jsr      $87f2(pc)  ; -> sub_87f2
+  009b8c:  4e ba ec 64          jsr      $87f2(pc)  ; -> Codec_SetReplyTarget
   009b90:  58 8f                addq.l   #$4, a7
 L9b92:
   009b92:  2f 0c                move.l   a4, -(a7)
@@ -14764,7 +14802,17 @@ L9bb0:
   009bb0:  4c ee 18 f0 ff 5e    movem.l  -$a2(a6), d4-d7/a3-a4
   009bb6:  4e 5e                unlk     a6
   009bb8:  4e 75                rts
-sub_9bba:
+* Codec_Decompress(descPM, srcRect, dstPM, dstRect, flags, data, clipRgn,
+*   -, estimate, &size, &time, -, storage, type)  -  'rpza'/'rle ' -> pixels.
+* descPM depth must be 16 for 'rpza' (-8956), flags & $F zero (-8958),
+* the rects congruent and inside clipRgn (-8960); dst depth >= 8 for
+* 'rpza', 32 for 'rle ' (-8952).  estimate (selector $11): size 3*w*h
+* and time 500/(w*h), no card call.  At 8 bpp it passes either an
+* error-diffusion table (flags & $40; Codec_BuildDitherTable, cached at
+* storage+4) or TheGDevice's 5-bit inverse table (MakeITable(nil, nil,
+* 5) if needed).  Posts $39 (12 longs, $A05C), then polls s7_sub_6e14
+* until the card is done.
+Codec_Decompress:
   009bba:  4e 56 ff 80          link.w   a6, #$ff80
   009bbe:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   009bc2:  28 2e 00 3c          move.l   $3c(a6), d4
@@ -14772,7 +14820,7 @@ sub_9bba:
   009bca:  70 00                moveq    #$0, d0
   009bcc:  2d 40 ff fc          move.l   d0, -$4(a6)
   009bd0:  2f 2e 00 38          move.l   $38(a6), -(a7)
-  009bd4:  4e ba 05 52          jsr      $a128(pc)  ; -> sub_a128
+  009bd4:  4e ba 05 52          jsr      $a128(pc)  ; -> Codec_GetStorage
   009bd8:  28 40                movea.l  d0, a4
   009bda:  20 0c                move.l   a4, d0
   009bdc:  58 8f                addq.l   #$4, a7
@@ -14885,7 +14933,7 @@ L9cfa:
 L9d08:
   009d08:  59 8f                subq.l   #$4, a7
   009d0a:  2f 2e 00 18          move.l   $18(a6), -(a7)
-  009d0e:  4e ba 08 8e          jsr      $a59e(pc)  ; -> sub_a59e
+  009d0e:  4e ba 08 8e          jsr      $a59e(pc)  ; -> glue_StripAddress
   009d12:  2d 5f ff 88          move.l   (a7)+, -$78(a6)
   009d16:  4a ae 00 20          tst.l    $20(a6)
   009d1a:  67 3c                beq.b    $9d58  ; -> L9d58
@@ -14941,19 +14989,19 @@ L9d84:
   009da6:  4a a8 00 04          tst.l    $4(a0)
   009daa:  66 52                bne.b    $9dfe  ; -> L9dfe
   009dac:  59 8f                subq.l   #$4, a7
-  009dae:  4e ba 06 74          jsr      $a424(pc)  ; -> sub_a424
+  009dae:  4e ba 06 74          jsr      $a424(pc)  ; -> glue_GetZone
   009db2:  2d 5f ff 80          move.l   (a7)+, -$80(a6)
   009db6:  59 8f                subq.l   #$4, a7
   009db8:  2e b8 02 a6          move.l   $2a6.w, (a7)
-  009dbc:  4e ba 06 70          jsr      $a42e(pc)  ; -> sub_a42e
+  009dbc:  4e ba 06 70          jsr      $a42e(pc)  ; -> glue_SetZone
   009dc0:  59 8f                subq.l   #$4, a7
   009dc2:  2f 3c 00 02 00 08    move.l   #$20008, -(a7)
-  009dc8:  4e ba 06 92          jsr      $a45c(pc)  ; -> sub_a45c
+  009dc8:  4e ba 06 92          jsr      $a45c(pc)  ; -> glue_NewHandle
   009dcc:  20 54                movea.l  (a4), a0
   009dce:  21 5f 00 04          move.l   (a7)+, $4(a0)
   009dd2:  66 1a                bne.b    $9dee  ; -> L9dee
   009dd4:  2f 2e ff 80          move.l   -$80(a6), -(a7)
-  009dd8:  4e ba 06 54          jsr      $a42e(pc)  ; -> sub_a42e
+  009dd8:  4e ba 06 54          jsr      $a42e(pc)  ; -> glue_SetZone
   009ddc:  2f 2e 00 10          move.l   $10(a6), -(a7)
   009de0:  2f 2e ff f0          move.l   -$10(a6), -(a7)
   009de4:  70 0e                moveq    #$e, d0
@@ -14962,7 +15010,7 @@ L9d84:
   009dea:  60 00 02 be          bra.w    $a0aa  ; -> La0aa
 L9dee:
   009dee:  2f 2e ff 80          move.l   -$80(a6), -(a7)
-  009df2:  4e ba 06 3a          jsr      $a42e(pc)  ; -> sub_a42e
+  009df2:  4e ba 06 3a          jsr      $a42e(pc)  ; -> glue_SetZone
   009df6:  1d 7c 00 01 ff 87    move.b   #$1, -$79(a6)
   009dfc:  60 26                bra.b    $9e24  ; -> L9e24
 L9dfe:
@@ -14994,18 +15042,18 @@ L9e24:
   009e44:  20 6e ff f4          movea.l  -$c(a6), a0
   009e48:  20 50                movea.l  (a0), a0
   009e4a:  2f 28 00 06          move.l   $6(a0), -(a7)
-  009e4e:  4e ba 03 82          jsr      $a1d2(pc)  ; -> sub_a1d2
+  009e4e:  4e ba 03 82          jsr      $a1d2(pc)  ; -> Codec_BuildDitherTable
   009e52:  4f ef 00 10          lea.l    $10(a7), a7
 L9e56:
   009e56:  20 54                movea.l  (a4), a0
   009e58:  2d 68 00 04 ff fc    move.l   $4(a0), -$4(a6)
   009e5e:  2f 28 00 04          move.l   $4(a0), -(a7)
-  009e62:  4e ba 06 46          jsr      $a4aa(pc)  ; -> sub_a4aa
+  009e62:  4e ba 06 46          jsr      $a4aa(pc)  ; -> glue_HLock
   009e66:  59 8f                subq.l   #$4, a7
   009e68:  20 54                movea.l  (a4), a0
   009e6a:  20 68 00 04          movea.l  $4(a0), a0
   009e6e:  2f 10                move.l   (a0), -(a7)
-  009e70:  4e ba 07 2c          jsr      $a59e(pc)  ; -> sub_a59e
+  009e70:  4e ba 07 2c          jsr      $a59e(pc)  ; -> glue_StripAddress
   009e74:  2d 5f ff f8          move.l   (a7)+, -$8(a6)
   009e78:  60 00 00 94          bra.w    $9f0e  ; -> L9f0e
 L9e7c:
@@ -15053,14 +15101,14 @@ L9ee0:
   009ee4:  20 50                movea.l  (a0), a0
   009ee6:  2d 68 00 06 ff fc    move.l   $6(a0), -$4(a6)
   009eec:  2f 28 00 06          move.l   $6(a0), -(a7)
-  009ef0:  4e ba 05 b8          jsr      $a4aa(pc)  ; -> sub_a4aa
+  009ef0:  4e ba 05 b8          jsr      $a4aa(pc)  ; -> glue_HLock
   009ef4:  59 8f                subq.l   #$4, a7
   009ef6:  20 6e ff f4          movea.l  -$c(a6), a0
   009efa:  20 50                movea.l  (a0), a0
   009efc:  20 68 00 06          movea.l  $6(a0), a0
   009f00:  20 50                movea.l  (a0), a0
   009f02:  48 68 00 06          pea.l    $6(a0)
-  009f06:  4e ba 06 96          jsr      $a59e(pc)  ; -> sub_a59e
+  009f06:  4e ba 06 96          jsr      $a59e(pc)  ; -> glue_StripAddress
   009f0a:  2d 5f ff f8          move.l   (a7)+, -$8(a6)
 L9f0e:
   009f0e:  20 6e 00 10          movea.l  $10(a6), a0
@@ -15192,7 +15240,7 @@ La07a:
   00a07a:  4a ae ff fc          tst.l    -$4(a6)
   00a07e:  67 08                beq.b    $a088  ; -> La088
   00a080:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00a084:  4e ba 04 2e          jsr      $a4b4(pc)  ; -> sub_a4b4
+  00a084:  4e ba 04 2e          jsr      $a4b4(pc)  ; -> glue_HUnlock
 La088:
   00a088:  2f 2e 00 10          move.l   $10(a6), -(a7)
   00a08c:  2f 2e ff f0          move.l   -$10(a6), -(a7)
@@ -15210,7 +15258,10 @@ La0aa:
   00a0aa:  4c ee 18 f0 ff 68    movem.l  -$98(a6), d4-d7/a3-a4
   00a0b0:  4e 5e                unlk     a6
   00a0b2:  4e 75                rts
-sub_a0b4:
+* Codec_GetInfo(info)  -  selector $16: copies the Pascal string
+* "8·24GC Road Pizza" (19 bytes) to info+0; +$A0 version 4, +$A4
+* vendor 'appl', +$A8 $00043001, +$AC $00004009.  info nil: -50.
+Codec_GetInfo:
   00a0b4:  4e 56 00 00          link.w   a6, #$0
   00a0b8:  2f 0b                move.l   a3, -(a7)
   00a0ba:  26 6e 00 08          movea.l  $8(a6), a3
@@ -15223,7 +15274,7 @@ La0c6:
   00a0ca:  2f 0b                move.l   a3, -(a7)
   00a0cc:  70 13                moveq    #$13, d0
   00a0ce:  2f 00                move.l   d0, -(a7)
-  00a0d0:  4e ba 03 ec          jsr      $a4be(pc)  ; -> sub_a4be
+  00a0d0:  4e ba 03 ec          jsr      $a4be(pc)  ; -> glue_BlockMove
   00a0d4:  27 7c 61 70 70 6c 00 a4 move.l   #$6170706c, $a4(a3)
   00a0dc:  70 04                moveq    #$4, d0
   00a0de:  27 40 00 a0          move.l   d0, $a0(a3)
@@ -15237,32 +15288,37 @@ La0f4:
   00a0fc:  11 38 a5 32 34 47 43 20 dc.b     $11, $38, $A5, $32, $34, $47, $43, $20  ; .8.24GC 
   00a104:  52 6f 61 64 20 50 69 7a dc.b     $52, $6F, $61, $64, $20, $50, $69, $7A  ; Road Piz
   00a10c:  7a 61 00 00          dc.b     $7A, $61, $00, $00  ; za..
-sub_a110:
+* Codec_Unimplemented  -  selector $18: returns -8939 ($DD15).
+Codec_Unimplemented:
   00a110:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a114:  26 6f 00 10          movea.l  $10(a7), a3
   00a118:  28 4b                movea.l  a3, a4
   00a11a:  30 3c dd 15          move.w   #$dd15, d0
   00a11e:  4c df 18 00          movem.l  (a7)+, a3-a4
   00a122:  4e 75                rts
-sub_a124:
+* Codec_ReturnMinus1  -  selector $17: returns -1.
+Codec_ReturnMinus1:
   00a124:  70 ff                moveq    #$ff, d0
   00a126:  4e 75                rts
-sub_a128:
+* Codec_GetStorage(&h)  -  creates the codec's $14-byte state handle on
+* first use, in the system zone: +0 long, +4 dither-table handle, +8
+* byte, +$A word, +$C/+$10 two NewRgn scratch regions.  Returns h.
+Codec_GetStorage:
   00a128:  4e 56 ff fc          link.w   a6, #$fffc
   00a12c:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a130:  28 6e 00 08          movea.l  $8(a6), a4
   00a134:  4a 94                tst.l    (a4)
   00a136:  66 56                bne.b    $a18e  ; -> La18e
   00a138:  59 8f                subq.l   #$4, a7
-  00a13a:  4e ba 02 e8          jsr      $a424(pc)  ; -> sub_a424
+  00a13a:  4e ba 02 e8          jsr      $a424(pc)  ; -> glue_GetZone
   00a13e:  2d 5f ff fc          move.l   (a7)+, -$4(a6)
   00a142:  59 8f                subq.l   #$4, a7
   00a144:  2e b8 02 a6          move.l   $2a6.w, (a7)
-  00a148:  4e ba 02 e4          jsr      $a42e(pc)  ; -> sub_a42e
+  00a148:  4e ba 02 e4          jsr      $a42e(pc)  ; -> glue_SetZone
   00a14c:  59 8f                subq.l   #$4, a7
   00a14e:  70 14                moveq    #$14, d0
   00a150:  2f 00                move.l   d0, -(a7)
-  00a152:  4e ba 03 08          jsr      $a45c(pc)  ; -> sub_a45c
+  00a152:  4e ba 03 08          jsr      $a45c(pc)  ; -> glue_NewHandle
   00a156:  28 9f                move.l   (a7)+, (a4)
   00a158:  26 54                movea.l  (a4), a3
   00a15a:  59 8f                subq.l   #$4, a7
@@ -15283,17 +15339,19 @@ sub_a128:
   00a180:  20 53                movea.l  (a3), a0
   00a182:  42 68 00 0a          clr.w    $a(a0)
   00a186:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00a18a:  4e ba 02 a2          jsr      $a42e(pc)  ; -> sub_a42e
+  00a18a:  4e ba 02 a2          jsr      $a42e(pc)  ; -> glue_SetZone
 La18e:
   00a18e:  20 14                move.l   (a4), d0
   00a190:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   00a196:  4e 5e                unlk     a6
   00a198:  4e 75                rts
-sub_a19a:
+* Codec_Close(&h)  -  selector $19: disposes the two regions and the
+* state handle and clears h (the dither table at +4 is not disposed).
+Codec_Close:
   00a19a:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00a19e:  28 6f 00 0c          movea.l  $c(a7), a4
   00a1a2:  2f 0c                move.l   a4, -(a7)
-  00a1a4:  4e ba ff 82          jsr      $a128(pc)  ; -> sub_a128
+  00a1a4:  4e ba ff 82          jsr      $a128(pc)  ; -> Codec_GetStorage
   00a1a8:  26 40                movea.l  d0, a3
   00a1aa:  20 0b                move.l   a3, d0
   00a1ac:  58 8f                addq.l   #$4, a7
@@ -15305,14 +15363,19 @@ sub_a19a:
   00a1ba:  2f 28 00 0c          move.l   $c(a0), -(a7)
   00a1be:  a8 d9                dc.w     $a8d9
   00a1c0:  2f 0b                move.l   a3, -(a7)
-  00a1c2:  4e ba 02 a4          jsr      $a468(pc)  ; -> sub_a468
+  00a1c2:  4e ba 02 a4          jsr      $a468(pc)  ; -> glue_DisposHandle
 La1c6:
   00a1c6:  70 00                moveq    #$0, d0
   00a1c8:  28 80                move.l   d0, (a4)
   00a1ca:  70 00                moveq    #$0, d0
   00a1cc:  4c df 18 00          movem.l  (a7)+, a3-a4
   00a1d0:  4e 75                rts
-sub_a1d2:
+* Codec_BuildDitherTable(iTable, cTable, out, res=5)  -  out = ITab seed,
+* 0, then for every 5-5-5 RGB colour one long of four 8-bit indices
+* (error diffusion: each of the four passes subtracts the chosen CLUT
+* colour from the running error, clamped 0..255).  $20008 bytes, read
+* by the card's dithered 8 bpp output.
+Codec_BuildDitherTable:
   00a1d2:  4e 56 ff e2          link.w   a6, #$ffe2
   00a1d6:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00a1da:  42 6e ff ec          clr.w    -$14(a6)
@@ -15493,7 +15556,9 @@ La3c6:
   00a3d6:  4c ee 18 f0 ff ca    movem.l  -$36(a6), d4-d7/a3-a4
   00a3dc:  4e 5e                unlk     a6
   00a3de:  4e 75                rts
-La3e0:
+* Shared _MemoryDispatch ($A05C) tail: address in a0, count in a1,
+* OSErr result; the selector in d0 comes from the four stubs below.
+glue_MemoryDispatch:
   00a3e0:  22 1f                move.l   (a7)+, d1
   00a3e2:  22 5f                movea.l  (a7)+, a1
   00a3e4:  20 5f                movea.l  (a7)+, a0
@@ -15501,7 +15566,9 @@ La3e0:
   00a3e8:  3e 80                move.w   d0, (a7)
   00a3ea:  22 41                movea.l  d1, a1
   00a3ec:  4e d1                jmp      (a1)
-La3ee:
+* glue_DebugUtil  -  _DebugUtil ($A08D) with a0/a1 from the stack;
+* nothing calls it.
+glue_DebugUtil:
   00a3ee:  22 1f                move.l   (a7)+, d1
   00a3f0:  22 5f                movea.l  (a7)+, a1
   00a3f2:  20 5f                movea.l  (a7)+, a0
@@ -15509,18 +15576,22 @@ La3ee:
   00a3f6:  3e 80                move.w   d0, (a7)
   00a3f8:  22 41                movea.l  d1, a1
   00a3fa:  4e d1                jmp      (a1)
-sub_a3fc:
+* glue_HoldMemory  -  _MemoryDispatch selector 0.
+glue_HoldMemory:
   00a3fc:  70 00                moveq    #$0, d0
-  00a3fe:  60 e0                bra.b    $a3e0  ; -> La3e0
-sub_a400:
+  00a3fe:  60 e0                bra.b    $a3e0  ; -> glue_MemoryDispatch
+* glue_UnholdMemory  -  _MemoryDispatch selector 1.
+glue_UnholdMemory:
   00a400:  70 01                moveq    #$1, d0
-  00a402:  60 dc                bra.b    $a3e0  ; -> La3e0
-sub_a404:
+  00a402:  60 dc                bra.b    $a3e0  ; -> glue_MemoryDispatch
+* glue_LockMemory  -  _MemoryDispatch selector 2.
+glue_LockMemory:
   00a404:  70 02                moveq    #$2, d0
-  00a406:  60 d8                bra.b    $a3e0  ; -> La3e0
-sub_a408:
+  00a406:  60 d8                bra.b    $a3e0  ; -> glue_MemoryDispatch
+* glue_UnlockMemory  -  _MemoryDispatch selector 3.
+glue_UnlockMemory:
   00a408:  70 03                moveq    #$3, d0
-  00a40a:  60 d4                bra.b    $a3e0  ; -> La3e0
+  00a40a:  60 d4                bra.b    $a3e0  ; -> glue_MemoryDispatch
 * s7_sub_c264  -  System 7 $C264 (identical code).
 s7_sub_c264:
   00a40c:  22 1f                move.l   (a7)+, d1
@@ -15535,16 +15606,20 @@ s7_sub_c264:
   00a41e:  22 88                move.l   a0, (a1)
   00a420:  22 41                movea.l  d1, a1
   00a422:  4e d1                jmp      (a1)
-sub_a424:
+* glue_GetZone  -  _GetZone ($A11A).  The Memory Manager stubs
+* $A424-$A4CA store d0 in MemErr ($220) through the shared tail $A446.
+glue_GetZone:
   00a424:  a1 1a                dc.w     $a11a
   00a426:  2f 48 00 04          move.l   a0, $4(a7)
   00a42a:  4e fa 00 1a          jmp      $a446(pc)  ; -> La446
-sub_a42e:
+* glue_SetZone  -  _SetZone ($A01B).
+glue_SetZone:
   00a42e:  22 5f                movea.l  (a7)+, a1
   00a430:  20 5f                movea.l  (a7)+, a0
   00a432:  a0 1b                dc.w     $a01b
   00a434:  4e fa 00 0e          jmp      $a444(pc)  ; -> La444
-La438:
+* glue_CompactMem  -  _CompactMem ($A04C); nothing calls it.
+glue_CompactMem:
   00a438:  22 5f                movea.l  (a7)+, a1
   00a43a:  20 1f                move.l   (a7)+, d0
   00a43c:  a0 4c                dc.w     $a04c
@@ -15557,22 +15632,26 @@ La444:
 La446:
   00a446:  31 c0 02 20          move.w   d0, $220.w
   00a44a:  4e 75                rts
-La44c:
+* MemErr = 0; nothing calls it.
+glue_ClearMemErr:
   00a44c:  70 00                moveq    #$0, d0
   00a44e:  60 f6                bra.b    $a446  ; -> La446
-sub_a450:
+* glue_NewPtr  -  _NewPtr ($A11E).
+glue_NewPtr:
   00a450:  22 5f                movea.l  (a7)+, a1
   00a452:  20 1f                move.l   (a7)+, d0
   00a454:  a1 1e                dc.w     $a11e
   00a456:  2e 88                move.l   a0, (a7)
   00a458:  4e fa ff ea          jmp      $a444(pc)  ; -> La444
-sub_a45c:
+* glue_NewHandle  -  _NewHandle ($A122).
+glue_NewHandle:
   00a45c:  22 5f                movea.l  (a7)+, a1
   00a45e:  20 1f                move.l   (a7)+, d0
   00a460:  a1 22                dc.w     $a122
   00a462:  2e 88                move.l   a0, (a7)
   00a464:  4e fa ff de          jmp      $a444(pc)  ; -> La444
-sub_a468:
+* glue_DisposHandle  -  _DisposHandle ($A023).
+glue_DisposHandle:
   00a468:  22 5f                movea.l  (a7)+, a1
   00a46a:  20 5f                movea.l  (a7)+, a0
   00a46c:  a0 23                dc.w     $a023
@@ -15588,35 +15667,41 @@ s7_sub_bfde:
   00a47e:  4e fa ff c4          jmp      $a444(pc)  ; -> La444
 La482:
   00a482:  4e fa ff be          jmp      $a442(pc)  ; -> La442
-sub_a486:
+* glue_SetHandleSize  -  _SetHandleSize ($A024).
+glue_SetHandleSize:
   00a486:  22 5f                movea.l  (a7)+, a1
   00a488:  20 1f                move.l   (a7)+, d0
   00a48a:  20 5f                movea.l  (a7)+, a0
   00a48c:  a0 24                dc.w     $a024
   00a48e:  4e fa ff b4          jmp      $a444(pc)  ; -> La444
-sub_a492:
+* glue_RecoverHandle  -  _RecoverHandle ($A128).
+glue_RecoverHandle:
   00a492:  22 5f                movea.l  (a7)+, a1
   00a494:  20 5f                movea.l  (a7)+, a0
   00a496:  a1 28                dc.w     $a128
   00a498:  2e 88                move.l   a0, (a7)
   00a49a:  4e fa ff a6          jmp      $a442(pc)  ; -> La442
-sub_a49e:
+* glue_ReallocHandle  -  _ReallocHandle ($A027).
+glue_ReallocHandle:
   00a49e:  22 5f                movea.l  (a7)+, a1
   00a4a0:  20 1f                move.l   (a7)+, d0
   00a4a2:  20 5f                movea.l  (a7)+, a0
   00a4a4:  a0 27                dc.w     $a027
   00a4a6:  4e fa ff 9c          jmp      $a444(pc)  ; -> La444
-sub_a4aa:
+* glue_HLock  -  _HLock ($A029).
+glue_HLock:
   00a4aa:  22 5f                movea.l  (a7)+, a1
   00a4ac:  20 5f                movea.l  (a7)+, a0
   00a4ae:  a0 29                dc.w     $a029
   00a4b0:  4e fa ff 92          jmp      $a444(pc)  ; -> La444
-sub_a4b4:
+* glue_HUnlock  -  _HUnlock ($A02A).
+glue_HUnlock:
   00a4b4:  22 5f                movea.l  (a7)+, a1
   00a4b6:  20 5f                movea.l  (a7)+, a0
   00a4b8:  a0 2a                dc.w     $a02a
   00a4ba:  4e fa ff 88          jmp      $a444(pc)  ; -> La444
-sub_a4be:
+* glue_BlockMove(src, dst, count)  -  _BlockMove ($A02E).
+glue_BlockMove:
   00a4be:  22 1f                move.l   (a7)+, d1
   00a4c0:  20 1f                move.l   (a7)+, d0
   00a4c2:  22 5f                movea.l  (a7)+, a1
@@ -15656,13 +15741,15 @@ La502:
   00a50c:  20 5f                movea.l  (a7)+, a0
   00a50e:  de fc 00 0c          adda.w   #$c, a7
   00a512:  4e d0                jmp      (a0)
-sub_a514:
+* glue_HGetState  -  _HGetState ($A069).
+glue_HGetState:
   00a514:  22 5f                movea.l  (a7)+, a1
   00a516:  20 5f                movea.l  (a7)+, a0
   00a518:  a0 69                dc.w     $a069
   00a51a:  1e 80                move.b   d0, (a7)
   00a51c:  4e d1                jmp      (a1)
-sub_a51e:
+* glue_SwapMMUMode(&mode)  -  _SwapMMUMode ($A05D).
+glue_SwapMMUMode:
   00a51e:  20 6f 00 04          movea.l  $4(a7), a0
   00a522:  10 10                move.b   (a0), d0
   00a524:  a0 5d                dc.w     $a05d
@@ -15687,7 +15774,8 @@ HWPrivProbe:
 La548:
   00a548:  1e 80                move.b   d0, (a7)
   00a54a:  4e d1                jmp      (a1)
-sub_a54c:
+* glue_Gestalt(selector, &response)  -  _Gestalt ($A1AD).
+glue_Gestalt:
   00a54c:  20 2f 00 08          move.l   $8(a7), d0
   00a550:  a1 ad                dc.w     $a1ad
   00a552:  22 6f 00 04          movea.l  $4(a7), a1
@@ -15696,42 +15784,50 @@ sub_a54c:
   00a55c:  20 5f                movea.l  (a7)+, a0
   00a55e:  50 8f                addq.l   #$8, a7
   00a560:  4e d0                jmp      (a0)
-sub_a562:
+* glue_SReadWord(spBlock)  -  _SlotManager ($A06E) selector 1.
+glue_SReadWord:
   00a562:  22 5f                movea.l  (a7)+, a1
   00a564:  20 5f                movea.l  (a7)+, a0
   00a566:  70 01                moveq    #$1, d0
   00a568:  a0 6e                dc.w     $a06e
   00a56a:  3e 80                move.w   d0, (a7)
   00a56c:  4e d1                jmp      (a1)
-sub_a56e:
+* glue_SReadLong(spBlock)  -  _SlotManager selector 2.
+glue_SReadLong:
   00a56e:  22 5f                movea.l  (a7)+, a1
   00a570:  20 5f                movea.l  (a7)+, a0
   00a572:  70 02                moveq    #$2, d0
   00a574:  a0 6e                dc.w     $a06e
   00a576:  3e 80                move.w   d0, (a7)
   00a578:  4e d1                jmp      (a1)
-sub_a57a:
+* glue_SGetCString(spBlock)  -  _SlotManager selector 3.
+glue_SGetCString:
   00a57a:  22 5f                movea.l  (a7)+, a1
   00a57c:  20 5f                movea.l  (a7)+, a0
   00a57e:  70 03                moveq    #$3, d0
   00a580:  a0 6e                dc.w     $a06e
   00a582:  3e 80                move.w   d0, (a7)
   00a584:  4e d1                jmp      (a1)
-sub_a586:
+* glue_SFindStruct(spBlock)  -  _SlotManager selector 6.
+glue_SFindStruct:
   00a586:  22 5f                movea.l  (a7)+, a1
   00a588:  20 5f                movea.l  (a7)+, a0
   00a58a:  70 06                moveq    #$6, d0
   00a58c:  a0 6e                dc.w     $a06e
   00a58e:  3e 80                move.w   d0, (a7)
   00a590:  4e d1                jmp      (a1)
-sub_a592:
+* glue_SNextTypeSRsrc(spBlock)  -  _SlotManager selector $15.
+glue_SNextTypeSRsrc:
   00a592:  22 5f                movea.l  (a7)+, a1
   00a594:  20 5f                movea.l  (a7)+, a0
   00a596:  70 15                moveq    #$15, d0
   00a598:  a0 6e                dc.w     $a06e
   00a59a:  3e 80                move.w   d0, (a7)
   00a59c:  4e d1                jmp      (a1)
-sub_a59e:
+* glue_StripAddress(p)  -  _StripAddress ($A055) when the trap is
+* implemented (ROM85 >= 0 and its address, from _GetTrapAddress $A346,
+* differs from _Unimplemented $A89F); otherwise p & Lo3Bytes ($31A).
+glue_StripAddress:
   00a59e:  4a 78 02 8e          tst.w    $28e.w
   00a5a2:  6b 1c                bmi.b    $a5c0  ; -> La5c0
   00a5a4:  30 3c a8 9f          move.w   #$a89f, d0

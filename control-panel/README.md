@@ -351,10 +351,12 @@ boot-time **`INIT`**s. Remaining, on request:
   source. Open points are in the "Still open" list in `HOST_CARD_PROTOCOL.md`.
 * **System 6 host side** — `gc24_sw11.s` is a plain disassembly of the System 6
   package's `gc24` (42 KB, 105 × 44-byte dispatch entries; made by
-  `gc24_sw11_dasm.py` with capstone from `gc24_sw11_notes.py`), annotated only
-  on the command path (EngineDispatch `$6224`, the packet post and argument
-  copy, the read-back of `[packet+$54]` at `$8AE8`), each with its System 7
-  counterpart.
+  `gc24_sw11_dasm.py` with capstone from `gc24_sw11_notes.py`). All 200
+  functions are named: 164 after their System 7 counterparts (by dispatch
+  slot, identical or similar code), the `'rpza'` QuickTime codec (`$9510`
+  Codec_Dispatch, `$9BBA` Codec_Decompress, `$9752` Codec_Compress, …) and
+  the Toolbox glue by what they do; the command path (EngineDispatch `$6224`,
+  the argument copy, the read-back of `[packet+$54]` at `$8AE8`) is annotated.
 * A few smaller helpers in `INIT_main.s` (the icon/alert plumbing under
   `ShowIconOrAlert`) aren't traced further — turns out they don't need to
   be: an embedded credit block right after the function (previously

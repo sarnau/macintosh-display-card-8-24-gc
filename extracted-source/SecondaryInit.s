@@ -60,9 +60,11 @@ L2f9a:
   002fa6:  6c 06                bge.b    $2fae  ; -> L2fae
   002fa8:  20 5f                movea.l  (a7)+, a0
   002faa:  60 00 01 24          bra.w    $30d0  ; -> L30d0
-* Find this card's video sResource (sNextTypeSRsrc), read its info
-* (sRsrcInfo) and flip the enabled/disabled state of the accelerated vs.
-* plain sResource pair via sSetSRsrcState so QuickDraw GC binds to it.
+* With 32-Bit QuickDraw: find this card's video sResource (sNextTypeSRsrc);
+* if it is a B-bank one (id bit 4, no 24 bpp), delete it (sDeleteSRTRec $31,
+* and its TV sibling, id bit 3) and insert the A-bank twin (sInsertSRTRec $0A,
+* same driver refnum), record the new id in PRAM (sReadPRAMRec/sPutPRAMRec
+* $11/$12) and insert the sibling disabled (spParamData = 1).
 L2fae:
   002fae:  20 5f                movea.l  (a7)+, a0
   002fb0:  11 43 00 31          move.b   d3, $31(a0)  ; [spSlot]
@@ -87,13 +89,13 @@ L2fae:
   002ffc:  a0 6e                dc.w     $a06e  ; _SlotManager selector=sRsrcInfo  sRsrcInfo
   002ffe:  3a 28 00 26          move.w   $26(a0), d5  ; [spRefNum]
   003002:  70 31                moveq    #$31, d0
-  003004:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sSetSRsrcState
+  003004:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sDeleteSRTRec
   003006:  0c 02 00 00          cmpi.b   #$0, d2
   00300a:  66 10                bne.b    $301c  ; -> L301c
   00300c:  08 44 00 03          bchg.b   #$3, d4
   003010:  11 44 00 32          move.b   d4, $32(a0)  ; [spID]
   003014:  70 31                moveq    #$31, d0
-  003016:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31
+  003016:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x31  sDeleteSRTRec (TV sibling)
   003018:  08 44 00 03          bchg.b   #$3, d4
 L301c:
   00301c:  08 84 00 04          bclr.b   #$4, d4
@@ -104,15 +106,15 @@ L301c:
   00302e:  31 45 00 26          move.w   d5, $26(a0)  ; [spRefNum]
   003032:  42 a8 00 18          clr.l    $18(a0)  ; [spParamData]
   003036:  70 0a                moveq    #$a, d0
-  003038:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0xa
+  003038:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0xa  sInsertSRTRec (A-bank twin)
   00303a:  51 4f                subq.w   #$8, a7
   00303c:  20 8f                move.l   a7, (a0)  ; [spResult]
   00303e:  70 11                moveq    #$11, d0
-  003040:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x11
+  003040:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x11  sReadPRAMRec
   003042:  1f 44 00 03          move.b   d4, $3(a7)
   003046:  21 4f 00 04          move.l   a7, $4(a0)  ; [spsPointer]
   00304a:  70 12                moveq    #$12, d0
-  00304c:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x12
+  00304c:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0x12  sPutPRAMRec
   00304e:  50 4f                addq.w   #$8, a7
   003050:  0c 02 00 00          cmpi.b   #$0, d2
   003054:  66 28                bne.b    $307e  ; -> L307e
@@ -123,7 +125,7 @@ L301c:
   003066:  42 68 00 26          clr.w    $26(a0)  ; [spRefNum]
   00306a:  21 7c 00 00 00 01 00 18 move.l   #$1, $18(a0)  ; [spParamData]
   003072:  70 0a                moveq    #$a, d0
-  003074:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0xa
+  003074:  a0 6e                dc.w     $a06e  ; _SlotManager selector=0xa  sInsertSRTRec (sibling, disabled)
   003076:  42 a8 00 18          clr.l    $18(a0)  ; [spParamData]
   00307a:  08 44 00 03          bchg.b   #$3, d4
 * Patch the driver's dCtlStorage: set the framebuffer base

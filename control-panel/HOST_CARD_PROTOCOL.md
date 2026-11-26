@@ -163,7 +163,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- the clock-synthesiser part and how the per-monitor pixel clock is selected (section 11.8);
+- the device behind the 137-bit serial stream at `$44800000` (constant except for the board revision and a 4-bit field that is 1 on Two-Page); the pixel clock is settled (a DP8531 at `$46800000`, section 11.8);
 - DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
 - flag bits 1, 3, 10, 30 and 31 are traced (section 9): kernel debug switches (FPU, instruction counting, data watchpoint, bus-error escape) that no host code or Antelope sets; only a poke of `PublicIn+$18` before init would. Who writes the watch window `$4C0067D8`/`$67DC` and the escape address in gr121 is not known.
@@ -3547,21 +3547,35 @@ on selector `$10`-`$19`:
 
 | selector | routine | does |
 |---|---|---|
-| `$10`, `$11` | `$9BBA` | sends `$39` (12 longs): decompress |
-| `$12`, `$13`, `$14` | `$9752` | sends `$3A` (11 longs), or `$3B` (16 longs) with an extra 32-bit PixMap: compress |
+| `$10` | `$9BBA` Codec_Decompress | decompress: sends `$39` (12 longs) |
+| `$11` | `$9BBA` | decompress estimate only: size 3·w·h, time 500/(w·h), no card call (`$9F8E`-`$9FD6`) |
+| `$12` | `$9752` Codec_Compress | compress: sends `$3A` (11 longs) |
+| `$13` | `$9752` | compress estimate only: maximum size and time, no card call |
+| `$14` | `$9752` | compress with a previous frame (32-bit, pixelType 16): sends `$3B` (16 longs) |
 | `$15` | | returns 0 |
-| `$16` | `$A0B4` | codec info: name "8·24GC Road Pizza", vendor `'appl'`, version 4, flags `$43001`/`$4009` |
+| `$16` | `$A0B4` Codec_GetInfo | codec info: name "8·24GC Road Pizza", vendor `'appl'`, version 4, flags `$43001`/`$4009` |
 | `$17` | `$A124` | returns -1 |
-| `$18`, `$19` | `$A110`, `$A19A` | |
+| `$18` | `$A110` | unimplemented: returns -8939 |
+| `$19` | `$A19A` Codec_Close | close: disposes the state handle (the dither table is leaked) |
+
+The selectors do not follow QuickTime 1.0's codec order, and of its error
+codes only `$DD00` (-8960, codecErr) is a released one; `$DD02`, `$DD04`,
+`$DD08` and `$DD15` look like pre-release codes. The calls arrive through
+the driver's Control case at `DRVR` `$0F2A`, then GA_ControlFFFFFFFD. Names
+are in `gc24_sw11.s` (no MacsBug names here; they come from what each
+routine does).
 
 Both senders lock the PixMaps (`_QDExtensions` LockPixels, GetPixBaseAddr,
 GetPixelsState) and pass base addresses, row bytes (`& $3FFF`), bounds
 and depth to the card, then wait for the reply.
-* `$9BBA` requires a 16-bit PixMap for `'rpza'` (else `-8956`). It returns
-  a byte count and a time estimate (`× 50 / (width × height)`) through
-  two output pointers.
+* `$9BBA` requires a 16-bit PixMap for `'rpza'` (else `-8956`). Only selector
+  `$11` returns a size and a time estimate through two output pointers. At
+  8 bpp with flags bit 6 it passes a dither table built at `$A1D2`
+  (Codec_BuildDitherTable: 5-5-5 colour to four error-diffused 8-bit
+  indices, `$20008` bytes).
 * `$9752` takes a PixMap of depth 8, 16 or 32 for `'rpza'`, and only 32 for
-  `'rle '`. At depth 8 it uses the PixMap's colour table.
+  `'rle '`. At depth 8 it uses the PixMap's colour table. It returns the
+  card's reply (the compressed byte count) through its size pointer.
 
 The direction comes from the card's opcode tests. The host side does not
 name it.
@@ -4179,8 +4193,8 @@ No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 
 | card | host | written by | meaning |
 |---|---|---|---|
-| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | serial clock-synthesiser port (*reading*, from the shape of the data). The VideoDriver never writes it |
-| `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | 16-entry table port. The values rise from `$0C` to `$F0` in the TV tables (*reading*: a filter/convolution curve). It does not hold the per-mode timing |
+| `$44800000` | `$04800000` | PrimaryInit only (`$22D0`-`$2406`, `$26D4`-`$279C`): bit 0, then `$998`, `$8B88`, `$AAAD`, then by board revision `$9ACC`/`$9BCC`, `$8A9C`, `$88ACAC`/`$88ACBC`, `$53`/`$93`, `$2405B`/`$2409B`, then 2 or 1 (4 bits) and 1 (2 bits) by monitor | a serial port, MSB first, one bit per write from data bit 31 (SerialShiftOutReg `$2880`). Not the clock synthesiser: the stream does not fit the DP8531's registers. Its device is **unknown** (perhaps a configuration register of one of the custom chips). The VideoDriver never writes it |
+| `$46800000` | `$06800000` | PrimaryInit `$256C`/`$27F4` (16 longs to one address); VideoDriver `$60BC`, only when GFlags `Interlaced` is set (TV modes) | **the DP8531 clock synthesiser** (National; U016 on the board, 20.000 MHz reference): 16 writes, each `register << 4 | nibble` in bits 7-0 (that is why the values rise from `$0C` to `$F0`), then a `$D00`-loop settle delay. See 11.8 |
 
 ### 11.4 `$46000000` (host `$06000000`): bus status, revision, slot burst mask
 
@@ -4205,8 +4219,9 @@ offset 0); address bits 3-2 select the register, and `$46C0000C` is never
 accessed. Host and card agree: the host's `$C0000000` at `+8` reads back as
 `$C0` at Boot `$2003660`, and the host's GetEntries takes bits 31-24 of a
 long read. There is no separate read-index or pixel-mask register, so the
-part is not a Bt471/478-style one; the single-index part fits the AC842
-named in the ROM comments, which the code cannot prove. Antelope writes the
+part is not a Bt471/478-style one. The board photo shows a Brooktree chip
+marked "RAMDAC 428", "©89 APPLE": an Apple-custom part (the ROM comments
+call it AC842). Antelope writes the
 index as a full word with the index in bits 7-0, so the RAMDAC sees index
 0: TestCLUT tests entry 0, not `$FE`, and passes either way;
 SaveCLUT/RestoreCLUT/WriteCLUT start at 0 and are unaffected.
@@ -4235,7 +4250,7 @@ rectangle case". No host code addresses this range.
 2. `+$80` bit 31 (linear, from GFlags).
 3. `+$7C` bit 31 ← long 1.
 4. `+$04` ← long 2 (8 bits), `+$00` ← long 3 (20 bits), `+$A0` ← long 4 (12 bits).
-5. TV modes only: `$46800000` ← 16 longs, then a delay.
+5. TV modes only: the DP8531 clock synthesiser (`$46800000`) ← 16 register writes, then a settle delay.
 6. `+$1C`/`$20`/`$24` bit 31 set.
 7. Timing control ← 0, then timing registers 0-14 ← 15 longs.
 8. `+$C4` bit 31 set, timing control ← 1, WaitForVBlank.
@@ -4249,10 +4264,10 @@ Each mode table pointer (`a0`, chosen in VideoOpen `$53AE`-`$545E`) has a
 22-byte header in front of it: pages−1 for 24- and 32-bit addressing
 (`a0−$16`, `a0−$11`, 5 bytes each), rowBytes per depth (`a0−$C`, 5 words)
 and vRes (`a0−2`). Then one record per depth: 20 longs on the progressive
-monitors, 36 on TV modes (longs 0-4, 16 filter longs for `$46800000`, then
-the 15 timing longs). PrimaryInit has its own boot tables (`$2A34`-`$2E5C`,
+monitors, 36 on TV modes (longs 0-4, the 16 clock-synthesiser writes for `$46800000`,
+then the 15 timing longs). PrimaryInit has its own boot tables (`$2A34`-`$2E5C`,
 `$98` bytes, chosen at `$24A4`-`$24F8`: 16 timing values, register 15 = 2,
-plus two gray-fill counts).
+plus two gray-fill counts; longs 5-20 are the clock-synthesiser writes).
 
 | monitor (sRsrc) | table | resolution, depths | rowBytes 1/2/4/8/24 | base | long 0 | H active / bp / sync / fp | H total | V active / bp / sync / fp (half-lines) | lines | r13 | r14 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -4262,7 +4277,7 @@ plus two gray-fill counts).
 | 12" (`$A2`/`$B2`) | `$3A24` | 512×384, 1-24 | 64/128/256/512/2048 | `$10000` | `$80`-`$9C` | 512/80/32/16 | 640 | 768/38/6/2 | 407 | 0 | 608 |
 | NTSC 640×480 (`$AC`/`$BC`) | `$3EB0` | 640×480, 1-24 | 1024 / 2560 | `$11400` | `$C1`-`$D9`, `$9C` | 640/38…64/60/42…16 | 780 | 481/32/6/6 | 262.5 | `$6E` | 330 |
 | NTSC 512×384 (`$A4`/`$B4`) | `$447C` | 512×384, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 512/98…120/60/110…88 | 780 | 433/80/6/6 | 262.5 | `$6E` | 330 |
-| PAL 768×576 (`$A8`/`$B8`) | `$4A48` | 768×576, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 768/53…81/69/54…26 | 944 | 576/39/5/5 | 312.5 | `$5E` | 403 |
+| PAL 768×576 (`$A8`/`$B8`) | `$4A48` | 768×576, 1-8 (no 24-bit mode: its record's rowBytes 2560 is too short) | 1024 / 2560 | `$11400` | as NTSC | 768/53…81/69/54…26 | 944 | 576/39/5/5 | 312.5 | `$5E` | 403 |
 | PAL 640×480 (`$A0`/`$B0`) | `$5014` | 640×480, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 640/117…148/69/118…87 | 944 | 528/87/5/5 | 312.5 | `$5E` | 403 |
 
 Measured: the horizontal registers 3-6 hold active, back porch, sync and
@@ -4272,8 +4287,33 @@ Registers 0, 1, 7, 8 are always 3, 0, 3, 0; long 3 (display start) is always
 `$200`/`$280` on TV; long 1 (the interleaved layout) is 1 only on TV modes at
 1-8 bpp. The TV tables trade back porch against front porch per depth with a
 constant sum (pipeline compensation). The B banks drop 24 bpp (Two-Page B
-also 8 bpp). Four more TV tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`; long 0
-`$80`-`$9C`, r13 = `$0E`) are not referenced by any `lea`.
+also 8 bpp). Four more tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) are unreachable
+left-overs. Each sits directly before the convolved table of the same slot
+and holds an unconvolved, progressive variant: long 0 `$80`-`$9C`, long 1 =
+0, constant porches, r13 = `$0E` (640×480) or `$6E` (512×384). The PAL-slot
+copies `$4762` and `$4D2E` repeat the NTSC records of `$3BCA` and `$4196`
+under a PAL vRes. Nothing reaches them: VideoOpen's eight `lea` are a
+complete compare tree (`$53AE`-`$545E`), and no table index, sResource
+entry or PrimaryInit path points there. No sResource selects "convolution
+off".
+
+Which sResource survives (PrimaryInit `$2420`-`$247E`; selector `$31` is
+sDeleteSRTRec, `$09` sSetsRsrcState): one whole bank is deleted (the B bank
+when sVersion succeeds, else the A bank); in the other, the sensed
+monitor's sRsrc is kept, its TV sibling (id bit 3) disabled and the rest
+deleted. Sense 1 → `$A1` Portrait, 2 → `$A2` 12", 3 → `$A3` Two-Page, 6 →
+`$A6` 13"; sense 4 or extended `$14` → `$A4`/`$AC` NTSC, extended `$00` →
+`$A0`/`$A8` PAL, bit 3 from the id saved in PRAM (`$2278`, written by the
+driver's cscSetDefaultMode). Senses 0 and 5 match nothing and delete all 8.
+With 32-Bit QuickDraw, SecondaryInit (`$2FAE`-`$307A`) swaps a B-bank
+sRsrc for its A-bank twin (sDeleteSRTRec, sInsertSRTRec, PRAM update), so
+the B bank (without 24 bpp) serves only old QuickDraw.
+
+The apparent VPBlock mismatches (mode `$83` of `$A8` and `$AC`) come from
+two mode lists without an `$FF` terminator (`$70B4`, `$70F4`) running into
+the B-bank lists. The Slot Manager takes the first match, so the correct
+blocks `$7238` and `$71DC` are used. The driver itself never reads a
+VPBlock (VideoOpen's sFindStruct reads only the gamma directory, id `$40`).
 
 With the standard pixel clocks the totals give the expected rates (*inferred*):
 30.24 MHz / (864×525) = 66.7 Hz (13"), 15.67 MHz / (640×407) = 60.15 Hz
@@ -4293,11 +4333,35 @@ bit 24 = convolution (JMFB's "C" tables); bit 30, set on Two-Page, Portrait
 and the convolved TV modes, is not understood. Long 2 is `$FF << (8 − n)` with
 n = 3 + log2 depth, plus 2 when long 0 has bit 30.
 
-**The clock synthesiser.** PrimaryInit's stream into `$44800000` (`$22CE`-`$2406`,
-`$26D4`-`$279C`) is the same 131 bits for every monitor (by board revision:
-`$9ACC`/`$9BCC`, `$88ACAC`/`$88ACBC`, `$053`/`$093`, `$2405B`/`$2409B`), then
-4 bits that are 1 on the Two-Page monitor and 2 on all others, then 2 bits
-= 1. The video driver never writes it. So the per-monitor pixel clock is not
-programmed as an M/N pair here; the part presumably holds fixed frequencies
-selected by hardware, or the 4-bit field is a select or post-divider. The
-chip is not identified.
+**The clock synthesiser** is a National DP8531 (U016 in the board photo,
+`Macintosh Control Panel/ Macintosh Display Card 8•24 CG.jpg`, next to a
+20.000 MHz oscillator; the RAMDAC beside it is marked "Bt RAMDAC 428 … ©89
+APPLE"). It is a parallel part, programmed through `$46800000`: 16 long
+writes, each `register << 4 | nibble` in bits 7-0, then a `$D00`-loop settle
+delay, as System 7.1's JMFB code loads its "National" clock. PCLK = 20 MHz ×
+N / R / 2^P, with N = registers 0-3, R = 4-6 and P = 9:
+
+| table | N | R | P | PCLK |
+|---|---|---|---|---|
+| `$2A34` Two-Page | 190 | 19 | 1 | 100.000 MHz |
+| `$2ACC` Portrait | 126 | 22 | 1 | 57.273 MHz |
+| `$2B64` 13" | 127 | 21 | 2 | 30.238 MHz |
+| `$2BFC` 12" | 94 | 15 | 3 | 15.667 MHz |
+| `$2C94`/`$2D2C`, `$3EB0`/`$447C` NTSC | 540 | 55 | 2 | 49.091 MHz = 4 × 12.273 |
+| `$2DC4`, `$4A48`/`$5014` PAL | 413 | 70 | 1 | 59.000 MHz = 4 × 14.75 |
+| unreferenced `$3BCA`/`$4196`/`$4762`/`$4D2E` | 157 | 16 | 4 | 12.266 MHz |
+
+The other registers are the same everywhere: 10 = `$D` (both TTL clock
+outputs and LPF2 off), 11 = 6 (N mode, SCLK from the S counter), 12 = 4
+(restart the VCO) on the progressive tables and 0 on TV, 13 = 1 (LCLK off);
+S and L are 0, 1/1 on PAL. PrimaryInit loads the clock once, from the boot
+table of the sensed monitor; the VideoDriver reloads it only for TV modes
+(GFlags `Interlaced`), since a depth change keeps the pixel clock. Long 0's
+bit 30 thus marks the modes whose timing generator runs at PCLK/4 (*reading*):
+the ×4-pixel horizontal timing of Two-Page and Portrait and the 4× pixel
+clock of the convolved TV modes.
+
+The 137-bit stream PrimaryInit shifts into `$44800000` (`$22CE`-`$2406`,
+`$26D4`-`$279C`; by board revision `$9ACC`/`$9BCC`, `$88ACAC`/`$88ACBC`,
+`$053`/`$093`, `$2405B`/`$2409B`, then 4 bits that are 1 on Two-Page and 2
+otherwise, then 2 bits = 1) is not the clock; its target is unknown.
