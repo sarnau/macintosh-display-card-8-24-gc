@@ -75,6 +75,17 @@ values for TV). It is the same timing chip layout as the original 8•24's.
 | NTSC | 640×480, 512×384 | 1-24 | 780 × 525, interlaced | 30 Hz frames |
 | PAL | 768×576, 640×480 | 1-8 (768×576), 1-24 (640×480) | 944 × 625, interlaced | 25 Hz frames |
 
+That is the shipping ROM, 1.0 (341-0812). A later ROM, 1.1 (341-0266,
+September 1991), adds two displays and a depth, and makes the TV modes'
+flicker filter optional:
+
+| monitor (1.1 ROM) | resolution | depths | total (pixels × lines) | refresh |
+|---|---|---|---|---|
+| 16" Color | 832×624 | 1-8, 16 | 1152 × 667 | 74.5 Hz |
+| 21" Color | 1152×870 | 1-8 | 1456 × 915 (as Two-Page) | 75 Hz |
+| 13", 12", 16", NTSC, PAL | as above | adds 16 bits ("thousands") | | |
+| NTSC, PAL without filter | as above | 1-8, 16, 32 | 780 × 525, 944 × 625 at the dot clock | 30 / 25 Hz frames |
+
 The refresh rates follow from the totals and the pixel clocks the ROM
 programs. The pixel clock comes from a National DP8531 synthesiser (20 MHz
 reference; 100, 57.27, 30.24 and 15.67 MHz for the four monitors, 4 × the
