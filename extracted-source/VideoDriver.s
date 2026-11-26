@@ -446,40 +446,40 @@ L56e2:
 * bit C of flags -> pad the two unused DAC bytes with 0 (mono/8-bit path).
 L56f6:
   0056f6:  24 1f                move.l   (a7)+, d2
-  0056f8:  17 42 ff fc          move.b   d2, -$4(a3)  ; [saveBaseAddr]
+  0056f8:  17 42 ff fc          move.b   d2, -$4(a3)  ; RAMDAC address (+$06C00000)
   0056fc:  e0 8a                lsr.l    #$8, d2
   0056fe:  08 05 00 0c          btst.b   #$c, d5
   005702:  67 08                beq.b    $570c  ; -> L570c
-  005704:  42 13                clr.b    (a3)  ; [saveMode]
-  005706:  42 13                clr.b    (a3)  ; [saveMode]
-  005708:  16 82                move.b   d2, (a3)  ; [saveMode]
+  005704:  42 13                clr.b    (a3)  ; RAMDAC data (+$06C00004)
+  005706:  42 13                clr.b    (a3)  ; RAMDAC data (+$06C00004)
+  005708:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   00570a:  60 0a                bra.b    $5716  ; -> L5716
 L570c:
-  00570c:  16 82                move.b   d2, (a3)  ; [saveMode]
+  00570c:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   00570e:  e0 8a                lsr.l    #$8, d2
-  005710:  16 82                move.b   d2, (a3)  ; [saveMode]
+  005710:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   005712:  e0 8a                lsr.l    #$8, d2
-  005714:  16 82                move.b   d2, (a3)  ; [saveMode]
+  005714:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
 L5716:
   005716:  51 cb ff de          dbra     d3, $56f6  ; -> L56f6
   00571a:  60 24                bra.b    $5740  ; -> L5740
 L571c:
-  00571c:  17 47 ff fc          move.b   d7, -$4(a3)  ; [saveBaseAddr]
+  00571c:  17 47 ff fc          move.b   d7, -$4(a3)  ; RAMDAC address (+$06C00000)
 L5720:
   005720:  24 1f                move.l   (a7)+, d2
   005722:  e0 8a                lsr.l    #$8, d2
   005724:  08 05 00 0c          btst.b   #$c, d5
   005728:  67 08                beq.b    $5732  ; -> L5732
-  00572a:  42 13                clr.b    (a3)  ; [saveMode]
-  00572c:  42 13                clr.b    (a3)  ; [saveMode]
-  00572e:  16 82                move.b   d2, (a3)  ; [saveMode]
+  00572a:  42 13                clr.b    (a3)  ; RAMDAC data (+$06C00004)
+  00572c:  42 13                clr.b    (a3)  ; RAMDAC data (+$06C00004)
+  00572e:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   005730:  60 0a                bra.b    $573c  ; -> L573c
 L5732:
-  005732:  16 82                move.b   d2, (a3)  ; [saveMode]
+  005732:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   005734:  e0 8a                lsr.l    #$8, d2
-  005736:  16 82                move.b   d2, (a3)  ; [saveMode]
+  005736:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
   005738:  e0 8a                lsr.l    #$8, d2
-  00573a:  16 82                move.b   d2, (a3)  ; [saveMode]
+  00573a:  16 82                move.b   d2, (a3)  ; RAMDAC data (+$06C00004)
 L573c:
   00573c:  51 cb ff e2          dbra     d3, $5720  ; -> L5720
 L5740:
@@ -532,7 +532,7 @@ L5792:
 * csCode 4  cscSetGamma  -  install a new gamma table.
 * (A2)=GammaTbl ptr (0 = restore default linear gamma).  Validates the
 * table, copies it into a freshly-allocated buffer (storage.$18) and, if
-* the CLUT is live, re-applies the gamma to the AC842.
+* in direct (24-bit) mode, loads it into all 256 RAMDAC entries.
 Ctl_SetGamma:
   0057aa:  20 12                move.l   (a2), d0
   0057ac:  67 00 00 a4          beq.w    $5852  ; -> L5852
@@ -594,7 +594,7 @@ L5848:
   00584c:  51 ca ff fa          dbra     d2, $5848  ; -> L5848
   005850:  60 24                bra.b    $5876  ; -> L5876
 L5852:
-  005852:  20 6b 00 18          movea.l  $18(a3), a0  ; [saveGammaPtr] csParam=0: rebuild the default (inverting) gamma ramp
+  005852:  20 6b 00 18          movea.l  $18(a3), a0  ; [saveGammaPtr] csParam=0: rebuild the default (identity) gamma ramp
   005856:  30 28 00 04          move.w   $4(a0), d0
   00585a:  34 28 00 06          move.w   $6(a0), d2
   00585e:  53 42                subq.w   #$1, d2
@@ -607,7 +607,7 @@ L586a:
   00586c:  46 18                not.b    (a0)+
   00586e:  51 c8 ff fa          dbra     d0, $586a  ; -> L586a
   005872:  51 ca ff f2          dbra     d2, $5866  ; -> L5866
-* If CLUT is valid, push the new gamma through all 256 AC842 entries
+* Direct mode only (GFlags bit 10): load the new gamma into all 256 RAMDAC entries
 L5876:
   005876:  08 2b 00 0a 00 1c    btst.b   #$a, $1c(a3)  ; [GFlags.DirectModeFlag]
   00587c:  67 00 fd 04          beq.w    $5582  ; -> Ctl_KillIO
@@ -944,16 +944,16 @@ L5ba0:
   005ba0:  32 10                move.w   (a0), d1
   005ba2:  b2 03                cmp.b    d3, d1
   005ba4:  62 28                bhi.b    $5bce  ; -> L5bce
-  005ba6:  17 41 ff fc          move.b   d1, -$4(a3)  ; [saveBaseAddr]
-  005baa:  22 13                move.l   (a3), d1  ; [saveMode]
+  005ba6:  17 41 ff fc          move.b   d1, -$4(a3)  ; RAMDAC address (+$06C00000)
+  005baa:  22 13                move.l   (a3), d1  ; RAMDAC data (+$06C00004)
   005bac:  e1 99                rol.l    #$8, d1
   005bae:  11 41 00 02          move.b   d1, $2(a0)
   005bb2:  11 41 00 03          move.b   d1, $3(a0)
-  005bb6:  22 13                move.l   (a3), d1  ; [saveMode]
+  005bb6:  22 13                move.l   (a3), d1  ; RAMDAC data (+$06C00004)
   005bb8:  e1 99                rol.l    #$8, d1
   005bba:  11 41 00 04          move.b   d1, $4(a0)
   005bbe:  11 41 00 05          move.b   d1, $5(a0)
-  005bc2:  22 13                move.l   (a3), d1  ; [saveMode]
+  005bc2:  22 13                move.l   (a3), d1  ; RAMDAC data (+$06C00004)
   005bc4:  e1 99                rol.l    #$8, d1
   005bc6:  11 41 00 06          move.b   d1, $6(a0)
   005bca:  11 41 00 07          move.b   d1, $7(a0)

@@ -163,7 +163,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
-- DrawMultiObject: all 25 opcodes are named and their cases found; left open is which host script system rewrites the glyph images `$84`-`$9E` that the card re-reads (probably KanjiTalk 6; "Open points" there);
+- DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
 - the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
 - some flag bits (1, 3, 10, 30, 31) are read only in outline (section 9).
@@ -2202,7 +2202,13 @@ range). That part remains a reading.
 * **Who rewrites glyphs `$84`-`$9E`.** `WidthAFID` (`+$41C`) is the width
   table's actual font family ID (`ToolUtils.a`: `widthAFID EQU 1052`). The host's
   signed `≥ $4000` test selects every non-Roman script family ($4000-$7FFF,
-  script = (ID−$4000)/$200+1, Script Manager `CommonMapping`), not only one script.
+  script = (ID−$4000)/$200+1, Script Manager `CommonMapping`), not only one script
+  (`$8A28`). Its byte scan (`$8A34`-`$8A58`) does not parse 2-byte characters: a
+  lead or a trail byte in `$84`-`$9E` sets mask bit 3 alike. The card's side
+  (`ConvertFontStrike`, `new` = 0, `$147BC`-`$148EC`) returns at once unless the
+  strike spans `$84`-`$9E` (`$147D0`-`$147E4`) and re-fetches only those
+  bit-image columns (`CopyHostMemory` mode 2, `$14870`); metrics, `locTable` and
+  `owTable` are not re-read.
   The 7.1 sources have no code that rewrites a strike's bit image. Their only 2-byte
   text path is the later TrueType one. Of the Mac encodings, only MacJapanese leaves
   `$84`-`$9E` without 1-byte characters (they are Shift-JIS lead bytes). In MacThai
@@ -2211,8 +2217,14 @@ range). That part remains a reading.
   reading is that KanjiTalk 6 draws 2-byte bitmap characters by copying their images
   into 27 fixed-width scratch slots `$84`-`$9E` of the Japanese strike and drawing
   the slot codes through StdText. The card's re-read of just those columns, with
-  the metrics kept, fits that. This is not confirmed: KanjiTalk's code and font
-  resources have not been examined.
+  the metrics kept, fits that, and so does Tech Q&A TX10: 2-byte bitmap fonts were
+  kept in a separate `'fbit'` format, not `NFNT`, so their images had to be put
+  somewhere StdText could draw them. `$84`-`$9E` is a strict subset of the
+  Shift-JIS lead bytes (`$81`-`$9F`, `$E0`-`$FC`; `DoubleByteSupport.a`
+  `sjisHighBytes`); why `$81`-`$83` and `$9F` are left out is not known. This is
+  not confirmed (about 60%; another CJK script kit is possible): no KanjiTalk
+  code or font is on hand, and the local Tech Info Library notes on KanjiTalk and
+  on the 8•24 GC say nothing about drawing.
    (Test: dump a KanjiTalk 6 Osaka strike, or disassemble its text patch.)
 
 #### The dispatcher prologue and packet layout
@@ -3905,8 +3917,8 @@ Uncertain:
   inferred from `CopyHostMemory`'s direct path, not from a hardware
   document. With host VM, low memory is mapped one to one, so logical and
   physical `$178` agree.
-* Whether the System 6 host code ever writes `$178` or reads `4` was not
-  checked (gc24 for System 6 is not disassembled). The key reading needs
+* The System 6 host's `gc24` (`gc24_sw11.s`) has no absolute access to
+  `$178` or `4` (its one `$178(a0)`, at `$1044`, is a record offset). The key reading needs
   nothing from the host beyond the Keyboard/ADB driver's normal `KeyMap`
   updates.
 * The Tab/Shift/Control assignment depends on the standard bit order of
@@ -4019,7 +4031,8 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
   ID `-n` stores the entry's `+$28` in the driver globals at
   `$A78 + 4n`. ID -1 is `$85AA` (slot `$A7C`), -2 is `$8638` (`$A80`),
   and -3 is `$8580` (`$A84`, the codec entry above).
-* `$85AA(unit, value)` sends `$00`. If `value` is not 0, it sets the
+* `$85AA(unit, value)` first re-initialises the card (`$884A`; it
+  returns -1 if unit `+$1C` bit 1 is then set) and sends `$00`. If `value` is not 0, it sets the
   unit's timeout word (`+2`) to 500, sends `$02` with `value` as its one
   long, stores the reply at unit `+$174` and puts the timeout back. Then it
   sends `$00` again. It returns `+$174`.
@@ -4034,15 +4047,21 @@ case to the epilogue `$2E460` (System 7 `$3287C`). Against System 7:
   (reported through Control 20).
 
 **The probe answers 1.** Both ends are now read:
-* For selectors below `$0C`, `$6224(cmd, args, n)` writes the packet
-  directly (`$77D4`-`$795E`): `+$18` = 0, `+$48` = `cmd`, `+$4C` = the
-  sequence number (`+$20` of the unit, incremented), `+$50` = `n`, the
-  arguments copied to the area whose address the card publishes at `+$54`
-  (System 6 Antelope: `packet+$64C`; this host's exact store is not yet
-  re-checked), and `+$14` = -1. It waits until bit 0 or 1 of
-  the status long (`[unit+$10]`) is set. Then it returns packet `+$1C`
-  (`$7A60`). A timeout returns 0 and sets bit 1 of unit `+$1C`
-  (`$7A96`). The host never writes `+$1C` itself.
+* Selectors below `$0C`, and every selector the switch at `$628E`
+  (`cmd - $0C`, 45 cases) does not handle, take `$6224(cmd, args, n)`'s
+  generic packet path (`$77D4`-`$795E`, System 7 `$5F10`-`$604A`;
+  `gc24_sw11.s`): `+$18` = 0, `+$48` = `cmd`, `+$4C` = the sequence number
+  (`+$20` of the unit, incremented), `+$50` = `n`. The arguments are copied
+  (`$7850`-`$7936`, System 7's CopyParamsToQueue) to the area at unit
+  `+$18`, which the card re-initialisation `$884A` sets from the address
+  the card publishes at `+$54`: `(packet & $FFF00000) | ([packet+$54] &
+  $FFFFF)` (`$8AE8`-`$8B0C`, System 7 `$726A`-`$728E`; System 6 Antelope
+  publishes `packet+$64C`). Then `+$14` = -1. (If status bit 3 is already
+  set, it returns -1 without posting.) It waits until bit 0 or 1 of the
+  status long (`[unit+$10]`) is set, then returns packet `+$1C` (`$7A60`).
+  The deadline is Ticks plus unit `+$02`, extended while packet `+$1C4`
+  changes. A timeout calls `$8E54(unit, 2, 0)`, returns 0 and sets bit 1
+  of unit `+$1C` (`$7A96`). The host never writes `+$1C` on this path.
 * The System 6 dispatcher, like System 7's, stores 1 in packet `+$1C`
   as soon as it takes a command (`$2D648`-`$2D650`: `const gr99, 1`,
   `add gr98, gr98, $1C`, `store`; the same words as System 7 `$31E58`).
@@ -4098,7 +4117,7 @@ Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 
 | card | bits | written by | read by | meaning |
 |---|---|---|---|---|
-| `$44000000` | serial, 20 | PrimaryInit `$254E`/`$27D6` and VideoDriver `$6098` (timing-table long 3, always `$2000`); Hand `$C6` `$2001328` (20 stores of `lr2 << 10`, `lr2` halved first if `+$80` is set) | Boot `$20035EC` (20 read/write-backs) | **display start** (est.). Boot makes PublicOut+`$1C` = value `<< 2`, `<< 1` more if `+$7C` is set and `<< 1` more if `+$80` is set, then ORs in `gr66` (slot) and `$0C000000`. `$2000 << 3` = `$10000` = the VideoDriver's base offset (`$5E4A`). In the interleaved layout, `$C6`'s scaling (÷4) and Boot's (×8) disagree (open) |
+| `$44000000` | serial, 20 | PrimaryInit `$254E`/`$27D6` and VideoDriver `$6098` (timing-table long 3, always `$2000`); Hand `$C6` `$2001328` (20 stores of `lr2 << 10`, `lr2` halved first if `+$80` is set) | Boot `$20035EC` (20 read/write-backs) | **display start** (est.). Boot makes PublicOut+`$1C` = value `<< 2`, `<< 1` more if `+$7C` is set and `<< 1` more if `+$80` is set, then ORs in `gr66` (slot) and `$0C000000`. `$2000 << 3` = `$10000` = the VideoDriver's base offset (`$5E4A`). The host always sets exactly one of `+$7C`/`+$80` (VideoDriver `$6060`-`$6084`), so Boot's factor is ×8 in both layouts (×4 only after PrimaryInit's reset table `$2B64`, which clears both). Every host timing table has `$2000`, so Boot always gets offset `$10000`; on TV modes the driver's base is `$11400` (`$5E42`-`$5E62`), `$1400` past the display start. `$C6` writes `lr2/8` in the linear layout (it halves first, `$20012FC`) and `lr2/4` in the interleaved one: it agrees with Boot when linear and puts the start at twice the offset when interleaved. This never happens: `$C6` has no callers (Antelope's stub `$38F74` is unreferenced). It also stores its halved value at PublicOut+`$1C`, where Boot stores a full card pointer |
 | `$44000004` | serial, 8 | PrimaryInit `$2540`/`$27C8`, VideoDriver `$608A` (long 2: `$F8/$FC/$FE/$FF` for 1/2/4/8 bpp on the 12" and portrait tables, `$E0/$F0/$F8/$FC/$FF` on the 13" table) | - | depth-dependent, meaning unknown (no card access) |
 | `$44000008` | serial, 16 | PrimaryInit `$20BC`-`$20D8` (4 × 4 bits of `$A`, i.e. `$AAAA`), at reset only | - | unknown (*reading*: a reset/unlock pattern) |
 | `$4400000C`, `$10`, `$14`, `$18` | bit 31 | Boot writes each value back | Boot `$2003010` loop (4 iterations, bit inverted) | **NuBus slot ID** (est.). Boot builds the 4-bit slot `s` and stores `gr66 = s << 28` at PublicOut+`$2C`. That value is the top nibble of the pointers PublicOut+`$0C`-`$18` and service `$C4`'s result, which IsOnThisCard `$13F54` uses as the slot |
@@ -4122,7 +4141,7 @@ Legend: **est.** = the code's effect is unambiguous, or both sides agree;
 | `$4400008C` | bit 31 | kernel init `$2002308` and pager `$2001FF0`: `~(gr64 << 24)`, so bit 31 = NOT flags bit 7; pager 0 during the fill (`$2001F84`) | - | controlled by flags bit 7 (meaning unknown) |
 | `$44000090` | bit 31 | PrimaryInit -1 (`$2130`); kernel init `$200231C`: `~(gr64 << 25)`, so bit 31 = NOT flags bit 6 | - | controlled by flags bit 6 (meaning unknown) |
 | `$44000094`, `$98`, `$9C` | bit 31 | - | kernel init `$2002178`-`$20021A0`; TestInterleave `$34C44`-`$34C78`; DRVR ProbeCard `$21F0` (`$9C` only) | **3-bit board configuration** (est. as a code). Init ORs it into PublicOu+`$04` bits 24-26 and clears flags bit 8 when it is 0. TestInterleave skips when it is 0. DRVR: `$9C` clear means board generation 2 |
-| `$440000A0` | serial, 12 | PrimaryInit `$255C`/`$27E4`, VideoDriver `$60A6` (long 4); Hand `$C6` `$2001358` (12 stores of `lr4 << 18`, halved first if `+$80` is set) | Boot `$2003788` (12 read/write-backs; only when `+$7C` is clear, else `$A00`) | **row bytes / 8** in the linear layout (est.: the ROM's values ×8 equal the driver's rowBytes table, e.g. `$10,$20,$28,$50,$140` → 128, 256, 320, 640, 2560 at `$387E`). Boot computes value `<< 2`, `<< 1` more if `+$80` is set, capped at `$A00`, into PublicOut+`$24` |
+| `$440000A0` | serial, 12 | PrimaryInit `$255C`/`$27E4`, VideoDriver `$60A6` (long 4); Hand `$C6` `$2001358` (12 stores of `lr4 << 18`, halved first if `+$80` is set) | Boot `$2003788` (12 read/write-backs; only when `+$7C` is clear, else `$A00`) | **row stride**: rowBytes/8 linear, rowBytes/4 interleaved, doubled on interlaced TV modes (est.: `$10`…`$140` → 128…2560 on the Apple monitors, `$387E`; NTSC/PAL `$200` for rowBytes `$400` at 1-8 bpp and `$280` for `$A00` at 24 bpp). `$C6` uses the same units (÷8 / ÷4). Boot computes value `<< 2`, `<< 1` more if `+$80` is set, capped at `$A00`, into PublicOut+`$24` |
 | `$440000A8` | ? | PrimaryInit 0 (`$2180`); -1 for monitor code 3 (`$23D8`) | - | unknown (two-page monitor only) |
 | `$440000AC`, `$B8`, `$BC` | ? | PrimaryInit -1 (`$218A`, `$2198`, `$2122`) | - | unknown |
 | `$440000C0` | ? | PrimaryInit 0 (`$21A6`) | - | unknown |
@@ -4162,16 +4181,31 @@ No code accesses `$4400006C`, `$74`, `$B0` or `$B4`.
 
 | card | written by | read by | meaning |
 |---|---|---|---|
-| `$46C00000` | host byte at `+0`: VideoDriver `$5604`, `$56F8`, `$58D4`, `$5974`, `$5BA6`; PrimaryInit `$25C4`/`$284A` (long 0). Card: Hand `$C7` `$2001384` and `$C8` `$20013D0` (byte store, BP 0); Antelope TestCLUT `$359D8`/`$359F4` (word `$FE`), SaveCLUT `$36CA0`, RestoreCLUT `$36D2C`, WriteCLUT `$36DC0` (word 0) | - | **CLUT index** (est.) |
-| `$46C00004` | three bytes per entry: host `$560C`, `$5704`-`$5710`, `$58DE`-`$58E6`, `$597E`-`$5986`; PrimaryInit (entry 0 = `$FF,$FF,$FF`, entry 1 = 0,0,0); card `$C7` (`lr3`, `lr4`, `lr5`), Antelope `$359E8`, `$36D44`, `$36DD8` (bits 31-24) | card bits 31-24: `$C8` `$20013DC`-`$20013F4` (result `$00BBGGRR`), TestCLUT `$359F8`…, SaveCLUT `$36CB0`. Host GetEntries `$5BAA`-`$5BC6` uses bits 7-0 of a long read | **CLUT data**, auto-increment (est.). The byte lanes differ between the two sides (see note) |
-| `$46C00008` | host only: timing-table long 0 (PrimaryInit `$2504`/`$27AC`, VideoDriver `$605C`) | Boot `$200365C` (bits 31-24) | **pixel mode** (est. for depth). Boot: bits 26-25 ≠ 0 → 24 bpp, else bits 28-27 = log2 depth (1/2/4/8); ROM values `$C0/$C8/$D0/$D8`, `$80…/$9C` for 24 bpp, `$C1…` on TV |
+| `$46C00000` | host byte at `+0`: VideoDriver `$5604`, `$56F8`, `$58D4`, `$5974`, `$5BA6`; PrimaryInit `$25C4`/`$284A` (long 0). Card: Hand `$C7` `$2001384` and `$C8` `$20013D0` (byte store, BP 0); Antelope TestCLUT `$359D8`/`$359F4` (word `$FE`), SaveCLUT `$36CA0`, RestoreCLUT `$36D2C`, WriteCLUT `$36DC0` (word 0) | - | **CLUT address**: one index for writing and reading back (bits 31-24 = host byte `+0`) |
+| `$46C00004` | three bytes per entry: host `$560C`, `$5704`-`$5710`, `$58DE`-`$58E6`, `$597E`-`$5986`; PrimaryInit (entry 0 = `$FF,$FF,$FF`, entry 1 = 0,0,0); card `$C7` (`lr3`, `lr4`, `lr5`), Antelope `$359E8`, `$36D44`, `$36DD8` (bits 31-24) | card bits 31-24: `$C8` `$20013DC`-`$20013F4` (result `$00BBGGRR`), TestCLUT `$359F8`…, SaveCLUT `$36CB0`. Host GetEntries `$5BAA`-`$5BC6` (bits 31-24 of a long read, via `rol.l #8`) | **CLUT data**: R, G, B, then the index moves to the next entry, on writes and reads (bits 31-24) |
+| `$46C00008` | host only: timing-table long 0 (PrimaryInit `$2504`/`$27AC`, VideoDriver `$605C`) | Boot `$200365C` (bits 31-24) | **RAMDAC command / pixel mode** (the third register, readable). Boot: bits 26-25 ≠ 0 → 24 bpp, else bits 28-27 = log2 depth (1/2/4/8); ROM values `$C0/$C8/$D0/$D8`, `$80…/$9C` for 24 bpp, `$C1…` on TV |
 
-Note on lanes: the host writes the index and data as bytes at `+0` and reads
-data in bits 7-0 of a long. The card reads data in bits 31-24. Antelope
-writes the index as a word with the index in bits 7-0, while Hand's `$C7`
-puts it in bits 31-24 as well (`inbyte` with BP = 0). TestCLUT rewrites
-the same index before it reads back, so the test passes under either
-wiring.
+Note on lanes: the RAMDAC's 8-bit bus is on bits 31-24 (the 68k's byte
+offset 0); address bits 3-2 select the register, and `$46C0000C` is never
+accessed. Host and card agree: the host's `$C0000000` at `+8` reads back as
+`$C0` at Boot `$2003660`, and the host's GetEntries takes bits 31-24 of a
+long read. There is no separate read-index or pixel-mask register, so the
+part is not a Bt471/478-style one; the single-index part fits the AC842
+named in the ROM comments, which the code cannot prove. Antelope writes the
+index as a full word with the index in bits 7-0, so the RAMDAC sees index
+0: TestCLUT tests entry 0, not `$FE`, and passes either way;
+SaveCLUT/RestoreCLUT/WriteCLUT start at 0 and are unaffected.
+
+How the host loads it (VideoDriver): SetEntries packs
+`B<<24 | G<<16 | R<<8 | index` through the three gamma tables (`sub_5758`)
+and writes the index, then R, G, B; on a monochrome monitor (GFlags bit 12)
+it writes 0, 0 and the luminance (`$5704`, `$572A`), so only the blue
+channel carries the picture. In direct (24-bit) mode (GFlags bit 10)
+SetEntries refuses (`$5630`), and SetGamma (`$5876`) and GrayPage
+(`$5916`) load entry i = gR[i], gG[i], gB[i] (`$58DE`, `$597E`): the CLUT
+is then a per-channel gamma lookup. In indexed modes a new gamma table
+takes effect at the next SetEntries. The default gamma (`$5852`) is the
+identity (entry k = k).
 
 ### 11.6 Block-write colour registers `$4CC00000`, `$4CC00004` (host `$0CC00000`, `$0CC00004`)
 
