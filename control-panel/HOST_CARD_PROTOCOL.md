@@ -163,10 +163,10 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 `$2001924`).
 
 **Still open:**
+- the clock-synthesiser part and how the per-monitor pixel clock is selected (section 11.8);
 - DrawMultiObject: all 25 opcodes are named and their cases found; left open is only who rewrites glyphs `$84`-`$9E` in a non-Roman (`WidthAFID` ≥ `$4000`) strike that the card re-reads (`$147BC`). The best fit is KanjiTalk 6 using these 27 unused Shift-JIS lead-byte slots as scratch cells for 2-byte bitmap glyphs, which is not confirmed ("Open points" there);
-- the give-up reasons 4, 6 and 9 and config bit `$10` (section 9);
 - the System 6 Antelope (section 10), now also exact: 620 of its 769 functions are identical to System 7's, 66 changed, 83 only in System 6 (82 only in System 7). Its `.lit` names the 16-bit arithmetic-mode stubs (`RBAverage16Half`, `RB…16`, `Stretch…16`, `Pat…Slab16`). Its 10,928-word block at `$331C4`-`$3DC84` is an Apple Video (`'rpza'`) codec behind commands `$39`-`$3B`: `$374A4` is its decoder (command `$39`) and `$33218` its encoder (`$3A`/`$3B`); the host side is a QuickTime codec at `gc24` `$9510`. The host's `$00`/`$02` pair is a probe behind the driver's Status 10: no Antelope handles `$02`, so its reply stays the 1 the dispatcher stores on taking a command, which is the answer the control panel wants. The stubs mark the 16-bit arithmetic loops that System 7 adds. The encoder's 17-way switches pick shift-based averaging by pixel count, and the `'rle '` path decodes a private line format into 32-bit pixels with an optional 4×4 ordered dither ("The codec, step by step");
-- some flag bits (1, 3, 10, 30, 31) are read only in outline (section 9).
+- flag bits 1, 3, 10, 30 and 31 are traced (section 9): kernel debug switches (FPU, instruction counting, data watchpoint, bus-error escape) that no host code or Antelope sets; only a poke of `PublicIn+$18` before init would. Who writes the watch window `$4C0067D8`/`$67DC` and the escape address in gr121 is not known.
 
 ## 1. Bring-up (`Init29K` -> `Boot` -> kernel init)
 
@@ -3020,7 +3020,7 @@ All six `PupS` resources hold `00000001 000000D2 00000060 000004B0`
 |---|---|---|
 | `+$0` | 1 | accelerator on/off: `gc24` 32 stops with error `$D8DB` (reported through cs20) if it is 0; the control panel's `sub_d30` writes it, and `sub_8ca` applies it |
 | `+$4` | `$D2` (210) | not read by either path seen |
-| `+$8` | `$60` | the config word, sent with cs17 |
+| `+$8` | `$60` | the config word, sent with cs17 (bits `$20`, `$40`, `$100` used by the DRVR; `$80` = never give up, in `gc24`; `$10` unused) |
 | `+$C` | `$4B0` (1200); System 6 `$3C0` (960) | sent by `gc24` 32 with cs18, which stores its low word at unit `+$002`: the card-response timeout in ticks (below) |
 
 `gc24` 32 (the startup sequence) sends cs17, cs18 and cs19 in turn,
@@ -3043,13 +3043,14 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 | bit | value | set by | used by (card) |
 |---|---|---|---|
 | 0 | `$1` | config `$20` (default) | init: on a CPU with revision (CFG.PRL, bits 24-31) of 2 or more the flag leaves CFG.CD clear, i.e. the branch target cache on; otherwise CD is set (`$2002248`) |
-| 1, 3 | `$2`, `$8` | - | a floating-point coprocessor: either bit sets CFG.CP (coprocessor present); with bit 1 (and not 3) init also writes a mode word to it (`store 1, 63`, a coprocessor store, `$2002288`), and the register dump saves its state (`$2002A44`) |
+| 1 | `$2` | - (no host code) | Am29027 fitted: init sets CFG.CP and writes `$0FC00820` to the coprocessor at `$1375` (`store 1,63`, `$200227C`-`$20022A0`); the register dump saves two coprocessor words at `$4C0067C8`/`$67CC` (`$2002A44`) |
 | 2 | `$4` | - | vector 4 (coprocessor exception): ignored if set, else reason `$9D` |
+| 3 | `$8` | - | coprocessor present, not initialised: sets CFG.CP and skips bit 1's set-up (`$2002268`). With 1 and 3 clear, coprocessor instructions trap to vector 3 (reason `$8F`) |
 | 5 | `$20` | GC card types | init: clears the TLB and the pager's tables (`$4C002818`, `$4C002CA8`, free list `$4C002810`), i.e. demand paging is set up (`$2002370`) |
 | 6, 7 | `$40`, `$80` | - | init: written, inverted, to `$44000090` and `$4400008C` |
 | 8 | `$100` | GC card types | init: clears OPS.TU (no trap on unaligned access) and writes -1 to `$4400005C` (`$20022D8`); cleared at init when the 3-bit board code at `$44000094/98/9C` is 0 (`$20021C0`; the same code gates TestInterleave, and DRVR's ProbeCard reads `$9C`); service `$D6` undoes it; vector 7 (data access exception) reads `$44000070` when it is set |
 | 9 | `$200` | config `$40` (default) | not tested by the kernel; Antelope's `storem` fills and copies (`$37C40`, `$37D98`, `$38248`, `$38900`) bracket their bursts with service `$B9` (OPS.SM, supervisor mode) when it is set |
-| 10 | `$400` | - | init: OPS.TE (trace enable); vector 15 (trace) |
+| 10 | `$400` | - | instruction counting: init sets OPS.TE (`$20022A8`); each trace trap adds 1 to the 64-bit counter `$4C00684C`/`$6850` instead of reason `$9F` (`$2000A90`); debug commands 1/2 leave the saved OPS's TE alone (`$2002B7C`) |
 | 11 | `$800` | host, until config `$100` (cs50) clears it | the mailbox: when set, the kernel does not post its reports (`$2001BC0`, `$2002AAC`) |
 | 15 | `$8000` | - | vector 2 (out of range): ignored if set, else reason `$93` |
 | 16 | `$10000` | - | the kernel stops after init with reason `$A1` instead of starting the program (`$2002634`); the timer vector's debug hook (`$2000978`); also read by Antelope's feature-flag readers in file 25 |
@@ -3063,8 +3064,8 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 | 27 | `$8000000` | kernel | "regions registered": set by the region add (`$CC`, `$20014B4`), cleared by the remove (`$2001764`) and at init; the TLB-miss handler and the table walker `$2001C2C` test it |
 | 28 | `$10000000` | - | service `$D2` restarts the kernel |
 | 29 | `$20000000` | kernel init, when `[$46000000]` reports a hardware revision of 1 or more (`$2002208`) | not tested in `Hand` |
-| 30 | `$40000000` | - | data TLB miss outside any region: record it at `$4C0061C8`/`$61CC` instead of failing with reason `$A6` (a debugger watch); trace vector |
-| 31 | `$80000000` | - | vector 7 (data access exception) takes its recovery path only when set (`$2000594`) |
+| 30 | `$40000000` | - | data watchpoint: a data TLB miss outside any region fails with reason `$A6` if it lies in `[$4C0067D8]`..`+[$4C0067DC]` (0/0, so address 0); otherwise it maps the page for one instruction (OPS.TE, `$61C8`/`$61CC`, `$2000860`), and the trace vector removes the entry again (`$2000A48`). When clear, such misses are mapped one-to-one (`$2000898`) |
+| 31 | `$80000000` | - | vector 7 with a transfer pending: abandon it (CHC.CV cleared) and resume at gr121 (`$2000594`); when clear, rewind the load/store-multiple and retry (`$20005B8`) |
 
 So the default flags (`$A00B21` on a GC card with the default config: bits 0,
 5, 8, 9, 11, 21, 23) turn on paging, the `storem` interlock and the card
@@ -3099,17 +3100,31 @@ deadline when the card makes progress (it posts a request, which
    cs13/17/50/51 calls refuse;
 2. clears `globals+$257` and walks the table at `globals+$278` (16 bytes
    per entry, count at `+$22C`), copying each used entry's `+4` long to
-   `globals+$14+n`. This presumably switches the patches back to the
-   original routines; the installer side was not checked;
+   `globals+$14+n`, which presumably switches the patches back to the
+   original routines. The loop has a bug: it indexes `$14(a4,d7.l)` with
+   `d7` counting by 1, not 4 (`$765E`), so each address lands one byte
+   after the previous one and only entry 0 is restored correctly;
 3. posts a Notification Manager alert (`_NMInstall`), "Graphics
    accelerator is having difficulty. You will need to reboot to re-enable
    it." (Pascal string at `$76CA`).
 
-It skips all of this if the config word has bit `$80`. That is one of the
-two bits `gc24` 32's dead `eori #$90` would have flipped, so `$80` looks
-like a "never give up" debug setting. The other callers pass reasons 4,
-6 and 9 (`$6FC8`, `$72F4`, `$730C`, `$734E`), not traced. A gc24 entry at
-`$1068` returns unit `+$15C`, the last reason.
+It skips all of this if the config word has bit `$80` (also tested by
+`sub_7570`): a "never give up" debug setting, one of the two bits of
+`gc24` 32's dead `eori.l #$90` (`$524`). The other bit, `$10`, is read by
+nothing: not by DRVR (`$2AE6`-`$2B06`), `gc24`, the control panel (Status 7
+at `cdev` `$05FE` tests only bit 31) or the card. The reason word is
+write-only: nothing reads unit `+$15C` (the DRVR only clears it, `$1F92`;
+the `gc24` stub at `$1068` jumps through globals `+$14+$15C`, the saved
+address of dispatch #87, `_GetCTSeed`, not through the unit field).
+
+| reason | where | condition | disable |
+|---|---|---|---|
+| 2 | `$6100`, `$631E` | command or sync timeout | no |
+| 3 | `$71EE`, `$7236` | command `$01`: no reply after four tries, or reply ≠ 1 | yes |
+| 4 | `$72F4` / `$730C` | `$17` (PQDInit, sent by `sub_494E` at `$72CC`) replies ≠ 1 during the reset; no disable if it timed out (unit `+$1C` bit 1) | no / yes |
+| 6 | `$6FC8` | after a timeout the reset restarts the card (`sub_7570`, `gc24`'s copy of PostLoadPoke); dead, since `sub_7570` returns 0 on every path (`$7588`, `$75F4`; System 6 the same, `$88B8`) | (yes) |
+| 7 | `$6DFE` | `StoreCtxWord_AA6`: trap not in the patch table at `globals+$278` | yes |
+| 9 | `$734E` | no room for the DrawMultiObject record buffer (`sub_73C4` on the packet's free list at `+$10` = packet+`$6D0`); it retries with `$C8` less until the size is exactly 0, and from the default `$1000` (`DRVR` `$13A`) it wraps past 0, so in practice it spins instead of giving up | yes |
 
 ## 10. The System 6 package ("8•24 GC SW 1.1")
 
@@ -4227,3 +4242,62 @@ rectangle case". No host code addresses this range.
 
 JMFBSetDepth runs this between `control ← 3` / doorbell and the final
 `VidComm+$04 ← -1`.
+
+### 11.8 The video modes (declaration ROM `341-0812.bin`, file offset = ROM address)
+
+Each mode table pointer (`a0`, chosen in VideoOpen `$53AE`-`$545E`) has a
+22-byte header in front of it: pages−1 for 24- and 32-bit addressing
+(`a0−$16`, `a0−$11`, 5 bytes each), rowBytes per depth (`a0−$C`, 5 words)
+and vRes (`a0−2`). Then one record per depth: 20 longs on the progressive
+monitors, 36 on TV modes (longs 0-4, 16 filter longs for `$46800000`, then
+the 15 timing longs). PrimaryInit has its own boot tables (`$2A34`-`$2E5C`,
+`$98` bytes, chosen at `$24A4`-`$24F8`: 16 timing values, register 15 = 2,
+plus two gray-fill counts).
+
+| monitor (sRsrc) | table | resolution, depths | rowBytes 1/2/4/8/24 | base | long 0 | H active / bp / sync / fp | H total | V active / bp / sync / fp (half-lines) | lines | r13 | r14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Two-Page (`$A3`/`$B3`) | `$35D2` | 1152×870, 1-8 | 256/512/576/1152 | `$10000` | `$C0`-`$D8` | 288/34/32/10 (×4 px) | 364 (1456 px) | 1740/78/6/6 | 915 | 0 | 364 |
+| Portrait (`$A1`/`$B1`) | `$3728` | 640×870, 1-8 | 128/256/512/1024 | `$10000` | `$C0`-`$D8` | 160/18/20/10 (×4 px) | 208 (832 px) | 1740/84/6/6 | 918 | 0 | 208 |
+| 13" (`$A6`/`$B6`) | `$387E` | 640×480, 1-24 | 128/256/320/640/2560 | `$10000` | `$80`-`$98`, `$9C` | 640/96/64/64 | 864 | 960/78/6/6 | 525 | 0 | 864 |
+| 12" (`$A2`/`$B2`) | `$3A24` | 512×384, 1-24 | 64/128/256/512/2048 | `$10000` | `$80`-`$9C` | 512/80/32/16 | 640 | 768/38/6/2 | 407 | 0 | 608 |
+| NTSC 640×480 (`$AC`/`$BC`) | `$3EB0` | 640×480, 1-24 | 1024 / 2560 | `$11400` | `$C1`-`$D9`, `$9C` | 640/38…64/60/42…16 | 780 | 481/32/6/6 | 262.5 | `$6E` | 330 |
+| NTSC 512×384 (`$A4`/`$B4`) | `$447C` | 512×384, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 512/98…120/60/110…88 | 780 | 433/80/6/6 | 262.5 | `$6E` | 330 |
+| PAL 768×576 (`$A8`/`$B8`) | `$4A48` | 768×576, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 768/53…81/69/54…26 | 944 | 576/39/5/5 | 312.5 | `$5E` | 403 |
+| PAL 640×480 (`$A0`/`$B0`) | `$5014` | 640×480, 1-24 | 1024 / 2560 | `$11400` | as NTSC | 640/117…148/69/118…87 | 944 | 528/87/5/5 | 312.5 | `$5E` | 403 |
+
+Measured: the horizontal registers 3-6 hold active, back porch, sync and
+front porch, each minus 2; registers 9-12 the vertical ones in half-lines.
+Registers 0, 1, 7, 8 are always 3, 0, 3, 0; long 3 (display start) is always
+`$2000`; long 4 (row stride) is rowBytes/8 on the progressive monitors and
+`$200`/`$280` on TV; long 1 (the interleaved layout) is 1 only on TV modes at
+1-8 bpp. The TV tables trade back porch against front porch per depth with a
+constant sum (pipeline compensation). The B banks drop 24 bpp (Two-Page B
+also 8 bpp). Four more TV tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`; long 0
+`$80`-`$9C`, r13 = `$0E`) are not referenced by any `lea`.
+
+With the standard pixel clocks the totals give the expected rates (*inferred*):
+30.24 MHz / (864×525) = 66.7 Hz (13"), 15.67 MHz / (640×407) = 60.15 Hz
+(12"), 57.28 MHz / (832×918) = 75.0 Hz (Portrait), 100 MHz / (1456×915) =
+75.06 Hz (Two-Page); NTSC 780×525 and PAL 944×625 are the square-pixel
+12.27/14.75 MHz timings. The layout is that of the original 8•24's
+"Stopwatch" timing chip in System 7.1's `JMFBPrimaryInit.a` (7 horizontal,
+6 vertical, 2 composite values; same control `$3C`, VBL ack `$48` and status
+`$C0` offsets; NTSC there `3,0,$136,$27E,$12,$3A,$3A / 3,0,$1E0,$21,6,6 /
+$6E,$14A`). Register 2 is the mid-line point (hActive/2 on progressive
+monitors), 14 the serration point (H − hsync on the 12", H/2 − hsync on TV,
+H where there is none), 13 a composite parameter used only on TV (perhaps
+the equalising-pulse width).
+
+Long 0 is the RAMDAC command byte: bits 28-27 = log2 depth, `$9C` = 24 bpp,
+bit 24 = convolution (JMFB's "C" tables); bit 30, set on Two-Page, Portrait
+and the convolved TV modes, is not understood. Long 2 is `$FF << (8 − n)` with
+n = 3 + log2 depth, plus 2 when long 0 has bit 30.
+
+**The clock synthesiser.** PrimaryInit's stream into `$44800000` (`$22CE`-`$2406`,
+`$26D4`-`$279C`) is the same 131 bits for every monitor (by board revision:
+`$9ACC`/`$9BCC`, `$88ACAC`/`$88ACBC`, `$053`/`$093`, `$2405B`/`$2409B`), then
+4 bits that are 1 on the Two-Page monitor and 2 on all others, then 2 bits
+= 1. The video driver never writes it. So the per-monitor pixel clock is not
+programmed as an M/N pair here; the part presumably holds fixed frequencies
+selected by hardware, or the 4-bit field is a select or post-divider. The
+chip is not identified.

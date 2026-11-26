@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # gc24_sw11_dasm.py -- plain recursive-descent disassembly (capstone 5) of a
 # gc24 resource in the System 6 layout (44-byte dispatch entries).
-# usage: gc24_sw11_dasm.py BIN NOTES.py OUT.s   (NOTES.py: HEADER and NOTES)
+# usage: gc24_sw11_dasm.py BIN NOTES.py OUT.s   (NOTES.py: HEADER, NOTES and
+# optionally NAMES {addr: label} / EXTRA_SEEDS [addr]; NAMES replace the
+# sub_/L labels and appear in the `; -> name' call annotations)
 import sys, re, struct, capstone
 
 d = open(sys.argv[1], 'rb').read()
 notes = {}
-exec(open(sys.argv[2]).read())          # defines HEADER (str) and NOTES {addr: [lines]}
+NAMES = {}                              # optional in NOTES.py: {addr: label name}
+EXTRA_SEEDS = []
+exec(open(sys.argv[2]).read())          # defines HEADER (str), NOTES {addr: [lines]}, NAMES, EXTRA_SEEDS
 N = len(d)
 md = capstone.Cs(capstone.CS_ARCH_M68K, capstone.CS_MODE_M68K_020)
 md.detail = False

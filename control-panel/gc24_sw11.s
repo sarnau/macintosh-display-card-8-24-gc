@@ -25,9 +25,16 @@
 *  Rebuild: extract_resources.py RSRC OUT/ gc24, then
 *    gc24_sw11_dasm.py OUT/gc24_-4048.bin gc24_sw11_notes.py gc24_sw11.s
 *
-*  NOT ANNOTATED beyond the command-path points below (EngineDispatch, the
-*  packet post, the argument copy, the go/wait loop, the reply, and the
+*  Annotated at the command-path points below (EngineDispatch, the packet
+*  post, the argument copy, the go/wait loop, the reply, and the
 *  packet-pointer read-back), each naming its System 7 (gc24.s) counterpart.
+*  164 of the 200 functions carry their System 7 name and address (a
+*  "System 7 $xxxx" line, plus the first line of the S7 banner as "S7:");
+*  unnamed S7 routines are s7_sub_<S7 address>.  Not in System 7: the
+*  QuickTime 'rpza' codec and its helpers ($87C6-$87F2, $94E4-$A1D2) and the
+*  Toolbox trap glue at $A3FC-$A59E (System 7 issues the A-traps inline).
+*  Only in System 7: ACEFLoad and its helpers, GA_MoveHHi, Strip24 (inlined
+*  here) and GestaltSelectorTable.
 *  The code is the same compiler output as System 7's with the offsets
 *  shifted; Strip24 is inlined here as `and.l #$ffffff' and HWPrivProbe is
 *  $A532 (System 7 $C01A).
@@ -54,7 +61,7 @@ L4:
   000022:  2e 9f                move.l   (a7)+, (a7)
   000024:  4e 75                rts
   000026:  4e 71                dc.b     $4E, $71  ; Nq
-  000028:  60 00 50 5e          bra.w    $5088  ; -> L5088
+  000028:  60 00 50 5e          bra.w    $5088  ; -> GA_Translate24To32
   00002c:  00 00 08 ee          dc.l     $000008EE  ; dispatch #1
 L30:
   000030:  2f 08                move.l   a0, -(a7)
@@ -71,7 +78,7 @@ L30:
   00004c:  20 6f 00 04          movea.l  $4(a7), a0
   000050:  2e 9f                move.l   (a7)+, (a7)
   000052:  4e 75                rts
-  000054:  60 00 11 e6          bra.w    $123c  ; -> L123c
+  000054:  60 00 11 e6          bra.w    $123c  ; -> GACursorTask
   000058:  00 00 11 b0          dc.l     $000011B0  ; dispatch #2
 L5c:
   00005c:  2f 08                move.l   a0, -(a7)
@@ -88,7 +95,7 @@ L5c:
   000078:  20 6f 00 04          movea.l  $4(a7), a0
   00007c:  2e 9f                move.l   (a7)+, (a7)
   00007e:  4e 75                rts
-  000080:  60 00 60 2a          bra.w    $60ac  ; -> L60ac
+  000080:  60 00 60 2a          bra.w    $60ac  ; -> GA_CopyBits
   000084:  00 00 10 40          dc.l     $00001040  ; dispatch #3
 L88:
   000088:  2f 08                move.l   a0, -(a7)
@@ -105,7 +112,7 @@ L88:
   0000a4:  20 6f 00 04          movea.l  $4(a7), a0
   0000a8:  2e 9f                move.l   (a7)+, (a7)
   0000aa:  4e 75                rts
-  0000ac:  60 00 53 96          bra.w    $5444  ; -> L5444
+  0000ac:  60 00 53 96          bra.w    $5444  ; -> GA_StdLine
   0000b0:  00 00 10 f4          dc.l     $000010F4  ; dispatch #4
 Lb4:
   0000b4:  2f 08                move.l   a0, -(a7)
@@ -122,7 +129,7 @@ Lb4:
   0000d0:  20 6f 00 04          movea.l  $4(a7), a0
   0000d4:  2e 9f                move.l   (a7)+, (a7)
   0000d6:  4e 75                rts
-  0000d8:  60 00 56 36          bra.w    $5710  ; -> L5710
+  0000d8:  60 00 56 36          bra.w    $5710  ; -> GA_StdArc
   0000dc:  00 00 10 08          dc.l     $00001008  ; dispatch #5
 Le0:
   0000e0:  2f 08                move.l   a0, -(a7)
@@ -139,7 +146,7 @@ Le0:
   0000fc:  20 6f 00 04          movea.l  $4(a7), a0
   000100:  2e 9f                move.l   (a7)+, (a7)
   000102:  4e 75                rts
-  000104:  60 00 54 fc          bra.w    $5602  ; -> L5602
+  000104:  60 00 54 fc          bra.w    $5602  ; -> GA_StdText
   000108:  00 00 1a 9c          dc.l     $00001A9C  ; dispatch #6
 L10c:
   00010c:  2f 08                move.l   a0, -(a7)
@@ -156,7 +163,7 @@ L10c:
   000128:  20 6f 00 04          movea.l  $4(a7), a0
   00012c:  2e 9f                move.l   (a7)+, (a7)
   00012e:  4e 75                rts
-  000130:  60 00 50 16          bra.w    $5148  ; -> L5148
+  000130:  60 00 50 16          bra.w    $5148  ; -> GA_TrapAB27
   000134:  00 00 08 00          dc.l     $00000800  ; dispatch #7
 L138:
   000138:  2f 08                move.l   a0, -(a7)
@@ -173,7 +180,7 @@ L138:
   000154:  20 6f 00 04          movea.l  $4(a7), a0
   000158:  2e 9f                move.l   (a7)+, (a7)
   00015a:  4e 75                rts
-  00015c:  60 00 59 fe          bra.w    $5b5c  ; -> L5b5c
+  00015c:  60 00 59 fe          bra.w    $5b5c  ; -> GA_LowMem0800
   000160:  00 00 08 04          dc.l     $00000804  ; dispatch #8
 L164:
   000164:  2f 08                move.l   a0, -(a7)
@@ -190,7 +197,7 @@ L164:
   000180:  20 6f 00 04          movea.l  $4(a7), a0
   000184:  2e 9f                move.l   (a7)+, (a7)
   000186:  4e 75                rts
-  000188:  60 00 59 64          bra.w    $5aee  ; -> L5aee
+  000188:  60 00 59 64          bra.w    $5aee  ; -> GA_LowMem0804
   00018c:  00 00 08 08          dc.l     $00000808  ; dispatch #9
 L190:
   000190:  2f 08                move.l   a0, -(a7)
@@ -207,7 +214,7 @@ L190:
   0001ac:  20 6f 00 04          movea.l  $4(a7), a0
   0001b0:  2e 9f                move.l   (a7)+, (a7)
   0001b2:  4e 75                rts
-  0001b4:  60 00 5b 6a          bra.w    $5d20  ; -> L5d20
+  0001b4:  60 00 5b 6a          bra.w    $5d20  ; -> GA_LowMem0808
   0001b8:  00 00 1c 68          dc.l     $00001C68  ; dispatch #10
 L1bc:
   0001bc:  2f 08                move.l   a0, -(a7)
@@ -224,7 +231,7 @@ L1bc:
   0001d8:  20 6f 00 04          movea.l  $4(a7), a0
   0001dc:  2e 9f                move.l   (a7)+, (a7)
   0001de:  4e 75                rts
-  0001e0:  60 00 17 06          bra.w    $18e8  ; -> L18e8
+  0001e0:  60 00 17 06          bra.w    $18e8  ; -> GA_TrapAB9A
   0001e4:  00 00 10 64          dc.l     $00001064  ; dispatch #11
 L1e8:
   0001e8:  2f 08                move.l   a0, -(a7)
@@ -241,7 +248,7 @@ L1e8:
   000204:  20 6f 00 04          movea.l  $4(a7), a0
   000208:  2e 9f                move.l   (a7)+, (a7)
   00020a:  4e 75                rts
-  00020c:  60 00 23 40          bra.w    $254e  ; -> L254e
+  00020c:  60 00 23 40          bra.w    $254e  ; -> GA_SetPenState
   000210:  00 00 10 6c          dc.l     $0000106C  ; dispatch #12
 L214:
   000214:  2f 08                move.l   a0, -(a7)
@@ -258,7 +265,7 @@ L214:
   000230:  20 6f 00 04          movea.l  $4(a7), a0
   000234:  2e 9f                move.l   (a7)+, (a7)
   000236:  4e 75                rts
-  000238:  60 00 23 da          bra.w    $2614  ; -> L2614
+  000238:  60 00 23 da          bra.w    $2614  ; -> GA_PenSize
   00023c:  00 00 10 70          dc.l     $00001070  ; dispatch #13
 L240:
   000240:  2f 08                move.l   a0, -(a7)
@@ -275,7 +282,7 @@ L240:
   00025c:  20 6f 00 04          movea.l  $4(a7), a0
   000260:  2e 9f                move.l   (a7)+, (a7)
   000262:  4e 75                rts
-  000264:  60 00 24 34          bra.w    $269a  ; -> L269a
+  000264:  60 00 24 34          bra.w    $269a  ; -> GA_PenMode
   000268:  00 00 10 78          dc.l     $00001078  ; dispatch #14
 L26c:
   00026c:  2f 08                move.l   a0, -(a7)
@@ -292,7 +299,7 @@ L26c:
   000288:  20 6f 00 04          movea.l  $4(a7), a0
   00028c:  2e 9f                move.l   (a7)+, (a7)
   00028e:  4e 75                rts
-  000290:  60 00 25 70          bra.w    $2802  ; -> L2802
+  000290:  60 00 25 70          bra.w    $2802  ; -> GA_PenNormal
   000294:  00 00 1a 8c          dc.l     $00001A8C  ; dispatch #15
 L298:
   000298:  2f 08                move.l   a0, -(a7)
@@ -309,7 +316,7 @@ L298:
   0002b4:  20 6f 00 04          movea.l  $4(a7), a0
   0002b8:  2e 9f                move.l   (a7)+, (a7)
   0002ba:  4e 75                rts
-  0002bc:  60 00 4c 56          bra.w    $4f14  ; -> L4f14
+  0002bc:  60 00 4c 56          bra.w    $4f14  ; -> GA_TrapAB23
   0002c0:  00 00 0f 88          dc.l     $00000F88  ; dispatch #16
 L2c4:
   0002c4:  2f 08                move.l   a0, -(a7)
@@ -326,7 +333,7 @@ L2c4:
   0002e0:  20 6f 00 04          movea.l  $4(a7), a0
   0002e4:  2e 9f                move.l   (a7)+, (a7)
   0002e6:  4e 75                rts
-  0002e8:  60 00 30 b2          bra.w    $339c  ; -> L339c
+  0002e8:  60 00 30 b2          bra.w    $339c  ; -> GA_ForeColor
   0002ec:  00 00 16 50          dc.l     $00001650  ; dispatch #17
 L2f0:
   0002f0:  2f 08                move.l   a0, -(a7)
@@ -343,7 +350,7 @@ L2f0:
   00030c:  20 6f 00 04          movea.l  $4(a7), a0
   000310:  2e 9f                move.l   (a7)+, (a7)
   000312:  4e 75                rts
-  000314:  60 00 30 e6          bra.w    $33fc  ; -> L33fc
+  000314:  60 00 30 e6          bra.w    $33fc  ; -> GA_RGBForeColor
   000318:  00 00 18 5c          dc.l     $0000185C  ; dispatch #18
 L31c:
   00031c:  2f 08                move.l   a0, -(a7)
@@ -360,7 +367,7 @@ L31c:
   000338:  20 6f 00 04          movea.l  $4(a7), a0
   00033c:  2e 9f                move.l   (a7)+, (a7)
   00033e:  4e 75                rts
-  000340:  60 00 31 4c          bra.w    $348e  ; -> L348e
+  000340:  60 00 31 4c          bra.w    $348e  ; -> GA_PmForeColor
   000344:  00 00 18 60          dc.l     $00001860  ; dispatch #19
 L348:
   000348:  2f 08                move.l   a0, -(a7)
@@ -377,7 +384,7 @@ L348:
   000364:  20 6f 00 04          movea.l  $4(a7), a0
   000368:  2e 9f                move.l   (a7)+, (a7)
   00036a:  4e 75                rts
-  00036c:  60 00 32 b0          bra.w    $361e  ; -> L361e
+  00036c:  60 00 32 b0          bra.w    $361e  ; -> GA_PmBackColor
   000370:  00 00 10 80          dc.l     $00001080  ; dispatch #20
 L374:
   000374:  2f 08                move.l   a0, -(a7)
@@ -394,7 +401,7 @@ L374:
   000390:  20 6f 00 04          movea.l  $4(a7), a0
   000394:  2e 9f                move.l   (a7)+, (a7)
   000396:  4e 75                rts
-  000398:  60 00 56 74          bra.w    $5a0e  ; -> L5a0e
+  000398:  60 00 56 74          bra.w    $5a0e  ; -> GA_StdRect
   00039c:  00 00 10 d8          dc.l     $000010D8  ; dispatch #21
 L3a0:
   0003a0:  2f 08                move.l   a0, -(a7)
@@ -411,7 +418,7 @@ L3a0:
   0003bc:  20 6f 00 04          movea.l  $4(a7), a0
   0003c0:  2e 9f                move.l   (a7)+, (a7)
   0003c2:  4e 75                rts
-  0003c4:  60 00 55 68          bra.w    $592e  ; -> L592e
+  0003c4:  60 00 55 68          bra.w    $592e  ; -> GA_StdOval
   0003c8:  00 00 10 bc          dc.l     $000010BC  ; dispatch #22
 L3cc:
   0003cc:  2f 08                move.l   a0, -(a7)
@@ -428,7 +435,7 @@ L3cc:
   0003e8:  20 6f 00 04          movea.l  $4(a7), a0
   0003ec:  2e 9f                move.l   (a7)+, (a7)
   0003ee:  4e 75                rts
-  0003f0:  60 00 54 28          bra.w    $581a  ; -> L581a
+  0003f0:  60 00 54 28          bra.w    $581a  ; -> GA_StdRRect
   0003f4:  00 00 11 14          dc.l     $00001114  ; dispatch #23
 L3f8:
   0003f8:  2f 08                move.l   a0, -(a7)
@@ -445,7 +452,7 @@ L3f8:
   000414:  20 6f 00 04          movea.l  $4(a7), a0
   000418:  2e 9f                move.l   (a7)+, (a7)
   00041a:  4e 75                rts
-  00041c:  60 00 50 fa          bra.w    $5518  ; -> L5518
+  00041c:  60 00 50 fa          bra.w    $5518  ; -> GA_StdPoly
   000420:  00 00 11 44          dc.l     $00001144  ; dispatch #24
 L424:
   000424:  2f 08                move.l   a0, -(a7)
@@ -462,7 +469,7 @@ L424:
   000440:  20 6f 00 04          movea.l  $4(a7), a0
   000444:  2e 9f                move.l   (a7)+, (a7)
   000446:  4e 75                rts
-  000448:  60 00 4f 1a          bra.w    $5364  ; -> L5364
+  000448:  60 00 4f 1a          bra.w    $5364  ; -> GA_StdRgn
   00044c:  00 00 16 e8          dc.l     $000016E8  ; dispatch #25
 L450:
   000450:  2f 08                move.l   a0, -(a7)
@@ -479,7 +486,7 @@ L450:
   00046c:  20 6f 00 04          movea.l  $4(a7), a0
   000470:  2e 9f                move.l   (a7)+, (a7)
   000472:  4e 75                rts
-  000474:  60 00 18 da          bra.w    $1d50  ; -> L1d50
+  000474:  60 00 18 da          bra.w    $1d50  ; -> GA_AddSearch
   000478:  00 00 17 30          dc.l     $00001730  ; dispatch #26
 L47c:
   00047c:  2f 08                move.l   a0, -(a7)
@@ -496,7 +503,7 @@ L47c:
   000498:  20 6f 00 04          movea.l  $4(a7), a0
   00049c:  2e 9f                move.l   (a7)+, (a7)
   00049e:  4e 75                rts
-  0004a0:  60 00 19 7e          bra.w    $1e20  ; -> L1e20
+  0004a0:  60 00 19 7e          bra.w    $1e20  ; -> GA_DelSearch
   0004a4:  00 00 16 ec          dc.l     $000016EC  ; dispatch #27
 L4a8:
   0004a8:  2f 08                move.l   a0, -(a7)
@@ -513,7 +520,7 @@ L4a8:
   0004c4:  20 6f 00 04          movea.l  $4(a7), a0
   0004c8:  2e 9f                move.l   (a7)+, (a7)
   0004ca:  4e 75                rts
-  0004cc:  60 00 19 a2          bra.w    $1e70  ; -> L1e70
+  0004cc:  60 00 19 a2          bra.w    $1e70  ; -> GA_AddComp
   0004d0:  00 00 17 34          dc.l     $00001734  ; dispatch #28
 L4d4:
   0004d4:  2f 08                move.l   a0, -(a7)
@@ -530,7 +537,7 @@ L4d4:
   0004f0:  20 6f 00 04          movea.l  $4(a7), a0
   0004f4:  2e 9f                move.l   (a7)+, (a7)
   0004f6:  4e 75                rts
-  0004f8:  60 00 19 c6          bra.w    $1ec0  ; -> L1ec0
+  0004f8:  60 00 19 c6          bra.w    $1ec0  ; -> GA_DelComp
   0004fc:  00 00 16 20          dc.l     $00001620  ; dispatch #29
 L500:
   000500:  2f 08                move.l   a0, -(a7)
@@ -547,7 +554,7 @@ L500:
   00051c:  20 6f 00 04          movea.l  $4(a7), a0
   000520:  2e 9f                move.l   (a7)+, (a7)
   000522:  4e 75                rts
-  000524:  60 00 19 ea          bra.w    $1f10  ; -> L1f10
+  000524:  60 00 19 ea          bra.w    $1f10  ; -> GA_DisposPixPat
   000528:  00 00 16 24          dc.l     $00001624  ; dispatch #30
 L52c:
   00052c:  2f 08                move.l   a0, -(a7)
@@ -564,7 +571,7 @@ L52c:
   000548:  20 6f 00 04          movea.l  $4(a7), a0
   00054c:  2e 9f                move.l   (a7)+, (a7)
   00054e:  4e 75                rts
-  000550:  60 00 19 ee          bra.w    $1f40  ; -> L1f40
+  000550:  60 00 19 ee          bra.w    $1f40  ; -> GA_CopyPixPat
   000554:  00 00 16 34          dc.l     $00001634  ; dispatch #31
 L558:
   000558:  2f 08                move.l   a0, -(a7)
@@ -581,7 +588,7 @@ L558:
   000574:  20 6f 00 04          movea.l  $4(a7), a0
   000578:  2e 9f                move.l   (a7)+, (a7)
   00057a:  4e 75                rts
-  00057c:  60 00 1a 54          bra.w    $1fd2  ; -> L1fd2
+  00057c:  60 00 1a 54          bra.w    $1fd2  ; -> GA_MakeRGBPat
   000580:  00 00 1a 44          dc.l     $00001A44  ; dispatch #32
 L584:
   000584:  2f 08                move.l   a0, -(a7)
@@ -598,7 +605,7 @@ L584:
   0005a0:  20 6f 00 04          movea.l  $4(a7), a0
   0005a4:  2e 9f                move.l   (a7)+, (a7)
   0005a6:  4e 75                rts
-  0005a8:  60 00 1a b2          bra.w    $205c  ; -> L205c
+  0005a8:  60 00 1a b2          bra.w    $205c  ; -> GA_TrapAB11
   0005ac:  00 00 0f d4          dc.l     $00000FD4  ; dispatch #33
 L5b0:
   0005b0:  2f 08                move.l   a0, -(a7)
@@ -615,7 +622,7 @@ L5b0:
   0005cc:  20 6f 00 04          movea.l  $4(a7), a0
   0005d0:  2e 9f                move.l   (a7)+, (a7)
   0005d2:  4e 75                rts
-  0005d4:  60 00 1c 68          bra.w    $223e  ; -> L223e
+  0005d4:  60 00 1c 68          bra.w    $223e  ; -> GA_SetPBits
   0005d8:  00 00 0f d8          dc.l     $00000FD8  ; dispatch #34
 L5dc:
   0005dc:  2f 08                move.l   a0, -(a7)
@@ -632,7 +639,7 @@ L5dc:
   0005f8:  20 6f 00 04          movea.l  $4(a7), a0
   0005fc:  2e 9f                move.l   (a7)+, (a7)
   0005fe:  4e 75                rts
-  000600:  60 00 1c d8          bra.w    $22da  ; -> L22da
+  000600:  60 00 1c d8          bra.w    $22da  ; -> GA_PortSize
   000604:  00 00 0f dc          dc.l     $00000FDC  ; dispatch #35
 L608:
   000608:  2f 08                move.l   a0, -(a7)
@@ -649,7 +656,7 @@ L608:
   000624:  20 6f 00 04          movea.l  $4(a7), a0
   000628:  2e 9f                move.l   (a7)+, (a7)
   00062a:  4e 75                rts
-  00062c:  60 00 1d 2c          bra.w    $235a  ; -> L235a
+  00062c:  60 00 1d 2c          bra.w    $235a  ; -> GA_MovePortTo
   000630:  00 00 0f e0          dc.l     $00000FE0  ; dispatch #36
 L634:
   000634:  2f 08                move.l   a0, -(a7)
@@ -666,7 +673,7 @@ L634:
   000650:  20 6f 00 04          movea.l  $4(a7), a0
   000654:  2e 9f                move.l   (a7)+, (a7)
   000656:  4e 75                rts
-  000658:  60 00 1d 52          bra.w    $23ac  ; -> L23ac
+  000658:  60 00 1d 52          bra.w    $23ac  ; -> GA_SetOrigin
   00065c:  00 00 0f e4          dc.l     $00000FE4  ; dispatch #37
 L660:
   000660:  2f 08                move.l   a0, -(a7)
@@ -683,7 +690,7 @@ L660:
   00067c:  20 6f 00 04          movea.l  $4(a7), a0
   000680:  2e 9f                move.l   (a7)+, (a7)
   000682:  4e 75                rts
-  000684:  60 00 1d 94          bra.w    $241a  ; -> L241a
+  000684:  60 00 1d 94          bra.w    $241a  ; -> GA_SetClip
   000688:  00 00 0f ec          dc.l     $00000FEC  ; dispatch #38
 L68c:
   00068c:  2f 08                move.l   a0, -(a7)
@@ -700,7 +707,7 @@ L68c:
   0006a8:  20 6f 00 04          movea.l  $4(a7), a0
   0006ac:  2e 9f                move.l   (a7)+, (a7)
   0006ae:  4e 75                rts
-  0006b0:  60 00 1d d8          bra.w    $248a  ; -> L248a
+  0006b0:  60 00 1d d8          bra.w    $248a  ; -> GA_ClipRect
   0006b4:  00 00 10 58          dc.l     $00001058  ; dispatch #39
 L6b8:
   0006b8:  2f 08                move.l   a0, -(a7)
@@ -717,7 +724,7 @@ L6b8:
   0006d4:  20 6f 00 04          movea.l  $4(a7), a0
   0006d8:  2e 9f                move.l   (a7)+, (a7)
   0006da:  4e 75                rts
-  0006dc:  60 00 1e 4c          bra.w    $252a  ; -> L252a
+  0006dc:  60 00 1e 4c          bra.w    $252a  ; -> GA_HidePen
   0006e0:  00 00 10 5c          dc.l     $0000105C  ; dispatch #40
 L6e4:
   0006e4:  2f 08                move.l   a0, -(a7)
@@ -734,7 +741,7 @@ L6e4:
   000700:  20 6f 00 04          movea.l  $4(a7), a0
   000704:  2e 9f                move.l   (a7)+, (a7)
   000706:  4e 75                rts
-  000708:  60 00 1e 32          bra.w    $253c  ; -> L253c
+  000708:  60 00 1e 32          bra.w    $253c  ; -> GA_ShowPen
   00070c:  00 00 0f 8c          dc.l     $00000F8C  ; dispatch #41
 L710:
   000710:  2f 08                move.l   a0, -(a7)
@@ -751,7 +758,7 @@ L710:
   00072c:  20 6f 00 04          movea.l  $4(a7), a0
   000730:  2e 9f                move.l   (a7)+, (a7)
   000732:  4e 75                rts
-  000734:  60 00 2d f6          bra.w    $352c  ; -> L352c
+  000734:  60 00 2d f6          bra.w    $352c  ; -> GA_BackColor
   000738:  00 00 0f 90          dc.l     $00000F90  ; dispatch #42
 L73c:
   00073c:  2f 08                move.l   a0, -(a7)
@@ -768,7 +775,7 @@ L73c:
   000758:  20 6f 00 04          movea.l  $4(a7), a0
   00075c:  2e 9f                move.l   (a7)+, (a7)
   00075e:  4e 75                rts
-  000760:  60 00 21 6c          bra.w    $28ce  ; -> L28ce
+  000760:  60 00 21 6c          bra.w    $28ce  ; -> GA_ColorBit
   000764:  00 00 11 68          dc.l     $00001168  ; dispatch #43
 L768:
   000768:  2f 08                move.l   a0, -(a7)
@@ -785,7 +792,7 @@ L768:
   000784:  20 6f 00 04          movea.l  $4(a7), a0
   000788:  2e 9f                move.l   (a7)+, (a7)
   00078a:  4e 75                rts
-  00078c:  60 00 21 9c          bra.w    $292a  ; -> L292a
+  00078c:  60 00 21 9c          bra.w    $292a  ; -> GA_OpenRgn
   000790:  00 00 11 cc          dc.l     $000011CC  ; dispatch #44
 L794:
   000794:  2f 08                move.l   a0, -(a7)
@@ -802,7 +809,7 @@ L794:
   0007b0:  20 6f 00 04          movea.l  $4(a7), a0
   0007b4:  2e 9f                move.l   (a7)+, (a7)
   0007b6:  4e 75                rts
-  0007b8:  60 00 21 82          bra.w    $293c  ; -> L293c
+  0007b8:  60 00 21 82          bra.w    $293c  ; -> GA_OpenPicture
   0007bc:  00 00 11 2c          dc.l     $0000112C  ; dispatch #45
 L7c0:
   0007c0:  2f 08                move.l   a0, -(a7)
@@ -819,7 +826,7 @@ L7c0:
   0007dc:  20 6f 00 04          movea.l  $4(a7), a0
   0007e0:  2e 9f                move.l   (a7)+, (a7)
   0007e2:  4e 75                rts
-  0007e4:  60 00 21 82          bra.w    $2968  ; -> L2968
+  0007e4:  60 00 21 82          bra.w    $2968  ; -> GA_OpenPoly
   0007e8:  00 00 11 70          dc.l     $00001170  ; dispatch #46
 L7ec:
   0007ec:  2f 08                move.l   a0, -(a7)
@@ -836,7 +843,7 @@ L7ec:
   000808:  20 6f 00 04          movea.l  $4(a7), a0
   00080c:  2e 9f                move.l   (a7)+, (a7)
   00080e:  4e 75                rts
-  000810:  60 00 22 58          bra.w    $2a6a  ; -> L2a6a
+  000810:  60 00 22 58          bra.w    $2a6a  ; -> GA_CopyRgn
   000814:  00 00 11 78          dc.l     $00001178  ; dispatch #47
 L818:
   000818:  2f 08                move.l   a0, -(a7)
@@ -853,7 +860,7 @@ L818:
   000834:  20 6f 00 04          movea.l  $4(a7), a0
   000838:  2e 9f                move.l   (a7)+, (a7)
   00083a:  4e 75                rts
-  00083c:  60 00 23 5e          bra.w    $2b9c  ; -> L2b9c
+  00083c:  60 00 23 5e          bra.w    $2b9c  ; -> GA_SetRecRgn
   000840:  00 00 11 7c          dc.l     $0000117C  ; dispatch #48
 L844:
   000844:  2f 08                move.l   a0, -(a7)
@@ -870,7 +877,7 @@ L844:
   000860:  20 6f 00 04          movea.l  $4(a7), a0
   000864:  2e 9f                move.l   (a7)+, (a7)
   000866:  4e 75                rts
-  000868:  60 00 24 10          bra.w    $2c7a  ; -> L2c7a
+  000868:  60 00 24 10          bra.w    $2c7a  ; -> GA_RectRgn
   00086c:  00 00 11 80          dc.l     $00001180  ; dispatch #49
 L870:
   000870:  2f 08                move.l   a0, -(a7)
@@ -887,7 +894,7 @@ L870:
   00088c:  20 6f 00 04          movea.l  $4(a7), a0
   000890:  2e 9f                move.l   (a7)+, (a7)
   000892:  4e 75                rts
-  000894:  60 00 24 9c          bra.w    $2d32  ; -> L2d32
+  000894:  60 00 24 9c          bra.w    $2d32  ; -> GA_OffsetRgn
   000898:  00 00 11 84          dc.l     $00001184  ; dispatch #50
 L89c:
   00089c:  2f 08                move.l   a0, -(a7)
@@ -904,7 +911,7 @@ L89c:
   0008b8:  20 6f 00 04          movea.l  $4(a7), a0
   0008bc:  2e 9f                move.l   (a7)+, (a7)
   0008be:  4e 75                rts
-  0008c0:  60 00 25 5e          bra.w    $2e20  ; -> L2e20
+  0008c0:  60 00 25 5e          bra.w    $2e20  ; -> GA_InsetRgn
   0008c4:  00 00 11 90          dc.l     $00001190  ; dispatch #51
 L8c8:
   0008c8:  2f 08                move.l   a0, -(a7)
@@ -921,7 +928,7 @@ L8c8:
   0008e4:  20 6f 00 04          movea.l  $4(a7), a0
   0008e8:  2e 9f                move.l   (a7)+, (a7)
   0008ea:  4e 75                rts
-  0008ec:  60 00 26 20          bra.w    $2f0e  ; -> L2f0e
+  0008ec:  60 00 26 20          bra.w    $2f0e  ; -> GA_SectRgn
   0008f0:  00 00 11 94          dc.l     $00001194  ; dispatch #52
 L8f4:
   0008f4:  2f 08                move.l   a0, -(a7)
@@ -938,7 +945,7 @@ L8f4:
   000910:  20 6f 00 04          movea.l  $4(a7), a0
   000914:  2e 9f                move.l   (a7)+, (a7)
   000916:  4e 75                rts
-  000918:  60 00 26 d6          bra.w    $2ff0  ; -> L2ff0
+  000918:  60 00 26 d6          bra.w    $2ff0  ; -> GA_UnionRgn
   00091c:  00 00 11 98          dc.l     $00001198  ; dispatch #53
 L920:
   000920:  2f 08                move.l   a0, -(a7)
@@ -955,7 +962,7 @@ L920:
   00093c:  20 6f 00 04          movea.l  $4(a7), a0
   000940:  2e 9f                move.l   (a7)+, (a7)
   000942:  4e 75                rts
-  000944:  60 00 27 8c          bra.w    $30d2  ; -> L30d2
+  000944:  60 00 27 8c          bra.w    $30d2  ; -> GA_DiffRgn
   000948:  00 00 11 9c          dc.l     $0000119C  ; dispatch #54
 L94c:
   00094c:  2f 08                move.l   a0, -(a7)
@@ -972,7 +979,7 @@ L94c:
   000968:  20 6f 00 04          movea.l  $4(a7), a0
   00096c:  2e 9f                move.l   (a7)+, (a7)
   00096e:  4e 75                rts
-  000970:  60 00 28 42          bra.w    $31b4  ; -> L31b4
+  000970:  60 00 28 42          bra.w    $31b4  ; -> GA_XOrRgn
   000974:  00 00 11 ec          dc.l     $000011EC  ; dispatch #55
 L978:
   000978:  2f 08                move.l   a0, -(a7)
@@ -989,7 +996,7 @@ L978:
   000994:  20 6f 00 04          movea.l  $4(a7), a0
   000998:  2e 9f                move.l   (a7)+, (a7)
   00099a:  4e 75                rts
-  00099c:  60 00 28 f8          bra.w    $3296  ; -> L3296
+  00099c:  60 00 28 f8          bra.w    $3296  ; -> GA_MapRgn
   0009a0:  00 00 16 54          dc.l     $00001654  ; dispatch #56
 L9a4:
   0009a4:  2f 08                move.l   a0, -(a7)
@@ -1006,7 +1013,7 @@ L9a4:
   0009c0:  20 6f 00 04          movea.l  $4(a7), a0
   0009c4:  2e 9f                move.l   (a7)+, (a7)
   0009c6:  4e 75                rts
-  0009c8:  60 00 2b c2          bra.w    $358c  ; -> L358c
+  0009c8:  60 00 2b c2          bra.w    $358c  ; -> GA_RGBBackColor
   0009cc:  00 00 16 14          dc.l     $00001614  ; dispatch #57
 L9d0:
   0009d0:  2f 08                move.l   a0, -(a7)
@@ -1023,7 +1030,7 @@ L9d0:
   0009ec:  20 6f 00 04          movea.l  $4(a7), a0
   0009f0:  2e 9f                move.l   (a7)+, (a7)
   0009f2:  4e 75                rts
-  0009f4:  60 00 30 b2          bra.w    $3aa8  ; -> L3aa8
+  0009f4:  60 00 30 b2          bra.w    $3aa8  ; -> GA_CopyPixMap
   0009f8:  00 00 16 28          dc.l     $00001628  ; dispatch #58
 L9fc:
   0009fc:  2f 08                move.l   a0, -(a7)
@@ -1040,7 +1047,7 @@ L9fc:
   000a18:  20 6f 00 04          movea.l  $4(a7), a0
   000a1c:  2e 9f                move.l   (a7)+, (a7)
   000a1e:  4e 75                rts
-  000a20:  60 00 30 e8          bra.w    $3b0a  ; -> L3b0a
+  000a20:  60 00 30 e8          bra.w    $3b0a  ; -> GA_PenPixPat
   000a24:  00 00 16 2c          dc.l     $0000162C  ; dispatch #59
 La28:
   000a28:  2f 08                move.l   a0, -(a7)
@@ -1057,7 +1064,7 @@ La28:
   000a44:  20 6f 00 04          movea.l  $4(a7), a0
   000a48:  2e 9f                move.l   (a7)+, (a7)
   000a4a:  4e 75                rts
-  000a4c:  60 00 31 a4          bra.w    $3bf2  ; -> L3bf2
+  000a4c:  60 00 31 a4          bra.w    $3bf2  ; -> GA_BackPixPat
   000a50:  00 00 16 18          dc.l     $00001618  ; dispatch #60
 La54:
   000a54:  2f 08                move.l   a0, -(a7)
@@ -1074,7 +1081,7 @@ La54:
   000a70:  20 6f 00 04          movea.l  $4(a7), a0
   000a74:  2e 9f                move.l   (a7)+, (a7)
   000a76:  4e 75                rts
-  000a78:  60 00 32 60          bra.w    $3cda  ; -> L3cda
+  000a78:  60 00 32 60          bra.w    $3cda  ; -> GA_SetPortPix
   000a7c:  00 00 16 84          dc.l     $00001684  ; dispatch #61
 La80:
   000a80:  2f 08                move.l   a0, -(a7)
@@ -1091,7 +1098,7 @@ La80:
   000a9c:  20 6f 00 04          movea.l  $4(a7), a0
   000aa0:  2e 9f                move.l   (a7)+, (a7)
   000aa2:  4e 75                rts
-  000aa4:  60 00 32 8a          bra.w    $3d30  ; -> L3d30
+  000aa4:  60 00 32 8a          bra.w    $3d30  ; -> GA_OpColor
   000aa8:  00 00 16 88          dc.l     $00001688  ; dispatch #62
 Laac:
   000aac:  2f 08                move.l   a0, -(a7)
@@ -1108,7 +1115,7 @@ Laac:
   000ac8:  20 6f 00 04          movea.l  $4(a7), a0
   000acc:  2e 9f                move.l   (a7)+, (a7)
   000ace:  4e 75                rts
-  000ad0:  60 00 32 e2          bra.w    $3db4  ; -> L3db4
+  000ad0:  60 00 32 e2          bra.w    $3db4  ; -> GA_HiliteColor
   000ad4:  00 00 11 74          dc.l     $00001174  ; dispatch #63
 Lad8:
   000ad8:  2f 08                move.l   a0, -(a7)
@@ -1125,7 +1132,7 @@ Lad8:
   000af4:  20 6f 00 04          movea.l  $4(a7), a0
   000af8:  2e 9f                move.l   (a7)+, (a7)
   000afa:  4e 75                rts
-  000afc:  60 00 1f fc          bra.w    $2afa  ; -> L2afa
+  000afc:  60 00 1f fc          bra.w    $2afa  ; -> GA_SetEmptyRgn
   000b00:  00 00 10 74          dc.l     $00001074  ; dispatch #64
 Lb04:
   000b04:  2f 08                move.l   a0, -(a7)
@@ -1142,7 +1149,7 @@ Lb04:
   000b20:  20 6f 00 04          movea.l  $4(a7), a0
   000b24:  2e 9f                move.l   (a7)+, (a7)
   000b26:  4e 75                rts
-  000b28:  60 00 1b 8e          bra.w    $26b8  ; -> L26b8
+  000b28:  60 00 1b 8e          bra.w    $26b8  ; -> GA_PenPat
   000b2c:  00 00 0f f0          dc.l     $00000FF0  ; dispatch #65
 Lb30:
   000b30:  2f 08                move.l   a0, -(a7)
@@ -1159,7 +1166,7 @@ Lb30:
   000b4c:  20 6f 00 04          movea.l  $4(a7), a0
   000b50:  2e 9f                move.l   (a7)+, (a7)
   000b52:  4e 75                rts
-  000b54:  60 00 1c 0e          bra.w    $2764  ; -> L2764
+  000b54:  60 00 1c 0e          bra.w    $2764  ; -> GA_BackPat
   000b58:  00 00 1a 74          dc.l     $00001A74  ; dispatch #66
 Lb5c:
   000b5c:  2f 08                move.l   a0, -(a7)
@@ -1176,7 +1183,7 @@ Lb5c:
   000b78:  20 6f 00 04          movea.l  $4(a7), a0
   000b7c:  2e 9f                move.l   (a7)+, (a7)
   000b7e:  4e 75                rts
-  000b80:  60 00 07 b2          bra.w    $1334  ; -> L1334
+  000b80:  60 00 07 b2          bra.w    $1334  ; -> GA_QDExtensions
   000b84:  00 00 16 64          dc.l     $00001664  ; dispatch #67
 Lb88:
   000b88:  2f 08                move.l   a0, -(a7)
@@ -1193,7 +1200,7 @@ Lb88:
   000ba4:  20 6f 00 04          movea.l  $4(a7), a0
   000ba8:  2e 9f                move.l   (a7)+, (a7)
   000baa:  4e 75                rts
-  000bac:  60 00 2d a4          bra.w    $3952  ; -> L3952
+  000bac:  60 00 2d a4          bra.w    $3952  ; -> GA_GetForeColor
   000bb0:  00 00 16 68          dc.l     $00001668  ; dispatch #68
 Lbb4:
   000bb4:  2f 08                move.l   a0, -(a7)
@@ -1210,7 +1217,7 @@ Lbb4:
   000bd0:  20 6f 00 04          movea.l  $4(a7), a0
   000bd4:  2e 9f                move.l   (a7)+, (a7)
   000bd6:  4e 75                rts
-  000bd8:  60 00 2e 10          bra.w    $39ea  ; -> L39ea
+  000bd8:  60 00 2e 10          bra.w    $39ea  ; -> GA_GetBackColor
   000bdc:  00 00 08 14          dc.l     $00000814  ; dispatch #69
 Lbe0:
   000be0:  2f 08                move.l   a0, -(a7)
@@ -1227,7 +1234,7 @@ Lbe0:
   000bfc:  20 6f 00 04          movea.l  $4(a7), a0
   000c00:  2e 9f                move.l   (a7)+, (a7)
   000c02:  4e 75                rts
-  000c04:  60 00 52 60          bra.w    $5e66  ; -> L5e66
+  000c04:  60 00 52 60          bra.w    $5e66  ; -> GA_LowMem0814
   000c08:  00 00 08 18          dc.l     $00000818  ; dispatch #70
 Lc0c:
   000c0c:  2f 08                move.l   a0, -(a7)
@@ -1244,7 +1251,7 @@ Lc0c:
   000c28:  20 6f 00 04          movea.l  $4(a7), a0
   000c2c:  2e 9f                move.l   (a7)+, (a7)
   000c2e:  4e 75                rts
-  000c30:  60 00 4f 92          bra.w    $5bc4  ; -> L5bc4
+  000c30:  60 00 4f 92          bra.w    $5bc4  ; -> GA_LowMem0818
   000c34:  00 00 08 1c          dc.l     $0000081C  ; dispatch #71
 Lc38:
   000c38:  2f 08                move.l   a0, -(a7)
@@ -1261,7 +1268,7 @@ Lc38:
   000c54:  20 6f 00 04          movea.l  $4(a7), a0
   000c58:  2e 9f                move.l   (a7)+, (a7)
   000c5a:  4e 75                rts
-  000c5c:  60 00 4f ea          bra.w    $5c48  ; -> L5c48
+  000c5c:  60 00 4f ea          bra.w    $5c48  ; -> GA_LowMem081C
   000c60:  00 00 08 90          dc.l     $00000890  ; dispatch #72
 Lc64:
   000c64:  2f 08                move.l   a0, -(a7)
@@ -1278,7 +1285,7 @@ Lc64:
   000c80:  20 6f 00 04          movea.l  $4(a7), a0
   000c84:  2e 9f                move.l   (a7)+, (a7)
   000c86:  4e 75                rts
-  000c88:  60 00 50 26          bra.w    $5cb0  ; -> L5cb0
+  000c88:  60 00 50 26          bra.w    $5cb0  ; -> GA_LowMem0890
   000c8c:  00 00 16 b4          dc.l     $000016B4  ; dispatch #73
 Lc90:
   000c90:  2f 08                move.l   a0, -(a7)
@@ -1295,7 +1302,7 @@ Lc90:
   000cac:  20 6f 00 04          movea.l  $4(a7), a0
   000cb0:  2e 9f                move.l   (a7)+, (a7)
   000cb2:  4e 75                rts
-  000cb4:  60 00 10 20          bra.w    $1cd6  ; -> L1cd6
+  000cb4:  60 00 10 20          bra.w    $1cd6  ; -> GA_SetDeviceAttribute
   000cb8:  00 00 16 c0          dc.l     $000016C0  ; dispatch #74
 Lcbc:
   000cbc:  2f 08                move.l   a0, -(a7)
@@ -1312,7 +1319,7 @@ Lcbc:
   000cd8:  20 6f 00 04          movea.l  $4(a7), a0
   000cdc:  2e 9f                move.l   (a7)+, (a7)
   000cde:  4e 75                rts
-  000ce0:  60 00 10 3e          bra.w    $1d20  ; -> L1d20
+  000ce0:  60 00 10 3e          bra.w    $1d20  ; -> GA_DisposGDevice
   000ce4:  00 00 11 d8          dc.l     $000011D8  ; dispatch #75
 Lce8:
   000ce8:  2f 08                move.l   a0, -(a7)
@@ -1329,7 +1336,7 @@ Lce8:
   000d04:  20 6f 00 04          movea.l  $4(a7), a0
   000d08:  2e 9f                move.l   (a7)+, (a7)
   000d0a:  4e 75                rts
-  000d0c:  60 00 52 88          bra.w    $5f96  ; -> L5f96
+  000d0c:  60 00 52 88          bra.w    $5f96  ; -> GA_DrawPicture
   000d10:  00 00 16 0c          dc.l     $0000160C  ; dispatch #76
 Ld14:
   000d14:  2f 08                move.l   a0, -(a7)
@@ -1346,7 +1353,7 @@ Ld14:
   000d30:  20 6f 00 04          movea.l  $4(a7), a0
   000d34:  2e 9f                move.l   (a7)+, (a7)
   000d36:  4e 75                rts
-  000d38:  60 00 2d 48          bra.w    $3a82  ; -> L3a82
+  000d38:  60 00 2d 48          bra.w    $3a82  ; -> GA_NewPixMap
   000d3c:  00 00 16 fc          dc.l     $000016FC  ; dispatch #77
 Ld40:
   000d40:  2f 08                move.l   a0, -(a7)
@@ -1363,7 +1370,7 @@ Ld40:
   000d5c:  20 6f 00 04          movea.l  $4(a7), a0
   000d60:  2e 9f                move.l   (a7)+, (a7)
   000d62:  4e 75                rts
-  000d64:  60 00 0e f8          bra.w    $1c5e  ; -> L1c5e
+  000d64:  60 00 0e f8          bra.w    $1c5e  ; -> GA_SetEntries
   000d68:  00 00 10 a8          dc.l     $000010A8  ; dispatch #78
 Ld6c:
   000d6c:  2f 08                move.l   a0, -(a7)
@@ -1380,7 +1387,7 @@ Ld6c:
   000d88:  20 6f 00 04          movea.l  $4(a7), a0
   000d8c:  2e 9f                move.l   (a7)+, (a7)
   000d8e:  4e 75                rts
-  000d90:  60 00 1b f4          bra.w    $2986  ; -> L2986
+  000d90:  60 00 1b f4          bra.w    $2986  ; -> GA_SectRect
   000d94:  00 00 0f f4          dc.l     $00000FF4  ; dispatch #79
 Ld98:
   000d98:  2f 08                move.l   a0, -(a7)
@@ -1397,7 +1404,7 @@ Ld98:
   000db4:  20 6f 00 04          movea.l  $4(a7), a0
   000db8:  2e 9f                move.l   (a7)+, (a7)
   000dba:  4e 75                rts
-  000dbc:  60 00 32 fa          bra.w    $40b8  ; -> L40b8
+  000dbc:  60 00 32 fa          bra.w    $40b8  ; -> GA_CloseCPort
   000dc0:  00 00 16 5c          dc.l     $0000165C  ; dispatch #80
 Ldc4:
   000dc4:  2f 08                move.l   a0, -(a7)
@@ -1414,7 +1421,7 @@ Ldc4:
   000de0:  20 6f 00 04          movea.l  $4(a7), a0
   000de4:  2e 9f                move.l   (a7)+, (a7)
   000de6:  4e 75                rts
-  000de8:  60 00 2a 7e          bra.w    $3868  ; -> L3868
+  000de8:  60 00 2a 7e          bra.w    $3868  ; -> GA_GetCPixel
   000dec:  00 00 0f 94          dc.l     $00000F94  ; dispatch #81
 Ldf0:
   000df0:  2f 08                move.l   a0, -(a7)
@@ -1431,7 +1438,7 @@ Ldf0:
   000e0c:  20 6f 00 04          movea.l  $4(a7), a0
   000e10:  2e 9f                move.l   (a7)+, (a7)
   000e12:  4e 75                rts
-  000e14:  60 00 29 4c          bra.w    $3762  ; -> L3762
+  000e14:  60 00 29 4c          bra.w    $3762  ; -> GA_GetPixel
   000e18:  00 00 17 40          dc.l     $00001740  ; dispatch #82
 Le1c:
   000e1c:  2f 08                move.l   a0, -(a7)
@@ -1448,7 +1455,7 @@ Le1c:
   000e38:  20 6f 00 04          movea.l  $4(a7), a0
   000e3c:  2e 9f                move.l   (a7)+, (a7)
   000e3e:  4e 75                rts
-  000e40:  60 00 51 8e          bra.w    $5fd0  ; -> L5fd0
+  000e40:  60 00 51 8e          bra.w    $5fd0  ; -> GA_SeedCFill
   000e44:  00 00 17 3c          dc.l     $0000173C  ; dispatch #83
 Le48:
   000e48:  2f 08                move.l   a0, -(a7)
@@ -1465,7 +1472,7 @@ Le48:
   000e64:  20 6f 00 04          movea.l  $4(a7), a0
   000e68:  2e 9f                move.l   (a7)+, (a7)
   000e6a:  4e 75                rts
-  000e6c:  60 00 51 be          bra.w    $602c  ; -> L602c
+  000e6c:  60 00 51 be          bra.w    $602c  ; -> GA_CalcCMask
   000e70:  00 00 17 24          dc.l     $00001724  ; dispatch #84
 Le74:
   000e74:  2f 08                move.l   a0, -(a7)
@@ -1482,7 +1489,7 @@ Le74:
   000e90:  20 6f 00 04          movea.l  $4(a7), a0
   000e94:  2e 9f                move.l   (a7)+, (a7)
   000e96:  4e 75                rts
-  000e98:  60 00 0c b0          bra.w    $1b4a  ; -> L1b4a
+  000e98:  60 00 0c b0          bra.w    $1b4a  ; -> GA_SaveEntries
   000e9c:  00 00 17 28          dc.l     $00001728  ; dispatch #85
 Lea0:
   000ea0:  2f 08                move.l   a0, -(a7)
@@ -1499,7 +1506,7 @@ Lea0:
   000ebc:  20 6f 00 04          movea.l  $4(a7), a0
   000ec0:  2e 9f                move.l   (a7)+, (a7)
   000ec2:  4e 75                rts
-  000ec4:  60 00 0c e2          bra.w    $1ba8  ; -> L1ba8
+  000ec4:  60 00 0c e2          bra.w    $1ba8  ; -> GA_RestoreEntries
   000ec8:  00 00 16 dc          dc.l     $000016DC  ; dispatch #86
 Lecc:
   000ecc:  2f 08                move.l   a0, -(a7)
@@ -1516,7 +1523,7 @@ Lecc:
   000ee8:  20 6f 00 04          movea.l  $4(a7), a0
   000eec:  2e 9f                move.l   (a7)+, (a7)
   000eee:  4e 75                rts
-  000ef0:  60 00 0d 14          bra.w    $1c06  ; -> L1c06
+  000ef0:  60 00 0d 14          bra.w    $1c06  ; -> GA_GetSubTable
   000ef4:  00 00 16 a0          dc.l     $000016A0  ; dispatch #87
 Lef8:
   000ef8:  2f 08                move.l   a0, -(a7)
@@ -1533,7 +1540,7 @@ Lef8:
   000f14:  20 6f 00 04          movea.l  $4(a7), a0
   000f18:  2e 9f                move.l   (a7)+, (a7)
   000f1a:  4e 75                rts
-  000f1c:  60 00 03 96          bra.w    $12b4  ; -> L12b4
+  000f1c:  60 00 03 96          bra.w    $12b4  ; -> GA_GETCTSEED
   000f20:  00 00 18 88          dc.l     $00001888  ; dispatch #88
 Lf24:
   000f24:  2f 08                move.l   a0, -(a7)
@@ -1550,7 +1557,7 @@ Lf24:
   000f40:  20 6f 00 04          movea.l  $4(a7), a0
   000f44:  2e 9f                move.l   (a7)+, (a7)
   000f46:  4e 75                rts
-  000f48:  60 00 03 a6          bra.w    $12f0  ; -> L12f0
+  000f48:  60 00 03 a6          bra.w    $12f0  ; -> GA_PMGR
   000f4c:  00 00 18 50          dc.l     $00001850  ; dispatch #89
 Lf50:
   000f50:  2f 08                move.l   a0, -(a7)
@@ -1567,7 +1574,7 @@ Lf50:
   000f6c:  20 6f 00 04          movea.l  $4(a7), a0
   000f70:  2e 9f                move.l   (a7)+, (a7)
   000f72:  4e 75                rts
-  000f74:  60 00 0a fa          bra.w    $1a70  ; -> L1a70
+  000f74:  60 00 0a fa          bra.w    $1a70  ; -> GA_ActivatePalette
   000f78:  00 00 18 54          dc.l     $00001854  ; dispatch #90
 Lf7c:
   000f7c:  2f 08                move.l   a0, -(a7)
@@ -1584,7 +1591,7 @@ Lf7c:
   000f98:  20 6f 00 04          movea.l  $4(a7), a0
   000f9c:  2e 9f                move.l   (a7)+, (a7)
   000f9e:  4e 75                rts
-  000fa0:  60 00 0a 88          bra.w    $1a2a  ; -> L1a2a
+  000fa0:  60 00 0a 88          bra.w    $1a2a  ; -> GA_SetPalette
   000fa4:  00 00 18 80          dc.l     $00001880  ; dispatch #91
 Lfa8:
   000fa8:  2f 08                move.l   a0, -(a7)
@@ -1601,7 +1608,7 @@ Lfa8:
   000fc4:  20 6f 00 04          movea.l  $4(a7), a0
   000fc8:  2e 9f                move.l   (a7)+, (a7)
   000fca:  4e 75                rts
-  000fcc:  60 00 0a d6          bra.w    $1aa4  ; -> L1aa4
+  000fcc:  60 00 0a d6          bra.w    $1aa4  ; -> GA_Palette2CTab
   000fd0:  00 00 16 e4          dc.l     $000016E4  ; dispatch #92
 Lfd4:
   000fd4:  2f 08                move.l   a0, -(a7)
@@ -1618,7 +1625,7 @@ Lfd4:
   000ff0:  20 6f 00 04          movea.l  $4(a7), a0
   000ff4:  2e 9f                move.l   (a7)+, (a7)
   000ff6:  4e 75                rts
-  000ff8:  60 00 0a e8          bra.w    $1ae2  ; -> L1ae2
+  000ff8:  60 00 0a e8          bra.w    $1ae2  ; -> GA_MakeITable
   000ffc:  00 00 0f b8          dc.l     $00000FB8  ; dispatch #93
 L1000:
   001000:  2f 08                move.l   a0, -(a7)
@@ -1635,7 +1642,7 @@ L1000:
   00101c:  20 6f 00 04          movea.l  $4(a7), a0
   001020:  2e 9f                move.l   (a7)+, (a7)
   001022:  4e 75                rts
-  001024:  60 00 4e a8          bra.w    $5ece  ; -> L5ece
+  001024:  60 00 4e a8          bra.w    $5ece  ; -> GA_InitGraf
   001028:  00 00 0f b4          dc.l     $00000FB4  ; dispatch #94
 L102c:
   00102c:  2f 08                move.l   a0, -(a7)
@@ -1652,7 +1659,7 @@ L102c:
   001048:  20 6f 00 04          movea.l  $4(a7), a0
   00104c:  2e 9f                move.l   (a7)+, (a7)
   00104e:  4e 75                rts
-  001050:  60 00 4e a4          bra.w    $5ef6  ; -> L5ef6
+  001050:  60 00 4e a4          bra.w    $5ef6  ; -> GA_InitPort
   001054:  00 00 0f bc          dc.l     $00000FBC  ; dispatch #95
 L1058:
   001058:  2f 08                move.l   a0, -(a7)
@@ -1669,7 +1676,7 @@ L1058:
   001074:  20 6f 00 04          movea.l  $4(a7), a0
   001078:  2e 9f                move.l   (a7)+, (a7)
   00107a:  4e 75                rts
-  00107c:  60 00 4e a0          bra.w    $5f1e  ; -> L5f1e
+  00107c:  60 00 4e a0          bra.w    $5f1e  ; -> GA_OpenPort
   001080:  00 00 16 04          dc.l     $00001604  ; dispatch #96
 L1084:
   001084:  2f 08                move.l   a0, -(a7)
@@ -1686,7 +1693,7 @@ L1084:
   0010a0:  20 6f 00 04          movea.l  $4(a7), a0
   0010a4:  2e 9f                move.l   (a7)+, (a7)
   0010a6:  4e 75                rts
-  0010a8:  60 00 4e 9c          bra.w    $5f46  ; -> L5f46
+  0010a8:  60 00 4e 9c          bra.w    $5f46  ; -> GA_InitCPort
   0010ac:  00 00 16 00          dc.l     $00001600  ; dispatch #97
 L10b0:
   0010b0:  2f 08                move.l   a0, -(a7)
@@ -1703,7 +1710,7 @@ L10b0:
   0010cc:  20 6f 00 04          movea.l  $4(a7), a0
   0010d0:  2e 9f                move.l   (a7)+, (a7)
   0010d2:  4e 75                rts
-  0010d4:  60 00 4e 98          bra.w    $5f6e  ; -> L5f6e
+  0010d4:  60 00 4e 98          bra.w    $5f6e  ; -> GA_OpenCPort
   0010d8:  00 00 16 08          dc.l     $00001608  ; dispatch #98
 L10dc:
   0010dc:  2f 08                move.l   a0, -(a7)
@@ -1720,7 +1727,7 @@ L10dc:
   0010f8:  20 6f 00 04          movea.l  $4(a7), a0
   0010fc:  2e 9f                move.l   (a7)+, (a7)
   0010fe:  4e 75                rts
-  001100:  60 00 2f b6          bra.w    $40b8  ; -> L40b8
+  001100:  60 00 2f b6          bra.w    $40b8  ; -> GA_CloseCPort
   001104:  00 00 16 b8          dc.l     $000016B8  ; dispatch #99
 L1108:
   001108:  2f 08                move.l   a0, -(a7)
@@ -1737,7 +1744,7 @@ L1108:
   001124:  20 6f 00 04          movea.l  $4(a7), a0
   001128:  2e 9f                move.l   (a7)+, (a7)
   00112a:  4e 75                rts
-  00112c:  60 00 0c 72          bra.w    $1da0  ; -> L1da0
+  00112c:  60 00 0c 72          bra.w    $1da0  ; -> GA_InitGDevice
   001130:  00 00 11 5c          dc.l     $0000115C  ; dispatch #100
 L1134:
   001134:  2f 08                move.l   a0, -(a7)
@@ -1754,7 +1761,7 @@ L1134:
   001150:  20 6f 00 04          movea.l  $4(a7), a0
   001154:  2e 9f                move.l   (a7)+, (a7)
   001156:  4e 75                rts
-  001158:  60 00 2c e0          bra.w    $3e3a  ; -> L3e3a
+  001158:  60 00 2c e0          bra.w    $3e3a  ; -> GA_BitMapRgn
   00115c:  00 00 16 8c          dc.l     $0000168C  ; dispatch #101
 L1160:
   001160:  2f 08                move.l   a0, -(a7)
@@ -1771,7 +1778,7 @@ L1160:
   00117c:  20 6f 00 04          movea.l  $4(a7), a0
   001180:  2e 9f                move.l   (a7)+, (a7)
   001182:  4e 75                rts
-  001184:  60 00 2f 50          bra.w    $40d6  ; -> L40d6
+  001184:  60 00 2f 50          bra.w    $40d6  ; -> GA_CharExtra
   001188:  ff ff ff ff          dc.l     $FFFFFFFF  ; dispatch #102
 L118c:
   00118c:  2f 08                move.l   a0, -(a7)
@@ -1788,7 +1795,7 @@ L118c:
   0011a8:  20 6f 00 04          movea.l  $4(a7), a0
   0011ac:  2e 9f                move.l   (a7)+, (a7)
   0011ae:  4e 75                rts
-  0011b0:  60 00 73 f8          bra.w    $85aa  ; -> L85aa
+  0011b0:  60 00 73 f8          bra.w    $85aa  ; -> GA_ControlFFFFFFFF
   0011b4:  ff ff ff fe          dc.l     $FFFFFFFE  ; dispatch #103
 L11b8:
   0011b8:  2f 08                move.l   a0, -(a7)
@@ -1805,7 +1812,7 @@ L11b8:
   0011d4:  20 6f 00 04          movea.l  $4(a7), a0
   0011d8:  2e 9f                move.l   (a7)+, (a7)
   0011da:  4e 75                rts
-  0011dc:  60 00 74 5a          bra.w    $8638  ; -> L8638
+  0011dc:  60 00 74 5a          bra.w    $8638  ; -> GA_ControlFFFFFFFE
   0011e0:  ff ff ff fd          dc.l     $FFFFFFFD  ; dispatch #104
 L11e4:
   0011e4:  2f 08                move.l   a0, -(a7)
@@ -1822,17 +1829,20 @@ L11e4:
   001200:  20 6f 00 04          movea.l  $4(a7), a0
   001204:  2e 9f                move.l   (a7)+, (a7)
   001206:  4e 75                rts
-  001208:  60 00 73 76          bra.w    $8580  ; -> L8580
+  001208:  60 00 73 76          bra.w    $8580  ; -> GA_ControlFFFFFFFD
   00120c:  00 00 00 00 00 00 00 00 dc.b     $00, $00, $00, $00, $00, $00, $00, $00  ; ........
   001214:  00 00 00 00 00 00 00 00 dc.b     $00, $00, $00, $00, $00, $00, $00, $00  ; ........
   00121c:  00 00 00 00 00 00 00 00 dc.b     $00, $00, $00, $00, $00, $00, $00, $00  ; ........
   001224:  00 00 00 00 00 00 00 00 dc.b     $00, $00, $00, $00, $00, $00, $00, $00  ; ........
   00122c:  00 00 00 00          dc.b     $00, $00, $00, $00  ; ....
-sub_1230:
+* GetA5  -  System 7 $8010 (identical bytes, S6 MacsBug name).
+* S7: GetA5  -  returns A5 (the QuickDraw/app globals world) in D0.
+GetA5:
   001230:  20 0d                move.l   a5, d0
   001232:  4e 75                rts
   001234:  47 65 74 41 35 00 00 00 dc.b     $47, $65, $74, $41, $35, $00, $00, $00  ; GetA5...
-L123c:
+* GACursorTask  -  System 7 $801C (same trap slot $8EE, code r=0.97).
+GACursorTask:
   00123c:  48 e7 ff f8          movem.l  d0-d7/a0-a4, -(a7)
   001240:  20 38 08 88          move.l   $888.w, d0
   001244:  67 5c                beq.b    $12a2  ; -> L12a2
@@ -1862,7 +1872,7 @@ L1276:
 L128c:
   00128c:  48 e7 40 80          movem.l  d1/a0, -(a7)
   001290:  2f 00                move.l   d0, -(a7)
-  001292:  4e ba 74 08          jsr      $869c(pc)  ; -> sub_869c
+  001292:  4e ba 74 08          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001296:  58 8f                addq.l   #$4, a7
   001298:  20 40                movea.l  d0, a0
   00129a:  4e 90                jsr      (a0)
@@ -1873,14 +1883,15 @@ L12a2:
   0012a6:  4e 75                rts
   0012a8:  47 41 43 75 72 73 6f 72 dc.b     $47, $41, $43, $75, $72, $73, $6F, $72  ; GACursor
   0012b0:  54 61 73 6b          dc.b     $54, $61, $73, $6B  ; Task
-L12b4:
+* GA_GETCTSEED  -  System 7 $8098 (identical code).
+GA_GETCTSEED:
   0012b4:  2f 08                move.l   a0, -(a7)
   0012b6:  48 e7 e0 60          movem.l  d0-d2/a1-a2, -(a7)
   0012ba:  42 a7                clr.l    -(a7)
-  0012bc:  4e ba 4d d6          jsr      $6094(pc)  ; -> sub_6094
+  0012bc:  4e ba 4d d6          jsr      $6094(pc)  ; -> s7_sub_4822
   0012c0:  58 8f                addq.l   #$4, a7
   0012c2:  2f 3c 00 00 16 a0    move.l   #$16a0, -(a7)
-  0012c8:  4e ba 73 d2          jsr      $869c(pc)  ; -> sub_869c
+  0012c8:  4e ba 73 d2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0012cc:  58 8f                addq.l   #$4, a7
   0012ce:  20 40                movea.l  d0, a0
   0012d0:  4c df 06 07          movem.l  (a7)+, d0-d2/a1-a2
@@ -1891,12 +1902,13 @@ L12b4:
   0012e0:  4e 75                rts
   0012e2:  47 41 5f 47 45 54 43 54 dc.b     $47, $41, $5F, $47, $45, $54, $43, $54  ; GA_GETCT
   0012ea:  53 45 45 44 00 00    dc.b     $53, $45, $45, $44, $00, $00  ; SEED..
-L12f0:
+* GA_PMGR  -  System 7 $80D4 (identical code).
+GA_PMGR:
   0012f0:  2f 08                move.l   a0, -(a7)
   0012f2:  48 e7 e0 60          movem.l  d0-d2/a1-a2, -(a7)
   0012f6:  0c 40 00 0c          cmpi.w   #$c, d0
   0012fa:  66 10                bne.b    $130c  ; -> L130c
-  0012fc:  4e ba 23 be          jsr      $36bc(pc)  ; -> sub_36bc
+  0012fc:  4e ba 23 be          jsr      $36bc(pc)  ; -> s7_sub_b1be
   001300:  4a 80                tst.l    d0
   001302:  66 08                bne.b    $130c  ; -> L130c
   001304:  4c df 06 07          movem.l  (a7)+, d0-d2/a1-a2
@@ -1904,7 +1916,7 @@ L12f0:
   00130a:  4e 75                rts
 L130c:
   00130c:  2f 3c 00 00 18 88    move.l   #$1888, -(a7)
-  001312:  4e ba 73 88          jsr      $869c(pc)  ; -> sub_869c
+  001312:  4e ba 73 88          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001316:  58 8f                addq.l   #$4, a7
   001318:  20 40                movea.l  d0, a0
   00131a:  4c df 06 07          movem.l  (a7)+, d0-d2/a1-a2
@@ -1914,7 +1926,9 @@ L130c:
   001328:  58 8f                addq.l   #$4, a7
   00132a:  4e 75                rts
   00132c:  47 41 5f 50 4d 47 52 00 dc.b     $47, $41, $5F, $50, $4D, $47, $52, $00  ; GA_PMGR.
-L1334:
+* GA_QDExtensions  -  System 7 $8118 (same trap slot $1A74, code r=0.89).
+* S7: Patch #66 replaces _QDExtensions ($AB1D); no EngineDispatch command found
+GA_QDExtensions:
   001334:  0c 40 00 08          cmpi.w   #$8, d0
   001338:  67 68                beq.b    $13a2  ; -> L13a2
   00133a:  0c 40 00 01          cmpi.w   #$1, d0
@@ -1940,39 +1954,40 @@ L1334:
   001376:  2f 00                move.l   d0, -(a7)
   001378:  60 32                bra.b    $13ac  ; -> L13ac
 L137a:
-  00137a:  4e fa 2b 36          jmp      $3eb2(pc)  ; -> L3eb2
+  00137a:  4e fa 2b 36          jmp      $3eb2(pc)  ; -> s7_Lb940
 L137e:
-  00137e:  4e fa 2c d0          jmp      $4050(pc)  ; -> L4050
+  00137e:  4e fa 2c d0          jmp      $4050(pc)  ; -> s7_Lbb14
 L1382:
-  001382:  4e fa 2e 7a          jmp      $41fe(pc)  ; -> L41fe
+  001382:  4e fa 2e 7a          jmp      $41fe(pc)  ; -> s7_Lbd76
 L1386:
-  001386:  4e fa 2f 46          jmp      $42ce(pc)  ; -> L42ce
+  001386:  4e fa 2f 46          jmp      $42ce(pc)  ; -> s7_Lbe74
 L138a:
   00138a:  4e fa 2f 64          jmp      $42f0(pc)  ; -> L42f0
 L138e:
-  00138e:  4e fa 2f aa          jmp      $433a(pc)  ; -> L433a
+  00138e:  4e fa 2f aa          jmp      $433a(pc)  ; -> s7_Lbecc
 L1392:
-  001392:  4e fa 2b 90          jmp      $3f24(pc)  ; -> L3f24
+  001392:  4e fa 2b 90          jmp      $3f24(pc)  ; -> s7_Lb9b4
 L1396:
-  001396:  4e fa 2c 34          jmp      $3fcc(pc)  ; -> L3fcc
+  001396:  4e fa 2c 34          jmp      $3fcc(pc)  ; -> s7_Lba64
 L139a:
-  00139a:  4e fa 2b c8          jmp      $3f64(pc)  ; -> L3f64
+  00139a:  4e fa 2b c8          jmp      $3f64(pc)  ; -> s7_Lb9fc
 L139e:
   00139e:  4e fa 2e 2e          jmp      $41ce(pc)  ; -> L41ce
 L13a2:
   0013a2:  2f 00                move.l   d0, -(a7)
   0013a4:  2f 2f 00 08          move.l   $8(a7), -(a7)
-  0013a8:  4e ba 2d a8          jsr      $4152(pc)  ; -> sub_4152
+  0013a8:  4e ba 2d a8          jsr      $4152(pc)  ; -> s7_sub_bcc8
 L13ac:
   0013ac:  2f 3c 00 00 1a 74    move.l   #$1a74, -(a7)
-  0013b2:  4e ba 72 e8          jsr      $869c(pc)  ; -> sub_869c
+  0013b2:  4e ba 72 e8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0013b6:  58 8f                addq.l   #$4, a7
   0013b8:  20 40                movea.l  d0, a0
   0013ba:  20 1f                move.l   (a7)+, d0
   0013bc:  4e d0                jmp      (a0)
   0013be:  47 41 5f 51 44 4f 46 46 dc.b     $47, $41, $5F, $51, $44, $4F, $46, $46  ; GA_QDOFF
   0013c6:  53 43 52 45 45 4e    dc.b     $53, $43, $52, $45, $45, $4E  ; SCREEN
-sub_13cc:
+* s7_sub_8da4  -  System 7 $8DA4 (similar code, r=0.80).
+s7_sub_8da4:
   0013cc:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0013d0:  28 6f 00 18          movea.l  $18(a7), a4
   0013d4:  26 6f 00 14          movea.l  $14(a7), a3
@@ -2007,7 +2022,8 @@ L1414:
 L1416:
   001416:  4c df 18 c0          movem.l  (a7)+, d6-d7/a3-a4
   00141a:  4e 75                rts
-sub_141c:
+* s7_sub_8df2  -  System 7 $8DF2 (similar code, r=0.89).
+s7_sub_8df2:
   00141c:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001420:  28 6f 00 0c          movea.l  $c(a7), a4
   001424:  30 2c 00 06          move.w   $6(a4), d0
@@ -2033,7 +2049,8 @@ L144a:
 L1456:
   001456:  4c df 18 00          movem.l  (a7)+, a3-a4
   00145a:  4e 75                rts
-sub_145c:
+* s7_sub_8e38  -  System 7 $8E38 (similar code, r=0.71).
+s7_sub_8e38:
   00145c:  4e 56 00 00          link.w   a6, #$0
   001460:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   001464:  28 6e 00 0c          movea.l  $c(a6), a4
@@ -2059,7 +2076,7 @@ sub_145c:
   00149c:  00 54                dc.w     $0054    ; [4] -> L14e6
   00149e:  00 5c                dc.w     $005C    ; [5] -> L14ee
 L14a0:
-  0014a0:  4e ba fd 8e          jsr      $1230(pc)  ; -> sub_1230
+  0014a0:  4e ba fd 8e          jsr      $1230(pc)  ; -> GetA5
   0014a4:  20 40                movea.l  d0, a0
   0014a6:  20 50                movea.l  (a0), a0
   0014a8:  20 50                movea.l  (a0), a0
@@ -2075,7 +2092,7 @@ L14ba:
   0014c0:  60 40                bra.b    $1502  ; -> L1502
 L14c2:
   0014c2:  7e 0a                moveq    #$a, d7
-  0014c4:  4e ba fd 6a          jsr      $1230(pc)  ; -> sub_1230
+  0014c4:  4e ba fd 6a          jsr      $1230(pc)  ; -> GetA5
   0014c8:  20 40                movea.l  d0, a0
   0014ca:  20 10                move.l   (a0), d0
   0014cc:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -2083,7 +2100,7 @@ L14c2:
   0014d4:  48 68 00 ba          pea.l    $ba(a0)
   0014d8:  70 00                moveq    #$0, d0
   0014da:  3f 00                move.w   d0, -(a7)
-  0014dc:  4e ba 0c 2c          jsr      $210a(pc)  ; -> sub_210a
+  0014dc:  4e ba 0c 2c          jsr      $210a(pc)  ; -> s7_sub_9a88
   0014e0:  36 bc 00 03          move.w   #$3, (a3)
   0014e4:  60 1c                bra.b    $1502  ; -> L1502
 L14e6:
@@ -2091,7 +2108,7 @@ L14e6:
   0014e8:  36 bc 00 03          move.w   #$3, (a3)
   0014ec:  60 14                bra.b    $1502  ; -> L1502
 L14ee:
-  0014ee:  4e ba fd 40          jsr      $1230(pc)  ; -> sub_1230
+  0014ee:  4e ba fd 40          jsr      $1230(pc)  ; -> GetA5
   0014f2:  20 40                movea.l  d0, a0
   0014f4:  20 50                movea.l  (a0), a0
   0014f6:  20 50                movea.l  (a0), a0
@@ -2121,7 +2138,8 @@ L1524:
   001526:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   00152c:  4e 5e                unlk     a6
   00152e:  4e 75                rts
-sub_1530:
+* s7_sub_8f04  -  System 7 $8F04 (similar code, r=0.82).
+s7_sub_8f04:
   001530:  4e 56 ff c4          link.w   a6, #$ffc4
   001534:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
   001538:  2c 2e 00 0c          move.l   $c(a6), d6
@@ -2208,7 +2226,7 @@ L15d8:
   00161e:  20 6e ff fc          movea.l  -$4(a6), a0
   001622:  20 68 01 82          movea.l  $182(a0), a0
   001626:  48 68 00 78          pea.l    $78(a0)
-  00162a:  4e ba 33 02          jsr      $492e(pc)  ; -> sub_492e
+  00162a:  4e ba 33 02          jsr      $492e(pc)  ; -> s7_sub_87cc
   00162e:  72 00                moveq    #$0, d1
   001630:  12 00                move.b   d0, d1
   001632:  50 8f                addq.l   #$8, a7
@@ -2322,7 +2340,8 @@ L173c:
   00173c:  4c ee 18 e0 ff b0    movem.l  -$50(a6), d5-d7/a3-a4
   001742:  4e 5e                unlk     a6
   001744:  4e 75                rts
-sub_1746:
+* s7_sub_90ee  -  System 7 $90EE (checked by hand, r=0.67).
+s7_sub_90ee:
   001746:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00174a:  28 6f 00 0c          movea.l  $c(a7), a4
   00174e:  20 2f 00 10          move.l   $10(a7), d0
@@ -2367,7 +2386,8 @@ L178a:
 L17a4:
   0017a4:  4c df 18 00          movem.l  (a7)+, a3-a4
   0017a8:  4e 75                rts
-sub_17aa:
+* s7_sub_9146  -  System 7 $9146 (identical code).
+s7_sub_9146:
   0017aa:  4e 56 00 00          link.w   a6, #$0
   0017ae:  48 e7 00 18          movem.l  a3-a4, -(a7)
   0017b2:  28 6e 00 08          movea.l  $8(a6), a4
@@ -2389,7 +2409,8 @@ sub_17aa:
   0017d8:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   0017de:  4e 5e                unlk     a6
   0017e0:  4e 75                rts
-sub_17e2:
+* s7_sub_917e  -  System 7 $917E (similar code, r=0.83).
+s7_sub_917e:
   0017e2:  2f 07                move.l   d7, -(a7)
   0017e4:  2e 2f 00 08          move.l   $8(a7), d7
   0017e8:  70 01                moveq    #$1, d0
@@ -2405,7 +2426,8 @@ L17f4:
   001802:  20 08                move.l   a0, d0
   001804:  2e 1f                move.l   (a7)+, d7
   001806:  4e 75                rts
-sub_1808:
+* s7_sub_91aa  -  System 7 $91AA (similar code, r=0.88).
+s7_sub_91aa:
   001808:  4e 56 ff ec          link.w   a6, #$ffec
   00180c:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   001810:  1c 2e 00 17          move.b   $17(a6), d6
@@ -2487,14 +2509,16 @@ L18de:
   0018de:  4c ee 18 c0 ff dc    movem.l  -$24(a6), d6-d7/a3-a4
   0018e4:  4e 5e                unlk     a6
   0018e6:  4e 75                rts
-L18e8:
+* GA_TrapAB9A  -  System 7 $9278 (same trap slot $1C68, code r=0.94).
+* S7: Patch #10 replaces trap $AB9A; card commands: $2A
+GA_TrapAB9A:
   0018e8:  4e 56 ff e0          link.w   a6, #$ffe0
   0018ec:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   0018f0:  70 00                moveq    #$0, d0
   0018f2:  2f 00                move.l   d0, -(a7)
-  0018f4:  4e ba 6f 2c          jsr      $8822(pc)  ; -> sub_8822
+  0018f4:  4e ba 6f 2c          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0018f8:  26 40                movea.l  d0, a3
-  0018fa:  4e ba f9 34          jsr      $1230(pc)  ; -> sub_1230
+  0018fa:  4e ba f9 34          jsr      $1230(pc)  ; -> GetA5
   0018fe:  20 40                movea.l  d0, a0
   001900:  20 50                movea.l  (a0), a0
   001902:  b7 d0                cmpa.l   (a0), a3
@@ -2520,7 +2544,7 @@ L18e8:
   00194c:  55 8f                subq.l   #$2, a7
   00194e:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001952:  48 78 1c 68          pea.l    $1c68.w
-  001956:  4e ba 6d 44          jsr      $869c(pc)  ; -> sub_869c
+  001956:  4e ba 6d 44          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00195a:  58 8f                addq.l   #$4, a7
   00195c:  2f 00                move.l   d0, -(a7)
   00195e:  20 5f                movea.l  (a7)+, a0
@@ -2566,7 +2590,7 @@ L19b4:
   0019b8:  55 8f                subq.l   #$2, a7
   0019ba:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0019be:  48 78 1c 68          pea.l    $1c68.w
-  0019c2:  4e ba 6c d8          jsr      $869c(pc)  ; -> sub_869c
+  0019c2:  4e ba 6c d8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0019c6:  58 8f                addq.l   #$4, a7
   0019c8:  2f 00                move.l   d0, -(a7)
   0019ca:  20 5f                movea.l  (a7)+, a0
@@ -2597,7 +2621,7 @@ L1a04:
   001a04:  55 8f                subq.l   #$2, a7
   001a06:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001a0a:  48 78 1c 68          pea.l    $1c68.w
-  001a0e:  4e ba 6c 8c          jsr      $869c(pc)  ; -> sub_869c
+  001a0e:  4e ba 6c 8c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001a12:  58 8f                addq.l   #$4, a7
   001a14:  2f 00                move.l   d0, -(a7)
   001a16:  20 5f                movea.l  (a7)+, a0
@@ -2607,7 +2631,9 @@ L1a1e:
   001a1e:  4c ee 18 f0 ff c8    movem.l  -$38(a6), d4-d7/a3-a4
   001a24:  4e 5e                unlk     a6
   001a26:  4e 74 00 04          rtd      #$4
-L1a2a:
+* GA_SetPalette  -  System 7 $93B8 (same trap slot $1854, code r=0.91).
+* S7: Patch #90 replaces _SetPalette ($AA95); card commands: $26
+GA_SetPalette:
   001a2a:  4e 56 00 00          link.w   a6, #$0
   001a2e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001a32:  28 6e 00 0a          movea.l  $a(a6), a4
@@ -2624,7 +2650,7 @@ L1a2a:
   001a4e:  2f 0c                move.l   a4, -(a7)
   001a50:  3f 2e 00 08          move.w   $8(a6), -(a7)
   001a54:  48 78 18 54          pea.l    $1854.w
-  001a58:  4e ba 6c 42          jsr      $869c(pc)  ; -> sub_869c
+  001a58:  4e ba 6c 42          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001a5c:  58 8f                addq.l   #$4, a7
   001a5e:  2f 00                move.l   d0, -(a7)
   001a60:  20 5f                movea.l  (a7)+, a0
@@ -2632,7 +2658,9 @@ L1a2a:
   001a64:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   001a6a:  4e 5e                unlk     a6
   001a6c:  4e 74 00 0a          rtd      #$a
-L1a70:
+* GA_ActivatePalette  -  System 7 $93F4 (same trap slot $1850, code r=0.84).
+* S7: Patch #89 replaces _ActivatePalette ($AA94); card commands: $26
+GA_ActivatePalette:
   001a70:  2f 0b                move.l   a3, -(a7)
   001a72:  26 6f 00 08          movea.l  $8(a7), a3
   001a76:  70 01                moveq    #$1, d0
@@ -2645,7 +2673,7 @@ L1a70:
   001a84:  4e ba 47 9e          jsr      $6224(pc)  ; -> EngineDispatch
   001a88:  2f 0b                move.l   a3, -(a7)
   001a8a:  48 78 18 50          pea.l    $1850.w
-  001a8e:  4e ba 6c 0c          jsr      $869c(pc)  ; -> sub_869c
+  001a8e:  4e ba 6c 0c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001a92:  58 8f                addq.l   #$4, a7
   001a94:  2f 00                move.l   d0, -(a7)
   001a96:  20 5f                movea.l  (a7)+, a0
@@ -2653,7 +2681,9 @@ L1a70:
   001a9a:  4f ef 00 10          lea.l    $10(a7), a7
   001a9e:  26 5f                movea.l  (a7)+, a3
   001aa0:  4e 74 00 04          rtd      #$4
-L1aa4:
+* GA_Palette2CTab  -  System 7 $9428 (same trap slot $1880, code r=0.83).
+* S7: Patch #91 replaces _Palette2CTab ($AAA0); card commands: $26
+GA_Palette2CTab:
   001aa4:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001aa8:  28 6f 00 0c          movea.l  $c(a7), a4
   001aac:  26 6f 00 10          movea.l  $10(a7), a3
@@ -2668,7 +2698,7 @@ L1aa4:
   001ac2:  2f 0b                move.l   a3, -(a7)
   001ac4:  2f 0c                move.l   a4, -(a7)
   001ac6:  48 78 18 80          pea.l    $1880.w
-  001aca:  4e ba 6b d0          jsr      $869c(pc)  ; -> sub_869c
+  001aca:  4e ba 6b d0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001ace:  58 8f                addq.l   #$4, a7
   001ad0:  2f 00                move.l   d0, -(a7)
   001ad2:  20 5f                movea.l  (a7)+, a0
@@ -2676,7 +2706,9 @@ L1aa4:
   001ad6:  4f ef 00 10          lea.l    $10(a7), a7
   001ada:  4c df 18 00          movem.l  (a7)+, a3-a4
   001ade:  4e 74 00 08          rtd      #$8
-L1ae2:
+* GA_MakeITable  -  System 7 $9460 (same trap slot $16E4, code r=0.93).
+* S7: Patch #92 replaces _MakeITable ($AA39); card commands: $1B
+GA_MakeITable:
   001ae2:  4e 56 ff fc          link.w   a6, #$fffc
   001ae6:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001aea:  28 6e 00 0e          movea.l  $e(a6), a4
@@ -2685,7 +2717,7 @@ L1ae2:
   001af4:  2f 0b                move.l   a3, -(a7)
   001af6:  3f 2e 00 08          move.w   $8(a6), -(a7)
   001afa:  48 78 16 e4          pea.l    $16e4.w
-  001afe:  4e ba 6b 9c          jsr      $869c(pc)  ; -> sub_869c
+  001afe:  4e ba 6b 9c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001b02:  58 8f                addq.l   #$4, a7
   001b04:  2f 00                move.l   d0, -(a7)
   001b06:  20 5f                movea.l  (a7)+, a0
@@ -2713,7 +2745,9 @@ L1b3e:
   001b3e:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   001b44:  4e 5e                unlk     a6
   001b46:  4e 74 00 0a          rtd      #$a
-L1b4a:
+* GA_SaveEntries  -  System 7 $94C6 (same trap slot $1724, code r=0.93).
+* S7: Patch #84 replaces _SaveEntries ($AA49); card commands: $1A
+GA_SaveEntries:
   001b4a:  4e 56 00 00          link.w   a6, #$0
   001b4e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001b52:  28 6e 00 08          movea.l  $8(a6), a4
@@ -2722,7 +2756,7 @@ L1b4a:
   001b5c:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   001b60:  2f 0c                move.l   a4, -(a7)
   001b62:  48 78 17 24          pea.l    $1724.w
-  001b66:  4e ba 6b 34          jsr      $869c(pc)  ; -> sub_869c
+  001b66:  4e ba 6b 34          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001b6a:  58 8f                addq.l   #$4, a7
   001b6c:  2f 00                move.l   d0, -(a7)
   001b6e:  20 5f                movea.l  (a7)+, a0
@@ -2745,7 +2779,9 @@ L1b8a:
   001b9c:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   001ba2:  4e 5e                unlk     a6
   001ba4:  4e 74 00 0c          rtd      #$c
-L1ba8:
+* GA_RestoreEntries  -  System 7 $951A (same trap slot $1728, code r=0.93).
+* S7: Patch #85 replaces _RestoreEntries ($AA4A); card commands: $1A
+GA_RestoreEntries:
   001ba8:  4e 56 00 00          link.w   a6, #$0
   001bac:  48 e7 00 18          movem.l  a3-a4, -(a7)
   001bb0:  28 6e 00 08          movea.l  $8(a6), a4
@@ -2754,7 +2790,7 @@ L1ba8:
   001bba:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   001bbe:  2f 0c                move.l   a4, -(a7)
   001bc0:  48 78 17 28          pea.l    $1728.w
-  001bc4:  4e ba 6a d6          jsr      $869c(pc)  ; -> sub_869c
+  001bc4:  4e ba 6a d6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001bc8:  58 8f                addq.l   #$4, a7
   001bca:  2f 00                move.l   d0, -(a7)
   001bcc:  20 5f                movea.l  (a7)+, a0
@@ -2777,7 +2813,9 @@ L1be8:
   001bfa:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   001c00:  4e 5e                unlk     a6
   001c02:  4e 74 00 0c          rtd      #$c
-L1c06:
+* GA_GetSubTable  -  System 7 $956E (same trap slot $16DC, code r=0.95).
+* S7: Patch #86 replaces _GetSubTable ($AA37); card commands: $1A
+GA_GetSubTable:
   001c06:  4e 56 00 00          link.w   a6, #$0
   001c0a:  2f 0b                move.l   a3, -(a7)
   001c0c:  26 6e 00 0e          movea.l  $e(a6), a3
@@ -2785,7 +2823,7 @@ L1c06:
   001c12:  3f 2e 00 0c          move.w   $c(a6), -(a7)
   001c16:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001c1a:  48 78 16 dc          pea.l    $16dc.w
-  001c1e:  4e ba 6a 7c          jsr      $869c(pc)  ; -> sub_869c
+  001c1e:  4e ba 6a 7c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001c22:  58 8f                addq.l   #$4, a7
   001c24:  2f 00                move.l   d0, -(a7)
   001c26:  20 5f                movea.l  (a7)+, a0
@@ -2808,14 +2846,16 @@ L1c42:
   001c54:  26 6e ff fc          movea.l  -$4(a6), a3
   001c58:  4e 5e                unlk     a6
   001c5a:  4e 74 00 0a          rtd      #$a
-L1c5e:
+* GA_SetEntries  -  System 7 $95C2 (same trap slot $16FC, code r=0.95).
+* S7: Patch #77 replaces _SetEntries ($AA3F); card commands: $1A $29
+GA_SetEntries:
   001c5e:  4e 56 ff fc          link.w   a6, #$fffc
   001c62:  2f 0b                move.l   a3, -(a7)
   001c64:  26 6e 00 08          movea.l  $8(a6), a3
   001c68:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   001c6c:  2f 0b                move.l   a3, -(a7)
   001c6e:  48 78 16 fc          pea.l    $16fc.w
-  001c72:  4e ba 6a 28          jsr      $869c(pc)  ; -> sub_869c
+  001c72:  4e ba 6a 28          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001c76:  58 8f                addq.l   #$4, a7
   001c78:  2f 00                move.l   d0, -(a7)
   001c7a:  20 5f                movea.l  (a7)+, a0
@@ -2851,7 +2891,9 @@ L1caa:
   001ccc:  26 6e ff f8          movea.l  -$8(a6), a3
   001cd0:  4e 5e                unlk     a6
   001cd2:  4e 74 00 08          rtd      #$8
-L1cd6:
+* GA_SetDeviceAttribute  -  System 7 $9634 (identical code).
+* S7: Patch #73 replaces _SetDeviceAttribute ($AA2D); card commands: $26 $29
+GA_SetDeviceAttribute:
   001cd6:  4e 56 00 00          link.w   a6, #$0
   001cda:  70 01                moveq    #$1, d0
   001cdc:  2f 00                move.l   d0, -(a7)
@@ -2865,7 +2907,7 @@ L1cd6:
   001cf0:  3f 2e 00 0a          move.w   $a(a6), -(a7)
   001cf4:  1f 2e 00 08          move.b   $8(a6), -(a7)
   001cf8:  48 78 16 b4          pea.l    $16b4.w
-  001cfc:  4e ba 69 9e          jsr      $869c(pc)  ; -> sub_869c
+  001cfc:  4e ba 69 9e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001d00:  58 8f                addq.l   #$4, a7
   001d02:  2f 00                move.l   d0, -(a7)
   001d04:  20 5f                movea.l  (a7)+, a0
@@ -2879,7 +2921,9 @@ L1cd6:
   001d16:  4e ba 45 0c          jsr      $6224(pc)  ; -> EngineDispatch
   001d1a:  4e 5e                unlk     a6
   001d1c:  4e 74 00 08          rtd      #$8
-L1d20:
+* GA_DisposGDevice  -  System 7 $9684 (identical code).
+* S7: Patch #74 replaces _DisposGDevice ($AA30); card commands: $2B
+GA_DisposGDevice:
   001d20:  4e 56 00 00          link.w   a6, #$0
   001d24:  70 01                moveq    #$1, d0
   001d26:  2f 00                move.l   d0, -(a7)
@@ -2890,14 +2934,16 @@ L1d20:
   001d32:  4e ba 44 f0          jsr      $6224(pc)  ; -> EngineDispatch
   001d36:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001d3a:  48 78 16 c0          pea.l    $16c0.w
-  001d3e:  4e ba 69 5c          jsr      $869c(pc)  ; -> sub_869c
+  001d3e:  4e ba 69 5c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001d42:  58 8f                addq.l   #$4, a7
   001d44:  2f 00                move.l   d0, -(a7)
   001d46:  20 5f                movea.l  (a7)+, a0
   001d48:  4e 90                jsr      (a0)
   001d4a:  4e 5e                unlk     a6
   001d4c:  4e 74 00 04          rtd      #$4
-L1d50:
+* GA_AddSearch  -  System 7 $96B8 (same trap slot $16E8, code r=0.95).
+* S7: Patch #25 replaces _AddSearch ($AA3A); card commands: $26 $29
+GA_AddSearch:
   001d50:  4e 56 ff fc          link.w   a6, #$fffc
   001d54:  2f 0b                move.l   a3, -(a7)
   001d56:  26 6e 00 08          movea.l  $8(a6), a3
@@ -2912,7 +2958,7 @@ L1d50:
   001d6e:  4e ba 44 b4          jsr      $6224(pc)  ; -> EngineDispatch
   001d72:  2f 0b                move.l   a3, -(a7)
   001d74:  48 78 16 e8          pea.l    $16e8.w
-  001d78:  4e ba 69 22          jsr      $869c(pc)  ; -> sub_869c
+  001d78:  4e ba 69 22          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001d7c:  58 8f                addq.l   #$4, a7
   001d7e:  2f 00                move.l   d0, -(a7)
   001d80:  20 5f                movea.l  (a7)+, a0
@@ -2927,7 +2973,9 @@ L1d50:
   001d96:  26 6e ff f8          movea.l  -$8(a6), a3
   001d9a:  4e 5e                unlk     a6
   001d9c:  4e 74 00 04          rtd      #$4
-L1da0:
+* GA_InitGDevice  -  System 7 $9706 (same trap slot $16B8, code r=0.98).
+* S7: Patch #99 replaces _InitGDevice ($AA2E); card commands: $12 $13 $14 $16 $26 $29
+GA_InitGDevice:
   001da0:  4e 56 00 00          link.w   a6, #$0
   001da4:  2f 0b                move.l   a3, -(a7)
   001da6:  20 78 08 88          movea.l  $888.w, a0
@@ -2955,12 +3003,12 @@ L1da0:
   001de2:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   001de6:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001dea:  48 78 16 b8          pea.l    $16b8.w
-  001dee:  4e ba 68 ac          jsr      $869c(pc)  ; -> sub_869c
+  001dee:  4e ba 68 ac          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001df2:  58 8f                addq.l   #$4, a7
   001df4:  2f 00                move.l   d0, -(a7)
   001df6:  20 5f                movea.l  (a7)+, a0
   001df8:  4e 90                jsr      (a0)
-  001dfa:  4e ba 71 dc          jsr      $8fd8(pc)  ; -> sub_8fd8
+  001dfa:  4e ba 71 dc          jsr      $8fd8(pc)  ; -> s7_sub_77a6
   001dfe:  70 01                moveq    #$1, d0
   001e00:  2f 00                move.l   d0, -(a7)
   001e02:  2f 00                move.l   d0, -(a7)
@@ -2973,7 +3021,9 @@ L1da0:
   001e16:  26 6e ff fc          movea.l  -$4(a6), a3
   001e1a:  4e 5e                unlk     a6
   001e1c:  4e 74 00 0a          rtd      #$a
-L1e20:
+* GA_DelSearch  -  System 7 $9794 (same trap slot $1730, code r=0.95).
+* S7: Patch #26 replaces _DelSearch ($AA4C); card commands: $26 $29
+GA_DelSearch:
   001e20:  4e 56 ff fc          link.w   a6, #$fffc
   001e24:  2f 0b                move.l   a3, -(a7)
   001e26:  26 6e 00 08          movea.l  $8(a6), a3
@@ -2988,7 +3038,7 @@ L1e20:
   001e3e:  4e ba 43 e4          jsr      $6224(pc)  ; -> EngineDispatch
   001e42:  2f 0b                move.l   a3, -(a7)
   001e44:  48 78 17 30          pea.l    $1730.w
-  001e48:  4e ba 68 52          jsr      $869c(pc)  ; -> sub_869c
+  001e48:  4e ba 68 52          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001e4c:  58 8f                addq.l   #$4, a7
   001e4e:  2f 00                move.l   d0, -(a7)
   001e50:  20 5f                movea.l  (a7)+, a0
@@ -3003,7 +3053,9 @@ L1e20:
   001e66:  26 6e ff f8          movea.l  -$8(a6), a3
   001e6a:  4e 5e                unlk     a6
   001e6c:  4e 74 00 04          rtd      #$4
-L1e70:
+* GA_AddComp  -  System 7 $97E2 (same trap slot $16EC, code r=0.95).
+* S7: Patch #27 replaces _AddComp ($AA3B); card commands: $26 $29
+GA_AddComp:
   001e70:  4e 56 ff fc          link.w   a6, #$fffc
   001e74:  2f 0b                move.l   a3, -(a7)
   001e76:  26 6e 00 08          movea.l  $8(a6), a3
@@ -3018,7 +3070,7 @@ L1e70:
   001e8e:  4e ba 43 94          jsr      $6224(pc)  ; -> EngineDispatch
   001e92:  2f 0b                move.l   a3, -(a7)
   001e94:  48 78 16 ec          pea.l    $16ec.w
-  001e98:  4e ba 68 02          jsr      $869c(pc)  ; -> sub_869c
+  001e98:  4e ba 68 02          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001e9c:  58 8f                addq.l   #$4, a7
   001e9e:  2f 00                move.l   d0, -(a7)
   001ea0:  20 5f                movea.l  (a7)+, a0
@@ -3033,7 +3085,9 @@ L1e70:
   001eb6:  26 6e ff f8          movea.l  -$8(a6), a3
   001eba:  4e 5e                unlk     a6
   001ebc:  4e 74 00 04          rtd      #$4
-L1ec0:
+* GA_DelComp  -  System 7 $9830 (same trap slot $1734, code r=0.95).
+* S7: Patch #28 replaces _DelComp ($AA4D); card commands: $26 $29
+GA_DelComp:
   001ec0:  4e 56 ff fc          link.w   a6, #$fffc
   001ec4:  2f 0b                move.l   a3, -(a7)
   001ec6:  26 6e 00 08          movea.l  $8(a6), a3
@@ -3048,7 +3102,7 @@ L1ec0:
   001ede:  4e ba 43 44          jsr      $6224(pc)  ; -> EngineDispatch
   001ee2:  2f 0b                move.l   a3, -(a7)
   001ee4:  48 78 17 34          pea.l    $1734.w
-  001ee8:  4e ba 67 b2          jsr      $869c(pc)  ; -> sub_869c
+  001ee8:  4e ba 67 b2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001eec:  58 8f                addq.l   #$4, a7
   001eee:  2f 00                move.l   d0, -(a7)
   001ef0:  20 5f                movea.l  (a7)+, a0
@@ -3063,7 +3117,9 @@ L1ec0:
   001f06:  26 6e ff f8          movea.l  -$8(a6), a3
   001f0a:  4e 5e                unlk     a6
   001f0c:  4e 74 00 04          rtd      #$4
-L1f10:
+* GA_DisposPixPat  -  System 7 $987E (identical code).
+* S7: Patch #29 replaces _DisposPixPat ($AA08); card commands: $2C
+GA_DisposPixPat:
   001f10:  4e 56 00 00          link.w   a6, #$0
   001f14:  70 01                moveq    #$1, d0
   001f16:  2f 00                move.l   d0, -(a7)
@@ -3074,20 +3130,22 @@ L1f10:
   001f22:  4e ba 43 00          jsr      $6224(pc)  ; -> EngineDispatch
   001f26:  2f 2e 00 08          move.l   $8(a6), -(a7)
   001f2a:  48 78 16 20          pea.l    $1620.w
-  001f2e:  4e ba 67 6c          jsr      $869c(pc)  ; -> sub_869c
+  001f2e:  4e ba 67 6c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001f32:  58 8f                addq.l   #$4, a7
   001f34:  2f 00                move.l   d0, -(a7)
   001f36:  20 5f                movea.l  (a7)+, a0
   001f38:  4e 90                jsr      (a0)
   001f3a:  4e 5e                unlk     a6
   001f3c:  4e 74 00 04          rtd      #$4
-L1f40:
+* GA_CopyPixPat  -  System 7 $98B2 (same trap slot $1624, code r=0.95).
+* S7: Patch #30 replaces _CopyPixPat ($AA09); card commands: $2A
+GA_CopyPixPat:
   001f40:  4e 56 ff f8          link.w   a6, #$fff8
   001f44:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   001f48:  28 6e 00 08          movea.l  $8(a6), a4
   001f4c:  70 00                moveq    #$0, d0
   001f4e:  2f 00                move.l   d0, -(a7)
-  001f50:  4e ba 68 d0          jsr      $8822(pc)  ; -> sub_8822
+  001f50:  4e ba 68 d0          jsr      $8822(pc)  ; -> s7_sub_6f1c
   001f54:  26 40                movea.l  d0, a3
   001f56:  7e 00                moveq    #$0, d7
   001f58:  20 0b                move.l   a3, d0
@@ -3113,7 +3171,7 @@ L1f82:
   001f82:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   001f86:  2f 0c                move.l   a4, -(a7)
   001f88:  48 78 16 24          pea.l    $1624.w
-  001f8c:  4e ba 67 0e          jsr      $869c(pc)  ; -> sub_869c
+  001f8c:  4e ba 67 0e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   001f90:  58 8f                addq.l   #$4, a7
   001f92:  2f 00                move.l   d0, -(a7)
   001f94:  20 5f                movea.l  (a7)+, a0
@@ -3138,13 +3196,15 @@ L1fc6:
   001fc6:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   001fcc:  4e 5e                unlk     a6
   001fce:  4e 74 00 08          rtd      #$8
-L1fd2:
+* GA_MakeRGBPat  -  System 7 $9948 (same trap slot $1634, code r=0.95).
+* S7: Patch #31 replaces _MakeRGBPat ($AA0D); card commands: $2A
+GA_MakeRGBPat:
   001fd2:  4e 56 ff f8          link.w   a6, #$fff8
   001fd6:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   001fda:  28 6e 00 0c          movea.l  $c(a6), a4
   001fde:  70 00                moveq    #$0, d0
   001fe0:  2f 00                move.l   d0, -(a7)
-  001fe2:  4e ba 68 3e          jsr      $8822(pc)  ; -> sub_8822
+  001fe2:  4e ba 68 3e          jsr      $8822(pc)  ; -> s7_sub_6f1c
   001fe6:  26 40                movea.l  d0, a3
   001fe8:  7e 00                moveq    #$0, d7
   001fea:  20 0b                move.l   a3, d0
@@ -3170,7 +3230,7 @@ L2014:
   002014:  2f 0c                move.l   a4, -(a7)
   002016:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00201a:  48 78 16 34          pea.l    $1634.w
-  00201e:  4e ba 66 7c          jsr      $869c(pc)  ; -> sub_869c
+  00201e:  4e ba 66 7c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002022:  58 8f                addq.l   #$4, a7
   002024:  2f 00                move.l   d0, -(a7)
   002026:  20 5f                movea.l  (a7)+, a0
@@ -3193,12 +3253,14 @@ L2050:
   002050:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   002056:  4e 5e                unlk     a6
   002058:  4e 74 00 08          rtd      #$8
-L205c:
+* GA_TrapAB11  -  System 7 $99D6 (same trap slot $1A44, code r=0.96).
+* S7: Patch #32 replaces trap $AB11; card commands: $2A
+GA_TrapAB11:
   00205c:  4e 56 ff f8          link.w   a6, #$fff8
   002060:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   002064:  70 00                moveq    #$0, d0
   002066:  2f 00                move.l   d0, -(a7)
-  002068:  4e ba 67 b8          jsr      $8822(pc)  ; -> sub_8822
+  002068:  4e ba 67 b8          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00206c:  26 40                movea.l  d0, a3
   00206e:  7e 00                moveq    #$0, d7
   002070:  20 6e 00 08          movea.l  $8(a6), a0
@@ -3212,7 +3274,7 @@ L205c:
   002084:  72 00                moveq    #$0, d1
   002086:  2f 01                move.l   d1, -(a7)
   002088:  2f 2e 00 0c          move.l   $c(a6), -(a7)
-  00208c:  4e ba f7 7a          jsr      $1808(pc)  ; -> sub_1808
+  00208c:  4e ba f7 7a          jsr      $1808(pc)  ; -> s7_sub_91aa
   002090:  4a 00                tst.b    d0
   002092:  4f ef 00 10          lea.l    $10(a7), a7
   002096:  66 66                bne.b    $20fe  ; -> L20fe
@@ -3238,7 +3300,7 @@ L20c0:
   0020c0:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0020c4:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0020c8:  48 78 1a 44          pea.l    $1a44.w
-  0020cc:  4e ba 65 ce          jsr      $869c(pc)  ; -> sub_869c
+  0020cc:  4e ba 65 ce          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0020d0:  58 8f                addq.l   #$4, a7
   0020d2:  2f 00                move.l   d0, -(a7)
   0020d4:  20 5f                movea.l  (a7)+, a0
@@ -3261,13 +3323,14 @@ L20fe:
   0020fe:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   002104:  4e 5e                unlk     a6
   002106:  4e 74 00 08          rtd      #$8
-sub_210a:
+* s7_sub_9a88  -  System 7 $9A88 (similar code, r=0.90).
+s7_sub_9a88:
   00210a:  4e 56 ff f8          link.w   a6, #$fff8
   00210e:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
   002112:  3a 2e 00 08          move.w   $8(a6), d5
   002116:  70 00                moveq    #$0, d0
   002118:  2f 00                move.l   d0, -(a7)
-  00211a:  4e ba 67 06          jsr      $8822(pc)  ; -> sub_8822
+  00211a:  4e ba 67 06          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00211e:  26 40                movea.l  d0, a3
   002120:  4a ae 00 0a          tst.l    $a(a6)
   002124:  58 8f                addq.l   #$4, a7
@@ -3286,7 +3349,7 @@ sub_210a:
   002146:  aa 28                dc.w     $aa28
   002148:  28 9f                move.l   (a7)+, (a4)
 L214a:
-  00214a:  4e ba f0 e4          jsr      $1230(pc)  ; -> sub_1230
+  00214a:  4e ba f0 e4          jsr      $1230(pc)  ; -> GetA5
   00214e:  20 40                movea.l  d0, a0
   002150:  20 50                movea.l  (a0), a0
   002152:  b7 d0                cmpa.l   (a0), a3
@@ -3322,7 +3385,7 @@ L2184:
   002192:  48 68 00 14          pea.l    $14(a0)
   002196:  2f 00                move.l   d0, -(a7)
   002198:  2f 0c                move.l   a4, -(a7)
-  00219a:  4e ba f6 6c          jsr      $1808(pc)  ; -> sub_1808
+  00219a:  4e ba f6 6c          jsr      $1808(pc)  ; -> s7_sub_91aa
   00219e:  72 00                moveq    #$0, d1
   0021a0:  12 00                move.b   d0, d1
   0021a2:  4f ef 00 10          lea.l    $10(a7), a7
@@ -3346,7 +3409,7 @@ L21c4:
   0021c8:  10 07                move.b   d7, d0
   0021ca:  2f 00                move.l   d0, -(a7)
   0021cc:  2f 0c                move.l   a4, -(a7)
-  0021ce:  4e ba f6 38          jsr      $1808(pc)  ; -> sub_1808
+  0021ce:  4e ba f6 38          jsr      $1808(pc)  ; -> s7_sub_91aa
   0021d2:  72 00                moveq    #$0, d1
   0021d4:  12 00                move.b   d0, d1
   0021d6:  4f ef 00 10          lea.l    $10(a7), a7
@@ -3354,7 +3417,7 @@ L21c4:
 L21dc:
   0021dc:  2f 2e 00 0a          move.l   $a(a6), -(a7)
   0021e0:  48 78 1a 8c          pea.l    $1a8c.w
-  0021e4:  4e ba 64 b6          jsr      $869c(pc)  ; -> sub_869c
+  0021e4:  4e ba 64 b6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0021e8:  58 8f                addq.l   #$4, a7
   0021ea:  2f 00                move.l   d0, -(a7)
   0021ec:  3f 05                move.w   d5, -(a7)
@@ -3378,7 +3441,7 @@ L21dc:
 L221a:
   00221a:  2f 2e 00 0a          move.l   $a(a6), -(a7)
   00221e:  48 78 1a 8c          pea.l    $1a8c.w
-  002222:  4e ba 64 78          jsr      $869c(pc)  ; -> sub_869c
+  002222:  4e ba 64 78          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002226:  58 8f                addq.l   #$4, a7
   002228:  2f 00                move.l   d0, -(a7)
   00222a:  3f 05                move.w   d5, -(a7)
@@ -3389,15 +3452,17 @@ L2232:
   002232:  4c ee 18 e0 ff e4    movem.l  -$1c(a6), d5-d7/a3-a4
   002238:  4e 5e                unlk     a6
   00223a:  4e 74 00 06          rtd      #$6
-L223e:
+* GA_SetPBits  -  System 7 $9BCA (same trap slot $FD4, code r=0.89).
+* S7: Patch #33 replaces _SetPBits ($A875); card commands: $26
+GA_SetPBits:
   00223e:  4e 56 ff fc          link.w   a6, #$fffc
   002242:  48 e7 00 18          movem.l  a3-a4, -(a7)
   002246:  28 6e 00 08          movea.l  $8(a6), a4
   00224a:  70 00                moveq    #$0, d0
   00224c:  2f 00                move.l   d0, -(a7)
-  00224e:  4e ba 65 d2          jsr      $8822(pc)  ; -> sub_8822
+  00224e:  4e ba 65 d2          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002252:  2d 40 ff fc          move.l   d0, -$4(a6)
-  002256:  4e ba ef d8          jsr      $1230(pc)  ; -> sub_1230
+  002256:  4e ba ef d8          jsr      $1230(pc)  ; -> GetA5
   00225a:  20 40                movea.l  d0, a0
   00225c:  20 50                movea.l  (a0), a0
   00225e:  20 2e ff fc          move.l   -$4(a6), d0
@@ -3438,7 +3503,7 @@ L22a6:
 L22bc:
   0022bc:  2f 0c                move.l   a4, -(a7)
   0022be:  48 78 0f d4          pea.l    $fd4.w
-  0022c2:  4e ba 63 d8          jsr      $869c(pc)  ; -> sub_869c
+  0022c2:  4e ba 63 d8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0022c6:  58 8f                addq.l   #$4, a7
   0022c8:  2f 00                move.l   d0, -(a7)
   0022ca:  20 5f                movea.l  (a7)+, a0
@@ -3446,15 +3511,17 @@ L22bc:
   0022ce:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   0022d4:  4e 5e                unlk     a6
   0022d6:  4e 74 00 04          rtd      #$4
-L22da:
+* GA_PortSize  -  System 7 $9C62 (same trap slot $FD8, code r=0.96).
+* S7: Patch #34 replaces _PortSize ($A876); card commands: $26
+GA_PortSize:
   0022da:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0022de:  3c 2f 00 14          move.w   $14(a7), d6
   0022e2:  3e 2f 00 16          move.w   $16(a7), d7
   0022e6:  70 00                moveq    #$0, d0
   0022e8:  2f 00                move.l   d0, -(a7)
-  0022ea:  4e ba 65 36          jsr      $8822(pc)  ; -> sub_8822
+  0022ea:  4e ba 65 36          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0022ee:  28 40                movea.l  d0, a4
-  0022f0:  4e ba ef 3e          jsr      $1230(pc)  ; -> sub_1230
+  0022f0:  4e ba ef 3e          jsr      $1230(pc)  ; -> GetA5
   0022f4:  20 40                movea.l  d0, a0
   0022f6:  20 50                movea.l  (a0), a0
   0022f8:  b9 d0                cmpa.l   (a0), a4
@@ -3491,21 +3558,23 @@ L233e:
   00233e:  3f 07                move.w   d7, -(a7)
   002340:  3f 06                move.w   d6, -(a7)
   002342:  48 78 0f d8          pea.l    $fd8.w
-  002346:  4e ba 63 54          jsr      $869c(pc)  ; -> sub_869c
+  002346:  4e ba 63 54          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00234a:  58 8f                addq.l   #$4, a7
   00234c:  2f 00                move.l   d0, -(a7)
   00234e:  20 5f                movea.l  (a7)+, a0
   002350:  4e 90                jsr      (a0)
   002352:  4c df 18 c0          movem.l  (a7)+, d6-d7/a3-a4
   002356:  4e 74 00 04          rtd      #$4
-L235a:
+* GA_MovePortTo  -  System 7 $9CF2 (same trap slot $FDC, code r=0.97).
+* S7: Patch #35 replaces _MovePortTo ($A877); card commands: $26
+GA_MovePortTo:
   00235a:  4e 56 00 00          link.w   a6, #$0
   00235e:  2f 0b                move.l   a3, -(a7)
   002360:  70 00                moveq    #$0, d0
   002362:  2f 00                move.l   d0, -(a7)
-  002364:  4e ba 64 bc          jsr      $8822(pc)  ; -> sub_8822
+  002364:  4e ba 64 bc          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002368:  26 40                movea.l  d0, a3
-  00236a:  4e ba ee c4          jsr      $1230(pc)  ; -> sub_1230
+  00236a:  4e ba ee c4          jsr      $1230(pc)  ; -> GetA5
   00236e:  20 40                movea.l  d0, a0
   002370:  20 50                movea.l  (a0), a0
   002372:  b7 d0                cmpa.l   (a0), a3
@@ -3523,7 +3592,7 @@ L235a:
 L238e:
   00238e:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002392:  48 78 0f dc          pea.l    $fdc.w
-  002396:  4e ba 63 04          jsr      $869c(pc)  ; -> sub_869c
+  002396:  4e ba 63 04          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00239a:  58 8f                addq.l   #$4, a7
   00239c:  2f 00                move.l   d0, -(a7)
   00239e:  20 5f                movea.l  (a7)+, a0
@@ -3531,15 +3600,17 @@ L238e:
   0023a2:  26 6e ff fc          movea.l  -$4(a6), a3
   0023a6:  4e 5e                unlk     a6
   0023a8:  4e 74 00 04          rtd      #$4
-L23ac:
+* GA_SetOrigin  -  System 7 $9D4C (same trap slot $FE0, code r=0.82).
+* S7: Patch #36 replaces _SetOrigin ($A878); card commands: $26
+GA_SetOrigin:
   0023ac:  48 e7 03 10          movem.l  d6-d7/a3, -(a7)
   0023b0:  3c 2f 00 10          move.w   $10(a7), d6
   0023b4:  3e 2f 00 12          move.w   $12(a7), d7
   0023b8:  70 00                moveq    #$0, d0
   0023ba:  2f 00                move.l   d0, -(a7)
-  0023bc:  4e ba 64 64          jsr      $8822(pc)  ; -> sub_8822
+  0023bc:  4e ba 64 64          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0023c0:  26 40                movea.l  d0, a3
-  0023c2:  4e ba ee 6c          jsr      $1230(pc)  ; -> sub_1230
+  0023c2:  4e ba ee 6c          jsr      $1230(pc)  ; -> GetA5
   0023c6:  20 40                movea.l  d0, a0
   0023c8:  20 50                movea.l  (a0), a0
   0023ca:  b7 d0                cmpa.l   (a0), a3
@@ -3569,7 +3640,7 @@ L23fe:
   0023fe:  3f 07                move.w   d7, -(a7)
   002400:  3f 06                move.w   d6, -(a7)
   002402:  48 78 0f e0          pea.l    $fe0.w
-  002406:  4e ba 62 94          jsr      $869c(pc)  ; -> sub_869c
+  002406:  4e ba 62 94          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00240a:  58 8f                addq.l   #$4, a7
   00240c:  2f 00                move.l   d0, -(a7)
   00240e:  20 5f                movea.l  (a7)+, a0
@@ -3577,17 +3648,19 @@ L23fe:
 L2412:
   002412:  4c df 08 c0          movem.l  (a7)+, d6-d7/a3
   002416:  4e 74 00 04          rtd      #$4
-L241a:
+* GA_SetClip  -  System 7 $9DBE (same trap slot $FE4, code r=0.94).
+* S7: Patch #37 replaces _SetClip ($A879); card commands: $32
+GA_SetClip:
   00241a:  4e 56 00 00          link.w   a6, #$0
   00241e:  2f 0b                move.l   a3, -(a7)
   002420:  70 00                moveq    #$0, d0
   002422:  2f 00                move.l   d0, -(a7)
-  002424:  4e ba 63 fc          jsr      $8822(pc)  ; -> sub_8822
+  002424:  4e ba 63 fc          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002428:  26 40                movea.l  d0, a3
   00242a:  20 0b                move.l   a3, d0
   00242c:  58 8f                addq.l   #$4, a7
   00242e:  67 3c                beq.b    $246c  ; -> L246c
-  002430:  4e ba ed fe          jsr      $1230(pc)  ; -> sub_1230
+  002430:  4e ba ed fe          jsr      $1230(pc)  ; -> GetA5
   002434:  20 40                movea.l  d0, a0
   002436:  20 50                movea.l  (a0), a0
   002438:  20 50                movea.l  (a0), a0
@@ -3612,7 +3685,7 @@ L241a:
 L246c:
   00246c:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002470:  48 78 0f e4          pea.l    $fe4.w
-  002474:  4e ba 62 26          jsr      $869c(pc)  ; -> sub_869c
+  002474:  4e ba 62 26          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002478:  58 8f                addq.l   #$4, a7
   00247a:  2f 00                move.l   d0, -(a7)
   00247c:  20 5f                movea.l  (a7)+, a0
@@ -3620,19 +3693,21 @@ L246c:
   002480:  26 6e ff fc          movea.l  -$4(a6), a3
   002484:  4e 5e                unlk     a6
   002486:  4e 74 00 04          rtd      #$4
-L248a:
+* GA_ClipRect  -  System 7 $9E34 (same trap slot $FEC, code r=0.92).
+* S7: Patch #38 replaces _ClipRect ($A87B); card commands: $32
+GA_ClipRect:
   00248a:  4e 56 ff f8          link.w   a6, #$fff8
   00248e:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   002492:  28 6e 00 08          movea.l  $8(a6), a4
   002496:  70 00                moveq    #$0, d0
   002498:  2f 00                move.l   d0, -(a7)
-  00249a:  4e ba 63 86          jsr      $8822(pc)  ; -> sub_8822
+  00249a:  4e ba 63 86          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00249e:  26 40                movea.l  d0, a3
   0024a0:  42 07                clr.b    d7
   0024a2:  20 0b                move.l   a3, d0
   0024a4:  58 8f                addq.l   #$4, a7
   0024a6:  67 4a                beq.b    $24f2  ; -> L24f2
-  0024a8:  4e ba ed 86          jsr      $1230(pc)  ; -> sub_1230
+  0024a8:  4e ba ed 86          jsr      $1230(pc)  ; -> GetA5
   0024ac:  20 40                movea.l  d0, a0
   0024ae:  20 50                movea.l  (a0), a0
   0024b0:  20 50                movea.l  (a0), a0
@@ -3661,7 +3736,7 @@ L24f0:
 L24f2:
   0024f2:  2f 0c                move.l   a4, -(a7)
   0024f4:  48 78 0f ec          pea.l    $fec.w
-  0024f8:  4e ba 61 a2          jsr      $869c(pc)  ; -> sub_869c
+  0024f8:  4e ba 61 a2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0024fc:  58 8f                addq.l   #$4, a7
   0024fe:  2f 00                move.l   d0, -(a7)
   002500:  20 5f                movea.l  (a7)+, a0
@@ -3680,32 +3755,38 @@ L251e:
   00251e:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   002524:  4e 5e                unlk     a6
   002526:  4e 74 00 04          rtd      #$4
-L252a:
+* GA_HidePen  -  System 7 $9ED0 (same trap slot $1058, code r=0.88).
+* S7: Patch #39 replaces _HidePen ($A896); no EngineDispatch command found
+GA_HidePen:
   00252a:  48 78 10 58          pea.l    $1058.w
-  00252e:  4e ba 61 6c          jsr      $869c(pc)  ; -> sub_869c
+  00252e:  4e ba 61 6c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002532:  58 8f                addq.l   #$4, a7
   002534:  2f 00                move.l   d0, -(a7)
   002536:  20 5f                movea.l  (a7)+, a0
   002538:  4e 90                jsr      (a0)
   00253a:  4e 75                rts
-L253c:
+* GA_ShowPen  -  System 7 $9EEA (same trap slot $105C, code r=0.88).
+* S7: Patch #40 replaces _ShowPen ($A897); no EngineDispatch command found
+GA_ShowPen:
   00253c:  48 78 10 5c          pea.l    $105c.w
-  002540:  4e ba 61 5a          jsr      $869c(pc)  ; -> sub_869c
+  002540:  4e ba 61 5a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002544:  58 8f                addq.l   #$4, a7
   002546:  2f 00                move.l   d0, -(a7)
   002548:  20 5f                movea.l  (a7)+, a0
   00254a:  4e 90                jsr      (a0)
   00254c:  4e 75                rts
-L254e:
+* GA_SetPenState  -  System 7 $9F04 (same trap slot $1064, code r=0.92).
+* S7: Patch #11 replaces _SetPenState ($A899); card commands: $2A $35
+GA_SetPenState:
   00254e:  4e 56 ff f4          link.w   a6, #$fff4
   002552:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   002556:  28 6e 00 08          movea.l  $8(a6), a4
   00255a:  70 00                moveq    #$0, d0
   00255c:  2f 00                move.l   d0, -(a7)
-  00255e:  4e ba 62 c2          jsr      $8822(pc)  ; -> sub_8822
+  00255e:  4e ba 62 c2          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002562:  26 40                movea.l  d0, a3
   002564:  7e 00                moveq    #$0, d7
-  002566:  4e ba ec c8          jsr      $1230(pc)  ; -> sub_1230
+  002566:  4e ba ec c8          jsr      $1230(pc)  ; -> GetA5
   00256a:  20 40                movea.l  d0, a0
   00256c:  20 50                movea.l  (a0), a0
   00256e:  b7 d0                cmpa.l   (a0), a3
@@ -3725,7 +3806,7 @@ L254e:
   002590:  49 c0                extb.l   d0
   002592:  2f 00                move.l   d0, -(a7)
   002594:  48 6b 00 3a          pea.l    $3a(a3)
-  002598:  4e ba f2 6e          jsr      $1808(pc)  ; -> sub_1808
+  002598:  4e ba f2 6e          jsr      $1808(pc)  ; -> s7_sub_91aa
   00259c:  72 00                moveq    #$0, d1
   00259e:  12 00                move.b   d0, d1
   0025a0:  4f ef 00 10          lea.l    $10(a7), a7
@@ -3748,7 +3829,7 @@ L25aa:
 L25d0:
   0025d0:  2f 0c                move.l   a4, -(a7)
   0025d2:  48 78 10 64          pea.l    $1064.w
-  0025d6:  4e ba 60 c4          jsr      $869c(pc)  ; -> sub_869c
+  0025d6:  4e ba 60 c4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0025da:  58 8f                addq.l   #$4, a7
   0025dc:  2f 00                move.l   d0, -(a7)
   0025de:  20 5f                movea.l  (a7)+, a0
@@ -3771,16 +3852,18 @@ L2608:
   002608:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   00260e:  4e 5e                unlk     a6
   002610:  4e 74 00 04          rtd      #$4
-L2614:
+* GA_PenSize  -  System 7 $9FD0 (same trap slot $106C, code r=0.98).
+* S7: Patch #12 replaces _PenSize ($A89B); card commands: $35
+GA_PenSize:
   002614:  4e 56 ff fc          link.w   a6, #$fffc
   002618:  48 e7 03 10          movem.l  d6-d7/a3, -(a7)
   00261c:  3c 2e 00 08          move.w   $8(a6), d6
   002620:  3e 2e 00 0a          move.w   $a(a6), d7
   002624:  70 00                moveq    #$0, d0
   002626:  2f 00                move.l   d0, -(a7)
-  002628:  4e ba 61 f8          jsr      $8822(pc)  ; -> sub_8822
+  002628:  4e ba 61 f8          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00262c:  26 40                movea.l  d0, a3
-  00262e:  4e ba ec 00          jsr      $1230(pc)  ; -> sub_1230
+  00262e:  4e ba ec 00          jsr      $1230(pc)  ; -> GetA5
   002632:  20 40                movea.l  d0, a0
   002634:  20 50                movea.l  (a0), a0
   002636:  b7 d0                cmpa.l   (a0), a3
@@ -3801,7 +3884,7 @@ L2614:
   002660:  3f 07                move.w   d7, -(a7)
   002662:  3f 06                move.w   d6, -(a7)
   002664:  48 78 10 6c          pea.l    $106c.w
-  002668:  4e ba 60 32          jsr      $869c(pc)  ; -> sub_869c
+  002668:  4e ba 60 32          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00266c:  58 8f                addq.l   #$4, a7
   00266e:  2f 00                move.l   d0, -(a7)
   002670:  20 5f                movea.l  (a7)+, a0
@@ -3812,7 +3895,7 @@ L267a:
   00267a:  3f 07                move.w   d7, -(a7)
   00267c:  3f 06                move.w   d6, -(a7)
   00267e:  48 78 10 6c          pea.l    $106c.w
-  002682:  4e ba 60 18          jsr      $869c(pc)  ; -> sub_869c
+  002682:  4e ba 60 18          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002686:  58 8f                addq.l   #$4, a7
   002688:  2f 00                move.l   d0, -(a7)
   00268a:  20 5f                movea.l  (a7)+, a0
@@ -3821,28 +3904,32 @@ L268e:
   00268e:  4c ee 08 c0 ff f0    movem.l  -$10(a6), d6-d7/a3
   002694:  4e 5e                unlk     a6
   002696:  4e 74 00 04          rtd      #$4
-L269a:
+* GA_PenMode  -  System 7 $A060 (identical code).
+* S7: Patch #13 replaces _PenMode ($A89C); no EngineDispatch command found
+GA_PenMode:
   00269a:  4e 56 00 00          link.w   a6, #$0
   00269e:  3f 2e 00 08          move.w   $8(a6), -(a7)
   0026a2:  48 78 10 70          pea.l    $1070.w
-  0026a6:  4e ba 5f f4          jsr      $869c(pc)  ; -> sub_869c
+  0026a6:  4e ba 5f f4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0026aa:  58 8f                addq.l   #$4, a7
   0026ac:  2f 00                move.l   d0, -(a7)
   0026ae:  20 5f                movea.l  (a7)+, a0
   0026b0:  4e 90                jsr      (a0)
   0026b2:  4e 5e                unlk     a6
   0026b4:  4e 74 00 02          rtd      #$2
-L26b8:
+* GA_PenPat  -  System 7 $A080 (same trap slot $1074, code r=0.91).
+* S7: Patch #64 replaces _PenPat ($A89D); card commands: $2A
+GA_PenPat:
   0026b8:  4e 56 ff f8          link.w   a6, #$fff8
   0026bc:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   0026c0:  28 6e 00 08          movea.l  $8(a6), a4
-  0026c4:  4e ba 28 66          jsr      $4f2c(pc)  ; -> sub_4f2c
+  0026c4:  4e ba 28 66          jsr      $4f2c(pc)  ; -> GetD2
   0026c8:  2e 00                move.l   d0, d7
   0026ca:  70 00                moveq    #$0, d0
   0026cc:  2f 00                move.l   d0, -(a7)
-  0026ce:  4e ba 61 52          jsr      $8822(pc)  ; -> sub_8822
+  0026ce:  4e ba 61 52          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0026d2:  26 40                movea.l  d0, a3
-  0026d4:  4e ba eb 5a          jsr      $1230(pc)  ; -> sub_1230
+  0026d4:  4e ba eb 5a          jsr      $1230(pc)  ; -> GetA5
   0026d8:  20 40                movea.l  d0, a0
   0026da:  20 50                movea.l  (a0), a0
   0026dc:  b7 d0                cmpa.l   (a0), a3
@@ -3858,14 +3945,14 @@ L26b8:
   0026f2:  49 c1                extb.l   d1
   0026f4:  2f 01                move.l   d1, -(a7)
   0026f6:  48 6b 00 3a          pea.l    $3a(a3)
-  0026fa:  4e ba f1 0c          jsr      $1808(pc)  ; -> sub_1808
+  0026fa:  4e ba f1 0c          jsr      $1808(pc)  ; -> s7_sub_91aa
   0026fe:  72 00                moveq    #$0, d1
   002700:  12 00                move.b   d0, d1
   002702:  4f ef 00 10          lea.l    $10(a7), a7
   002706:  66 48                bne.b    $2750  ; -> L2750
   002708:  2f 0c                move.l   a4, -(a7)
   00270a:  48 78 10 74          pea.l    $1074.w
-  00270e:  4e ba 5f 8c          jsr      $869c(pc)  ; -> sub_869c
+  00270e:  4e ba 5f 8c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002712:  58 8f                addq.l   #$4, a7
   002714:  2f 00                move.l   d0, -(a7)
   002716:  20 5f                movea.l  (a7)+, a0
@@ -3886,27 +3973,29 @@ L26b8:
 L273e:
   00273e:  2f 0c                move.l   a4, -(a7)
   002740:  48 78 10 74          pea.l    $1074.w
-  002744:  4e ba 5f 56          jsr      $869c(pc)  ; -> sub_869c
+  002744:  4e ba 5f 56          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002748:  58 8f                addq.l   #$4, a7
   00274a:  2f 00                move.l   d0, -(a7)
   00274c:  20 5f                movea.l  (a7)+, a0
   00274e:  4e 90                jsr      (a0)
 L2750:
   002750:  2f 07                move.l   d7, -(a7)
-  002752:  4e ba 27 e4          jsr      $4f38(pc)  ; -> sub_4f38
+  002752:  4e ba 27 e4          jsr      $4f38(pc)  ; -> SetD2
   002756:  58 8f                addq.l   #$4, a7
   002758:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   00275e:  4e 5e                unlk     a6
   002760:  4e 74 00 04          rtd      #$4
-L2764:
+* GA_BackPat  -  System 7 $A13A (same trap slot $FF0, code r=0.92).
+* S7: Patch #65 replaces _BackPat ($A87C); card commands: $2A
+GA_BackPat:
   002764:  4e 56 ff f8          link.w   a6, #$fff8
   002768:  48 e7 00 18          movem.l  a3-a4, -(a7)
   00276c:  28 6e 00 08          movea.l  $8(a6), a4
   002770:  70 00                moveq    #$0, d0
   002772:  2f 00                move.l   d0, -(a7)
-  002774:  4e ba 60 ac          jsr      $8822(pc)  ; -> sub_8822
+  002774:  4e ba 60 ac          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002778:  26 40                movea.l  d0, a3
-  00277a:  4e ba ea b4          jsr      $1230(pc)  ; -> sub_1230
+  00277a:  4e ba ea b4          jsr      $1230(pc)  ; -> GetA5
   00277e:  20 40                movea.l  d0, a0
   002780:  20 50                movea.l  (a0), a0
   002782:  b7 d0                cmpa.l   (a0), a3
@@ -3922,14 +4011,14 @@ L2764:
   002798:  49 c1                extb.l   d1
   00279a:  2f 01                move.l   d1, -(a7)
   00279c:  48 6b 00 20          pea.l    $20(a3)
-  0027a0:  4e ba f0 66          jsr      $1808(pc)  ; -> sub_1808
+  0027a0:  4e ba f0 66          jsr      $1808(pc)  ; -> s7_sub_91aa
   0027a4:  72 00                moveq    #$0, d1
   0027a6:  12 00                move.b   d0, d1
   0027a8:  4f ef 00 10          lea.l    $10(a7), a7
   0027ac:  66 48                bne.b    $27f6  ; -> L27f6
   0027ae:  2f 0c                move.l   a4, -(a7)
   0027b0:  48 78 0f f0          pea.l    $ff0.w
-  0027b4:  4e ba 5e e6          jsr      $869c(pc)  ; -> sub_869c
+  0027b4:  4e ba 5e e6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0027b8:  58 8f                addq.l   #$4, a7
   0027ba:  2f 00                move.l   d0, -(a7)
   0027bc:  20 5f                movea.l  (a7)+, a0
@@ -3950,7 +4039,7 @@ L2764:
 L27e4:
   0027e4:  2f 0c                move.l   a4, -(a7)
   0027e6:  48 78 0f f0          pea.l    $ff0.w
-  0027ea:  4e ba 5e b0          jsr      $869c(pc)  ; -> sub_869c
+  0027ea:  4e ba 5e b0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0027ee:  58 8f                addq.l   #$4, a7
   0027f0:  2f 00                move.l   d0, -(a7)
   0027f2:  20 5f                movea.l  (a7)+, a0
@@ -3959,19 +4048,21 @@ L27f6:
   0027f6:  4c ee 18 00 ff f0    movem.l  -$10(a6), a3-a4
   0027fc:  4e 5e                unlk     a6
   0027fe:  4e 74 00 04          rtd      #$4
-L2802:
+* GA_PenNormal  -  System 7 $A1E2 (same trap slot $1078, code r=0.94).
+* S7: Patch #14 replaces _PenNormal ($A89E); card commands: $2A $35
+GA_PenNormal:
   002802:  4e 56 ff f4          link.w   a6, #$fff4
   002806:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00280a:  49 ee ff f8          lea.l    -$8(a6), a4
   00280e:  70 00                moveq    #$0, d0
   002810:  2f 00                move.l   d0, -(a7)
-  002812:  4e ba 60 0e          jsr      $8822(pc)  ; -> sub_8822
+  002812:  4e ba 60 0e          jsr      $8822(pc)  ; -> s7_sub_6f1c
   002816:  26 40                movea.l  d0, a3
   002818:  7e 00                moveq    #$0, d7
   00281a:  20 0b                move.l   a3, d0
   00281c:  58 8f                addq.l   #$4, a7
   00281e:  67 72                beq.b    $2892  ; -> L2892
-  002820:  4e ba ea 0e          jsr      $1230(pc)  ; -> sub_1230
+  002820:  4e ba ea 0e          jsr      $1230(pc)  ; -> GetA5
   002824:  20 40                movea.l  d0, a0
   002826:  20 50                movea.l  (a0), a0
   002828:  b7 d0                cmpa.l   (a0), a3
@@ -3992,7 +4083,7 @@ L2802:
 L2858:
   002858:  70 00                moveq    #$0, d0
   00285a:  2f 00                move.l   d0, -(a7)
-  00285c:  4e ba e9 d2          jsr      $1230(pc)  ; -> sub_1230
+  00285c:  4e ba e9 d2          jsr      $1230(pc)  ; -> GetA5
   002860:  20 40                movea.l  d0, a0
   002862:  20 10                move.l   (a0), d0
   002864:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -4005,7 +4096,7 @@ L2858:
   00287a:  49 c0                extb.l   d0
   00287c:  2f 00                move.l   d0, -(a7)
   00287e:  48 6b 00 3a          pea.l    $3a(a3)
-  002882:  4e ba ef 84          jsr      $1808(pc)  ; -> sub_1808
+  002882:  4e ba ef 84          jsr      $1808(pc)  ; -> s7_sub_91aa
   002886:  72 00                moveq    #$0, d1
   002888:  12 00                move.b   d0, d1
   00288a:  4f ef 00 10          lea.l    $10(a7), a7
@@ -4013,7 +4104,7 @@ L2858:
   002890:  7e 01                moveq    #$1, d7
 L2892:
   002892:  48 78 10 78          pea.l    $1078.w
-  002896:  4e ba 5e 04          jsr      $869c(pc)  ; -> sub_869c
+  002896:  4e ba 5e 04          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00289a:  58 8f                addq.l   #$4, a7
   00289c:  2f 00                move.l   d0, -(a7)
   00289e:  20 5f                movea.l  (a7)+, a0
@@ -4036,14 +4127,16 @@ L28c4:
   0028c4:  4c ee 18 80 ff e8    movem.l  -$18(a6), d7/a3-a4
   0028ca:  4e 5e                unlk     a6
   0028cc:  4e 75                rts
-L28ce:
+* GA_ColorBit  -  System 7 $A2B8 (same trap slot $F90, code r=0.87).
+* S7: Patch #42 replaces _ColorBit ($A864); card commands: $26
+GA_ColorBit:
   0028ce:  48 e7 01 10          movem.l  d7/a3, -(a7)
   0028d2:  3e 2f 00 0c          move.w   $c(a7), d7
   0028d6:  70 00                moveq    #$0, d0
   0028d8:  2f 00                move.l   d0, -(a7)
-  0028da:  4e ba 5f 46          jsr      $8822(pc)  ; -> sub_8822
+  0028da:  4e ba 5f 46          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0028de:  26 40                movea.l  d0, a3
-  0028e0:  4e ba e9 4e          jsr      $1230(pc)  ; -> sub_1230
+  0028e0:  4e ba e9 4e          jsr      $1230(pc)  ; -> GetA5
   0028e4:  20 40                movea.l  d0, a0
   0028e6:  20 50                movea.l  (a0), a0
   0028e8:  b7 d0                cmpa.l   (a0), a3
@@ -4066,29 +4159,33 @@ L28ce:
 L2910:
   002910:  3f 07                move.w   d7, -(a7)
   002912:  48 78 0f 90          pea.l    $f90.w
-  002916:  4e ba 5d 84          jsr      $869c(pc)  ; -> sub_869c
+  002916:  4e ba 5d 84          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00291a:  58 8f                addq.l   #$4, a7
   00291c:  2f 00                move.l   d0, -(a7)
   00291e:  20 5f                movea.l  (a7)+, a0
   002920:  4e 90                jsr      (a0)
   002922:  4c df 08 80          movem.l  (a7)+, d7/a3
   002926:  4e 74 00 02          rtd      #$2
-L292a:
+* GA_OpenRgn  -  System 7 $A31E (same trap slot $1168, code r=0.88).
+* S7: Patch #43 replaces _OpenRgn ($A8DA); no EngineDispatch command found
+GA_OpenRgn:
   00292a:  48 78 11 68          pea.l    $1168.w
-  00292e:  4e ba 5d 6c          jsr      $869c(pc)  ; -> sub_869c
+  00292e:  4e ba 5d 6c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002932:  58 8f                addq.l   #$4, a7
   002934:  2f 00                move.l   d0, -(a7)
   002936:  20 5f                movea.l  (a7)+, a0
   002938:  4e 90                jsr      (a0)
   00293a:  4e 75                rts
-L293c:
+* GA_OpenPicture  -  System 7 $A338 (same trap slot $11CC, code r=0.89).
+* S7: Patch #44 replaces _OpenPicture ($A8F3); no EngineDispatch command found
+GA_OpenPicture:
   00293c:  4e 56 00 00          link.w   a6, #$0
   002940:  2f 0b                move.l   a3, -(a7)
   002942:  26 6e 00 08          movea.l  $8(a6), a3
   002946:  59 8f                subq.l   #$4, a7
   002948:  2f 0b                move.l   a3, -(a7)
   00294a:  48 78 11 cc          pea.l    $11cc.w
-  00294e:  4e ba 5d 4c          jsr      $869c(pc)  ; -> sub_869c
+  00294e:  4e ba 5d 4c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002952:  58 8f                addq.l   #$4, a7
   002954:  2f 00                move.l   d0, -(a7)
   002956:  20 5f                movea.l  (a7)+, a0
@@ -4097,11 +4194,13 @@ L293c:
   00295e:  26 6e ff fc          movea.l  -$4(a6), a3
   002962:  4e 5e                unlk     a6
   002964:  4e 74 00 04          rtd      #$4
-L2968:
+* GA_OpenPoly  -  System 7 $A35E (identical code).
+* S7: Patch #45 replaces _OpenPoly ($A8CB); no EngineDispatch command found
+GA_OpenPoly:
   002968:  4e 56 00 00          link.w   a6, #$0
   00296c:  59 8f                subq.l   #$4, a7
   00296e:  48 78 11 2c          pea.l    $112c.w
-  002972:  4e ba 5d 28          jsr      $869c(pc)  ; -> sub_869c
+  002972:  4e ba 5d 28          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002976:  58 8f                addq.l   #$4, a7
   002978:  2f 00                move.l   d0, -(a7)
   00297a:  20 5f                movea.l  (a7)+, a0
@@ -4109,7 +4208,9 @@ L2968:
   00297e:  2d 5f 00 08          move.l   (a7)+, $8(a6)
   002982:  4e 5e                unlk     a6
   002984:  4e 75                rts
-L2986:
+* GA_SectRect  -  System 7 $A37E (same trap slot $10A8, code r=0.98).
+* S7: Patch #78 replaces _SectRect ($A8AA); card commands: $10 $32
+GA_SectRect:
   002986:  4e 56 ff f8          link.w   a6, #$fff8
   00298a:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
   00298e:  26 6e 00 08          movea.l  $8(a6), a3
@@ -4146,7 +4247,7 @@ L29cc:
   0029dc:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0029e0:  2f 0b                move.l   a3, -(a7)
   0029e2:  48 78 10 a8          pea.l    $10a8.w
-  0029e6:  4e ba 5c b4          jsr      $869c(pc)  ; -> sub_869c
+  0029e6:  4e ba 5c b4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0029ea:  58 8f                addq.l   #$4, a7
   0029ec:  2f 00                move.l   d0, -(a7)
   0029ee:  20 5f                movea.l  (a7)+, a0
@@ -4188,7 +4289,7 @@ L2a3e:
   002a44:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002a48:  2f 0b                move.l   a3, -(a7)
   002a4a:  48 78 10 a8          pea.l    $10a8.w
-  002a4e:  4e ba 5c 4c          jsr      $869c(pc)  ; -> sub_869c
+  002a4e:  4e ba 5c 4c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002a52:  58 8f                addq.l   #$4, a7
   002a54:  2f 00                move.l   d0, -(a7)
   002a56:  20 5f                movea.l  (a7)+, a0
@@ -4198,7 +4299,9 @@ L2a5e:
   002a5e:  4c ee 18 e0 ff e4    movem.l  -$1c(a6), d5-d7/a3-a4
   002a64:  4e 5e                unlk     a6
   002a66:  4e 74 00 0c          rtd      #$c
-L2a6a:
+* GA_CopyRgn  -  System 7 $A472 (same trap slot $1170, code r=0.97).
+* S7: Patch #46 replaces _CopyRgn ($A8DC); card commands: $10 $32
+GA_CopyRgn:
   002a6a:  4e 56 00 00          link.w   a6, #$0
   002a6e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   002a72:  28 6e 00 0c          movea.l  $c(a6), a4
@@ -4216,7 +4319,7 @@ L2a6a:
   002a92:  2f 0c                move.l   a4, -(a7)
   002a94:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002a98:  48 78 11 70          pea.l    $1170.w
-  002a9c:  4e ba 5b fe          jsr      $869c(pc)  ; -> sub_869c
+  002a9c:  4e ba 5b fe          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002aa0:  58 8f                addq.l   #$4, a7
   002aa2:  2f 00                move.l   d0, -(a7)
   002aa4:  20 5f                movea.l  (a7)+, a0
@@ -4251,7 +4354,9 @@ L2aee:
   002aee:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   002af4:  4e 5e                unlk     a6
   002af6:  4e 74 00 08          rtd      #$8
-L2afa:
+* GA_SetEmptyRgn  -  System 7 $A506 (same trap slot $1174, code r=0.96).
+* S7: Patch #63 replaces _SetEmptyRgn ($A8DD); card commands: $10 $32
+GA_SetEmptyRgn:
   002afa:  4e 56 ff fc          link.w   a6, #$fffc
   002afe:  48 e7 00 18          movem.l  a3-a4, -(a7)
   002b02:  20 78 08 88          movea.l  $888.w, a0
@@ -4273,7 +4378,7 @@ L2afa:
 L2b2e:
   002b2e:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002b32:  48 78 11 74          pea.l    $1174.w
-  002b36:  4e ba 5b 64          jsr      $869c(pc)  ; -> sub_869c
+  002b36:  4e ba 5b 64          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002b3a:  58 8f                addq.l   #$4, a7
   002b3c:  2f 00                move.l   d0, -(a7)
   002b3e:  20 5f                movea.l  (a7)+, a0
@@ -4310,7 +4415,9 @@ L2b90:
   002b90:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   002b96:  4e 5e                unlk     a6
   002b98:  4e 74 00 04          rtd      #$4
-L2b9c:
+* GA_SetRecRgn  -  System 7 $A5AA (same trap slot $1178, code r=0.83).
+* S7: Patch #47 replaces _SetRecRgn ($A8DE); card commands: $10 $32
+GA_SetRecRgn:
   002b9c:  4e 56 ff fc          link.w   a6, #$fffc
   002ba0:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   002ba4:  38 2e 00 08          move.w   $8(a6), d4
@@ -4356,7 +4463,7 @@ L2c04:
   002c0c:  3f 05                move.w   d5, -(a7)
   002c0e:  3f 04                move.w   d4, -(a7)
   002c10:  48 78 11 78          pea.l    $1178.w
-  002c14:  4e ba 5a 86          jsr      $869c(pc)  ; -> sub_869c
+  002c14:  4e ba 5a 86          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002c18:  58 8f                addq.l   #$4, a7
   002c1a:  2f 00                move.l   d0, -(a7)
   002c1c:  20 5f                movea.l  (a7)+, a0
@@ -4393,7 +4500,9 @@ L2c6e:
   002c6e:  4c ee 18 f0 ff e4    movem.l  -$1c(a6), d4-d7/a3-a4
   002c74:  4e 5e                unlk     a6
   002c76:  4e 74 00 0c          rtd      #$c
-L2c7a:
+* GA_RectRgn  -  System 7 $A672 (same trap slot $117C, code r=0.94).
+* S7: Patch #48 replaces _RectRgn ($A8DF); card commands: $10 $32
+GA_RectRgn:
   002c7a:  4e 56 ff f8          link.w   a6, #$fff8
   002c7e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   002c82:  26 6e 00 08          movea.l  $8(a6), a3
@@ -4421,7 +4530,7 @@ L2cc2:
   002cc2:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002cc6:  2f 0b                move.l   a3, -(a7)
   002cc8:  48 78 11 7c          pea.l    $117c.w
-  002ccc:  4e ba 59 ce          jsr      $869c(pc)  ; -> sub_869c
+  002ccc:  4e ba 59 ce          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002cd0:  58 8f                addq.l   #$4, a7
   002cd2:  2f 00                move.l   d0, -(a7)
   002cd4:  20 5f                movea.l  (a7)+, a0
@@ -4458,7 +4567,9 @@ L2d26:
   002d26:  4c ee 18 00 ff f0    movem.l  -$10(a6), a3-a4
   002d2c:  4e 5e                unlk     a6
   002d2e:  4e 74 00 08          rtd      #$8
-L2d32:
+* GA_OffsetRgn  -  System 7 $A726 (same trap slot $1180, code r=0.92).
+* S7: Patch #49 replaces _OfsetRgn ($A8E0); card commands: $10 $32
+GA_OffsetRgn:
   002d32:  4e 56 00 00          link.w   a6, #$0
   002d36:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   002d3a:  3c 2e 00 08          move.w   $8(a6), d6
@@ -4495,7 +4606,7 @@ L2d80:
   002d86:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002d8a:  2f 0b                move.l   a3, -(a7)
   002d8c:  48 78 11 70          pea.l    $1170.w
-  002d90:  4e ba 59 0a          jsr      $869c(pc)  ; -> sub_869c
+  002d90:  4e ba 59 0a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002d94:  58 8f                addq.l   #$4, a7
   002d96:  2f 00                move.l   d0, -(a7)
   002d98:  20 5f                movea.l  (a7)+, a0
@@ -4504,7 +4615,7 @@ L2d80:
   002da0:  3f 07                move.w   d7, -(a7)
   002da2:  3f 06                move.w   d6, -(a7)
   002da4:  48 78 11 80          pea.l    $1180.w
-  002da8:  4e ba 58 f2          jsr      $869c(pc)  ; -> sub_869c
+  002da8:  4e ba 58 f2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002dac:  58 8f                addq.l   #$4, a7
   002dae:  2f 00                move.l   d0, -(a7)
   002db0:  20 5f                movea.l  (a7)+, a0
@@ -4545,7 +4656,7 @@ L2dfc:
   002e00:  3f 07                move.w   d7, -(a7)
   002e02:  3f 06                move.w   d6, -(a7)
   002e04:  48 78 11 80          pea.l    $1180.w
-  002e08:  4e ba 58 92          jsr      $869c(pc)  ; -> sub_869c
+  002e08:  4e ba 58 92          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002e0c:  58 8f                addq.l   #$4, a7
   002e0e:  2f 00                move.l   d0, -(a7)
   002e10:  20 5f                movea.l  (a7)+, a0
@@ -4554,7 +4665,9 @@ L2e14:
   002e14:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
   002e1a:  4e 5e                unlk     a6
   002e1c:  4e 74 00 08          rtd      #$8
-L2e20:
+* GA_InsetRgn  -  System 7 $A820 (same trap slot $1184, code r=0.92).
+* S7: Patch #50 replaces _InsetRgn ($A8E1); card commands: $10 $32
+GA_InsetRgn:
   002e20:  4e 56 00 00          link.w   a6, #$0
   002e24:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   002e28:  3c 2e 00 08          move.w   $8(a6), d6
@@ -4591,7 +4704,7 @@ L2e6e:
   002e74:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002e78:  2f 0b                move.l   a3, -(a7)
   002e7a:  48 78 11 70          pea.l    $1170.w
-  002e7e:  4e ba 58 1c          jsr      $869c(pc)  ; -> sub_869c
+  002e7e:  4e ba 58 1c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002e82:  58 8f                addq.l   #$4, a7
   002e84:  2f 00                move.l   d0, -(a7)
   002e86:  20 5f                movea.l  (a7)+, a0
@@ -4600,7 +4713,7 @@ L2e6e:
   002e8e:  3f 07                move.w   d7, -(a7)
   002e90:  3f 06                move.w   d6, -(a7)
   002e92:  48 78 11 84          pea.l    $1184.w
-  002e96:  4e ba 58 04          jsr      $869c(pc)  ; -> sub_869c
+  002e96:  4e ba 58 04          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002e9a:  58 8f                addq.l   #$4, a7
   002e9c:  2f 00                move.l   d0, -(a7)
   002e9e:  20 5f                movea.l  (a7)+, a0
@@ -4641,7 +4754,7 @@ L2eea:
   002eee:  3f 07                move.w   d7, -(a7)
   002ef0:  3f 06                move.w   d6, -(a7)
   002ef2:  48 78 11 84          pea.l    $1184.w
-  002ef6:  4e ba 57 a4          jsr      $869c(pc)  ; -> sub_869c
+  002ef6:  4e ba 57 a4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002efa:  58 8f                addq.l   #$4, a7
   002efc:  2f 00                move.l   d0, -(a7)
   002efe:  20 5f                movea.l  (a7)+, a0
@@ -4650,7 +4763,9 @@ L2f02:
   002f02:  4c ee 18 f0 ff e8    movem.l  -$18(a6), d4-d7/a3-a4
   002f08:  4e 5e                unlk     a6
   002f0a:  4e 74 00 08          rtd      #$8
-L2f0e:
+* GA_SectRgn  -  System 7 $A91A (same trap slot $1190, code r=0.95).
+* S7: Patch #51 replaces _SectRgn ($A8E4); card commands: $10 $32
+GA_SectRgn:
   002f0e:  4e 56 00 00          link.w   a6, #$0
   002f12:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   002f16:  20 78 08 88          movea.l  $888.w, a0
@@ -4678,7 +4793,7 @@ L2f48:
   002f4e:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002f52:  2f 0b                move.l   a3, -(a7)
   002f54:  48 78 11 70          pea.l    $1170.w
-  002f58:  4e ba 57 42          jsr      $869c(pc)  ; -> sub_869c
+  002f58:  4e ba 57 42          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002f5c:  58 8f                addq.l   #$4, a7
   002f5e:  2f 00                move.l   d0, -(a7)
   002f60:  20 5f                movea.l  (a7)+, a0
@@ -4687,7 +4802,7 @@ L2f48:
   002f68:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002f6c:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002f70:  48 78 11 90          pea.l    $1190.w
-  002f74:  4e ba 57 26          jsr      $869c(pc)  ; -> sub_869c
+  002f74:  4e ba 57 26          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002f78:  58 8f                addq.l   #$4, a7
   002f7a:  2f 00                move.l   d0, -(a7)
   002f7c:  20 5f                movea.l  (a7)+, a0
@@ -4728,7 +4843,7 @@ L2fc8:
   002fcc:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   002fd0:  2f 2e 00 08          move.l   $8(a6), -(a7)
   002fd4:  48 78 11 90          pea.l    $1190.w
-  002fd8:  4e ba 56 c2          jsr      $869c(pc)  ; -> sub_869c
+  002fd8:  4e ba 56 c2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   002fdc:  58 8f                addq.l   #$4, a7
   002fde:  2f 00                move.l   d0, -(a7)
   002fe0:  20 5f                movea.l  (a7)+, a0
@@ -4737,7 +4852,9 @@ L2fe4:
   002fe4:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   002fea:  4e 5e                unlk     a6
   002fec:  4e 74 00 0c          rtd      #$c
-L2ff0:
+* GA_UnionRgn  -  System 7 $AA0A (same trap slot $1194, code r=0.95).
+* S7: Patch #52 replaces _UnionRgn ($A8E5); card commands: $10 $32
+GA_UnionRgn:
   002ff0:  4e 56 00 00          link.w   a6, #$0
   002ff4:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   002ff8:  20 78 08 88          movea.l  $888.w, a0
@@ -4765,7 +4882,7 @@ L302a:
   003030:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003034:  2f 0b                move.l   a3, -(a7)
   003036:  48 78 11 70          pea.l    $1170.w
-  00303a:  4e ba 56 60          jsr      $869c(pc)  ; -> sub_869c
+  00303a:  4e ba 56 60          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00303e:  58 8f                addq.l   #$4, a7
   003040:  2f 00                move.l   d0, -(a7)
   003042:  20 5f                movea.l  (a7)+, a0
@@ -4774,7 +4891,7 @@ L302a:
   00304a:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   00304e:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003052:  48 78 11 94          pea.l    $1194.w
-  003056:  4e ba 56 44          jsr      $869c(pc)  ; -> sub_869c
+  003056:  4e ba 56 44          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00305a:  58 8f                addq.l   #$4, a7
   00305c:  2f 00                move.l   d0, -(a7)
   00305e:  20 5f                movea.l  (a7)+, a0
@@ -4815,7 +4932,7 @@ L30aa:
   0030ae:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0030b2:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0030b6:  48 78 11 94          pea.l    $1194.w
-  0030ba:  4e ba 55 e0          jsr      $869c(pc)  ; -> sub_869c
+  0030ba:  4e ba 55 e0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0030be:  58 8f                addq.l   #$4, a7
   0030c0:  2f 00                move.l   d0, -(a7)
   0030c2:  20 5f                movea.l  (a7)+, a0
@@ -4824,7 +4941,9 @@ L30c6:
   0030c6:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   0030cc:  4e 5e                unlk     a6
   0030ce:  4e 74 00 0c          rtd      #$c
-L30d2:
+* GA_DiffRgn  -  System 7 $AAFA (same trap slot $1198, code r=0.95).
+* S7: Patch #53 replaces _DiffRgn ($A8E6); card commands: $10 $32
+GA_DiffRgn:
   0030d2:  4e 56 00 00          link.w   a6, #$0
   0030d6:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0030da:  20 78 08 88          movea.l  $888.w, a0
@@ -4852,7 +4971,7 @@ L310c:
   003112:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003116:  2f 0b                move.l   a3, -(a7)
   003118:  48 78 11 70          pea.l    $1170.w
-  00311c:  4e ba 55 7e          jsr      $869c(pc)  ; -> sub_869c
+  00311c:  4e ba 55 7e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003120:  58 8f                addq.l   #$4, a7
   003122:  2f 00                move.l   d0, -(a7)
   003124:  20 5f                movea.l  (a7)+, a0
@@ -4861,7 +4980,7 @@ L310c:
   00312c:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003130:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003134:  48 78 11 98          pea.l    $1198.w
-  003138:  4e ba 55 62          jsr      $869c(pc)  ; -> sub_869c
+  003138:  4e ba 55 62          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00313c:  58 8f                addq.l   #$4, a7
   00313e:  2f 00                move.l   d0, -(a7)
   003140:  20 5f                movea.l  (a7)+, a0
@@ -4902,7 +5021,7 @@ L318c:
   003190:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003194:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003198:  48 78 11 98          pea.l    $1198.w
-  00319c:  4e ba 54 fe          jsr      $869c(pc)  ; -> sub_869c
+  00319c:  4e ba 54 fe          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0031a0:  58 8f                addq.l   #$4, a7
   0031a2:  2f 00                move.l   d0, -(a7)
   0031a4:  20 5f                movea.l  (a7)+, a0
@@ -4911,7 +5030,9 @@ L31a8:
   0031a8:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   0031ae:  4e 5e                unlk     a6
   0031b0:  4e 74 00 0c          rtd      #$c
-L31b4:
+* GA_XOrRgn  -  System 7 $ABEA (same trap slot $119C, code r=0.95).
+* S7: Patch #54 replaces _XOrRgn ($A8E7); card commands: $10 $32
+GA_XOrRgn:
   0031b4:  4e 56 00 00          link.w   a6, #$0
   0031b8:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0031bc:  20 78 08 88          movea.l  $888.w, a0
@@ -4939,7 +5060,7 @@ L31ee:
   0031f4:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0031f8:  2f 0b                move.l   a3, -(a7)
   0031fa:  48 78 11 70          pea.l    $1170.w
-  0031fe:  4e ba 54 9c          jsr      $869c(pc)  ; -> sub_869c
+  0031fe:  4e ba 54 9c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003202:  58 8f                addq.l   #$4, a7
   003204:  2f 00                move.l   d0, -(a7)
   003206:  20 5f                movea.l  (a7)+, a0
@@ -4948,7 +5069,7 @@ L31ee:
   00320e:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003212:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003216:  48 78 11 9c          pea.l    $119c.w
-  00321a:  4e ba 54 80          jsr      $869c(pc)  ; -> sub_869c
+  00321a:  4e ba 54 80          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00321e:  58 8f                addq.l   #$4, a7
   003220:  2f 00                move.l   d0, -(a7)
   003222:  20 5f                movea.l  (a7)+, a0
@@ -4989,7 +5110,7 @@ L326e:
   003272:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003276:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00327a:  48 78 11 9c          pea.l    $119c.w
-  00327e:  4e ba 54 1c          jsr      $869c(pc)  ; -> sub_869c
+  00327e:  4e ba 54 1c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003282:  58 8f                addq.l   #$4, a7
   003284:  2f 00                move.l   d0, -(a7)
   003286:  20 5f                movea.l  (a7)+, a0
@@ -4998,7 +5119,9 @@ L328a:
   00328a:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   003290:  4e 5e                unlk     a6
   003292:  4e 74 00 0c          rtd      #$c
-L3296:
+* GA_MapRgn  -  System 7 $ACDA (same trap slot $11EC, code r=0.96).
+* S7: Patch #55 replaces _MapRgn ($A8FB); card commands: $10 $32
+GA_MapRgn:
   003296:  4e 56 ff f8          link.w   a6, #$fff8
   00329a:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00329e:  28 6e 00 08          movea.l  $8(a6), a4
@@ -5037,7 +5160,7 @@ L32f4:
   0032fc:  2f 2e 00 10          move.l   $10(a6), -(a7)
   003300:  2f 2e ff fc          move.l   -$4(a6), -(a7)
   003304:  48 78 11 70          pea.l    $1170.w
-  003308:  4e ba 53 92          jsr      $869c(pc)  ; -> sub_869c
+  003308:  4e ba 53 92          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00330c:  58 8f                addq.l   #$4, a7
   00330e:  2f 00                move.l   d0, -(a7)
   003310:  20 5f                movea.l  (a7)+, a0
@@ -5046,7 +5169,7 @@ L32f4:
   003318:  2f 0b                move.l   a3, -(a7)
   00331a:  2f 0c                move.l   a4, -(a7)
   00331c:  48 78 11 ec          pea.l    $11ec.w
-  003320:  4e ba 53 7a          jsr      $869c(pc)  ; -> sub_869c
+  003320:  4e ba 53 7a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003324:  58 8f                addq.l   #$4, a7
   003326:  2f 00                move.l   d0, -(a7)
   003328:  20 5f                movea.l  (a7)+, a0
@@ -5087,7 +5210,7 @@ L3378:
   00337c:  2f 0b                move.l   a3, -(a7)
   00337e:  2f 0c                move.l   a4, -(a7)
   003380:  48 78 11 ec          pea.l    $11ec.w
-  003384:  4e ba 53 16          jsr      $869c(pc)  ; -> sub_869c
+  003384:  4e ba 53 16          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003388:  58 8f                addq.l   #$4, a7
   00338a:  2f 00                move.l   d0, -(a7)
   00338c:  20 5f                movea.l  (a7)+, a0
@@ -5096,21 +5219,23 @@ L3390:
   003390:  4c ee 18 c0 ff e8    movem.l  -$18(a6), d6-d7/a3-a4
   003396:  4e 5e                unlk     a6
   003398:  4e 74 00 0c          rtd      #$c
-L339c:
+* GA_ForeColor  -  System 7 $ADF0 (same trap slot $F88, code r=0.93).
+* S7: Patch #16 replaces _ForeColor ($A862); card commands: $36
+GA_ForeColor:
   00339c:  4e 56 ff fc          link.w   a6, #$fffc
   0033a0:  2f 0b                move.l   a3, -(a7)
   0033a2:  70 00                moveq    #$0, d0
   0033a4:  2f 00                move.l   d0, -(a7)
-  0033a6:  4e ba 54 7a          jsr      $8822(pc)  ; -> sub_8822
+  0033a6:  4e ba 54 7a          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0033aa:  26 40                movea.l  d0, a3
   0033ac:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0033b0:  48 78 0f 88          pea.l    $f88.w
-  0033b4:  4e ba 52 e6          jsr      $869c(pc)  ; -> sub_869c
+  0033b4:  4e ba 52 e6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0033b8:  58 8f                addq.l   #$4, a7
   0033ba:  2f 00                move.l   d0, -(a7)
   0033bc:  20 5f                movea.l  (a7)+, a0
   0033be:  4e 90                jsr      (a0)
-  0033c0:  4e ba de 6e          jsr      $1230(pc)  ; -> sub_1230
+  0033c0:  4e ba de 6e          jsr      $1230(pc)  ; -> GetA5
   0033c4:  20 40                movea.l  d0, a0
   0033c6:  20 50                movea.l  (a0), a0
   0033c8:  b7 d0                cmpa.l   (a0), a3
@@ -5133,15 +5258,17 @@ L33f2:
   0033f2:  26 6e ff f8          movea.l  -$8(a6), a3
   0033f6:  4e 5e                unlk     a6
   0033f8:  4e 74 00 04          rtd      #$4
-L33fc:
+* GA_RGBForeColor  -  System 7 $AE56 (same trap slot $1650, code r=0.83).
+* S7: Patch #17 replaces _RGBForeColor ($AA14); card commands: $36
+GA_RGBForeColor:
   0033fc:  4e 56 ff fc          link.w   a6, #$fffc
   003400:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003404:  28 6e 00 08          movea.l  $8(a6), a4
   003408:  70 00                moveq    #$0, d0
   00340a:  2f 00                move.l   d0, -(a7)
-  00340c:  4e ba 54 14          jsr      $8822(pc)  ; -> sub_8822
+  00340c:  4e ba 54 14          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003410:  26 40                movea.l  d0, a3
-  003412:  4e ba de 1c          jsr      $1230(pc)  ; -> sub_1230
+  003412:  4e ba de 1c          jsr      $1230(pc)  ; -> GetA5
   003416:  20 40                movea.l  d0, a0
   003418:  20 50                movea.l  (a0), a0
   00341a:  b7 d0                cmpa.l   (a0), a3
@@ -5162,7 +5289,7 @@ L33fc:
 L3440:
   003440:  2f 0c                move.l   a4, -(a7)
   003442:  48 78 16 50          pea.l    $1650.w
-  003446:  4e ba 52 54          jsr      $869c(pc)  ; -> sub_869c
+  003446:  4e ba 52 54          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00344a:  58 8f                addq.l   #$4, a7
   00344c:  2f 00                move.l   d0, -(a7)
   00344e:  20 5f                movea.l  (a7)+, a0
@@ -5181,7 +5308,7 @@ L3440:
 L3470:
   003470:  2f 0c                move.l   a4, -(a7)
   003472:  48 78 16 50          pea.l    $1650.w
-  003476:  4e ba 52 24          jsr      $869c(pc)  ; -> sub_869c
+  003476:  4e ba 52 24          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00347a:  58 8f                addq.l   #$4, a7
   00347c:  2f 00                move.l   d0, -(a7)
   00347e:  20 5f                movea.l  (a7)+, a0
@@ -5190,15 +5317,17 @@ L3482:
   003482:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   003488:  4e 5e                unlk     a6
   00348a:  4e 74 00 04          rtd      #$4
-L348e:
+* GA_PmForeColor  -  System 7 $AF00 (same trap slot $185C, code r=0.81).
+* S7: Patch #18 replaces _PmForeColor ($AA97); card commands: $36
+GA_PmForeColor:
   00348e:  4e 56 ff fc          link.w   a6, #$fffc
   003492:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003496:  3e 2e 00 08          move.w   $8(a6), d7
   00349a:  70 00                moveq    #$0, d0
   00349c:  2f 00                move.l   d0, -(a7)
-  00349e:  4e ba 53 82          jsr      $8822(pc)  ; -> sub_8822
+  00349e:  4e ba 53 82          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0034a2:  28 40                movea.l  d0, a4
-  0034a4:  4e ba dd 8a          jsr      $1230(pc)  ; -> sub_1230
+  0034a4:  4e ba dd 8a          jsr      $1230(pc)  ; -> GetA5
   0034a8:  20 40                movea.l  d0, a0
   0034aa:  20 50                movea.l  (a0), a0
   0034ac:  b9 d0                cmpa.l   (a0), a4
@@ -5224,7 +5353,7 @@ L348e:
 L34de:
   0034de:  3f 07                move.w   d7, -(a7)
   0034e0:  48 78 18 5c          pea.l    $185c.w
-  0034e4:  4e ba 51 b6          jsr      $869c(pc)  ; -> sub_869c
+  0034e4:  4e ba 51 b6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0034e8:  58 8f                addq.l   #$4, a7
   0034ea:  2f 00                move.l   d0, -(a7)
   0034ec:  20 5f                movea.l  (a7)+, a0
@@ -5243,7 +5372,7 @@ L34de:
 L350e:
   00350e:  3f 07                move.w   d7, -(a7)
   003510:  48 78 18 5c          pea.l    $185c.w
-  003514:  4e ba 51 86          jsr      $869c(pc)  ; -> sub_869c
+  003514:  4e ba 51 86          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003518:  58 8f                addq.l   #$4, a7
   00351a:  2f 00                move.l   d0, -(a7)
   00351c:  20 5f                movea.l  (a7)+, a0
@@ -5252,21 +5381,23 @@ L3520:
   003520:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   003526:  4e 5e                unlk     a6
   003528:  4e 74 00 02          rtd      #$2
-L352c:
+* GA_BackColor  -  System 7 $AFA0 (same trap slot $F8C, code r=0.93).
+* S7: Patch #41 replaces _BackColor ($A863); card commands: $37
+GA_BackColor:
   00352c:  4e 56 ff fc          link.w   a6, #$fffc
   003530:  2f 0b                move.l   a3, -(a7)
   003532:  70 00                moveq    #$0, d0
   003534:  2f 00                move.l   d0, -(a7)
-  003536:  4e ba 52 ea          jsr      $8822(pc)  ; -> sub_8822
+  003536:  4e ba 52 ea          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00353a:  26 40                movea.l  d0, a3
   00353c:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003540:  48 78 0f 8c          pea.l    $f8c.w
-  003544:  4e ba 51 56          jsr      $869c(pc)  ; -> sub_869c
+  003544:  4e ba 51 56          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003548:  58 8f                addq.l   #$4, a7
   00354a:  2f 00                move.l   d0, -(a7)
   00354c:  20 5f                movea.l  (a7)+, a0
   00354e:  4e 90                jsr      (a0)
-  003550:  4e ba dc de          jsr      $1230(pc)  ; -> sub_1230
+  003550:  4e ba dc de          jsr      $1230(pc)  ; -> GetA5
   003554:  20 40                movea.l  d0, a0
   003556:  20 50                movea.l  (a0), a0
   003558:  b7 d0                cmpa.l   (a0), a3
@@ -5289,15 +5420,17 @@ L3582:
   003582:  26 6e ff f8          movea.l  -$8(a6), a3
   003586:  4e 5e                unlk     a6
   003588:  4e 74 00 04          rtd      #$4
-L358c:
+* GA_RGBBackColor  -  System 7 $B006 (same trap slot $1654, code r=0.83).
+* S7: Patch #56 replaces _RGBBackColor ($AA15); card commands: $37
+GA_RGBBackColor:
   00358c:  4e 56 ff fc          link.w   a6, #$fffc
   003590:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003594:  28 6e 00 08          movea.l  $8(a6), a4
   003598:  70 00                moveq    #$0, d0
   00359a:  2f 00                move.l   d0, -(a7)
-  00359c:  4e ba 52 84          jsr      $8822(pc)  ; -> sub_8822
+  00359c:  4e ba 52 84          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0035a0:  26 40                movea.l  d0, a3
-  0035a2:  4e ba dc 8c          jsr      $1230(pc)  ; -> sub_1230
+  0035a2:  4e ba dc 8c          jsr      $1230(pc)  ; -> GetA5
   0035a6:  20 40                movea.l  d0, a0
   0035a8:  20 50                movea.l  (a0), a0
   0035aa:  b7 d0                cmpa.l   (a0), a3
@@ -5318,7 +5451,7 @@ L358c:
 L35d0:
   0035d0:  2f 0c                move.l   a4, -(a7)
   0035d2:  48 78 16 54          pea.l    $1654.w
-  0035d6:  4e ba 50 c4          jsr      $869c(pc)  ; -> sub_869c
+  0035d6:  4e ba 50 c4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0035da:  58 8f                addq.l   #$4, a7
   0035dc:  2f 00                move.l   d0, -(a7)
   0035de:  20 5f                movea.l  (a7)+, a0
@@ -5337,7 +5470,7 @@ L35d0:
 L3600:
   003600:  2f 0c                move.l   a4, -(a7)
   003602:  48 78 16 54          pea.l    $1654.w
-  003606:  4e ba 50 94          jsr      $869c(pc)  ; -> sub_869c
+  003606:  4e ba 50 94          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00360a:  58 8f                addq.l   #$4, a7
   00360c:  2f 00                move.l   d0, -(a7)
   00360e:  20 5f                movea.l  (a7)+, a0
@@ -5346,15 +5479,17 @@ L3612:
   003612:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   003618:  4e 5e                unlk     a6
   00361a:  4e 74 00 04          rtd      #$4
-L361e:
+* GA_PmBackColor  -  System 7 $B0B0 (same trap slot $1860, code r=0.81).
+* S7: Patch #19 replaces _PmBackColor ($AA98); card commands: $37
+GA_PmBackColor:
   00361e:  4e 56 ff fc          link.w   a6, #$fffc
   003622:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003626:  3e 2e 00 08          move.w   $8(a6), d7
   00362a:  70 00                moveq    #$0, d0
   00362c:  2f 00                move.l   d0, -(a7)
-  00362e:  4e ba 51 f2          jsr      $8822(pc)  ; -> sub_8822
+  00362e:  4e ba 51 f2          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003632:  28 40                movea.l  d0, a4
-  003634:  4e ba db fa          jsr      $1230(pc)  ; -> sub_1230
+  003634:  4e ba db fa          jsr      $1230(pc)  ; -> GetA5
   003638:  20 40                movea.l  d0, a0
   00363a:  20 50                movea.l  (a0), a0
   00363c:  b9 d0                cmpa.l   (a0), a4
@@ -5380,7 +5515,7 @@ L361e:
 L366e:
   00366e:  3f 07                move.w   d7, -(a7)
   003670:  48 78 18 60          pea.l    $1860.w
-  003674:  4e ba 50 26          jsr      $869c(pc)  ; -> sub_869c
+  003674:  4e ba 50 26          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003678:  58 8f                addq.l   #$4, a7
   00367a:  2f 00                move.l   d0, -(a7)
   00367c:  20 5f                movea.l  (a7)+, a0
@@ -5399,7 +5534,7 @@ L366e:
 L369e:
   00369e:  3f 07                move.w   d7, -(a7)
   0036a0:  48 78 18 60          pea.l    $1860.w
-  0036a4:  4e ba 4f f6          jsr      $869c(pc)  ; -> sub_869c
+  0036a4:  4e ba 4f f6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0036a8:  58 8f                addq.l   #$4, a7
   0036aa:  2f 00                move.l   d0, -(a7)
   0036ac:  20 5f                movea.l  (a7)+, a0
@@ -5408,7 +5543,8 @@ L36b0:
   0036b0:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   0036b6:  4e 5e                unlk     a6
   0036b8:  4e 74 00 02          rtd      #$2
-sub_36bc:
+* s7_sub_b1be  -  System 7 $B1BE (checked by hand, r=0.57).
+s7_sub_b1be:
   0036bc:  4e 56 ff f8          link.w   a6, #$fff8
   0036c0:  48 e7 11 18          movem.l  d3/d7/a3-a4, -(a7)
   0036c4:  70 01                moveq    #$1, d0
@@ -5458,7 +5594,7 @@ L3722:
   003736:  1f 01                move.b   d1, -(a7)
   003738:  74 01                moveq    #$1, d2
   00373a:  1f 02                move.b   d2, -(a7)
-  00373c:  4e ba 6d 90          jsr      $a4ce(pc)  ; -> sub_a4ce
+  00373c:  4e ba 6d 90          jsr      $a4ce(pc)  ; -> s7_sub_b14e
   003740:  12 1f                move.b   (a7)+, d1
   003742:  20 1f                move.l   (a7)+, d0
   003744:  74 00                moveq    #$0, d2
@@ -5470,12 +5606,14 @@ L3722:
   003754:  4e 75                rts
   003756:  0a 44 41 ca 48 61 6e 64 dc.b     $0A, $44, $41, $CA, $48, $61, $6E, $64  ; .DA.Hand
   00375e:  6c 65 72 00          dc.b     $6C, $65, $72, $00  ; ler.
-L3762:
+* GA_GetPixel  -  System 7 $B23E (same trap slot $F94, code r=0.83).
+* S7: Patch #81 replaces _GetPixel ($A865); card commands: $0D $29 $33
+GA_GetPixel:
   003762:  4e 56 ff f6          link.w   a6, #$fff6
   003766:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00376a:  38 2e 00 08          move.w   $8(a6), d4
   00376e:  3a 2e 00 0a          move.w   $a(a6), d5
-  003772:  4e ba da bc          jsr      $1230(pc)  ; -> sub_1230
+  003772:  4e ba da bc          jsr      $1230(pc)  ; -> GetA5
   003776:  20 40                movea.l  d0, a0
   003778:  20 50                movea.l  (a0), a0
   00377a:  28 50                movea.l  (a0), a4
@@ -5490,7 +5628,7 @@ L3762:
   003796:  70 00                moveq    #$0, d0
   003798:  2f 00                move.l   d0, -(a7)
   00379a:  2f 2c 00 02          move.l   $2(a4), -(a7)
-  00379e:  4e ba 0a 7a          jsr      $421a(pc)  ; -> sub_421a
+  00379e:  4e ba 0a 7a          jsr      $421a(pc)  ; -> s7_sub_bd94
   0037a2:  2d 40 ff f6          move.l   d0, -$a(a6)
   0037a6:  20 6c 00 02          movea.l  $2(a4), a0
   0037aa:  26 50                movea.l  (a0), a3
@@ -5521,7 +5659,7 @@ L3762:
   0037f8:  4c 06 08 00          muls.l   d6, d0
   0037fc:  2f 00                move.l   d0, -(a7)
   0037fe:  2f 2e ff f6          move.l   -$a(a6), -(a7)
-  003802:  4e ba 17 40          jsr      $4f44(pc)  ; -> sub_4f44
+  003802:  4e ba 17 40          jsr      $4f44(pc)  ; -> BitFieldExtract
   003806:  2e 00                move.l   d0, d7
   003808:  48 6e ff fb          pea.l    -$5(a6)
   00380c:  4e ba 6d 10          jsr      $a51e(pc)  ; -> sub_a51e
@@ -5543,7 +5681,7 @@ L382c:
   003832:  1d 40 00 0c          move.b   d0, $c(a6)
   003836:  60 24                bra.b    $385c  ; -> L385c
 L3838:
-  003838:  4e ba 4e d6          jsr      $8710(pc)  ; -> sub_8710
+  003838:  4e ba 4e d6          jsr      $8710(pc)  ; -> s7_sub_6e14
   00383c:  72 00                moveq    #$0, d1
   00383e:  12 00                move.b   d0, d1
   003840:  67 f6                beq.b    $3838  ; -> L3838
@@ -5551,7 +5689,7 @@ L3838:
   003844:  3f 05                move.w   d5, -(a7)
   003846:  3f 04                move.w   d4, -(a7)
   003848:  48 78 0f 94          pea.l    $f94.w
-  00384c:  4e ba 4e 4e          jsr      $869c(pc)  ; -> sub_869c
+  00384c:  4e ba 4e 4e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003850:  58 8f                addq.l   #$4, a7
   003852:  2f 00                move.l   d0, -(a7)
   003854:  20 5f                movea.l  (a7)+, a0
@@ -5561,12 +5699,14 @@ L385c:
   00385c:  4c ee 18 f0 ff de    movem.l  -$22(a6), d4-d7/a3-a4
   003862:  4e 5e                unlk     a6
   003864:  4e 74 00 04          rtd      #$4
-L3868:
+* GA_GetCPixel  -  System 7 $B34C (same trap slot $165C, code r=0.84).
+* S7: Patch #80 replaces _GetCPixel ($AA17); card commands: $0D $29 $33
+GA_GetCPixel:
   003868:  4e 56 ff f6          link.w   a6, #$fff6
   00386c:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   003870:  3a 2e 00 0c          move.w   $c(a6), d5
   003874:  3c 2e 00 0e          move.w   $e(a6), d6
-  003878:  4e ba d9 b6          jsr      $1230(pc)  ; -> sub_1230
+  003878:  4e ba d9 b6          jsr      $1230(pc)  ; -> GetA5
   00387c:  20 40                movea.l  d0, a0
   00387e:  20 50                movea.l  (a0), a0
   003880:  28 50                movea.l  (a0), a4
@@ -5581,7 +5721,7 @@ L3868:
   00389c:  70 00                moveq    #$0, d0
   00389e:  2f 00                move.l   d0, -(a7)
   0038a0:  2f 2c 00 02          move.l   $2(a4), -(a7)
-  0038a4:  4e ba 09 74          jsr      $421a(pc)  ; -> sub_421a
+  0038a4:  4e ba 09 74          jsr      $421a(pc)  ; -> s7_sub_bd94
   0038a8:  2d 40 ff f6          move.l   d0, -$a(a6)
   0038ac:  20 6c 00 02          movea.l  $2(a4), a0
   0038b0:  26 50                movea.l  (a0), a3
@@ -5612,7 +5752,7 @@ L3868:
   0038fa:  4c 07 08 00          muls.l   d7, d0
   0038fe:  2f 00                move.l   d0, -(a7)
   003900:  2f 2e ff f6          move.l   -$a(a6), -(a7)
-  003904:  4e ba 16 3e          jsr      $4f44(pc)  ; -> sub_4f44
+  003904:  4e ba 16 3e          jsr      $4f44(pc)  ; -> BitFieldExtract
   003908:  2d 40 ff fc          move.l   d0, -$4(a6)
   00390c:  48 6e ff fb          pea.l    -$5(a6)
   003910:  4e ba 6c 0c          jsr      $a51e(pc)  ; -> sub_a51e
@@ -5622,7 +5762,7 @@ L3868:
   00391e:  4f ef 00 14          lea.l    $14(a7), a7
   003922:  60 22                bra.b    $3946  ; -> L3946
 L3924:
-  003924:  4e ba 4d ea          jsr      $8710(pc)  ; -> sub_8710
+  003924:  4e ba 4d ea          jsr      $8710(pc)  ; -> s7_sub_6e14
   003928:  72 00                moveq    #$0, d1
   00392a:  12 00                move.b   d0, d1
   00392c:  67 f6                beq.b    $3924  ; -> L3924
@@ -5630,7 +5770,7 @@ L3924:
   003930:  3f 05                move.w   d5, -(a7)
   003932:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003936:  48 78 16 5c          pea.l    $165c.w
-  00393a:  4e ba 4d 60          jsr      $869c(pc)  ; -> sub_869c
+  00393a:  4e ba 4d 60          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00393e:  58 8f                addq.l   #$4, a7
   003940:  2f 00                move.l   d0, -(a7)
   003942:  20 5f                movea.l  (a7)+, a0
@@ -5639,17 +5779,19 @@ L3946:
   003946:  4c ee 18 f0 ff de    movem.l  -$22(a6), d4-d7/a3-a4
   00394c:  4e 5e                unlk     a6
   00394e:  4e 74 00 08          rtd      #$8
-L3952:
+* GA_GetForeColor  -  System 7 $B43E (same trap slot $1664, code r=0.90).
+* S7: Patch #67 replaces _GetForeColor ($AA19); card commands: $36
+GA_GetForeColor:
   003952:  4e 56 ff f2          link.w   a6, #$fff2
   003956:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00395a:  28 6e 00 08          movea.l  $8(a6), a4
-  00395e:  4e ba d8 d0          jsr      $1230(pc)  ; -> sub_1230
+  00395e:  4e ba d8 d0          jsr      $1230(pc)  ; -> GetA5
   003962:  20 40                movea.l  d0, a0
   003964:  20 50                movea.l  (a0), a0
   003966:  26 50                movea.l  (a0), a3
   003968:  2f 0c                move.l   a4, -(a7)
   00396a:  48 78 16 64          pea.l    $1664.w
-  00396e:  4e ba 4d 2c          jsr      $869c(pc)  ; -> sub_869c
+  00396e:  4e ba 4d 2c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003972:  58 8f                addq.l   #$4, a7
   003974:  2f 00                move.l   d0, -(a7)
   003976:  20 5f                movea.l  (a7)+, a0
@@ -5673,7 +5815,7 @@ L3952:
   0039ae:  27 47 00 50          move.l   d7, $50(a3)
   0039b2:  70 00                moveq    #$0, d0
   0039b4:  2f 00                move.l   d0, -(a7)
-  0039b6:  4e ba 4e 6a          jsr      $8822(pc)  ; -> sub_8822
+  0039b6:  4e ba 4e 6a          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0039ba:  28 40                movea.l  d0, a4
   0039bc:  b9 cb                cmpa.l   a3, a4
   0039be:  58 8f                addq.l   #$4, a7
@@ -5692,17 +5834,19 @@ L39de:
   0039de:  4c ee 18 80 ff e6    movem.l  -$1a(a6), d7/a3-a4
   0039e4:  4e 5e                unlk     a6
   0039e6:  4e 74 00 04          rtd      #$4
-L39ea:
+* GA_GetBackColor  -  System 7 $B4CA (same trap slot $1668, code r=0.90).
+* S7: Patch #68 replaces _GetBackColor ($AA1A); card commands: $37
+GA_GetBackColor:
   0039ea:  4e 56 ff f2          link.w   a6, #$fff2
   0039ee:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   0039f2:  28 6e 00 08          movea.l  $8(a6), a4
-  0039f6:  4e ba d8 38          jsr      $1230(pc)  ; -> sub_1230
+  0039f6:  4e ba d8 38          jsr      $1230(pc)  ; -> GetA5
   0039fa:  20 40                movea.l  d0, a0
   0039fc:  20 50                movea.l  (a0), a0
   0039fe:  26 50                movea.l  (a0), a3
   003a00:  2f 0c                move.l   a4, -(a7)
   003a02:  48 78 16 68          pea.l    $1668.w
-  003a06:  4e ba 4c 94          jsr      $869c(pc)  ; -> sub_869c
+  003a06:  4e ba 4c 94          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003a0a:  58 8f                addq.l   #$4, a7
   003a0c:  2f 00                move.l   d0, -(a7)
   003a0e:  20 5f                movea.l  (a7)+, a0
@@ -5726,7 +5870,7 @@ L39ea:
   003a46:  27 47 00 54          move.l   d7, $54(a3)
   003a4a:  70 00                moveq    #$0, d0
   003a4c:  2f 00                move.l   d0, -(a7)
-  003a4e:  4e ba 4d d2          jsr      $8822(pc)  ; -> sub_8822
+  003a4e:  4e ba 4d d2          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003a52:  28 40                movea.l  d0, a4
   003a54:  b9 cb                cmpa.l   a3, a4
   003a56:  58 8f                addq.l   #$4, a7
@@ -5745,12 +5889,14 @@ L3a76:
   003a76:  4c ee 18 80 ff e6    movem.l  -$1a(a6), d7/a3-a4
   003a7c:  4e 5e                unlk     a6
   003a7e:  4e 74 00 04          rtd      #$4
-L3a82:
+* GA_NewPixMap  -  System 7 $B556 (identical code).
+* S7: Patch #76 replaces _NewPixMap ($AA03); no EngineDispatch command found
+GA_NewPixMap:
   003a82:  4e 56 00 00          link.w   a6, #$0
   003a86:  2f 0b                move.l   a3, -(a7)
   003a88:  59 8f                subq.l   #$4, a7
   003a8a:  48 78 16 0c          pea.l    $160c.w
-  003a8e:  4e ba 4c 0c          jsr      $869c(pc)  ; -> sub_869c
+  003a8e:  4e ba 4c 0c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003a92:  58 8f                addq.l   #$4, a7
   003a94:  2f 00                move.l   d0, -(a7)
   003a96:  20 5f                movea.l  (a7)+, a0
@@ -5760,13 +5906,15 @@ L3a82:
   003aa0:  26 6e ff fc          movea.l  -$4(a6), a3
   003aa4:  4e 5e                unlk     a6
   003aa6:  4e 75                rts
-L3aa8:
+* GA_CopyPixMap  -  System 7 $B57E (same trap slot $1614, code r=0.93).
+* S7: Patch #57 replaces _CopyPixMap ($AA05); card commands: $26
+GA_CopyPixMap:
   003aa8:  4e 56 00 00          link.w   a6, #$0
   003aac:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003ab0:  28 6e 00 08          movea.l  $8(a6), a4
   003ab4:  70 00                moveq    #$0, d0
   003ab6:  2f 00                move.l   d0, -(a7)
-  003ab8:  4e ba 4d 68          jsr      $8822(pc)  ; -> sub_8822
+  003ab8:  4e ba 4d 68          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003abc:  26 40                movea.l  d0, a3
   003abe:  20 0b                move.l   a3, d0
   003ac0:  58 8f                addq.l   #$4, a7
@@ -5789,7 +5937,7 @@ L3ae8:
   003ae8:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003aec:  2f 0c                move.l   a4, -(a7)
   003aee:  48 78 16 14          pea.l    $1614.w
-  003af2:  4e ba 4b a8          jsr      $869c(pc)  ; -> sub_869c
+  003af2:  4e ba 4b a8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003af6:  58 8f                addq.l   #$4, a7
   003af8:  2f 00                move.l   d0, -(a7)
   003afa:  20 5f                movea.l  (a7)+, a0
@@ -5797,12 +5945,14 @@ L3ae8:
   003afe:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   003b04:  4e 5e                unlk     a6
   003b06:  4e 74 00 08          rtd      #$8
-L3b0a:
+* GA_PenPixPat  -  System 7 $B5E4 (same trap slot $1628, code r=0.87).
+* S7: Patch #58 replaces _PenPixPat ($AA0A); card commands: $2A
+GA_PenPixPat:
   003b0a:  4e 56 ff f8          link.w   a6, #$fff8
   003b0e:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003b12:  70 00                moveq    #$0, d0
   003b14:  2f 00                move.l   d0, -(a7)
-  003b16:  4e ba 4d 0a          jsr      $8822(pc)  ; -> sub_8822
+  003b16:  4e ba 4d 0a          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003b1a:  26 40                movea.l  d0, a3
   003b1c:  20 6e 00 08          movea.l  $8(a6), a0
   003b20:  20 50                movea.l  (a0), a0
@@ -5817,7 +5967,7 @@ L3b0a:
   003b36:  aa 28                dc.w     $aa28
   003b38:  28 9f                move.l   (a7)+, (a4)
 L3b3a:
-  003b3a:  4e ba d6 f4          jsr      $1230(pc)  ; -> sub_1230
+  003b3a:  4e ba d6 f4          jsr      $1230(pc)  ; -> GetA5
   003b3e:  20 40                movea.l  d0, a0
   003b40:  20 50                movea.l  (a0), a0
   003b42:  b7 d0                cmpa.l   (a0), a3
@@ -5833,7 +5983,7 @@ L3b3a:
   003b5a:  48 6e 00 08          pea.l    $8(a6)
   003b5e:  2f 00                move.l   d0, -(a7)
   003b60:  48 6b 00 3a          pea.l    $3a(a3)
-  003b64:  4e ba dc a2          jsr      $1808(pc)  ; -> sub_1808
+  003b64:  4e ba dc a2          jsr      $1808(pc)  ; -> s7_sub_91aa
   003b68:  72 00                moveq    #$0, d1
   003b6a:  12 00                move.b   d0, d1
   003b6c:  4f ef 00 10          lea.l    $10(a7), a7
@@ -5849,7 +5999,7 @@ L3b72:
   003b82:  48 68 00 14          pea.l    $14(a0)
   003b86:  2f 00                move.l   d0, -(a7)
   003b88:  48 6b 00 3a          pea.l    $3a(a3)
-  003b8c:  4e ba dc 7a          jsr      $1808(pc)  ; -> sub_1808
+  003b8c:  4e ba dc 7a          jsr      $1808(pc)  ; -> s7_sub_91aa
   003b90:  72 00                moveq    #$0, d1
   003b92:  12 00                move.b   d0, d1
   003b94:  4f ef 00 10          lea.l    $10(a7), a7
@@ -5857,7 +6007,7 @@ L3b72:
 L3b9a:
   003b9a:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003b9e:  48 78 16 28          pea.l    $1628.w
-  003ba2:  4e ba 4a f8          jsr      $869c(pc)  ; -> sub_869c
+  003ba2:  4e ba 4a f8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003ba6:  58 8f                addq.l   #$4, a7
   003ba8:  2f 00                move.l   d0, -(a7)
   003baa:  20 5f                movea.l  (a7)+, a0
@@ -5878,7 +6028,7 @@ L3b9a:
 L3bd2:
   003bd2:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003bd6:  48 78 16 28          pea.l    $1628.w
-  003bda:  4e ba 4a c0          jsr      $869c(pc)  ; -> sub_869c
+  003bda:  4e ba 4a c0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003bde:  58 8f                addq.l   #$4, a7
   003be0:  2f 00                move.l   d0, -(a7)
   003be2:  20 5f                movea.l  (a7)+, a0
@@ -5887,12 +6037,14 @@ L3be6:
   003be6:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   003bec:  4e 5e                unlk     a6
   003bee:  4e 74 00 04          rtd      #$4
-L3bf2:
+* GA_BackPixPat  -  System 7 $B6DE (same trap slot $162C, code r=0.87).
+* S7: Patch #59 replaces _BackPixPat ($AA0B); card commands: $2A
+GA_BackPixPat:
   003bf2:  4e 56 ff f8          link.w   a6, #$fff8
   003bf6:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003bfa:  70 00                moveq    #$0, d0
   003bfc:  2f 00                move.l   d0, -(a7)
-  003bfe:  4e ba 4c 22          jsr      $8822(pc)  ; -> sub_8822
+  003bfe:  4e ba 4c 22          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003c02:  26 40                movea.l  d0, a3
   003c04:  20 6e 00 08          movea.l  $8(a6), a0
   003c08:  20 50                movea.l  (a0), a0
@@ -5907,7 +6059,7 @@ L3bf2:
   003c1e:  aa 28                dc.w     $aa28
   003c20:  28 9f                move.l   (a7)+, (a4)
 L3c22:
-  003c22:  4e ba d6 0c          jsr      $1230(pc)  ; -> sub_1230
+  003c22:  4e ba d6 0c          jsr      $1230(pc)  ; -> GetA5
   003c26:  20 40                movea.l  d0, a0
   003c28:  20 50                movea.l  (a0), a0
   003c2a:  b7 d0                cmpa.l   (a0), a3
@@ -5923,7 +6075,7 @@ L3c22:
   003c42:  48 6e 00 08          pea.l    $8(a6)
   003c46:  2f 00                move.l   d0, -(a7)
   003c48:  48 6b 00 20          pea.l    $20(a3)
-  003c4c:  4e ba db ba          jsr      $1808(pc)  ; -> sub_1808
+  003c4c:  4e ba db ba          jsr      $1808(pc)  ; -> s7_sub_91aa
   003c50:  72 00                moveq    #$0, d1
   003c52:  12 00                move.b   d0, d1
   003c54:  4f ef 00 10          lea.l    $10(a7), a7
@@ -5939,7 +6091,7 @@ L3c5a:
   003c6a:  48 68 00 14          pea.l    $14(a0)
   003c6e:  2f 00                move.l   d0, -(a7)
   003c70:  48 6b 00 20          pea.l    $20(a3)
-  003c74:  4e ba db 92          jsr      $1808(pc)  ; -> sub_1808
+  003c74:  4e ba db 92          jsr      $1808(pc)  ; -> s7_sub_91aa
   003c78:  72 00                moveq    #$0, d1
   003c7a:  12 00                move.b   d0, d1
   003c7c:  4f ef 00 10          lea.l    $10(a7), a7
@@ -5947,7 +6099,7 @@ L3c5a:
 L3c82:
   003c82:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003c86:  48 78 16 2c          pea.l    $162c.w
-  003c8a:  4e ba 4a 10          jsr      $869c(pc)  ; -> sub_869c
+  003c8a:  4e ba 4a 10          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003c8e:  58 8f                addq.l   #$4, a7
   003c90:  2f 00                move.l   d0, -(a7)
   003c92:  20 5f                movea.l  (a7)+, a0
@@ -5968,7 +6120,7 @@ L3c82:
 L3cba:
   003cba:  2f 2e 00 08          move.l   $8(a6), -(a7)
   003cbe:  48 78 16 2c          pea.l    $162c.w
-  003cc2:  4e ba 49 d8          jsr      $869c(pc)  ; -> sub_869c
+  003cc2:  4e ba 49 d8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003cc6:  58 8f                addq.l   #$4, a7
   003cc8:  2f 00                move.l   d0, -(a7)
   003cca:  20 5f                movea.l  (a7)+, a0
@@ -5977,14 +6129,16 @@ L3cce:
   003cce:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   003cd4:  4e 5e                unlk     a6
   003cd6:  4e 74 00 04          rtd      #$4
-L3cda:
+* GA_SetPortPix  -  System 7 $B7D8 (same trap slot $1618, code r=0.94).
+* S7: Patch #60 replaces _SetPortPix ($AA06); card commands: $26
+GA_SetPortPix:
   003cda:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003cde:  28 6f 00 0c          movea.l  $c(a7), a4
   003ce2:  70 00                moveq    #$0, d0
   003ce4:  2f 00                move.l   d0, -(a7)
-  003ce6:  4e ba 4b 3a          jsr      $8822(pc)  ; -> sub_8822
+  003ce6:  4e ba 4b 3a          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003cea:  26 40                movea.l  d0, a3
-  003cec:  4e ba d5 42          jsr      $1230(pc)  ; -> sub_1230
+  003cec:  4e ba d5 42          jsr      $1230(pc)  ; -> GetA5
   003cf0:  20 40                movea.l  d0, a0
   003cf2:  20 50                movea.l  (a0), a0
   003cf4:  b7 d0                cmpa.l   (a0), a3
@@ -6004,22 +6158,24 @@ L3cda:
 L3d16:
   003d16:  2f 0c                move.l   a4, -(a7)
   003d18:  48 78 16 18          pea.l    $1618.w
-  003d1c:  4e ba 49 7e          jsr      $869c(pc)  ; -> sub_869c
+  003d1c:  4e ba 49 7e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003d20:  58 8f                addq.l   #$4, a7
   003d22:  2f 00                move.l   d0, -(a7)
   003d24:  20 5f                movea.l  (a7)+, a0
   003d26:  4e 90                jsr      (a0)
   003d28:  4c df 18 00          movem.l  (a7)+, a3-a4
   003d2c:  4e 74 00 04          rtd      #$4
-L3d30:
+* GA_OpColor  -  System 7 $B83E (same trap slot $1684, code r=0.88).
+* S7: Patch #61 replaces _OpColor ($AA21); card commands: $26
+GA_OpColor:
   003d30:  4e 56 ff fc          link.w   a6, #$fffc
   003d34:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003d38:  28 6e 00 08          movea.l  $8(a6), a4
   003d3c:  70 00                moveq    #$0, d0
   003d3e:  2f 00                move.l   d0, -(a7)
-  003d40:  4e ba 4a e0          jsr      $8822(pc)  ; -> sub_8822
+  003d40:  4e ba 4a e0          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003d44:  26 40                movea.l  d0, a3
-  003d46:  4e ba d4 e8          jsr      $1230(pc)  ; -> sub_1230
+  003d46:  4e ba d4 e8          jsr      $1230(pc)  ; -> GetA5
   003d4a:  20 40                movea.l  d0, a0
   003d4c:  20 50                movea.l  (a0), a0
   003d4e:  b7 d0                cmpa.l   (a0), a3
@@ -6054,7 +6210,7 @@ L3d80:
 L3d96:
   003d96:  2f 0c                move.l   a4, -(a7)
   003d98:  48 78 16 84          pea.l    $1684.w
-  003d9c:  4e ba 48 fe          jsr      $869c(pc)  ; -> sub_869c
+  003d9c:  4e ba 48 fe          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003da0:  58 8f                addq.l   #$4, a7
   003da2:  2f 00                move.l   d0, -(a7)
   003da4:  20 5f                movea.l  (a7)+, a0
@@ -6062,15 +6218,17 @@ L3d96:
   003da8:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   003dae:  4e 5e                unlk     a6
   003db0:  4e 74 00 04          rtd      #$4
-L3db4:
+* GA_HiliteColor  -  System 7 $B8BE (same trap slot $1688, code r=0.88).
+* S7: Patch #62 replaces _HiliteColor ($AA22); card commands: $26
+GA_HiliteColor:
   003db4:  4e 56 ff fc          link.w   a6, #$fffc
   003db8:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003dbc:  28 6e 00 08          movea.l  $8(a6), a4
   003dc0:  70 00                moveq    #$0, d0
   003dc2:  2f 00                move.l   d0, -(a7)
-  003dc4:  4e ba 4a 5c          jsr      $8822(pc)  ; -> sub_8822
+  003dc4:  4e ba 4a 5c          jsr      $8822(pc)  ; -> s7_sub_6f1c
   003dc8:  26 40                movea.l  d0, a3
-  003dca:  4e ba d4 64          jsr      $1230(pc)  ; -> sub_1230
+  003dca:  4e ba d4 64          jsr      $1230(pc)  ; -> GetA5
   003dce:  20 40                movea.l  d0, a0
   003dd0:  20 50                movea.l  (a0), a0
   003dd2:  b7 d0                cmpa.l   (a0), a3
@@ -6106,7 +6264,7 @@ L3e06:
 L3e1c:
   003e1c:  2f 0c                move.l   a4, -(a7)
   003e1e:  48 78 16 88          pea.l    $1688.w
-  003e22:  4e ba 48 78          jsr      $869c(pc)  ; -> sub_869c
+  003e22:  4e ba 48 78          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003e26:  58 8f                addq.l   #$4, a7
   003e28:  2f 00                move.l   d0, -(a7)
   003e2a:  20 5f                movea.l  (a7)+, a0
@@ -6114,7 +6272,9 @@ L3e1c:
   003e2e:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   003e34:  4e 5e                unlk     a6
   003e36:  4e 74 00 04          rtd      #$4
-L3e3a:
+* GA_BitMapRgn  -  System 7 $BF0C (same trap slot $115C, code r=0.46).
+* S7: Patch #100 replaces _BitMapRgn ($A8D7); card commands: $0D $38
+GA_BitMapRgn:
   003e3a:  4e 56 ff fc          link.w   a6, #$fffc
   003e3e:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003e42:  28 6e 00 0c          movea.l  $c(a6), a4
@@ -6151,7 +6311,7 @@ L3e8c:
   003e8e:  2f 0c                move.l   a4, -(a7)
   003e90:  2f 0b                move.l   a3, -(a7)
   003e92:  48 78 11 5c          pea.l    $115c.w
-  003e96:  4e ba 48 04          jsr      $869c(pc)  ; -> sub_869c
+  003e96:  4e ba 48 04          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003e9a:  58 8f                addq.l   #$4, a7
   003e9c:  2f 00                move.l   d0, -(a7)
   003e9e:  20 5f                movea.l  (a7)+, a0
@@ -6160,7 +6320,8 @@ L3e8c:
   003ea6:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   003eac:  4e 5e                unlk     a6
   003eae:  4e 74 00 08          rtd      #$8
-L3eb2:
+* s7_Lb940  -  System 7 $B940 (similar code, r=0.89).
+s7_Lb940:
   003eb2:  4e 56 ff fc          link.w   a6, #$fffc
   003eb6:  48 e7 00 18          movem.l  a3-a4, -(a7)
   003eba:  28 6e 00 08          movea.l  $8(a6), a4
@@ -6192,7 +6353,7 @@ L3efe:
   003efe:  55 8f                subq.l   #$2, a7
   003f00:  2f 0c                move.l   a4, -(a7)
   003f02:  48 78 1a 74          pea.l    $1a74.w
-  003f06:  4e ba 47 94          jsr      $869c(pc)  ; -> sub_869c
+  003f06:  4e ba 47 94          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003f0a:  58 8f                addq.l   #$4, a7
   003f0c:  2f 00                move.l   d0, -(a7)
   003f0e:  70 01                moveq    #$1, d0
@@ -6203,13 +6364,14 @@ L3f18:
   003f18:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   003f1e:  4e 5e                unlk     a6
   003f20:  4e 74 00 04          rtd      #$4
-L3f24:
+* s7_Lb9b4  -  System 7 $B9B4 (similar code, r=0.96).
+s7_Lb9b4:
   003f24:  4e 56 ff fc          link.w   a6, #$fffc
   003f28:  2f 0b                move.l   a3, -(a7)
   003f2a:  26 6e 00 08          movea.l  $8(a6), a3
   003f2e:  2f 0b                move.l   a3, -(a7)
   003f30:  48 78 1a 74          pea.l    $1a74.w
-  003f34:  4e ba 47 66          jsr      $869c(pc)  ; -> sub_869c
+  003f34:  4e ba 47 66          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003f38:  58 8f                addq.l   #$4, a7
   003f3a:  2f 00                move.l   d0, -(a7)
   003f3c:  70 02                moveq    #$2, d0
@@ -6227,7 +6389,8 @@ L3f24:
   003f5a:  26 6e ff f8          movea.l  -$8(a6), a3
   003f5e:  4e 5e                unlk     a6
   003f60:  4e 74 00 04          rtd      #$4
-L3f64:
+* s7_Lb9fc  -  System 7 $B9FC (similar code, r=0.92).
+s7_Lb9fc:
   003f64:  4e 56 00 00          link.w   a6, #$0
   003f68:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   003f6c:  28 6e 00 14          movea.l  $14(a6), a4
@@ -6241,7 +6404,7 @@ L3f64:
   003f86:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   003f8a:  2f 06                move.l   d6, -(a7)
   003f8c:  48 78 1a 74          pea.l    $1a74.w
-  003f90:  4e ba 47 0a          jsr      $869c(pc)  ; -> sub_869c
+  003f90:  4e ba 47 0a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   003f94:  58 8f                addq.l   #$4, a7
   003f96:  2f 00                move.l   d0, -(a7)
   003f98:  70 00                moveq    #$0, d0
@@ -6263,7 +6426,8 @@ L3fbc:
   003fc0:  4c ee 18 c0 ff f0    movem.l  -$10(a6), d6-d7/a3-a4
   003fc6:  4e 5e                unlk     a6
   003fc8:  4e 74 00 16          rtd      #$16
-L3fcc:
+* s7_Lba64  -  System 7 $BA64 (similar code, r=0.83).
+s7_Lba64:
   003fcc:  4e 56 ff fc          link.w   a6, #$fffc
   003fd0:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   003fd4:  28 6e 00 1a          movea.l  $1a(a6), a4
@@ -6297,7 +6461,7 @@ L4000:
   004022:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   004026:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00402a:  48 78 1a 74          pea.l    $1a74.w
-  00402e:  4e ba 46 6c          jsr      $869c(pc)  ; -> sub_869c
+  00402e:  4e ba 46 6c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   004032:  58 8f                addq.l   #$4, a7
   004034:  2f 00                move.l   d0, -(a7)
   004036:  70 03                moveq    #$3, d0
@@ -6308,7 +6472,8 @@ L4000:
   004044:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   00404a:  4e 5e                unlk     a6
   00404c:  4e 74 00 16          rtd      #$16
-L4050:
+* s7_Lbb14  -  System 7 $BB14 (similar code, r=0.86).
+s7_Lbb14:
   004050:  4e 56 ff fc          link.w   a6, #$fffc
   004054:  48 e7 00 18          movem.l  a3-a4, -(a7)
   004058:  28 6e 00 08          movea.l  $8(a6), a4
@@ -6337,7 +6502,7 @@ L4082:
 L4098:
   004098:  2f 0c                move.l   a4, -(a7)
   00409a:  48 78 1a 74          pea.l    $1a74.w
-  00409e:  4e ba 45 fc          jsr      $869c(pc)  ; -> sub_869c
+  00409e:  4e ba 45 fc          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0040a2:  58 8f                addq.l   #$4, a7
   0040a4:  2f 00                move.l   d0, -(a7)
   0040a6:  70 04                moveq    #$4, d0
@@ -6346,26 +6511,30 @@ L4098:
   0040ac:  4c ee 18 00 ff f4    movem.l  -$c(a6), a3-a4
   0040b2:  4e 5e                unlk     a6
   0040b4:  4e 74 00 04          rtd      #$4
-L40b8:
+* GA_CloseCPort  -  System 7 $BC22 (same trap slot $1608, code r=0.76).
+* S7: Patch #79 replaces _ClosePort ($A87D); no EngineDispatch command found
+GA_CloseCPort:
   0040b8:  2f 0b                move.l   a3, -(a7)
   0040ba:  26 6f 00 08          movea.l  $8(a7), a3
   0040be:  2f 0b                move.l   a3, -(a7)
   0040c0:  48 78 0f f4          pea.l    $ff4.w
-  0040c4:  4e ba 45 d6          jsr      $869c(pc)  ; -> sub_869c
+  0040c4:  4e ba 45 d6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0040c8:  58 8f                addq.l   #$4, a7
   0040ca:  2f 00                move.l   d0, -(a7)
   0040cc:  20 5f                movea.l  (a7)+, a0
   0040ce:  4e 90                jsr      (a0)
   0040d0:  26 5f                movea.l  (a7)+, a3
   0040d2:  4e 74 00 04          rtd      #$4
-L40d6:
+* GA_CharExtra  -  System 7 $BC42 (same trap slot $168C, code r=0.87).
+* S7: Patch #101 replaces _CharExtra ($AA23); card commands: $26
+GA_CharExtra:
   0040d6:  48 e7 03 10          movem.l  d6-d7/a3, -(a7)
   0040da:  2e 2f 00 10          move.l   $10(a7), d7
   0040de:  70 00                moveq    #$0, d0
   0040e0:  2f 00                move.l   d0, -(a7)
-  0040e2:  4e ba 47 3e          jsr      $8822(pc)  ; -> sub_8822
+  0040e2:  4e ba 47 3e          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0040e6:  26 40                movea.l  d0, a3
-  0040e8:  4e ba d1 46          jsr      $1230(pc)  ; -> sub_1230
+  0040e8:  4e ba d1 46          jsr      $1230(pc)  ; -> GetA5
   0040ec:  20 40                movea.l  d0, a0
   0040ee:  20 50                movea.l  (a0), a0
   0040f0:  b7 d0                cmpa.l   (a0), a3
@@ -6377,7 +6546,7 @@ L40d6:
   0040fe:  3c 2b 00 0c          move.w   $c(a3), d6
   004102:  2f 07                move.l   d7, -(a7)
   004104:  48 78 16 8c          pea.l    $168c.w
-  004108:  4e ba 45 92          jsr      $869c(pc)  ; -> sub_869c
+  004108:  4e ba 45 92          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00410c:  58 8f                addq.l   #$4, a7
   00410e:  2f 00                move.l   d0, -(a7)
   004110:  20 5f                movea.l  (a7)+, a0
@@ -6400,7 +6569,7 @@ L40d6:
 L4138:
   004138:  2f 07                move.l   d7, -(a7)
   00413a:  48 78 16 8c          pea.l    $168c.w
-  00413e:  4e ba 45 5c          jsr      $869c(pc)  ; -> sub_869c
+  00413e:  4e ba 45 5c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   004142:  58 8f                addq.l   #$4, a7
   004144:  2f 00                move.l   d0, -(a7)
   004146:  20 5f                movea.l  (a7)+, a0
@@ -6408,13 +6577,14 @@ L4138:
 L414a:
   00414a:  4c df 08 c0          movem.l  (a7)+, d6-d7/a3
   00414e:  4e 74 00 04          rtd      #$4
-sub_4152:
+* s7_sub_bcc8  -  System 7 $BCC8 (similar code, r=0.77).
+s7_sub_bcc8:
   004152:  4e 56 ff f8          link.w   a6, #$fff8
   004156:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   00415a:  28 6e 00 08          movea.l  $8(a6), a4
   00415e:  70 00                moveq    #$0, d0
   004160:  2f 00                move.l   d0, -(a7)
-  004162:  4e ba 46 be          jsr      $8822(pc)  ; -> sub_8822
+  004162:  4e ba 46 be          jsr      $8822(pc)  ; -> s7_sub_6f1c
   004166:  26 40                movea.l  d0, a3
   004168:  7e 00                moveq    #$0, d7
   00416a:  20 0b                move.l   a3, d0
@@ -6462,7 +6632,7 @@ L41ce:
   0041d0:  26 6f 00 08          movea.l  $8(a7), a3
   0041d4:  70 00                moveq    #$0, d0
   0041d6:  2f 00                move.l   d0, -(a7)
-  0041d8:  4e ba 46 48          jsr      $8822(pc)  ; -> sub_8822
+  0041d8:  4e ba 46 48          jsr      $8822(pc)  ; -> s7_sub_6f1c
   0041dc:  b0 8b                cmp.l    a3, d0
   0041de:  58 8f                addq.l   #$4, a7
   0041e0:  66 16                bne.b    $41f8  ; -> L41f8
@@ -6478,7 +6648,8 @@ L41ce:
 L41f8:
   0041f8:  26 5f                movea.l  (a7)+, a3
   0041fa:  4e 74 00 04          rtd      #$4
-L41fe:
+* s7_Lbd76  -  System 7 $BD76 (identical code).
+s7_Lbd76:
   0041fe:  4e 56 00 00          link.w   a6, #$0
   004202:  70 01                moveq    #$1, d0
   004204:  2f 00                move.l   d0, -(a7)
@@ -6489,14 +6660,15 @@ L41fe:
   004210:  4e ba 20 12          jsr      $6224(pc)  ; -> EngineDispatch
   004214:  4e 5e                unlk     a6
   004216:  4e 74 00 04          rtd      #$4
-sub_421a:
+* s7_sub_bd94  -  System 7 $BD94 (similar code, r=0.85).
+s7_sub_bd94:
   00421a:  4e 56 ff f8          link.w   a6, #$fff8
   00421e:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   004222:  28 6e 00 08          movea.l  $8(a6), a4
   004226:  59 8f                subq.l   #$4, a7
   004228:  2f 0c                move.l   a4, -(a7)
   00422a:  48 78 1a 74          pea.l    $1a74.w
-  00422e:  4e ba 44 6c          jsr      $869c(pc)  ; -> sub_869c
+  00422e:  4e ba 44 6c          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   004232:  58 8f                addq.l   #$4, a7
   004234:  2f 00                move.l   d0, -(a7)
   004236:  70 0f                moveq    #$f, d0
@@ -6558,7 +6730,7 @@ L4294:
   0042b4:  67 02                beq.b    $42b8  ; -> L42b8
   0042b6:  26 4c                movea.l  a4, a3
 L42b8:
-  0042b8:  4e ba 44 56          jsr      $8710(pc)  ; -> sub_8710
+  0042b8:  4e ba 44 56          jsr      $8710(pc)  ; -> s7_sub_6e14
   0042bc:  72 00                moveq    #$0, d1
   0042be:  12 00                move.b   d0, d1
   0042c0:  67 f6                beq.b    $42b8  ; -> L42b8
@@ -6566,14 +6738,15 @@ L42b8:
   0042c4:  4c ee 18 80 ff ec    movem.l  -$14(a6), d7/a3-a4
   0042ca:  4e 5e                unlk     a6
   0042cc:  4e 75                rts
-L42ce:
+* s7_Lbe74  -  System 7 $BE74 (similar code, r=0.80).
+s7_Lbe74:
   0042ce:  4e 56 00 00          link.w   a6, #$0
   0042d2:  2f 0b                move.l   a3, -(a7)
   0042d4:  26 6e 00 08          movea.l  $8(a6), a3
   0042d8:  70 01                moveq    #$1, d0
   0042da:  2f 00                move.l   d0, -(a7)
   0042dc:  2f 0b                move.l   a3, -(a7)
-  0042de:  4e ba ff 3a          jsr      $421a(pc)  ; -> sub_421a
+  0042de:  4e ba ff 3a          jsr      $421a(pc)  ; -> s7_sub_bd94
   0042e2:  2d 40 00 0c          move.l   d0, $c(a6)
   0042e6:  26 6e ff fc          movea.l  -$4(a6), a3
   0042ea:  4e 5e                unlk     a6
@@ -6583,7 +6756,7 @@ L42f0:
   0042f2:  26 6f 00 08          movea.l  $8(a7), a3
   0042f6:  2f 0b                move.l   a3, -(a7)
   0042f8:  48 78 1a 74          pea.l    $1a74.w
-  0042fc:  4e ba 43 9e          jsr      $869c(pc)  ; -> sub_869c
+  0042fc:  4e ba 43 9e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   004300:  58 8f                addq.l   #$4, a7
   004302:  2f 00                move.l   d0, -(a7)
   004304:  70 02                moveq    #$2, d0
@@ -6599,7 +6772,7 @@ L42f0:
   004318:  4e ba 1f 0a          jsr      $6224(pc)  ; -> EngineDispatch
   00431c:  2f 0b                move.l   a3, -(a7)
   00431e:  48 78 1a 74          pea.l    $1a74.w
-  004322:  4e ba 43 78          jsr      $869c(pc)  ; -> sub_869c
+  004322:  4e ba 43 78          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   004326:  58 8f                addq.l   #$4, a7
   004328:  2f 00                move.l   d0, -(a7)
   00432a:  70 11                moveq    #$11, d0
@@ -6608,13 +6781,14 @@ L42f0:
   004330:  4f ef 00 10          lea.l    $10(a7), a7
   004334:  26 5f                movea.l  (a7)+, a3
   004336:  4e 74 00 04          rtd      #$4
-L433a:
+* s7_Lbecc  -  System 7 $BECC (similar code, r=0.95).
+s7_Lbecc:
   00433a:  4e 56 00 00          link.w   a6, #$0
   00433e:  48 e7 00 18          movem.l  a3-a4, -(a7)
   004342:  26 6e 00 08          movea.l  $8(a6), a3
   004346:  70 00                moveq    #$0, d0
   004348:  2f 00                move.l   d0, -(a7)
-  00434a:  4e ba 44 d6          jsr      $8822(pc)  ; -> sub_8822
+  00434a:  4e ba 44 d6          jsr      $8822(pc)  ; -> s7_sub_6f1c
   00434e:  28 40                movea.l  d0, a4
   004350:  b9 cb                cmpa.l   a3, a4
   004352:  58 8f                addq.l   #$4, a7
@@ -6622,7 +6796,7 @@ L433a:
   004356:  20 0b                move.l   a3, d0
   004358:  66 0a                bne.b    $4364  ; -> L4364
 L435a:
-  00435a:  4e ba 43 b4          jsr      $8710(pc)  ; -> sub_8710
+  00435a:  4e ba 43 b4          jsr      $8710(pc)  ; -> s7_sub_6e14
   00435e:  1d 40 00 0c          move.b   d0, $c(a6)
   004362:  60 06                bra.b    $436a  ; -> L436a
 L4364:
@@ -6631,13 +6805,15 @@ L436a:
   00436a:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   004370:  4e 5e                unlk     a6
   004372:  4e 74 00 04          rtd      #$4
-sub_4376:
+* s7_sub_81bc  -  System 7 $81BC (similar code, r=0.77).
+s7_sub_81bc:
   004376:  2f 0b                move.l   a3, -(a7)
   004378:  26 6f 00 08          movea.l  $8(a7), a3
   00437c:  26 b8 08 24          move.l   $824.w, (a3)
   004380:  26 5f                movea.l  (a7)+, a3
   004382:  4e 75                rts
-sub_4384:
+* s7_sub_8262  -  System 7 $8262 (similar code, r=0.85).
+s7_sub_8262:
   004384:  4e 56 ff e4          link.w   a6, #$ffe4
   004388:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00438c:  2a 2e 00 24          move.l   $24(a6), d5
@@ -6802,7 +6978,7 @@ L44fe:
 L4504:
   004504:  2d 78 0c c8 ff f2    move.l   $cc8.w, -$e(a6)
   00450a:  27 78 0c c8 00 d0    move.l   $cc8.w, $d0(a3)
-  004510:  4e ba cd 1e          jsr      $1230(pc)  ; -> sub_1230
+  004510:  4e ba cd 1e          jsr      $1230(pc)  ; -> GetA5
   004514:  20 40                movea.l  d0, a0
   004516:  20 50                movea.l  (a0), a0
   004518:  2d 50 ff e8          move.l   (a0), -$18(a6)
@@ -6855,14 +7031,14 @@ L4504:
 L45b4:
   0045b4:  20 6e ff e8          movea.l  -$18(a6), a0
   0045b8:  2f 28 00 50          move.l   $50(a0), -(a7)
-  0045bc:  4e ba d2 24          jsr      $17e2(pc)  ; -> sub_17e2
+  0045bc:  4e ba d2 24          jsr      $17e2(pc)  ; -> s7_sub_917e
   0045c0:  20 40                movea.l  d0, a0
   0045c2:  43 eb 00 e8          lea.l    $e8(a3), a1
   0045c6:  22 d8                move.l   (a0)+, (a1)+
   0045c8:  32 d8                move.w   (a0)+, (a1)+
   0045ca:  20 6e ff e8          movea.l  -$18(a6), a0
   0045ce:  2f 28 00 54          move.l   $54(a0), -(a7)
-  0045d2:  4e ba d2 0e          jsr      $17e2(pc)  ; -> sub_17e2
+  0045d2:  4e ba d2 0e          jsr      $17e2(pc)  ; -> s7_sub_917e
   0045d6:  20 40                movea.l  d0, a0
   0045d8:  43 eb 00 ee          lea.l    $ee(a3), a1
   0045dc:  22 d8                move.l   (a0)+, (a1)+
@@ -7024,11 +7200,12 @@ L4730:
   00476a:  4c ee 18 f0 ff cc    movem.l  -$34(a6), d4-d7/a3-a4
   004770:  4e 5e                unlk     a6
   004772:  4e 75                rts
-sub_4774:
+* s7_sub_860e  -  System 7 $860E (similar code, r=0.80).
+s7_sub_860e:
   004774:  4e 56 ff fc          link.w   a6, #$fffc
   004778:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00477c:  28 6e 00 08          movea.l  $8(a6), a4
-  004780:  4e ba ca ae          jsr      $1230(pc)  ; -> sub_1230
+  004780:  4e ba ca ae          jsr      $1230(pc)  ; -> GetA5
   004784:  20 40                movea.l  d0, a0
   004786:  20 50                movea.l  (a0), a0
   004788:  2d 50 ff fc          move.l   (a0), -$4(a6)
@@ -7095,7 +7272,7 @@ L480a:
   004812:  20 d9                move.l   (a1)+, (a0)+
   004814:  20 d9                move.l   (a1)+, (a0)+
 L4816:
-  004816:  4e ba ca 18          jsr      $1230(pc)  ; -> sub_1230
+  004816:  4e ba ca 18          jsr      $1230(pc)  ; -> GetA5
   00481a:  20 40                movea.l  d0, a0
   00481c:  20 10                move.l   (a0), d0
   00481e:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -7106,7 +7283,8 @@ L4816:
   004838:  4c ee 18 c0 ff ec    movem.l  -$14(a6), d6-d7/a3-a4
   00483e:  4e 5e                unlk     a6
   004840:  4e 75                rts
-sub_4842:
+* s7_sub_86d6  -  System 7 $86D6 (similar code, r=0.76).
+s7_sub_86d6:
   004842:  4e 56 ff f8          link.w   a6, #$fff8
   004846:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   00484a:  28 6e 00 08          movea.l  $8(a6), a4
@@ -7186,7 +7364,8 @@ L48f4:
   0048f4:  4c ee 18 c0 ff e8    movem.l  -$18(a6), d6-d7/a3-a4
   0048fa:  4e 5e                unlk     a6
   0048fc:  4e 75                rts
-sub_48fe:
+* s7_sub_879a  -  System 7 $879A (similar code, r=0.73).
+s7_sub_879a:
   0048fe:  48 e7 00 18          movem.l  a3-a4, -(a7)
   004902:  28 6f 00 0c          movea.l  $c(a7), a4
   004906:  30 2c 00 04          move.w   $4(a4), d0
@@ -7204,7 +7383,8 @@ L491e:
   004922:  37 6f 00 16 00 0e    move.w   $16(a7), $e(a3)
   004928:  4c df 18 00          movem.l  (a7)+, a3-a4
   00492c:  4e 75                rts
-sub_492e:
+* s7_sub_87cc  -  System 7 $87CC (similar code, r=0.84).
+s7_sub_87cc:
   00492e:  4e 56 ff fe          link.w   a6, #$fffe
   004932:  48 e7 13 18          movem.l  d3/d6-d7/a3-a4, -(a7)
   004936:  2c 2e 00 0c          move.l   $c(a6), d6
@@ -7254,7 +7434,8 @@ L4996:
   0049a4:  4c ee 18 c8 ff ea    movem.l  -$16(a6), d3/d6-d7/a3-a4
   0049aa:  4e 5e                unlk     a6
   0049ac:  4e 75                rts
-sub_49ae:
+* s7_sub_884e  -  System 7 $884E (similar code, r=0.86).
+s7_sub_884e:
   0049ae:  4e 56 ff fa          link.w   a6, #$fffa
   0049b2:  48 e7 17 18          movem.l  d3/d5-d7/a3-a4, -(a7)
   0049b6:  2a 2e 00 10          move.l   $10(a6), d5
@@ -7311,12 +7492,13 @@ L4a2c:
   004a3a:  4c ee 18 e8 ff e2    movem.l  -$1e(a6), d3/d5-d7/a3-a4
   004a40:  4e 5e                unlk     a6
   004a42:  4e 75                rts
-sub_4a44:
+* s7_sub_88e6  -  System 7 $88E6 (similar code, r=0.72).
+s7_sub_88e6:
   004a44:  4e 56 ff 96          link.w   a6, #$ff96
   004a48:  48 e7 1f 18          movem.l  d3-d7/a3-a4, -(a7)
   004a4c:  49 ee ff c2          lea.l    -$3e(a6), a4
   004a50:  2a 2e 00 0c          move.l   $c(a6), d5
-  004a54:  4e ba c7 da          jsr      $1230(pc)  ; -> sub_1230
+  004a54:  4e ba c7 da          jsr      $1230(pc)  ; -> GetA5
   004a58:  20 40                movea.l  d0, a0
   004a5a:  20 10                move.l   (a0), d0
   004a5c:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -7358,7 +7540,7 @@ L4ac2:
   004ace:  48 c0                ext.l    d0
   004ad0:  2f 00                move.l   d0, -(a7)
   004ad2:  2f 06                move.l   d6, -(a7)
-  004ad4:  4e ba 04 92          jsr      $4f68(pc)  ; -> sub_4f68
+  004ad4:  4e ba 04 92          jsr      $4f68(pc)  ; -> FixScale
   004ad8:  20 6e 00 1c          movea.l  $1c(a6), a0
   004adc:  20 80                move.l   d0, (a0)
   004ade:  4f ef 00 0c          lea.l    $c(a7), a7
@@ -7372,7 +7554,7 @@ L4ae2:
   004afa:  22 6e 00 20          movea.l  $20(a6), a1
   004afe:  22 a8 00 80          move.l   $80(a0), (a1)
   004b02:  2f 2e ff aa          move.l   -$56(a6), -(a7)
-  004b06:  4e ba 04 bc          jsr      $4fc4(pc)  ; -> sub_4fc4
+  004b06:  4e ba 04 bc          jsr      $4fc4(pc)  ; -> s7_sub_7e8c
   004b0a:  3d 40 ff b6          move.w   d0, -$4a(a6)
   004b0e:  b7 ee ff a6          cmpa.l   -$5a(a6), a3
   004b12:  58 8f                addq.l   #$4, a7
@@ -7402,7 +7584,7 @@ L4b36:
   004b52:  2f 2e ff a6          move.l   -$5a(a6), -(a7)
   004b56:  20 6e 00 30          movea.l  $30(a6), a0
   004b5a:  48 68 00 f0          pea.l    $f0(a0)
-  004b5e:  4e ba fe 4e          jsr      $49ae(pc)  ; -> sub_49ae
+  004b5e:  4e ba fe 4e          jsr      $49ae(pc)  ; -> s7_sub_884e
   004b62:  72 00                moveq    #$0, d1
   004b64:  12 00                move.b   d0, d1
   004b66:  4f ef 00 0c          lea.l    $c(a7), a7
@@ -7462,7 +7644,7 @@ L4bd0:
   004bf4:  2f 2e ff be          move.l   -$42(a6), -(a7)
   004bf8:  20 6e 00 30          movea.l  $30(a6), a0
   004bfc:  48 68 00 c0          pea.l    $c0(a0)
-  004c00:  4e ba fd 2c          jsr      $492e(pc)  ; -> sub_492e
+  004c00:  4e ba fd 2c          jsr      $492e(pc)  ; -> s7_sub_87cc
   004c04:  72 00                moveq    #$0, d1
   004c06:  12 00                move.b   d0, d1
   004c08:  50 8f                addq.l   #$8, a7
@@ -7480,7 +7662,7 @@ L4c14:
   004c28:  2f 2e ff be          move.l   -$42(a6), -(a7)
   004c2c:  20 6e 00 30          movea.l  $30(a6), a0
   004c30:  48 68 00 c0          pea.l    $c0(a0)
-  004c34:  4e ba fc f8          jsr      $492e(pc)  ; -> sub_492e
+  004c34:  4e ba fc f8          jsr      $492e(pc)  ; -> s7_sub_87cc
   004c38:  72 00                moveq    #$0, d1
   004c3a:  12 00                move.b   d0, d1
   004c3c:  50 8f                addq.l   #$8, a7
@@ -7515,7 +7697,7 @@ L4c8c:
   004c90:  66 40                bne.b    $4cd2  ; -> L4cd2
   004c92:  2f 2e 00 24          move.l   $24(a6), -(a7)
   004c96:  2f 2e ff a2          move.l   -$5e(a6), -(a7)
-  004c9a:  4e ba 02 f4          jsr      $4f90(pc)  ; -> sub_4f90
+  004c9a:  4e ba 02 f4          jsr      $4f90(pc)  ; -> EqualFontOutput
   004c9e:  72 00                moveq    #$0, d1
   004ca0:  12 00                move.b   d0, d1
   004ca2:  50 8f                addq.l   #$8, a7
@@ -7557,7 +7739,7 @@ L4cde:
   004cfa:  2f 0b                move.l   a3, -(a7)
   004cfc:  20 6e 00 30          movea.l  $30(a6), a0
   004d00:  48 68 00 c0          pea.l    $c0(a0)
-  004d04:  4e ba fc 28          jsr      $492e(pc)  ; -> sub_492e
+  004d04:  4e ba fc 28          jsr      $492e(pc)  ; -> s7_sub_87cc
   004d08:  72 00                moveq    #$0, d1
   004d0a:  12 00                move.b   d0, d1
   004d0c:  50 8f                addq.l   #$8, a7
@@ -7574,7 +7756,7 @@ L4d18:
   004d28:  2f 0b                move.l   a3, -(a7)
   004d2a:  20 6e 00 30          movea.l  $30(a6), a0
   004d2e:  48 68 00 c0          pea.l    $c0(a0)
-  004d32:  4e ba fb fa          jsr      $492e(pc)  ; -> sub_492e
+  004d32:  4e ba fb fa          jsr      $492e(pc)  ; -> s7_sub_87cc
   004d36:  72 00                moveq    #$0, d1
   004d38:  12 00                move.b   d0, d1
   004d3a:  50 8f                addq.l   #$8, a7
@@ -7643,7 +7825,7 @@ L4dbe:
   004dda:  29 90 00 00          move.l   (a0), (a4, d0.w)
   004dde:  59 8f                subq.l   #$4, a7
   004de0:  2f 2e ff be          move.l   -$42(a6), -(a7)
-  004de4:  4e ba 56 8c          jsr      $a472(pc)  ; -> sub_a472
+  004de4:  4e ba 56 8c          jsr      $a472(pc)  ; -> s7_sub_bfde
   004de8:  20 04                move.l   d4, d0
   004dea:  52 84                addq.l   #$1, d4
   004dec:  e5 40                asl.w    #$2, d0
@@ -7676,7 +7858,7 @@ L4e14:
   004e2a:  29 93 00 00          move.l   (a3), (a4, d0.w)
   004e2e:  59 8f                subq.l   #$4, a7
   004e30:  2f 0b                move.l   a3, -(a7)
-  004e32:  4e ba 56 3e          jsr      $a472(pc)  ; -> sub_a472
+  004e32:  4e ba 56 3e          jsr      $a472(pc)  ; -> s7_sub_bfde
   004e36:  20 04                move.l   d4, d0
   004e38:  52 84                addq.l   #$1, d4
   004e3a:  e5 40                asl.w    #$2, d0
@@ -7764,22 +7946,28 @@ L4f0a:
   004f0a:  4c ee 18 f8 ff 7a    movem.l  -$86(a6), d3-d7/a3-a4
   004f10:  4e 5e                unlk     a6
   004f12:  4e 75                rts
-L4f14:
+* GA_TrapAB23  -  System 7 $7DAC (identical code).
+* S7: Patch #15 replaces trap $AB23; no EngineDispatch command found
+GA_TrapAB23:
   004f14:  20 5f                movea.l  (a7)+, a0
   004f16:  3f 00                move.w   d0, -(a7)
   004f18:  2f 08                move.l   a0, -(a7)
-  004f1a:  4e fa d1 ee          jmp      $210a(pc)  ; -> sub_210a
+  004f1a:  4e fa d1 ee          jmp      $210a(pc)  ; -> s7_sub_9a88
   004f1e:  47 41 5f 53 65 74 46 69 dc.b     $47, $41, $5F, $53, $65, $74, $46, $69  ; GA_SetFi
   004f26:  6c 6c 50 61 74 00    dc.b     $6C, $6C, $50, $61, $74, $00  ; llPat.
-sub_4f2c:
+* GetD2  -  System 7 $7DC4 (identical bytes, S6 MacsBug name).
+* S7: embedded MacsBug symbols that follow each one) --
+GetD2:
   004f2c:  20 02                move.l   d2, d0
   004f2e:  4e 75                rts
   004f30:  47 65 74 44 32 00 00 00 dc.b     $47, $65, $74, $44, $32, $00, $00, $00  ; GetD2...
-sub_4f38:
+* SetD2  -  System 7 $7DD0 (identical code).
+SetD2:
   004f38:  24 2f 00 04          move.l   $4(a7), d2
   004f3c:  4e 75                rts
   004f3e:  53 65 74 44 32 00    dc.b     $53, $65, $74, $44, $32, $00  ; SetD2.
-sub_4f44:
+* BitFieldExtract  -  System 7 $7E0C (identical bytes, S6 MacsBug name).
+BitFieldExtract:
   004f44:  20 6f 00 04          movea.l  $4(a7), a0
   004f48:  20 2f 00 08          move.l   $8(a7), d0
   004f4c:  22 2f 00 0c          move.l   $c(a7), d1
@@ -7788,7 +7976,8 @@ sub_4f44:
   004f56:  42 69 74 46 69 65 6c 64 dc.b     $42, $69, $74, $46, $69, $65, $6C, $64  ; BitField
   004f5e:  45 78 74 72 61 63 74 00 dc.b     $45, $78, $74, $72, $61, $63, $74, $00  ; Extract.
   004f66:  00 00                dc.b     $00, $00  ; ..
-sub_4f68:
+* FixScale  -  System 7 $7E30 (identical bytes, S6 MacsBug name).
+FixScale:
   004f68:  22 2f 00 08          move.l   $8(a7), d1
   004f6c:  48 41                swap     d1
   004f6e:  42 41                clr.w    d1
@@ -7801,7 +7990,8 @@ sub_4f68:
   004f84:  4e 75                rts
   004f86:  46 69 78 53 63 61 6c 65 dc.b     $46, $69, $78, $53, $63, $61, $6C, $65  ; FixScale
   004f8e:  00 00                dc.b     $00, $00  ; ..
-sub_4f90:
+* EqualFontOutput  -  System 7 $7E58 (identical bytes, S6 MacsBug name).
+EqualFontOutput:
   004f90:  20 6f 00 04          movea.l  $4(a7), a0
   004f94:  5c 88                addq.l   #$6, a0
   004f96:  22 6f 00 08          movea.l  $8(a7), a1
@@ -7821,7 +8011,8 @@ L4fb0:
   004fb2:  45 71 75 61 6c 46 6f 6e dc.b     $45, $71, $75, $61, $6C, $46, $6F, $6E  ; EqualFon
   004fba:  74 4f 75 74 70 75 74 00 dc.b     $74, $4F, $75, $74, $70, $75, $74, $00  ; tOutput.
   004fc2:  00 00                dc.b     $00, $00  ; ..
-sub_4fc4:
+* s7_sub_7e8c  -  System 7 $7E8C (identical bytes).
+s7_sub_7e8c:
   004fc4:  20 6f 00 04          movea.l  $4(a7), a0
   004fc8:  30 28 04 0e          move.w   $40e(a0), d0
   004fcc:  48 c0                ext.l    d0
@@ -7831,10 +8022,10 @@ sub_4fc4:
   004fd6:  d0 a8 04 18          add.l    $418(a0), d0
   004fda:  e2 98                ror.l    #$1, d0
   004fdc:  72 01                moveq    #$1, d1
-  004fde:  61 50                bsr.b    $5030  ; -> sub_5030
+  004fde:  61 50                bsr.b    $5030  ; -> WidthTableCheckSum
   004fe0:  58 88                addq.l   #$4, a0
   004fe2:  32 3c 00 0c          move.w   #$c, d1
-  004fe6:  61 48                bsr.b    $5030  ; -> sub_5030
+  004fe6:  61 48                bsr.b    $5030  ; -> WidthTableCheckSum
   004fe8:  d0 98                add.l    (a0)+, d0
   004fea:  e2 98                ror.l    #$1, d0
   004fec:  d0 98                add.l    (a0)+, d0
@@ -7871,7 +8062,8 @@ sub_4fc4:
   00502a:  d0 41                add.w    d1, d0
   00502c:  48 c0                ext.l    d0
   00502e:  4e 75                rts
-sub_5030:
+* WidthTableCheckSum  -  System 7 $7EF8 (identical bytes, S6 MacsBug name).
+WidthTableCheckSum:
   005030:  d0 98                add.l    (a0)+, d0
   005032:  e2 98                ror.l    #$1, d0
   005034:  d0 98                add.l    (a0)+, d0
@@ -7904,12 +8096,14 @@ sub_5030:
   00506a:  e2 98                ror.l    #$1, d0
   00506c:  d0 98                add.l    (a0)+, d0
   00506e:  e2 98                ror.l    #$1, d0
-  005070:  51 c9 ff be          dbra     d1, $5030  ; -> sub_5030
+  005070:  51 c9 ff be          dbra     d1, $5030  ; -> WidthTableCheckSum
   005074:  4e 75                rts
   005076:  57 69 64 74 68 54 61 62 dc.b     $57, $69, $64, $74, $68, $54, $61, $62  ; WidthTab
   00507e:  6c 65 43 68 65 63 6b 53 dc.b     $6C, $65, $43, $68, $65, $63, $6B, $53  ; leCheckS
   005086:  75 6d                dc.b     $75, $6D  ; um
-L5088:
+* GA_Translate24To32  -  System 7 $7F50 (same trap slot $644, code r=0.00).
+* S7: Patch #0 replaces _Translate24To32 ($A091); no EngineDispatch command found
+GA_Translate24To32:
   005088:  2f 08                move.l   a0, -(a7)
   00508a:  2f 00                move.l   d0, -(a7)
   00508c:  20 78 0d 62          movea.l  $d62.w, a0
@@ -7979,7 +8173,9 @@ L512e:
   005136:  47 41 5f 54 72 61 6e 73 dc.b     $47, $41, $5F, $54, $72, $61, $6E, $73  ; GA_Trans
   00513e:  6c 61 74 65 32 34 54 6f dc.b     $6C, $61, $74, $65, $32, $34, $54, $6F  ; late24To
   005146:  33 32                dc.b     $33, $32  ; 32
-L5148:
+* GA_TrapAB27  -  System 7 $32BC (same trap slot $1A9C, code r=0.71).
+* S7: Patch #6 replaces trap $AB27; card commands: $0D $15 $38
+GA_TrapAB27:
   005148:  4e 56 ff dc          link.w   a6, #$ffdc
   00514c:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005150:  3c 2e 00 08          move.w   $8(a6), d6
@@ -8037,7 +8233,7 @@ L5148:
   005202:  2f 2e 00 2c          move.l   $2c(a6), -(a7)
   005206:  2f 2e 00 30          move.l   $30(a6), -(a7)
   00520a:  2f 2e ff e0          move.l   -$20(a6), -(a7)
-  00520e:  4e ba f1 74          jsr      $4384(pc)  ; -> sub_4384
+  00520e:  4e ba f1 74          jsr      $4384(pc)  ; -> s7_sub_8262
   005212:  2d 6e ff e0 ff dc    move.l   -$20(a6), -$24(a6)
   005218:  70 01                moveq    #$1, d0
   00521a:  2f 00                move.l   d0, -(a7)
@@ -8083,7 +8279,7 @@ L527c:
   005292:  20 6c 00 1c          movea.l  $1c(a4), a0
   005296:  3f 28 00 04          move.w   $4(a0), -(a7)
   00529a:  48 78 08 08          pea.l    $808.w
-  00529e:  4e ba 33 fc          jsr      $869c(pc)  ; -> sub_869c
+  00529e:  4e ba 33 fc          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0052a2:  58 8f                addq.l   #$4, a7
   0052a4:  2f 00                move.l   d0, -(a7)
   0052a6:  20 5f                movea.l  (a7)+, a0
@@ -8099,12 +8295,12 @@ L52bc:
   0052bc:  48 6e ff f8          pea.l    -$8(a6)
   0052c0:  48 6e ff f0          pea.l    -$10(a6)
   0052c4:  2f 2e 00 30          move.l   $30(a6), -(a7)
-  0052c8:  4e ba f5 78          jsr      $4842(pc)  ; -> sub_4842
+  0052c8:  4e ba f5 78          jsr      $4842(pc)  ; -> s7_sub_86d6
   0052cc:  18 00                move.b   d0, d4
   0052ce:  48 6e ff fa          pea.l    -$6(a6)
   0052d2:  48 6e ff f4          pea.l    -$c(a6)
   0052d6:  2f 2e 00 28          move.l   $28(a6), -(a7)
-  0052da:  4e ba f5 66          jsr      $4842(pc)  ; -> sub_4842
+  0052da:  4e ba f5 66          jsr      $4842(pc)  ; -> s7_sub_86d6
   0052de:  1a 00                move.b   d0, d5
   0052e0:  2f 2e 00 30          move.l   $30(a6), -(a7)
   0052e4:  2f 2e 00 2c          move.l   $2c(a6), -(a7)
@@ -8119,7 +8315,7 @@ L52bc:
   005306:  2f 2e 00 0a          move.l   $a(a6), -(a7)
   00530a:  3f 06                move.w   d6, -(a7)
   00530c:  48 78 1a 9c          pea.l    $1a9c.w
-  005310:  4e ba 33 8a          jsr      $869c(pc)  ; -> sub_869c
+  005310:  4e ba 33 8a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005314:  58 8f                addq.l   #$4, a7
   005316:  2f 00                move.l   d0, -(a7)
   005318:  20 5f                movea.l  (a7)+, a0
@@ -8132,7 +8328,7 @@ L52bc:
   00532a:  2f 00                move.l   d0, -(a7)
   00532c:  2f 2e ff f0          move.l   -$10(a6), -(a7)
   005330:  2f 2e 00 30          move.l   $30(a6), -(a7)
-  005334:  4e ba f5 c8          jsr      $48fe(pc)  ; -> sub_48fe
+  005334:  4e ba f5 c8          jsr      $48fe(pc)  ; -> s7_sub_879a
   005338:  4f ef 00 0c          lea.l    $c(a7), a7
 L533c:
   00533c:  4a 05                tst.b    d5
@@ -8142,18 +8338,20 @@ L533c:
   005346:  2f 00                move.l   d0, -(a7)
   005348:  2f 2e ff f4          move.l   -$c(a6), -(a7)
   00534c:  2f 2e 00 28          move.l   $28(a6), -(a7)
-  005350:  4e ba f5 ac          jsr      $48fe(pc)  ; -> sub_48fe
+  005350:  4e ba f5 ac          jsr      $48fe(pc)  ; -> s7_sub_879a
   005354:  4f ef 00 0c          lea.l    $c(a7), a7
 L5358:
   005358:  4c ee 18 f0 ff c4    movem.l  -$3c(a6), d4-d7/a3-a4
   00535e:  4e 5e                unlk     a6
   005360:  4e 74 00 2c          rtd      #$2c
-L5364:
+* GA_StdRgn  -  System 7 $358C (same trap slot $1144, code r=0.96).
+* S7: Patch #24 replaces _StdRgn ($A8D1); card commands: $0D $18 $26 $38
+GA_StdRgn:
   005364:  4e 56 ff f2          link.w   a6, #$fff2
   005368:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00536c:  28 6e 00 08          movea.l  $8(a6), a4
   005370:  1e 2e 00 0c          move.b   $c(a6), d7
-  005374:  4e ba be ba          jsr      $1230(pc)  ; -> sub_1230
+  005374:  4e ba be ba          jsr      $1230(pc)  ; -> GetA5
   005378:  20 40                movea.l  d0, a0
   00537a:  20 50                movea.l  (a0), a0
   00537c:  26 50                movea.l  (a0), a3
@@ -8180,7 +8378,7 @@ L5364:
   0053b6:  48 6e ff fe          pea.l    -$2(a6)
   0053ba:  48 6e ff fa          pea.l    -$6(a6)
   0053be:  48 6b 00 02          pea.l    $2(a3)
-  0053c2:  4e ba f4 7e          jsr      $4842(pc)  ; -> sub_4842
+  0053c2:  4e ba f4 7e          jsr      $4842(pc)  ; -> s7_sub_86d6
   0053c6:  1c 00                move.b   d0, d6
   0053c8:  70 02                moveq    #$2, d0
   0053ca:  b0 84                cmp.l    d4, d0
@@ -8190,7 +8388,7 @@ L5364:
   0053d8:  1f 07                move.b   d7, -(a7)
   0053da:  2f 0c                move.l   a4, -(a7)
   0053dc:  48 78 11 44          pea.l    $1144.w
-  0053e0:  4e ba 32 ba          jsr      $869c(pc)  ; -> sub_869c
+  0053e0:  4e ba 32 ba          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0053e4:  58 8f                addq.l   #$4, a7
   0053e6:  2f 00                move.l   d0, -(a7)
   0053e8:  20 5f                movea.l  (a7)+, a0
@@ -8201,7 +8399,7 @@ L53f2:
   0053f2:  1f 07                move.b   d7, -(a7)
   0053f4:  2f 0c                move.l   a4, -(a7)
   0053f6:  48 78 11 44          pea.l    $1144.w
-  0053fa:  4e ba 32 a0          jsr      $869c(pc)  ; -> sub_869c
+  0053fa:  4e ba 32 a0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0053fe:  58 8f                addq.l   #$4, a7
   005400:  2f 00                move.l   d0, -(a7)
   005402:  20 5f                movea.l  (a7)+, a0
@@ -8214,14 +8412,14 @@ L5406:
   005410:  2f 00                move.l   d0, -(a7)
   005412:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   005416:  48 6b 00 02          pea.l    $2(a3)
-  00541a:  4e ba f4 e2          jsr      $48fe(pc)  ; -> sub_48fe
+  00541a:  4e ba f4 e2          jsr      $48fe(pc)  ; -> s7_sub_879a
   00541e:  4f ef 00 0c          lea.l    $c(a7), a7
   005422:  60 14                bra.b    $5438  ; -> L5438
 L5424:
   005424:  1f 07                move.b   d7, -(a7)
   005426:  2f 0c                move.l   a4, -(a7)
   005428:  48 78 11 44          pea.l    $1144.w
-  00542c:  4e ba 32 6e          jsr      $869c(pc)  ; -> sub_869c
+  00542c:  4e ba 32 6e          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005430:  58 8f                addq.l   #$4, a7
   005432:  2f 00                move.l   d0, -(a7)
   005434:  20 5f                movea.l  (a7)+, a0
@@ -8230,10 +8428,12 @@ L5438:
   005438:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   00543e:  4e 5e                unlk     a6
   005440:  4e 74 00 06          rtd      #$6
-L5444:
+* GA_StdLine  -  System 7 $3682 (same trap slot $1040, code r=0.96).
+* S7: Patch #3 replaces _StdLine ($A890); card commands: $0D $20 $26 $38
+GA_StdLine:
   005444:  4e 56 ff f6          link.w   a6, #$fff6
   005448:  48 e7 07 10          movem.l  d5-d7/a3, -(a7)
-  00544c:  4e ba bd e2          jsr      $1230(pc)  ; -> sub_1230
+  00544c:  4e ba bd e2          jsr      $1230(pc)  ; -> GetA5
   005450:  20 40                movea.l  d0, a0
   005452:  20 50                movea.l  (a0), a0
   005454:  26 50                movea.l  (a0), a3
@@ -8258,7 +8458,7 @@ L5444:
   00548a:  48 6e ff fe          pea.l    -$2(a6)
   00548e:  48 6e ff fa          pea.l    -$6(a6)
   005492:  48 6b 00 02          pea.l    $2(a3)
-  005496:  4e ba f3 aa          jsr      $4842(pc)  ; -> sub_4842
+  005496:  4e ba f3 aa          jsr      $4842(pc)  ; -> s7_sub_86d6
   00549a:  1e 00                move.b   d0, d7
   00549c:  70 02                moveq    #$2, d0
   00549e:  b0 85                cmp.l    d5, d0
@@ -8267,7 +8467,7 @@ L5444:
   0054a6:  37 7c ff ff 00 42    move.w   #$ffff, $42(a3)
   0054ac:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0054b0:  48 78 10 40          pea.l    $1040.w
-  0054b4:  4e ba 31 e6          jsr      $869c(pc)  ; -> sub_869c
+  0054b4:  4e ba 31 e6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0054b8:  58 8f                addq.l   #$4, a7
   0054ba:  2f 00                move.l   d0, -(a7)
   0054bc:  20 5f                movea.l  (a7)+, a0
@@ -8277,7 +8477,7 @@ L5444:
 L54c6:
   0054c6:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0054ca:  48 78 10 40          pea.l    $1040.w
-  0054ce:  4e ba 31 cc          jsr      $869c(pc)  ; -> sub_869c
+  0054ce:  4e ba 31 cc          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0054d2:  58 8f                addq.l   #$4, a7
   0054d4:  2f 00                move.l   d0, -(a7)
   0054d6:  20 5f                movea.l  (a7)+, a0
@@ -8290,13 +8490,13 @@ L54da:
   0054e4:  2f 00                move.l   d0, -(a7)
   0054e6:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   0054ea:  48 6b 00 02          pea.l    $2(a3)
-  0054ee:  4e ba f4 0e          jsr      $48fe(pc)  ; -> sub_48fe
+  0054ee:  4e ba f4 0e          jsr      $48fe(pc)  ; -> s7_sub_879a
   0054f2:  4f ef 00 0c          lea.l    $c(a7), a7
   0054f6:  60 14                bra.b    $550c  ; -> L550c
 L54f8:
   0054f8:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0054fc:  48 78 10 40          pea.l    $1040.w
-  005500:  4e ba 31 9a          jsr      $869c(pc)  ; -> sub_869c
+  005500:  4e ba 31 9a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005504:  58 8f                addq.l   #$4, a7
   005506:  2f 00                move.l   d0, -(a7)
   005508:  20 5f                movea.l  (a7)+, a0
@@ -8305,12 +8505,14 @@ L550c:
   00550c:  4c ee 08 e0 ff e6    movem.l  -$1a(a6), d5-d7/a3
   005512:  4e 5e                unlk     a6
   005514:  4e 74 00 04          rtd      #$4
-L5518:
+* GA_StdPoly  -  System 7 $376C (same trap slot $1114, code r=0.95).
+* S7: Patch #23 replaces _StdPoly ($A8C5); card commands: $0D $26 $31 $38
+GA_StdPoly:
   005518:  4e 56 ff f2          link.w   a6, #$fff2
   00551c:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005520:  28 6e 00 08          movea.l  $8(a6), a4
   005524:  1e 2e 00 0c          move.b   $c(a6), d7
-  005528:  4e ba bd 06          jsr      $1230(pc)  ; -> sub_1230
+  005528:  4e ba bd 06          jsr      $1230(pc)  ; -> GetA5
   00552c:  20 40                movea.l  d0, a0
   00552e:  20 50                movea.l  (a0), a0
   005530:  26 50                movea.l  (a0), a3
@@ -8341,7 +8543,7 @@ L5518:
   005574:  48 6e ff fe          pea.l    -$2(a6)
   005578:  48 6e ff fa          pea.l    -$6(a6)
   00557c:  48 6b 00 02          pea.l    $2(a3)
-  005580:  4e ba f2 c0          jsr      $4842(pc)  ; -> sub_4842
+  005580:  4e ba f2 c0          jsr      $4842(pc)  ; -> s7_sub_86d6
   005584:  1a 00                move.b   d0, d5
   005586:  4f ef 00 0c          lea.l    $c(a7), a7
 L558a:
@@ -8352,7 +8554,7 @@ L558a:
   005596:  1f 07                move.b   d7, -(a7)
   005598:  2f 0c                move.l   a4, -(a7)
   00559a:  48 78 11 14          pea.l    $1114.w
-  00559e:  4e ba 30 fc          jsr      $869c(pc)  ; -> sub_869c
+  00559e:  4e ba 30 fc          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0055a2:  58 8f                addq.l   #$4, a7
   0055a4:  2f 00                move.l   d0, -(a7)
   0055a6:  20 5f                movea.l  (a7)+, a0
@@ -8363,7 +8565,7 @@ L55b0:
   0055b0:  1f 07                move.b   d7, -(a7)
   0055b2:  2f 0c                move.l   a4, -(a7)
   0055b4:  48 78 11 14          pea.l    $1114.w
-  0055b8:  4e ba 30 e2          jsr      $869c(pc)  ; -> sub_869c
+  0055b8:  4e ba 30 e2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0055bc:  58 8f                addq.l   #$4, a7
   0055be:  2f 00                move.l   d0, -(a7)
   0055c0:  20 5f                movea.l  (a7)+, a0
@@ -8376,14 +8578,14 @@ L55c4:
   0055ce:  2f 00                move.l   d0, -(a7)
   0055d0:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   0055d4:  48 6b 00 02          pea.l    $2(a3)
-  0055d8:  4e ba f3 24          jsr      $48fe(pc)  ; -> sub_48fe
+  0055d8:  4e ba f3 24          jsr      $48fe(pc)  ; -> s7_sub_879a
   0055dc:  4f ef 00 0c          lea.l    $c(a7), a7
   0055e0:  60 14                bra.b    $55f6  ; -> L55f6
 L55e2:
   0055e2:  1f 07                move.b   d7, -(a7)
   0055e4:  2f 0c                move.l   a4, -(a7)
   0055e6:  48 78 11 14          pea.l    $1114.w
-  0055ea:  4e ba 30 b0          jsr      $869c(pc)  ; -> sub_869c
+  0055ea:  4e ba 30 b0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0055ee:  58 8f                addq.l   #$4, a7
   0055f0:  2f 00                move.l   d0, -(a7)
   0055f2:  20 5f                movea.l  (a7)+, a0
@@ -8392,12 +8594,14 @@ L55f6:
   0055f6:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   0055fc:  4e 5e                unlk     a6
   0055fe:  4e 74 00 06          rtd      #$6
-L5602:
+* GA_StdText  -  System 7 $3A9C (same trap slot $1008, code r=0.50).
+* S7: Patch #5 replaces _StdText ($A882); card commands: $0D $21 $26 $38
+GA_StdText:
   005602:  4e 56 ff ea          link.w   a6, #$ffea
   005606:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   00560a:  3e 2e 00 14          move.w   $14(a6), d7
   00560e:  47 ee ff ea          lea.l    -$16(a6), a3
-  005612:  4e ba bc 1c          jsr      $1230(pc)  ; -> sub_1230
+  005612:  4e ba bc 1c          jsr      $1230(pc)  ; -> GetA5
   005616:  20 40                movea.l  d0, a0
   005618:  20 50                movea.l  (a0), a0
   00561a:  28 50                movea.l  (a0), a4
@@ -8430,7 +8634,7 @@ L5602:
   005664:  48 6e ff fe          pea.l    -$2(a6)
   005668:  48 6e ff fa          pea.l    -$6(a6)
   00566c:  48 6c 00 02          pea.l    $2(a4)
-  005670:  4e ba f1 d0          jsr      $4842(pc)  ; -> sub_4842
+  005670:  4e ba f1 d0          jsr      $4842(pc)  ; -> s7_sub_86d6
   005674:  1c 00                move.b   d0, d6
   005676:  70 02                moveq    #$2, d0
   005678:  b0 84                cmp.l    d4, d0
@@ -8442,7 +8646,7 @@ L5602:
   00568c:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   005690:  2f 2e 00 08          move.l   $8(a6), -(a7)
   005694:  48 78 10 08          pea.l    $1008.w
-  005698:  4e ba 30 02          jsr      $869c(pc)  ; -> sub_869c
+  005698:  4e ba 30 02          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00569c:  58 8f                addq.l   #$4, a7
   00569e:  2f 00                move.l   d0, -(a7)
   0056a0:  20 5f                movea.l  (a7)+, a0
@@ -8455,7 +8659,7 @@ L56aa:
   0056b0:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0056b4:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0056b8:  48 78 10 08          pea.l    $1008.w
-  0056bc:  4e ba 2f de          jsr      $869c(pc)  ; -> sub_869c
+  0056bc:  4e ba 2f de          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0056c0:  58 8f                addq.l   #$4, a7
   0056c2:  2f 00                move.l   d0, -(a7)
   0056c4:  20 5f                movea.l  (a7)+, a0
@@ -8468,7 +8672,7 @@ L56c8:
   0056d2:  2f 00                move.l   d0, -(a7)
   0056d4:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   0056d8:  48 6c 00 02          pea.l    $2(a4)
-  0056dc:  4e ba f2 20          jsr      $48fe(pc)  ; -> sub_48fe
+  0056dc:  4e ba f2 20          jsr      $48fe(pc)  ; -> s7_sub_879a
   0056e0:  4f ef 00 0c          lea.l    $c(a7), a7
   0056e4:  60 1e                bra.b    $5704  ; -> L5704
 L56e6:
@@ -8477,7 +8681,7 @@ L56e6:
   0056ec:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   0056f0:  2f 2e 00 08          move.l   $8(a6), -(a7)
   0056f4:  48 78 10 08          pea.l    $1008.w
-  0056f8:  4e ba 2f a2          jsr      $869c(pc)  ; -> sub_869c
+  0056f8:  4e ba 2f a2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0056fc:  58 8f                addq.l   #$4, a7
   0056fe:  2f 00                move.l   d0, -(a7)
   005700:  20 5f                movea.l  (a7)+, a0
@@ -8486,14 +8690,16 @@ L5704:
   005704:  4c ee 18 f0 ff d2    movem.l  -$2e(a6), d4-d7/a3-a4
   00570a:  4e 5e                unlk     a6
   00570c:  4e 74 00 0e          rtd      #$e
-L5710:
+* GA_StdArc  -  System 7 $3DDC (same trap slot $10F4, code r=0.97).
+* S7: Patch #4 replaces _StdArc ($A8BD); card commands: $0D $23 $26 $38
+GA_StdArc:
   005710:  4e 56 ff e4          link.w   a6, #$ffe4
   005714:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005718:  3a 2e 00 08          move.w   $8(a6), d5
   00571c:  3c 2e 00 0a          move.w   $a(a6), d6
   005720:  1e 2e 00 10          move.b   $10(a6), d7
   005724:  47 ee ff e4          lea.l    -$1c(a6), a3
-  005728:  4e ba bb 06          jsr      $1230(pc)  ; -> sub_1230
+  005728:  4e ba bb 06          jsr      $1230(pc)  ; -> GetA5
   00572c:  20 40                movea.l  d0, a0
   00572e:  20 50                movea.l  (a0), a0
   005730:  28 50                movea.l  (a0), a4
@@ -8524,7 +8730,7 @@ L5710:
   005776:  48 6e ff f8          pea.l    -$8(a6)
   00577a:  48 6e ff f4          pea.l    -$c(a6)
   00577e:  48 6c 00 02          pea.l    $2(a4)
-  005782:  4e ba f0 be          jsr      $4842(pc)  ; -> sub_4842
+  005782:  4e ba f0 be          jsr      $4842(pc)  ; -> s7_sub_86d6
   005786:  18 00                move.b   d0, d4
   005788:  70 02                moveq    #$2, d0
   00578a:  b0 ae ff fa          cmp.l    -$6(a6), d0
@@ -8536,7 +8742,7 @@ L5710:
   0057a0:  3f 06                move.w   d6, -(a7)
   0057a2:  3f 05                move.w   d5, -(a7)
   0057a4:  48 78 10 f4          pea.l    $10f4.w
-  0057a8:  4e ba 2e f2          jsr      $869c(pc)  ; -> sub_869c
+  0057a8:  4e ba 2e f2          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0057ac:  58 8f                addq.l   #$4, a7
   0057ae:  2f 00                move.l   d0, -(a7)
   0057b0:  20 5f                movea.l  (a7)+, a0
@@ -8549,7 +8755,7 @@ L57bc:
   0057c2:  3f 06                move.w   d6, -(a7)
   0057c4:  3f 05                move.w   d5, -(a7)
   0057c6:  48 78 10 f4          pea.l    $10f4.w
-  0057ca:  4e ba 2e d0          jsr      $869c(pc)  ; -> sub_869c
+  0057ca:  4e ba 2e d0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0057ce:  58 8f                addq.l   #$4, a7
   0057d0:  2f 00                move.l   d0, -(a7)
   0057d2:  20 5f                movea.l  (a7)+, a0
@@ -8562,7 +8768,7 @@ L57d6:
   0057e0:  2f 00                move.l   d0, -(a7)
   0057e2:  2f 2e ff f4          move.l   -$c(a6), -(a7)
   0057e6:  48 6c 00 02          pea.l    $2(a4)
-  0057ea:  4e ba f1 12          jsr      $48fe(pc)  ; -> sub_48fe
+  0057ea:  4e ba f1 12          jsr      $48fe(pc)  ; -> s7_sub_879a
   0057ee:  4f ef 00 0c          lea.l    $c(a7), a7
   0057f2:  60 1a                bra.b    $580e  ; -> L580e
 L57f4:
@@ -8571,7 +8777,7 @@ L57f4:
   0057fa:  3f 06                move.w   d6, -(a7)
   0057fc:  3f 05                move.w   d5, -(a7)
   0057fe:  48 78 10 f4          pea.l    $10f4.w
-  005802:  4e ba 2e 98          jsr      $869c(pc)  ; -> sub_869c
+  005802:  4e ba 2e 98          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005806:  58 8f                addq.l   #$4, a7
   005808:  2f 00                move.l   d0, -(a7)
   00580a:  20 5f                movea.l  (a7)+, a0
@@ -8580,14 +8786,16 @@ L580e:
   00580e:  4c ee 18 f0 ff cc    movem.l  -$34(a6), d4-d7/a3-a4
   005814:  4e 5e                unlk     a6
   005816:  4e 74 00 0a          rtd      #$a
-L581a:
+* GA_StdRRect  -  System 7 $3EFA (same trap slot $10BC, code r=0.96).
+* S7: Patch #22 replaces _StdRRect ($A8AF); card commands: $0D $26 $2E $38
+GA_StdRRect:
   00581a:  4e 56 ff e4          link.w   a6, #$ffe4
   00581e:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005822:  3a 2e 00 08          move.w   $8(a6), d5
   005826:  3c 2e 00 0a          move.w   $a(a6), d6
   00582a:  1e 2e 00 10          move.b   $10(a6), d7
   00582e:  47 ee ff e4          lea.l    -$1c(a6), a3
-  005832:  4e ba b9 fc          jsr      $1230(pc)  ; -> sub_1230
+  005832:  4e ba b9 fc          jsr      $1230(pc)  ; -> GetA5
   005836:  20 40                movea.l  d0, a0
   005838:  20 50                movea.l  (a0), a0
   00583a:  28 50                movea.l  (a0), a4
@@ -8622,7 +8830,7 @@ L581a:
   005888:  48 6e ff fa          pea.l    -$6(a6)
   00588c:  48 6e ff f6          pea.l    -$a(a6)
   005890:  48 6c 00 02          pea.l    $2(a4)
-  005894:  4e ba ef ac          jsr      $4842(pc)  ; -> sub_4842
+  005894:  4e ba ef ac          jsr      $4842(pc)  ; -> s7_sub_86d6
   005898:  1d 40 ff f5          move.b   d0, -$b(a6)
   00589c:  4f ef 00 0c          lea.l    $c(a7), a7
 L58a0:
@@ -8635,7 +8843,7 @@ L58a0:
   0058b4:  3f 06                move.w   d6, -(a7)
   0058b6:  3f 05                move.w   d5, -(a7)
   0058b8:  48 78 10 bc          pea.l    $10bc.w
-  0058bc:  4e ba 2d de          jsr      $869c(pc)  ; -> sub_869c
+  0058bc:  4e ba 2d de          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0058c0:  58 8f                addq.l   #$4, a7
   0058c2:  2f 00                move.l   d0, -(a7)
   0058c4:  20 5f                movea.l  (a7)+, a0
@@ -8648,7 +8856,7 @@ L58ce:
   0058d4:  3f 06                move.w   d6, -(a7)
   0058d6:  3f 05                move.w   d5, -(a7)
   0058d8:  48 78 10 bc          pea.l    $10bc.w
-  0058dc:  4e ba 2d be          jsr      $869c(pc)  ; -> sub_869c
+  0058dc:  4e ba 2d be          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0058e0:  58 8f                addq.l   #$4, a7
   0058e2:  2f 00                move.l   d0, -(a7)
   0058e4:  20 5f                movea.l  (a7)+, a0
@@ -8661,7 +8869,7 @@ L58e8:
   0058f4:  2f 00                move.l   d0, -(a7)
   0058f6:  2f 2e ff f6          move.l   -$a(a6), -(a7)
   0058fa:  48 6c 00 02          pea.l    $2(a4)
-  0058fe:  4e ba ef fe          jsr      $48fe(pc)  ; -> sub_48fe
+  0058fe:  4e ba ef fe          jsr      $48fe(pc)  ; -> s7_sub_879a
   005902:  4f ef 00 0c          lea.l    $c(a7), a7
   005906:  60 1a                bra.b    $5922  ; -> L5922
 L5908:
@@ -8670,7 +8878,7 @@ L5908:
   00590e:  3f 06                move.w   d6, -(a7)
   005910:  3f 05                move.w   d5, -(a7)
   005912:  48 78 10 bc          pea.l    $10bc.w
-  005916:  4e ba 2d 84          jsr      $869c(pc)  ; -> sub_869c
+  005916:  4e ba 2d 84          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00591a:  58 8f                addq.l   #$4, a7
   00591c:  2f 00                move.l   d0, -(a7)
   00591e:  20 5f                movea.l  (a7)+, a0
@@ -8679,12 +8887,14 @@ L5922:
   005922:  4c ee 18 f0 ff cc    movem.l  -$34(a6), d4-d7/a3-a4
   005928:  4e 5e                unlk     a6
   00592a:  4e 74 00 0a          rtd      #$a
-L592e:
+* GA_StdOval  -  System 7 $4020 (same trap slot $10D8, code r=0.96).
+* S7: Patch #21 replaces _StdOval ($A8B6); card commands: $0D $26 $2F $38
+GA_StdOval:
   00592e:  4e 56 ff f2          link.w   a6, #$fff2
   005932:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005936:  28 6e 00 08          movea.l  $8(a6), a4
   00593a:  1e 2e 00 0c          move.b   $c(a6), d7
-  00593e:  4e ba b8 f0          jsr      $1230(pc)  ; -> sub_1230
+  00593e:  4e ba b8 f0          jsr      $1230(pc)  ; -> GetA5
   005942:  20 40                movea.l  d0, a0
   005944:  20 50                movea.l  (a0), a0
   005946:  26 50                movea.l  (a0), a3
@@ -8711,7 +8921,7 @@ L592e:
   005980:  48 6e ff fe          pea.l    -$2(a6)
   005984:  48 6e ff fa          pea.l    -$6(a6)
   005988:  48 6b 00 02          pea.l    $2(a3)
-  00598c:  4e ba ee b4          jsr      $4842(pc)  ; -> sub_4842
+  00598c:  4e ba ee b4          jsr      $4842(pc)  ; -> s7_sub_86d6
   005990:  1c 00                move.b   d0, d6
   005992:  70 02                moveq    #$2, d0
   005994:  b0 84                cmp.l    d4, d0
@@ -8721,7 +8931,7 @@ L592e:
   0059a2:  1f 07                move.b   d7, -(a7)
   0059a4:  2f 0c                move.l   a4, -(a7)
   0059a6:  48 78 10 d8          pea.l    $10d8.w
-  0059aa:  4e ba 2c f0          jsr      $869c(pc)  ; -> sub_869c
+  0059aa:  4e ba 2c f0          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0059ae:  58 8f                addq.l   #$4, a7
   0059b0:  2f 00                move.l   d0, -(a7)
   0059b2:  20 5f                movea.l  (a7)+, a0
@@ -8732,7 +8942,7 @@ L59bc:
   0059bc:  1f 07                move.b   d7, -(a7)
   0059be:  2f 0c                move.l   a4, -(a7)
   0059c0:  48 78 10 d8          pea.l    $10d8.w
-  0059c4:  4e ba 2c d6          jsr      $869c(pc)  ; -> sub_869c
+  0059c4:  4e ba 2c d6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0059c8:  58 8f                addq.l   #$4, a7
   0059ca:  2f 00                move.l   d0, -(a7)
   0059cc:  20 5f                movea.l  (a7)+, a0
@@ -8745,14 +8955,14 @@ L59d0:
   0059da:  2f 00                move.l   d0, -(a7)
   0059dc:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   0059e0:  48 6b 00 02          pea.l    $2(a3)
-  0059e4:  4e ba ef 18          jsr      $48fe(pc)  ; -> sub_48fe
+  0059e4:  4e ba ef 18          jsr      $48fe(pc)  ; -> s7_sub_879a
   0059e8:  4f ef 00 0c          lea.l    $c(a7), a7
   0059ec:  60 14                bra.b    $5a02  ; -> L5a02
 L59ee:
   0059ee:  1f 07                move.b   d7, -(a7)
   0059f0:  2f 0c                move.l   a4, -(a7)
   0059f2:  48 78 10 d8          pea.l    $10d8.w
-  0059f6:  4e ba 2c a4          jsr      $869c(pc)  ; -> sub_869c
+  0059f6:  4e ba 2c a4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   0059fa:  58 8f                addq.l   #$4, a7
   0059fc:  2f 00                move.l   d0, -(a7)
   0059fe:  20 5f                movea.l  (a7)+, a0
@@ -8761,12 +8971,14 @@ L5a02:
   005a02:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   005a08:  4e 5e                unlk     a6
   005a0a:  4e 74 00 06          rtd      #$6
-L5a0e:
+* GA_StdRect  -  System 7 $4116 (same trap slot $1080, code r=0.96).
+* S7: Patch #20 replaces _StdRect ($A8A0); card commands: $0D $24 $26 $38
+GA_StdRect:
   005a0e:  4e 56 ff f2          link.w   a6, #$fff2
   005a12:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   005a16:  28 6e 00 08          movea.l  $8(a6), a4
   005a1a:  1e 2e 00 0c          move.b   $c(a6), d7
-  005a1e:  4e ba b8 10          jsr      $1230(pc)  ; -> sub_1230
+  005a1e:  4e ba b8 10          jsr      $1230(pc)  ; -> GetA5
   005a22:  20 40                movea.l  d0, a0
   005a24:  20 50                movea.l  (a0), a0
   005a26:  26 50                movea.l  (a0), a3
@@ -8793,7 +9005,7 @@ L5a0e:
   005a60:  48 6e ff fe          pea.l    -$2(a6)
   005a64:  48 6e ff fa          pea.l    -$6(a6)
   005a68:  48 6b 00 02          pea.l    $2(a3)
-  005a6c:  4e ba ed d4          jsr      $4842(pc)  ; -> sub_4842
+  005a6c:  4e ba ed d4          jsr      $4842(pc)  ; -> s7_sub_86d6
   005a70:  1c 00                move.b   d0, d6
   005a72:  70 02                moveq    #$2, d0
   005a74:  b0 84                cmp.l    d4, d0
@@ -8803,7 +9015,7 @@ L5a0e:
   005a82:  1f 07                move.b   d7, -(a7)
   005a84:  2f 0c                move.l   a4, -(a7)
   005a86:  48 78 10 80          pea.l    $1080.w
-  005a8a:  4e ba 2c 10          jsr      $869c(pc)  ; -> sub_869c
+  005a8a:  4e ba 2c 10          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005a8e:  58 8f                addq.l   #$4, a7
   005a90:  2f 00                move.l   d0, -(a7)
   005a92:  20 5f                movea.l  (a7)+, a0
@@ -8814,7 +9026,7 @@ L5a9c:
   005a9c:  1f 07                move.b   d7, -(a7)
   005a9e:  2f 0c                move.l   a4, -(a7)
   005aa0:  48 78 10 80          pea.l    $1080.w
-  005aa4:  4e ba 2b f6          jsr      $869c(pc)  ; -> sub_869c
+  005aa4:  4e ba 2b f6          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005aa8:  58 8f                addq.l   #$4, a7
   005aaa:  2f 00                move.l   d0, -(a7)
   005aac:  20 5f                movea.l  (a7)+, a0
@@ -8827,14 +9039,14 @@ L5ab0:
   005aba:  2f 00                move.l   d0, -(a7)
   005abc:  2f 2e ff fa          move.l   -$6(a6), -(a7)
   005ac0:  48 6b 00 02          pea.l    $2(a3)
-  005ac4:  4e ba ee 38          jsr      $48fe(pc)  ; -> sub_48fe
+  005ac4:  4e ba ee 38          jsr      $48fe(pc)  ; -> s7_sub_879a
   005ac8:  4f ef 00 0c          lea.l    $c(a7), a7
   005acc:  60 14                bra.b    $5ae2  ; -> L5ae2
 L5ace:
   005ace:  1f 07                move.b   d7, -(a7)
   005ad0:  2f 0c                move.l   a4, -(a7)
   005ad2:  48 78 10 80          pea.l    $1080.w
-  005ad6:  4e ba 2b c4          jsr      $869c(pc)  ; -> sub_869c
+  005ad6:  4e ba 2b c4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005ada:  58 8f                addq.l   #$4, a7
   005adc:  2f 00                move.l   d0, -(a7)
   005ade:  20 5f                movea.l  (a7)+, a0
@@ -8843,7 +9055,9 @@ L5ae2:
   005ae2:  4c ee 18 f0 ff da    movem.l  -$26(a6), d4-d7/a3-a4
   005ae8:  4e 5e                unlk     a6
   005aea:  4e 74 00 06          rtd      #$6
-L5aee:
+* GA_LowMem0804  -  System 7 $420C (same trap slot $804, code r=0.77).
+* S7: Patch #8 replaces special; no EngineDispatch command found
+GA_LowMem0804:
   005aee:  48 e7 01 10          movem.l  d7/a3, -(a7)
   005af2:  20 38 08 88          move.l   $888.w, d0
   005af6:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -8874,7 +9088,7 @@ L5b2c:
   005b3e:  20 80                move.l   d0, (a0)
 L5b40:
   005b40:  48 78 08 04          pea.l    $804.w
-  005b44:  4e ba 2b 56          jsr      $869c(pc)  ; -> sub_869c
+  005b44:  4e ba 2b 56          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005b48:  58 8f                addq.l   #$4, a7
   005b4a:  2f 00                move.l   d0, -(a7)
   005b4c:  20 5f                movea.l  (a7)+, a0
@@ -8884,7 +9098,9 @@ L5b40:
 L5b56:
   005b56:  4c df 08 80          movem.l  (a7)+, d7/a3
   005b5a:  4e 75                rts
-L5b5c:
+* GA_LowMem0800  -  System 7 $42B8 (same trap slot $800, code r=0.87).
+* S7: Patch #7 replaces special; no EngineDispatch command found
+GA_LowMem0800:
   005b5c:  48 e7 01 10          movem.l  d7/a3, -(a7)
   005b60:  20 38 08 88          move.l   $888.w, d0
   005b64:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -8913,7 +9129,7 @@ L5b94:
   005ba6:  20 80                move.l   d0, (a0)
 L5ba8:
   005ba8:  48 78 08 00          pea.l    $800.w
-  005bac:  4e ba 2a ee          jsr      $869c(pc)  ; -> sub_869c
+  005bac:  4e ba 2a ee          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005bb0:  58 8f                addq.l   #$4, a7
   005bb2:  2f 00                move.l   d0, -(a7)
   005bb4:  20 5f                movea.l  (a7)+, a0
@@ -8922,7 +9138,9 @@ L5ba8:
   005bbc:  20 87                move.l   d7, (a0)
   005bbe:  4c df 08 80          movem.l  (a7)+, d7/a3
   005bc2:  4e 75                rts
-L5bc4:
+* GA_LowMem0818  -  System 7 $433E (same trap slot $818, code r=0.94).
+* S7: Patch #70 replaces special; no EngineDispatch command found
+GA_LowMem0818:
   005bc4:  4e 56 00 00          link.w   a6, #$0
   005bc8:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   005bcc:  28 6e 00 0c          movea.l  $c(a6), a4
@@ -8957,7 +9175,7 @@ L5c18:
   005c20:  2f 0c                move.l   a4, -(a7)
   005c22:  2f 2e 00 08          move.l   $8(a6), -(a7)
   005c26:  48 78 08 18          pea.l    $818.w
-  005c2a:  4e ba 2a 70          jsr      $869c(pc)  ; -> sub_869c
+  005c2a:  4e ba 2a 70          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005c2e:  58 8f                addq.l   #$4, a7
   005c30:  2f 00                move.l   d0, -(a7)
   005c32:  20 5f                movea.l  (a7)+, a0
@@ -8967,7 +9185,9 @@ L5c18:
   005c3c:  4c ee 18 80 ff f4    movem.l  -$c(a6), d7/a3-a4
   005c42:  4e 5e                unlk     a6
   005c44:  4e 74 00 0e          rtd      #$e
-L5c48:
+* GA_LowMem081C  -  System 7 $43CA (same trap slot $81C, code r=0.92).
+* S7: Patch #71 replaces special; no EngineDispatch command found
+GA_LowMem081C:
   005c48:  48 e7 01 10          movem.l  d7/a3, -(a7)
   005c4c:  20 38 08 88          move.l   $888.w, d0
   005c50:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -8996,7 +9216,7 @@ L5c80:
   005c92:  20 80                move.l   d0, (a0)
 L5c94:
   005c94:  48 78 08 1c          pea.l    $81c.w
-  005c98:  4e ba 2a 02          jsr      $869c(pc)  ; -> sub_869c
+  005c98:  4e ba 2a 02          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005c9c:  58 8f                addq.l   #$4, a7
   005c9e:  2f 00                move.l   d0, -(a7)
   005ca0:  20 5f                movea.l  (a7)+, a0
@@ -9005,7 +9225,9 @@ L5c94:
   005ca8:  20 87                move.l   d7, (a0)
   005caa:  4c df 08 80          movem.l  (a7)+, d7/a3
   005cae:  4e 75                rts
-L5cb0:
+* GA_LowMem0890  -  System 7 $4444 (same trap slot $890, code r=0.91).
+* S7: Patch #72 replaces special; no EngineDispatch command found
+GA_LowMem0890:
   005cb0:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   005cb4:  28 6f 00 10          movea.l  $10(a7), a4
   005cb8:  20 38 08 88          move.l   $888.w, d0
@@ -9036,7 +9258,7 @@ L5cec:
 L5d00:
   005d00:  2f 0c                move.l   a4, -(a7)
   005d02:  48 78 08 90          pea.l    $890.w
-  005d06:  4e ba 29 94          jsr      $869c(pc)  ; -> sub_869c
+  005d06:  4e ba 29 94          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005d0a:  58 8f                addq.l   #$4, a7
   005d0c:  2f 00                move.l   d0, -(a7)
   005d0e:  20 5f                movea.l  (a7)+, a0
@@ -9045,7 +9267,9 @@ L5d00:
   005d16:  20 87                move.l   d7, (a0)
   005d18:  4c df 18 80          movem.l  (a7)+, d7/a3-a4
   005d1c:  4e 74 00 04          rtd      #$4
-L5d20:
+* GA_LowMem0808  -  System 7 $44C4 (same trap slot $808, code r=0.68).
+* S7: Patch #9 replaces special; no EngineDispatch command found
+GA_LowMem0808:
   005d20:  4e 56 ff fc          link.w   a6, #$fffc
   005d24:  48 e7 0f 10          movem.l  d4-d7/a3, -(a7)
   005d28:  38 2e 00 08          move.w   $8(a6), d4
@@ -9148,7 +9372,7 @@ L5e3a:
   005e3e:  3f 05                move.w   d5, -(a7)
   005e40:  3f 04                move.w   d4, -(a7)
   005e42:  48 78 08 08          pea.l    $808.w
-  005e46:  4e ba 28 54          jsr      $869c(pc)  ; -> sub_869c
+  005e46:  4e ba 28 54          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005e4a:  58 8f                addq.l   #$4, a7
   005e4c:  2f 00                move.l   d0, -(a7)
   005e4e:  20 5f                movea.l  (a7)+, a0
@@ -9159,7 +9383,9 @@ L5e5a:
   005e5a:  4c ee 08 f0 ff e8    movem.l  -$18(a6), d4-d7/a3
   005e60:  4e 5e                unlk     a6
   005e62:  4e 74 00 08          rtd      #$8
-L5e66:
+* GA_LowMem0814  -  System 7 $45D4 (same trap slot $814, code r=0.88).
+* S7: Patch #69 replaces special; no EngineDispatch command found
+GA_LowMem0814:
   005e66:  48 e7 01 10          movem.l  d7/a3, -(a7)
   005e6a:  20 38 08 88          move.l   $888.w, d0
   005e6e:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -9188,7 +9414,7 @@ L5e9e:
   005eb0:  20 80                move.l   d0, (a0)
 L5eb2:
   005eb2:  48 78 08 14          pea.l    $814.w
-  005eb6:  4e ba 27 e4          jsr      $869c(pc)  ; -> sub_869c
+  005eb6:  4e ba 27 e4          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005eba:  58 8f                addq.l   #$4, a7
   005ebc:  2f 00                move.l   d0, -(a7)
   005ebe:  20 5f                movea.l  (a7)+, a0
@@ -9197,15 +9423,17 @@ L5eb2:
   005ec6:  20 87                move.l   d7, (a0)
   005ec8:  4c df 08 80          movem.l  (a7)+, d7/a3
   005ecc:  4e 75                rts
-L5ece:
+* GA_InitGraf  -  System 7 $4658 (same trap slot $FB8, code r=0.79).
+* S7: Patch #93 replaces _InitGraf ($A86E); card commands: $26
+GA_InitGraf:
   005ece:  2f 0b                move.l   a3, -(a7)
   005ed0:  26 6f 00 08          movea.l  $8(a7), a3
   005ed4:  70 1f                moveq    #$1f, d0
   005ed6:  2f 00                move.l   d0, -(a7)
-  005ed8:  4e ba 01 ba          jsr      $6094(pc)  ; -> sub_6094
+  005ed8:  4e ba 01 ba          jsr      $6094(pc)  ; -> s7_sub_4822
   005edc:  2f 0b                move.l   a3, -(a7)
   005ede:  48 78 0f b8          pea.l    $fb8.w
-  005ee2:  4e ba 27 b8          jsr      $869c(pc)  ; -> sub_869c
+  005ee2:  4e ba 27 b8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005ee6:  58 8f                addq.l   #$4, a7
   005ee8:  2f 00                move.l   d0, -(a7)
   005eea:  20 5f                movea.l  (a7)+, a0
@@ -9213,15 +9441,17 @@ L5ece:
   005eee:  58 8f                addq.l   #$4, a7
   005ef0:  26 5f                movea.l  (a7)+, a3
   005ef2:  4e 74 00 04          rtd      #$4
-L5ef6:
+* GA_InitPort  -  System 7 $4682 (same trap slot $FB4, code r=0.79).
+* S7: Patch #94 replaces _InitPort ($A86D); card commands: $26
+GA_InitPort:
   005ef6:  2f 0b                move.l   a3, -(a7)
   005ef8:  26 6f 00 08          movea.l  $8(a7), a3
   005efc:  70 1e                moveq    #$1e, d0
   005efe:  2f 00                move.l   d0, -(a7)
-  005f00:  4e ba 01 92          jsr      $6094(pc)  ; -> sub_6094
+  005f00:  4e ba 01 92          jsr      $6094(pc)  ; -> s7_sub_4822
   005f04:  2f 0b                move.l   a3, -(a7)
   005f06:  48 78 0f b4          pea.l    $fb4.w
-  005f0a:  4e ba 27 90          jsr      $869c(pc)  ; -> sub_869c
+  005f0a:  4e ba 27 90          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005f0e:  58 8f                addq.l   #$4, a7
   005f10:  2f 00                move.l   d0, -(a7)
   005f12:  20 5f                movea.l  (a7)+, a0
@@ -9229,15 +9459,17 @@ L5ef6:
   005f16:  58 8f                addq.l   #$4, a7
   005f18:  26 5f                movea.l  (a7)+, a3
   005f1a:  4e 74 00 04          rtd      #$4
-L5f1e:
+* GA_OpenPort  -  System 7 $46AC (same trap slot $FBC, code r=0.79).
+* S7: Patch #95 replaces _OpenPort ($A86F); card commands: $26
+GA_OpenPort:
   005f1e:  2f 0b                move.l   a3, -(a7)
   005f20:  26 6f 00 08          movea.l  $8(a7), a3
   005f24:  70 1e                moveq    #$1e, d0
   005f26:  2f 00                move.l   d0, -(a7)
-  005f28:  4e ba 01 6a          jsr      $6094(pc)  ; -> sub_6094
+  005f28:  4e ba 01 6a          jsr      $6094(pc)  ; -> s7_sub_4822
   005f2c:  2f 0b                move.l   a3, -(a7)
   005f2e:  48 78 0f bc          pea.l    $fbc.w
-  005f32:  4e ba 27 68          jsr      $869c(pc)  ; -> sub_869c
+  005f32:  4e ba 27 68          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005f36:  58 8f                addq.l   #$4, a7
   005f38:  2f 00                move.l   d0, -(a7)
   005f3a:  20 5f                movea.l  (a7)+, a0
@@ -9245,15 +9477,17 @@ L5f1e:
   005f3e:  58 8f                addq.l   #$4, a7
   005f40:  26 5f                movea.l  (a7)+, a3
   005f42:  4e 74 00 04          rtd      #$4
-L5f46:
+* GA_InitCPort  -  System 7 $46D6 (same trap slot $1604, code r=0.79).
+* S7: Patch #96 replaces _InitCPort ($AA01); card commands: $26
+GA_InitCPort:
   005f46:  2f 0b                move.l   a3, -(a7)
   005f48:  26 6f 00 08          movea.l  $8(a7), a3
   005f4c:  70 1e                moveq    #$1e, d0
   005f4e:  2f 00                move.l   d0, -(a7)
-  005f50:  4e ba 01 42          jsr      $6094(pc)  ; -> sub_6094
+  005f50:  4e ba 01 42          jsr      $6094(pc)  ; -> s7_sub_4822
   005f54:  2f 0b                move.l   a3, -(a7)
   005f56:  48 78 16 04          pea.l    $1604.w
-  005f5a:  4e ba 27 40          jsr      $869c(pc)  ; -> sub_869c
+  005f5a:  4e ba 27 40          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005f5e:  58 8f                addq.l   #$4, a7
   005f60:  2f 00                move.l   d0, -(a7)
   005f62:  20 5f                movea.l  (a7)+, a0
@@ -9261,15 +9495,17 @@ L5f46:
   005f66:  58 8f                addq.l   #$4, a7
   005f68:  26 5f                movea.l  (a7)+, a3
   005f6a:  4e 74 00 04          rtd      #$4
-L5f6e:
+* GA_OpenCPort  -  System 7 $4700 (same trap slot $1600, code r=0.79).
+* S7: Patch #97 replaces _OpenCPort ($AA00); card commands: $26
+GA_OpenCPort:
   005f6e:  2f 0b                move.l   a3, -(a7)
   005f70:  26 6f 00 08          movea.l  $8(a7), a3
   005f74:  70 1e                moveq    #$1e, d0
   005f76:  2f 00                move.l   d0, -(a7)
-  005f78:  4e ba 01 1a          jsr      $6094(pc)  ; -> sub_6094
+  005f78:  4e ba 01 1a          jsr      $6094(pc)  ; -> s7_sub_4822
   005f7c:  2f 0b                move.l   a3, -(a7)
   005f7e:  48 78 16 00          pea.l    $1600.w
-  005f82:  4e ba 27 18          jsr      $869c(pc)  ; -> sub_869c
+  005f82:  4e ba 27 18          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005f86:  58 8f                addq.l   #$4, a7
   005f88:  2f 00                move.l   d0, -(a7)
   005f8a:  20 5f                movea.l  (a7)+, a0
@@ -9277,28 +9513,32 @@ L5f6e:
   005f8e:  58 8f                addq.l   #$4, a7
   005f90:  26 5f                movea.l  (a7)+, a3
   005f92:  4e 74 00 04          rtd      #$4
-L5f96:
+* GA_DrawPicture  -  System 7 $472A (same trap slot $11D8, code r=0.81).
+* S7: Patch #75 replaces _DrawPicture ($A8F6); card commands: $26
+GA_DrawPicture:
   005f96:  48 e7 00 18          movem.l  a3-a4, -(a7)
   005f9a:  28 6f 00 0c          movea.l  $c(a7), a4
   005f9e:  26 6f 00 10          movea.l  $10(a7), a3
   005fa2:  70 1a                moveq    #$1a, d0
   005fa4:  2f 00                move.l   d0, -(a7)
-  005fa6:  4e ba 00 ec          jsr      $6094(pc)  ; -> sub_6094
+  005fa6:  4e ba 00 ec          jsr      $6094(pc)  ; -> s7_sub_4822
   005faa:  2f 0b                move.l   a3, -(a7)
   005fac:  2f 0c                move.l   a4, -(a7)
   005fae:  48 78 11 d8          pea.l    $11d8.w
-  005fb2:  4e ba 26 e8          jsr      $869c(pc)  ; -> sub_869c
+  005fb2:  4e ba 26 e8          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   005fb6:  58 8f                addq.l   #$4, a7
   005fb8:  2f 00                move.l   d0, -(a7)
   005fba:  20 5f                movea.l  (a7)+, a0
   005fbc:  4e 90                jsr      (a0)
   005fbe:  70 1a                moveq    #$1a, d0
   005fc0:  2f 00                move.l   d0, -(a7)
-  005fc2:  4e ba 00 d0          jsr      $6094(pc)  ; -> sub_6094
+  005fc2:  4e ba 00 d0          jsr      $6094(pc)  ; -> s7_sub_4822
   005fc6:  50 8f                addq.l   #$8, a7
   005fc8:  4c df 18 00          movem.l  (a7)+, a3-a4
   005fcc:  4e 74 00 08          rtd      #$8
-L5fd0:
+* GA_SeedCFill  -  System 7 $4762 (same trap slot $1740, code r=0.85).
+* S7: Patch #82 replaces _SeedCFill ($AA50); no EngineDispatch command found
+GA_SeedCFill:
   005fd0:  4e 56 00 00          link.w   a6, #$0
   005fd4:  48 e7 00 18          movem.l  a3-a4, -(a7)
   005fd8:  28 6e 00 20          movea.l  $20(a6), a4
@@ -9316,7 +9556,7 @@ L5fd0:
   006004:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   006008:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00600c:  48 78 17 40          pea.l    $1740.w
-  006010:  4e ba 26 8a          jsr      $869c(pc)  ; -> sub_869c
+  006010:  4e ba 26 8a          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   006014:  58 8f                addq.l   #$4, a7
   006016:  2f 00                move.l   d0, -(a7)
   006018:  20 5f                movea.l  (a7)+, a0
@@ -9325,7 +9565,9 @@ L5fd0:
   006020:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   006026:  4e 5e                unlk     a6
   006028:  4e 74 00 1c          rtd      #$1c
-L602c:
+* GA_CalcCMask  -  System 7 $47BC (same trap slot $173C, code r=0.87).
+* S7: Patch #83 replaces _CalcCMask ($AA4F); no EngineDispatch command found
+GA_CalcCMask:
   00602c:  4e 56 ff fa          link.w   a6, #$fffa
   006030:  48 e7 00 18          movem.l  a3-a4, -(a7)
   006034:  28 6e 00 20          movea.l  $20(a6), a4
@@ -9347,7 +9589,7 @@ L602c:
   00606c:  2f 2e 00 0c          move.l   $c(a6), -(a7)
   006070:  2f 2e 00 08          move.l   $8(a6), -(a7)
   006074:  48 78 17 3c          pea.l    $173c.w
-  006078:  4e ba 26 22          jsr      $869c(pc)  ; -> sub_869c
+  006078:  4e ba 26 22          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   00607c:  58 8f                addq.l   #$4, a7
   00607e:  2f 00                move.l   d0, -(a7)
   006080:  20 5f                movea.l  (a7)+, a0
@@ -9356,7 +9598,9 @@ L602c:
   006088:  4c ee 18 00 ff f2    movem.l  -$e(a6), a3-a4
   00608e:  4e 5e                unlk     a6
   006090:  4e 74 00 1c          rtd      #$1c
-sub_6094:
+* s7_sub_4822  -  System 7 $4822 (identical code).
+* S7: sub_4822(reason) = EngineDispatch($26, NULL, reason): flush / end the
+s7_sub_4822:
   006094:  4e 56 00 00          link.w   a6, #$0
   006098:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00609c:  70 00                moveq    #$0, d0
@@ -9366,7 +9610,9 @@ sub_6094:
   0060a4:  4e ba 01 7e          jsr      $6224(pc)  ; -> EngineDispatch
   0060a8:  4e 5e                unlk     a6
   0060aa:  4e 75                rts
-L60ac:
+* GA_CopyBits  -  System 7 $483C (same trap slot $11B0, code r=0.93).
+* S7: Patch #2 replaces _CopyBits ($A8EC); card commands: $0D $38
+GA_CopyBits:
   0060ac:  4e 56 ff ee          link.w   a6, #$ffee
   0060b0:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0060b4:  3e 2e 00 0c          move.w   $c(a6), d7
@@ -9385,7 +9631,7 @@ L60ac:
   0060e6:  20 d9                move.l   (a1)+, (a0)+
   0060e8:  20 d9                move.l   (a1)+, (a0)+
 L60ea:
-  0060ea:  4e ba b1 44          jsr      $1230(pc)  ; -> sub_1230
+  0060ea:  4e ba b1 44          jsr      $1230(pc)  ; -> GetA5
   0060ee:  20 40                movea.l  d0, a0
   0060f0:  20 50                movea.l  (a0), a0
   0060f2:  20 50                movea.l  (a0), a0
@@ -9394,7 +9640,7 @@ L60ea:
   0060fa:  48 6e ff f2          pea.l    -$e(a6)
   0060fe:  48 6e ff ee          pea.l    -$12(a6)
   006102:  2f 0c                move.l   a4, -(a7)
-  006104:  4e ba e7 3c          jsr      $4842(pc)  ; -> sub_4842
+  006104:  4e ba e7 3c          jsr      $4842(pc)  ; -> s7_sub_86d6
   006108:  1c 00                move.b   d0, d6
   00610a:  2f 0c                move.l   a4, -(a7)
   00610c:  2f 2e 00 16          move.l   $16(a6), -(a7)
@@ -9403,7 +9649,7 @@ L60ea:
   006118:  3f 07                move.w   d7, -(a7)
   00611a:  2f 2e 00 08          move.l   $8(a6), -(a7)
   00611e:  48 78 11 b0          pea.l    $11b0.w
-  006122:  4e ba 25 78          jsr      $869c(pc)  ; -> sub_869c
+  006122:  4e ba 25 78          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   006126:  58 8f                addq.l   #$4, a7
   006128:  2f 00                move.l   d0, -(a7)
   00612a:  20 5f                movea.l  (a7)+, a0
@@ -9416,7 +9662,7 @@ L60ea:
   00613c:  2f 00                move.l   d0, -(a7)
   00613e:  2f 2e ff ee          move.l   -$12(a6), -(a7)
   006142:  2f 0c                move.l   a4, -(a7)
-  006144:  4e ba e7 b8          jsr      $48fe(pc)  ; -> sub_48fe
+  006144:  4e ba e7 b8          jsr      $48fe(pc)  ; -> s7_sub_879a
   006148:  4f ef 00 0c          lea.l    $c(a7), a7
   00614c:  60 44                bra.b    $6192  ; -> L6192
 L614e:
@@ -9431,7 +9677,7 @@ L614e:
   00616a:  3f 07                move.w   d7, -(a7)
   00616c:  2f 2e 00 08          move.l   $8(a6), -(a7)
   006170:  48 78 11 b0          pea.l    $11b0.w
-  006174:  4e ba 25 26          jsr      $869c(pc)  ; -> sub_869c
+  006174:  4e ba 25 26          jsr      $869c(pc)  ; -> StoreCtxWord_AA6
   006178:  58 8f                addq.l   #$4, a7
   00617a:  2f 00                move.l   d0, -(a7)
   00617c:  20 5f                movea.l  (a7)+, a0
@@ -9453,7 +9699,8 @@ L61a4:
   0061a4:  4c ee 18 c0 ff de    movem.l  -$22(a6), d6-d7/a3-a4
   0061aa:  4e 5e                unlk     a6
   0061ac:  4e 74 00 16          rtd      #$16
-sub_61b0:
+* s7_sub_494e  -  System 7 $494E (similar code, r=0.99).
+s7_sub_494e:
   0061b0:  4e 56 ff fc          link.w   a6, #$fffc
   0061b4:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   0061b8:  28 6e 00 08          movea.l  $8(a6), a4
@@ -9478,7 +9725,7 @@ L61e4:
   0061e6:  20 68 00 0c          movea.l  $c(a0), a0
   0061ea:  47 e8 06 04          lea.l    $604(a0), a3
   0061ee:  2f 0b                move.l   a3, -(a7)
-  0061f0:  4e ba e1 84          jsr      $4376(pc)  ; -> sub_4376
+  0061f0:  4e ba e1 84          jsr      $4376(pc)  ; -> s7_sub_81bc
   0061f4:  2d 4b ff fc          move.l   a3, -$4(a6)
   0061f8:  70 01                moveq    #$1, d0
   0061fa:  2f 00                move.l   d0, -(a7)
@@ -9501,7 +9748,7 @@ L621a:
 * EngineDispatch(cmd, args, n)  -  System 7 EngineDispatch $49C4.
 * a3 = unit record ([[globals+$214]]).  Bails to $7AFE unless the unit's
 * flags +$8 have $27 set and $600 clear; re-initialises the card through
-* sub_884a if unit+$1C says it is not ready.
+* s7_sub_6f4e if unit+$1C says it is not ready.
 EngineDispatch:
   006224:  4e 56 ff 98          link.w   a6, #$ff98
   006228:  48 e7 1f 38          movem.l  d3-d7/a2-a4, -(a7)
@@ -9531,7 +9778,7 @@ EngineDispatch:
   006278:  67 10                beq.b    $628a  ; -> L628a
 L627a:
   00627a:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00627e:  4e ba 25 ca          jsr      $884a(pc)  ; -> sub_884a
+  00627e:  4e ba 25 ca          jsr      $884a(pc)  ; -> s7_sub_6f4e
   006282:  4a 80                tst.l    d0
   006284:  58 8f                addq.l   #$4, a7
   006286:  66 00 18 76          bne.w    $7afe  ; -> L7afe
@@ -9601,14 +9848,14 @@ L630a:
   006314:  42 2e ff a8          clr.b    -$58(a6)
   006318:  42 2e ff a9          clr.b    -$57(a6)
   00631c:  42 6e ff aa          clr.w    -$56(a6)
-  006320:  4e ba af 0e          jsr      $1230(pc)  ; -> sub_1230
+  006320:  4e ba af 0e          jsr      $1230(pc)  ; -> GetA5
   006324:  20 40                movea.l  d0, a0
   006326:  20 50                movea.l  (a0), a0
   006328:  2d 50 ff da          move.l   (a0), -$26(a6)
   00632c:  66 0e                bne.b    $633c  ; -> L633c
   00632e:  70 14                moveq    #$14, d0
   006330:  2f 00                move.l   d0, -(a7)
-  006332:  4e ba fd 60          jsr      $6094(pc)  ; -> sub_6094
+  006332:  4e ba fd 60          jsr      $6094(pc)  ; -> s7_sub_4822
   006336:  58 8f                addq.l   #$4, a7
   006338:  60 00 17 c4          bra.w    $7afe  ; -> L7afe
 L633c:
@@ -9668,7 +9915,7 @@ L63d0:
   0063de:  6c 0e                bge.b    $63ee  ; -> L63ee
   0063e0:  70 12                moveq    #$12, d0
   0063e2:  2f 00                move.l   d0, -(a7)
-  0063e4:  4e ba fc ae          jsr      $6094(pc)  ; -> sub_6094
+  0063e4:  4e ba fc ae          jsr      $6094(pc)  ; -> s7_sub_4822
   0063e8:  58 8f                addq.l   #$4, a7
   0063ea:  60 00 17 12          bra.w    $7afe  ; -> L7afe
 L63ee:
@@ -9690,14 +9937,14 @@ L6420:
   006420:  48 6b 01 0e          pea.l    $10e(a3)
   006424:  48 6b 01 0a          pea.l    $10a(a3)
   006428:  2f 2e ff da          move.l   -$26(a6), -(a7)
-  00642c:  4e ba af 9e          jsr      $13cc(pc)  ; -> sub_13cc
+  00642c:  4e ba af 9e          jsr      $13cc(pc)  ; -> s7_sub_8da4
   006430:  1e 00                move.b   d0, d7
   006432:  48 6e ff ae          pea.l    -$52(a6)
   006436:  48 6e ff aa          pea.l    -$56(a6)
   00643a:  48 6e ff ac          pea.l    -$54(a6)
   00643e:  70 05                moveq    #$5, d0
   006440:  2f 00                move.l   d0, -(a7)
-  006442:  4e ba b0 18          jsr      $145c(pc)  ; -> sub_145c
+  006442:  4e ba b0 18          jsr      $145c(pc)  ; -> s7_sub_8e38
   006446:  70 00                moveq    #$0, d0
   006448:  30 2b 00 cc          move.w   $cc(a3), d0
   00644c:  32 2e ff ac          move.w   -$54(a6), d1
@@ -9723,7 +9970,7 @@ L645c:
   006486:  6e 00 01 b8          bgt.w    $6640  ; -> L6640
   00648a:  70 10                moveq    #$10, d0
   00648c:  2f 00                move.l   d0, -(a7)
-  00648e:  4e ba fc 04          jsr      $6094(pc)  ; -> sub_6094
+  00648e:  4e ba fc 04          jsr      $6094(pc)  ; -> s7_sub_4822
   006492:  20 2e ff c0          move.l   -$40(a6), d0
   006496:  d0 bc 00 00 00 90    add.l    #$90, d0
   00649c:  22 2e ff bc          move.l   -$44(a6), d1
@@ -9742,7 +9989,7 @@ L64be:
   0064be:  48 6b 01 0e          pea.l    $10e(a3)
   0064c2:  48 6b 01 0a          pea.l    $10a(a3)
   0064c6:  2f 2e ff da          move.l   -$26(a6), -(a7)
-  0064ca:  4e ba af 00          jsr      $13cc(pc)  ; -> sub_13cc
+  0064ca:  4e ba af 00          jsr      $13cc(pc)  ; -> s7_sub_8da4
   0064ce:  1e 00                move.b   d0, d7
   0064d0:  4f ef 00 0c          lea.l    $c(a7), a7
   0064d4:  60 00 01 6a          bra.w    $6640  ; -> L6640
@@ -9775,7 +10022,7 @@ L64f8:
   006522:  6e 00 01 1c          bgt.w    $6640  ; -> L6640
   006526:  70 06                moveq    #$6, d0
   006528:  2f 00                move.l   d0, -(a7)
-  00652a:  4e ba fb 68          jsr      $6094(pc)  ; -> sub_6094
+  00652a:  4e ba fb 68          jsr      $6094(pc)  ; -> s7_sub_4822
   00652e:  20 2e ff c0          move.l   -$40(a6), d0
   006532:  d0 bc 00 00 00 90    add.l    #$90, d0
   006538:  20 6e 00 0c          movea.l  $c(a6), a0
@@ -9835,7 +10082,7 @@ L65a6:
   0065d0:  6e 6e                bgt.b    $6640  ; -> L6640
   0065d2:  70 15                moveq    #$15, d0
   0065d4:  2f 00                move.l   d0, -(a7)
-  0065d6:  4e ba fa bc          jsr      $6094(pc)  ; -> sub_6094
+  0065d6:  4e ba fa bc          jsr      $6094(pc)  ; -> s7_sub_4822
   0065da:  20 2e ff c0          move.l   -$40(a6), d0
   0065de:  d0 bc 00 00 00 90    add.l    #$90, d0
   0065e4:  20 6e 00 0c          movea.l  $c(a6), a0
@@ -9869,7 +10116,7 @@ L660c:
   006630:  6e 0e                bgt.b    $6640  ; -> L6640
   006632:  70 1b                moveq    #$1b, d0
   006634:  2f 00                move.l   d0, -(a7)
-  006636:  4e ba fa 5c          jsr      $6094(pc)  ; -> sub_6094
+  006636:  4e ba fa 5c          jsr      $6094(pc)  ; -> s7_sub_4822
   00663a:  58 8f                addq.l   #$4, a7
   00663c:  60 00 14 c0          bra.w    $7afe  ; -> L7afe
 L6640:
@@ -9883,7 +10130,7 @@ L6640:
   006656:  67 0c                beq.b    $6664  ; -> L6664
   006658:  70 08                moveq    #$8, d0
   00665a:  2f 00                move.l   d0, -(a7)
-  00665c:  4e ba fa 36          jsr      $6094(pc)  ; -> sub_6094
+  00665c:  4e ba fa 36          jsr      $6094(pc)  ; -> s7_sub_4822
   006660:  58 8f                addq.l   #$4, a7
   006662:  60 20                bra.b    $6684  ; -> L6684
 L6664:
@@ -9895,7 +10142,7 @@ L6664:
   006678:  6e 0a                bgt.b    $6684  ; -> L6684
   00667a:  70 09                moveq    #$9, d0
   00667c:  2f 00                move.l   d0, -(a7)
-  00667e:  4e ba fa 14          jsr      $6094(pc)  ; -> sub_6094
+  00667e:  4e ba fa 14          jsr      $6094(pc)  ; -> s7_sub_4822
   006682:  58 8f                addq.l   #$4, a7
 L6684:
   006684:  20 2e ff da          move.l   -$26(a6), d0
@@ -9910,7 +10157,7 @@ L6684:
   0066a2:  2f 00                move.l   d0, -(a7)
   0066a4:  4e ba fb 7e          jsr      $6224(pc)  ; -> EngineDispatch
   0066a8:  2f 2e ff a4          move.l   -$5c(a6), -(a7)
-  0066ac:  4e ba e0 c6          jsr      $4774(pc)  ; -> sub_4774
+  0066ac:  4e ba e0 c6          jsr      $4774(pc)  ; -> s7_sub_860e
   0066b0:  20 6e ff a4          movea.l  -$5c(a6), a0
   0066b4:  43 eb 01 18          lea.l    $118(a3), a1
   0066b8:  41 e8 00 14          lea.l    $14(a0), a0
@@ -9963,7 +10210,7 @@ L6684:
   006752:  60 0e                bra.b    $6762  ; -> L6762
 L6754:
   006754:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  006758:  4e ba 14 fc          jsr      $7c56(pc)  ; -> sub_7c56
+  006758:  4e ba 14 fc          jsr      $7c56(pc)  ; -> s7_sub_63b0
   00675c:  58 8f                addq.l   #$4, a7
   00675e:  60 00 13 9e          bra.w    $7afe  ; -> L7afe
 L6762:
@@ -9987,12 +10234,12 @@ L6792:
   006798:  48 6b 00 e2          pea.l    $e2(a3)
   00679c:  48 6b 00 dc          pea.l    $dc(a3)
   0067a0:  2f 2b 00 c8          move.l   $c8(a3), -(a7)
-  0067a4:  4e ba ac 76          jsr      $141c(pc)  ; -> sub_141c
+  0067a4:  4e ba ac 76          jsr      $141c(pc)  ; -> s7_sub_8df2
   0067a8:  53 6b 00 dc          subq.w   #$1, $dc(a3)
   0067ac:  53 6b 00 e2          subq.w   #$1, $e2(a3)
   0067b0:  02 6b ff f0 00 f2    andi.w   #$fff0, $f2(a3)
   0067b6:  00 6b 00 0f 00 f2    ori.w    #$f, $f2(a3)
-  0067bc:  4e ba aa 72          jsr      $1230(pc)  ; -> sub_1230
+  0067bc:  4e ba aa 72          jsr      $1230(pc)  ; -> GetA5
   0067c0:  20 40                movea.l  d0, a0
   0067c2:  20 10                move.l   (a0), d0
   0067c4:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -10019,7 +10266,7 @@ L67d6:
   006810:  2f 2e ff bc          move.l   -$44(a6), -(a7)
   006814:  20 6e 00 0c          movea.l  $c(a6), a0
   006818:  2f 28 00 04          move.l   $4(a0), -(a7)
-  00681c:  4e ba e2 26          jsr      $4a44(pc)  ; -> sub_4a44
+  00681c:  4e ba e2 26          jsr      $4a44(pc)  ; -> s7_sub_88e6
   006820:  2d 40 ff a4          move.l   d0, -$5c(a6)
   006824:  72 ff                moveq    #$ff, d1
   006826:  b2 80                cmp.l    d0, d1
@@ -10027,7 +10274,7 @@ L67d6:
   00682c:  66 0e                bne.b    $683c  ; -> L683c
   00682e:  70 05                moveq    #$5, d0
   006830:  2f 00                move.l   d0, -(a7)
-  006832:  4e ba f8 60          jsr      $6094(pc)  ; -> sub_6094
+  006832:  4e ba f8 60          jsr      $6094(pc)  ; -> s7_sub_4822
   006836:  58 8f                addq.l   #$4, a7
   006838:  60 00 12 c4          bra.w    $7afe  ; -> L7afe
 L683c:
@@ -10056,7 +10303,7 @@ L6868:
   006874:  6e 00 00 8e          bgt.w    $6904  ; -> L6904
   006878:  70 10                moveq    #$10, d0
   00687a:  2f 00                move.l   d0, -(a7)
-  00687c:  4e ba f8 16          jsr      $6094(pc)  ; -> sub_6094
+  00687c:  4e ba f8 16          jsr      $6094(pc)  ; -> s7_sub_4822
   006880:  58 8f                addq.l   #$4, a7
   006882:  60 00 12 7a          bra.w    $7afe  ; -> L7afe
 L6886:
@@ -10076,7 +10323,7 @@ L68a6:
   0068aa:  20 10                move.l   (a0), d0
 L68ac:
   0068ac:  2f 00                move.l   d0, -(a7)
-  0068ae:  4e ba ab ac          jsr      $145c(pc)  ; -> sub_145c
+  0068ae:  4e ba ab ac          jsr      $145c(pc)  ; -> s7_sub_8e38
   0068b2:  70 00                moveq    #$0, d0
   0068b4:  30 2b 00 cc          move.w   $cc(a3), d0
   0068b8:  32 2e ff ac          move.w   -$54(a6), d1
@@ -10178,7 +10425,7 @@ L69c2:
   0069d0:  48 6e ff a2          pea.l    -$5e(a6)
   0069d4:  48 6e ff 9c          pea.l    -$64(a6)
   0069d8:  2f 2b 00 c8          move.l   $c8(a3), -(a7)
-  0069dc:  4e ba aa 3e          jsr      $141c(pc)  ; -> sub_141c
+  0069dc:  4e ba aa 3e          jsr      $141c(pc)  ; -> s7_sub_8df2
   0069e0:  41 eb 00 dc          lea.l    $dc(a3), a0
   0069e4:  43 ee ff 9c          lea.l    -$64(a6), a1
   0069e8:  70 02                moveq    #$2, d0
@@ -10246,7 +10493,7 @@ L6a80:
   006aaa:  27 40 00 b0          move.l   d0, $b0(a3)
   006aae:  d9 ab 00 c0          add.l    d4, $c0(a3)
 L6ab2:
-  006ab2:  4e ba a7 7c          jsr      $1230(pc)  ; -> sub_1230
+  006ab2:  4e ba a7 7c          jsr      $1230(pc)  ; -> GetA5
   006ab6:  20 40                movea.l  d0, a0
   006ab8:  20 10                move.l   (a0), d0
   006aba:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -10254,7 +10501,7 @@ L6ab2:
   006ac2:  20 2b 00 e8          move.l   $e8(a3), d0
   006ac6:  b0 a8 00 22          cmp.l    $22(a0), d0
   006aca:  67 3e                beq.b    $6b0a  ; -> L6b0a
-  006acc:  4e ba a7 62          jsr      $1230(pc)  ; -> sub_1230
+  006acc:  4e ba a7 62          jsr      $1230(pc)  ; -> GetA5
   006ad0:  20 40                movea.l  d0, a0
   006ad2:  20 10                move.l   (a0), d0
   006ad4:  90 bc 00 00 00 ca    sub.l    #$ca, d0
@@ -10284,7 +10531,7 @@ L6b0a:
   006b26:  48 c1                ext.l    d1
   006b28:  2f 01                move.l   d1, -(a7)
   006b2a:  2f 2b 00 c8          move.l   $c8(a3), -(a7)
-  006b2e:  4e ba ac 16          jsr      $1746(pc)  ; -> sub_1746
+  006b2e:  4e ba ac 16          jsr      $1746(pc)  ; -> s7_sub_90ee
   006b32:  50 8f                addq.l   #$8, a7
   006b34:  22 00                move.l   d0, d1
   006b36:  20 1f                move.l   (a7)+, d0
@@ -10313,7 +10560,7 @@ L6b52:
   006b76:  48 c0                ext.l    d0
   006b78:  2f 00                move.l   d0, -(a7)
   006b7a:  2f 2b 00 c8          move.l   $c8(a3), -(a7)
-  006b7e:  4e ba a9 b0          jsr      $1530(pc)  ; -> sub_1530
+  006b7e:  4e ba a9 b0          jsr      $1530(pc)  ; -> s7_sub_8f04
   006b82:  4a 80                tst.l    d0
   006b84:  4f ef 00 0c          lea.l    $c(a7), a7
   006b88:  6b 00 01 4a          bmi.w    $6cd4  ; -> L6cd4
@@ -10416,7 +10663,7 @@ L6c8c:
 L6cd4:
   006cd4:  70 00                moveq    #$0, d0
   006cd6:  2f 00                move.l   d0, -(a7)
-  006cd8:  4e ba f3 ba          jsr      $6094(pc)  ; -> sub_6094
+  006cd8:  4e ba f3 ba          jsr      $6094(pc)  ; -> s7_sub_4822
   006cdc:  58 8f                addq.l   #$4, a7
   006cde:  60 00 0e 1e          bra.w    $7afe  ; -> L7afe
 L6ce2:
@@ -10688,7 +10935,7 @@ L7038:
   007062:  2f 00                move.l   d0, -(a7)
   007064:  20 6e 00 0c          movea.l  $c(a6), a0
   007068:  2f 28 00 04          move.l   $4(a0), -(a7)
-  00706c:  4e ba a7 3c          jsr      $17aa(pc)  ; -> sub_17aa
+  00706c:  4e ba a7 3c          jsr      $17aa(pc)  ; -> s7_sub_9146
   007070:  2d 40 ff 98          move.l   d0, -$68(a6)
   007074:  4f ef 00 0c          lea.l    $c(a7), a7
   007078:  67 68                beq.b    $70e2  ; -> L70e2
@@ -10709,7 +10956,7 @@ L7038:
   0070a2:  a8 d9                dc.w     $a8d9
   0070a4:  70 15                moveq    #$15, d0
   0070a6:  2f 00                move.l   d0, -(a7)
-  0070a8:  4e ba ef ea          jsr      $6094(pc)  ; -> sub_6094
+  0070a8:  4e ba ef ea          jsr      $6094(pc)  ; -> s7_sub_4822
   0070ac:  58 8f                addq.l   #$4, a7
   0070ae:  60 00 0a 4e          bra.w    $7afe  ; -> L7afe
 L70b2:
@@ -10731,7 +10978,7 @@ L70b2:
 L70e2:
   0070e2:  70 15                moveq    #$15, d0
   0070e4:  2f 00                move.l   d0, -(a7)
-  0070e6:  4e ba ef ac          jsr      $6094(pc)  ; -> sub_6094
+  0070e6:  4e ba ef ac          jsr      $6094(pc)  ; -> s7_sub_4822
   0070ea:  58 8f                addq.l   #$4, a7
   0070ec:  60 00 0a 10          bra.w    $7afe  ; -> L7afe
 L70f0:
@@ -10871,7 +11118,7 @@ L725a:
   007298:  6e 0e                bgt.b    $72a8  ; -> L72a8
   00729a:  70 12                moveq    #$12, d0
   00729c:  2f 00                move.l   d0, -(a7)
-  00729e:  4e ba ed f4          jsr      $6094(pc)  ; -> sub_6094
+  00729e:  4e ba ed f4          jsr      $6094(pc)  ; -> s7_sub_4822
   0072a2:  58 8f                addq.l   #$4, a7
   0072a4:  60 00 08 20          bra.w    $7ac6  ; -> L7ac6
 L72a8:
@@ -10930,7 +11177,7 @@ L7312:
   00734a:  6e 0e                bgt.b    $735a  ; -> L735a
   00734c:  70 18                moveq    #$18, d0
   00734e:  2f 00                move.l   d0, -(a7)
-  007350:  4e ba ed 42          jsr      $6094(pc)  ; -> sub_6094
+  007350:  4e ba ed 42          jsr      $6094(pc)  ; -> s7_sub_4822
   007354:  58 8f                addq.l   #$4, a7
   007356:  60 00 07 6e          bra.w    $7ac6  ; -> L7ac6
 L735a:
@@ -10975,7 +11222,7 @@ L73c4:
   0073da:  6e 0e                bgt.b    $73ea  ; -> L73ea
   0073dc:  70 09                moveq    #$9, d0
   0073de:  2f 00                move.l   d0, -(a7)
-  0073e0:  4e ba ec b2          jsr      $6094(pc)  ; -> sub_6094
+  0073e0:  4e ba ec b2          jsr      $6094(pc)  ; -> s7_sub_4822
   0073e4:  58 8f                addq.l   #$4, a7
   0073e6:  60 00 06 de          bra.w    $7ac6  ; -> L7ac6
 L73ea:
@@ -11035,7 +11282,7 @@ L7496:
   00749e:  23 68 00 54 00 08    move.l   $54(a0), $8(a1)
   0074a4:  20 6b 00 c8          movea.l  $c8(a3), a0
   0074a8:  2f 28 00 54          move.l   $54(a0), -(a7)
-  0074ac:  4e ba a3 34          jsr      $17e2(pc)  ; -> sub_17e2
+  0074ac:  4e ba a3 34          jsr      $17e2(pc)  ; -> s7_sub_917e
   0074b0:  20 40                movea.l  d0, a0
   0074b2:  22 6b 00 b0          movea.l  $b0(a3), a1
   0074b6:  54 89                addq.l   #$2, a1
@@ -11072,7 +11319,7 @@ L74f8:
   00750e:  6e 0e                bgt.b    $751e  ; -> L751e
   007510:  70 09                moveq    #$9, d0
   007512:  2f 00                move.l   d0, -(a7)
-  007514:  4e ba eb 7e          jsr      $6094(pc)  ; -> sub_6094
+  007514:  4e ba eb 7e          jsr      $6094(pc)  ; -> s7_sub_4822
   007518:  58 8f                addq.l   #$4, a7
   00751a:  60 00 05 aa          bra.w    $7ac6  ; -> L7ac6
 L751e:
@@ -11132,7 +11379,7 @@ L75ca:
   0075d2:  23 68 00 50 00 08    move.l   $50(a0), $8(a1)
   0075d8:  20 6b 00 c8          movea.l  $c8(a3), a0
   0075dc:  2f 28 00 50          move.l   $50(a0), -(a7)
-  0075e0:  4e ba a2 00          jsr      $17e2(pc)  ; -> sub_17e2
+  0075e0:  4e ba a2 00          jsr      $17e2(pc)  ; -> s7_sub_917e
   0075e4:  20 40                movea.l  d0, a0
   0075e6:  22 6b 00 b0          movea.l  $b0(a3), a1
   0075ea:  54 89                addq.l   #$2, a1
@@ -11167,7 +11414,7 @@ L762c:
   00763a:  6e 0a                bgt.b    $7646  ; -> L7646
   00763c:  70 09                moveq    #$9, d0
   00763e:  2f 00                move.l   d0, -(a7)
-  007640:  4e ba ea 52          jsr      $6094(pc)  ; -> sub_6094
+  007640:  4e ba ea 52          jsr      $6094(pc)  ; -> s7_sub_4822
   007644:  58 8f                addq.l   #$4, a7
 L7646:
   007646:  20 6e 00 0c          movea.l  $c(a6), a0
@@ -11211,7 +11458,7 @@ L76a0:
   0076be:  20 6e 00 0c          movea.l  $c(a6), a0
   0076c2:  21 6b 00 c0 00 04    move.l   $c0(a3), $4(a0)
   0076c8:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  0076cc:  4e ba 05 88          jsr      $7c56(pc)  ; -> sub_7c56
+  0076cc:  4e ba 05 88          jsr      $7c56(pc)  ; -> s7_sub_63b0
   0076d0:  58 8f                addq.l   #$4, a7
   0076d2:  60 00 00 8e          bra.w    $7762  ; -> L7762
 L76d6:
@@ -11238,7 +11485,7 @@ L771a:
   007720:  67 0c                beq.b    $772e  ; -> L772e
   007722:  70 13                moveq    #$13, d0
   007724:  2f 00                move.l   d0, -(a7)
-  007726:  4e ba e9 6c          jsr      $6094(pc)  ; -> sub_6094
+  007726:  4e ba e9 6c          jsr      $6094(pc)  ; -> s7_sub_4822
   00772a:  58 8f                addq.l   #$4, a7
   00772c:  60 34                bra.b    $7762  ; -> L7762
 L772e:
@@ -11257,7 +11504,7 @@ L7748:
   007750:  20 2e 00 08          move.l   $8(a6), d0
   007754:  d0 bc 00 00 01 00    add.l    #$100, d0
   00775a:  2f 00                move.l   d0, -(a7)
-  00775c:  4e ba e9 36          jsr      $6094(pc)  ; -> sub_6094
+  00775c:  4e ba e9 36          jsr      $6094(pc)  ; -> s7_sub_4822
   007760:  58 8f                addq.l   #$4, a7
 L7762:
   007762:  70 01                moveq    #$1, d0
@@ -11268,7 +11515,7 @@ L7762:
   007770:  67 10                beq.b    $7782  ; -> L7782
 L7772:
   007772:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  007776:  4e ba 10 d2          jsr      $884a(pc)  ; -> sub_884a
+  007776:  4e ba 10 d2          jsr      $884a(pc)  ; -> s7_sub_6f4e
   00777a:  4a 80                tst.l    d0
   00777c:  58 8f                addq.l   #$4, a7
   00777e:  66 00 03 7e          bne.w    $7afe  ; -> L7afe
@@ -11277,21 +11524,21 @@ L7782:
   007784:  c0 ab 00 1c          and.l    $1c(a3), d0
   007788:  67 28                beq.b    $77b2  ; -> L77b2
   00778a:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00778e:  4e ba 10 ba          jsr      $884a(pc)  ; -> sub_884a
+  00778e:  4e ba 10 ba          jsr      $884a(pc)  ; -> s7_sub_6f4e
   007792:  4a 80                tst.l    d0
   007794:  58 8f                addq.l   #$4, a7
   007796:  67 1a                beq.b    $77b2  ; -> L77b2
   007798:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  00779c:  4e ba 16 2e          jsr      $8dcc(pc)  ; -> sub_8dcc
+  00779c:  4e ba 16 2e          jsr      $8dcc(pc)  ; -> s7_sub_7570
   0077a0:  4a 80                tst.l    d0
   0077a2:  58 8f                addq.l   #$4, a7
   0077a4:  66 00 03 58          bne.w    $7afe  ; -> L7afe
   0077a8:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  0077ac:  4e ba 10 9c          jsr      $884a(pc)  ; -> sub_884a
+  0077ac:  4e ba 10 9c          jsr      $884a(pc)  ; -> s7_sub_6f4e
   0077b0:  58 8f                addq.l   #$4, a7
 L77b2:
   0077b2:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  0077b6:  4e ba 03 6a          jsr      $7b22(pc)  ; -> sub_7b22
+  0077b6:  4e ba 03 6a          jsr      $7b22(pc)  ; -> s7_sub_624a
   0077ba:  72 01                moveq    #$1, d1
   0077bc:  b2 80                cmp.l    d0, d1
   0077be:  58 8f                addq.l   #$4, a7
@@ -11445,16 +11692,16 @@ L7938:
   00795a:  2d 41 ff c8          move.l   d1, -$38(a6)
   00795e:  60 00 00 9e          bra.w    $79fe  ; -> L79fe
 * Wait loop  -  System 7 $6074-$6116.  Loops while (status long & 3) == 0
-* (test at $79FE).  Status bit 3/4 with sub_884a succeeding: return 0;
-* bit 2: acknowledge and call sub_7ce4; past the deadline with no change
-* in packet+$1C4: sub_8e54(unit, 2, 0) and the timeout exit $7A96.
+* (test at $79FE).  Status bit 3/4 with s7_sub_6f4e succeeding: return 0;
+* bit 2: acknowledge and call s7_sub_6442; past the deadline with no change
+* in packet+$1C4: s7_sub_75fe(unit, 2, 0) and the timeout exit $7A96.
 L7962:
   007962:  20 6e ff d2          movea.l  -$2e(a6), a0
   007966:  70 18                moveq    #$18, d0
   007968:  c0 90                and.l    (a0), d0
   00796a:  67 18                beq.b    $7984  ; -> L7984
   00796c:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  007970:  4e ba 0e d8          jsr      $884a(pc)  ; -> sub_884a
+  007970:  4e ba 0e d8          jsr      $884a(pc)  ; -> s7_sub_6f4e
   007974:  4a 80                tst.l    d0
   007976:  58 8f                addq.l   #$4, a7
   007978:  67 0a                beq.b    $7984  ; -> L7984
@@ -11470,7 +11717,7 @@ L7984:
   007992:  02 90 ff ff ff fb    andi.l   #$fffffffb, (a0)
   007998:  48 6b 00 24          pea.l    $24(a3)
   00799c:  2f 2e ff d6          move.l   -$2a(a6), -(a7)
-  0079a0:  4e ba 03 42          jsr      $7ce4(pc)  ; -> sub_7ce4
+  0079a0:  4e ba 03 42          jsr      $7ce4(pc)  ; -> s7_sub_6442
   0079a4:  70 00                moveq    #$0, d0
   0079a6:  30 2b 00 02          move.w   $2(a3), d0
   0079aa:  d0 b8 01 6a          add.l    $16a.w, d0
@@ -11497,7 +11744,7 @@ L79e6:
   0079ea:  72 02                moveq    #$2, d1
   0079ec:  2f 01                move.l   d1, -(a7)
   0079ee:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  0079f2:  4e ba 14 60          jsr      $8e54(pc)  ; -> sub_8e54
+  0079f2:  4e ba 14 60          jsr      $8e54(pc)  ; -> s7_sub_75fe
   0079f6:  4f ef 00 0c          lea.l    $c(a7), a7
   0079fa:  60 00 00 9a          bra.w    $7a96  ; -> L7a96
 L79fe:
@@ -11513,14 +11760,14 @@ L79fe:
   007a18:  02 90 ff ff ff fb    andi.l   #$fffffffb, (a0)
   007a1e:  48 6b 00 24          pea.l    $24(a3)
   007a22:  2f 2e ff d6          move.l   -$2a(a6), -(a7)
-  007a26:  4e ba 02 bc          jsr      $7ce4(pc)  ; -> sub_7ce4
+  007a26:  4e ba 02 bc          jsr      $7ce4(pc)  ; -> s7_sub_6442
   007a2a:  50 8f                addq.l   #$8, a7
 L7a2c:
   007a2c:  70 26                moveq    #$26, d0
   007a2e:  b0 ae 00 08          cmp.l    $8(a6), d0
   007a32:  66 12                bne.b    $7a46  ; -> L7a46
   007a34:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  007a38:  4e ba 02 1c          jsr      $7c56(pc)  ; -> sub_7c56
+  007a38:  4e ba 02 1c          jsr      $7c56(pc)  ; -> s7_sub_63b0
   007a3c:  02 ab ff ff ff bf 00 1c andi.l   #$ffffffbf, $1c(a3)
   007a44:  58 8f                addq.l   #$4, a7
 L7a46:
@@ -11595,7 +11842,8 @@ L7b18:
   007b18:  4c ee 1c f8 ff 78    movem.l  -$88(a6), d3-d7/a2-a4
   007b1e:  4e 5e                unlk     a6
   007b20:  4e 75                rts
-sub_7b22:
+* s7_sub_624a  -  System 7 $624A (similar code, r=0.83).
+s7_sub_624a:
   007b22:  4e 56 ff f8          link.w   a6, #$fff8
   007b26:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   007b2a:  28 6e 00 08          movea.l  $8(a6), a4
@@ -11620,7 +11868,7 @@ L7b5c:
   007b62:  c0 90                and.l    (a0), d0
   007b64:  67 1c                beq.b    $7b82  ; -> L7b82
   007b66:  2f 0c                move.l   a4, -(a7)
-  007b68:  4e ba 0c e0          jsr      $884a(pc)  ; -> sub_884a
+  007b68:  4e ba 0c e0          jsr      $884a(pc)  ; -> s7_sub_6f4e
   007b6c:  4a 80                tst.l    d0
   007b6e:  58 8f                addq.l   #$4, a7
   007b70:  67 10                beq.b    $7b82  ; -> L7b82
@@ -11639,7 +11887,7 @@ L7b82:
   007b90:  02 90 ff ff ff fb    andi.l   #$fffffffb, (a0)
   007b96:  48 6b 00 24          pea.l    $24(a3)
   007b9a:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  007b9e:  4e ba 01 44          jsr      $7ce4(pc)  ; -> sub_7ce4
+  007b9e:  4e ba 01 44          jsr      $7ce4(pc)  ; -> s7_sub_6442
   007ba2:  70 00                moveq    #$0, d0
   007ba4:  30 2b 00 02          move.w   $2(a3), d0
   007ba8:  2e 00                move.l   d0, d7
@@ -11681,7 +11929,7 @@ L7bf0:
   007c0a:  02 90 ff ff ff fb    andi.l   #$fffffffb, (a0)
   007c10:  48 6b 00 24          pea.l    $24(a3)
   007c14:  2f 2e ff fc          move.l   -$4(a6), -(a7)
-  007c18:  4e ba 00 ca          jsr      $7ce4(pc)  ; -> sub_7ce4
+  007c18:  4e ba 00 ca          jsr      $7ce4(pc)  ; -> s7_sub_6442
   007c1c:  50 8f                addq.l   #$8, a7
 L7c1e:
   007c1e:  02 ab ff ff ff fb 00 1c andi.l   #$fffffffb, $1c(a3)
@@ -11703,7 +11951,8 @@ L7c4c:
   007c4c:  4c ee 18 f0 ff e0    movem.l  -$20(a6), d4-d7/a3-a4
   007c52:  4e 5e                unlk     a6
   007c54:  4e 75                rts
-sub_7c56:
+* s7_sub_63b0  -  System 7 $63B0 (similar code, r=0.92).
+s7_sub_63b0:
   007c56:  48 e7 00 18          movem.l  a3-a4, -(a7)
   007c5a:  28 6f 00 0c          movea.l  $c(a7), a4
   007c5e:  26 54                movea.l  (a4), a3
@@ -11741,7 +11990,8 @@ sub_7c56:
 L7cde:
   007cde:  4c df 18 00          movem.l  (a7)+, a3-a4
   007ce2:  4e 75                rts
-sub_7ce4:
+* s7_sub_6442  -  System 7 $6442 (by call graph, r=0.70).
+s7_sub_6442:
   007ce4:  4e 56 ff 6e          link.w   a6, #$ff6e
   007ce8:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   007cec:  1d 7c 00 01 ff 8d    move.b   #$1, -$73(a6)
@@ -12290,7 +12540,7 @@ L8312:
   00831e:  55 8f                subq.l   #$2, a7
   008320:  48 6e ff 9c          pea.l    -$64(a6)
   008324:  48 6e ff 6e          pea.l    -$92(a6)
-  008328:  4e ba 20 e2          jsr      $a40c(pc)  ; -> sub_a40c
+  008328:  4e ba 20 e2          jsr      $a40c(pc)  ; -> s7_sub_c264
   00832c:  30 1f                move.w   (a7)+, d0
   00832e:  48 c0                ext.l    d0
   008330:  28 00                move.l   d0, d4
@@ -12356,7 +12606,7 @@ L83a0:
   0083d6:  55 8f                subq.l   #$2, a7
   0083d8:  48 6e ff 9c          pea.l    -$64(a6)
   0083dc:  48 6e ff 6e          pea.l    -$92(a6)
-  0083e0:  4e ba 20 2a          jsr      $a40c(pc)  ; -> sub_a40c
+  0083e0:  4e ba 20 2a          jsr      $a40c(pc)  ; -> s7_sub_c264
   0083e4:  30 1f                move.w   (a7)+, d0
   0083e6:  48 c0                ext.l    d0
   0083e8:  28 00                move.l   d0, d4
@@ -12451,7 +12701,7 @@ L84e4:
   0084ec:  20 6e ff ec          movea.l  -$14(a6), a0
   0084f0:  20 50                movea.l  (a0), a0
   0084f2:  2f 28 00 c8          move.l   $c8(a0), -(a7)
-  0084f6:  4e ba 8f 24          jsr      $141c(pc)  ; -> sub_141c
+  0084f6:  4e ba 8f 24          jsr      $141c(pc)  ; -> s7_sub_8df2
   0084fa:  70 00                moveq    #$0, d0
   0084fc:  30 2e ff 72          move.w   -$8e(a6), d0
   008500:  20 6e ff 88          movea.l  -$78(a6), a0
@@ -12494,7 +12744,9 @@ L856a:
   008576:  4c ee 18 f0 ff 56    movem.l  -$aa(a6), d4-d7/a3-a4
   00857c:  4e 5e                unlk     a6
   00857e:  4e 75                rts
-L8580:
+* GA_ControlFFFFFFFD  -  System 7 $6C70 (same trap slot $FFFFFFFD, code r=0.74).
+* S7: Patch #105 replaces special; no EngineDispatch command in its own body:
+GA_ControlFFFFFFFD:
   008580:  4e 56 00 00          link.w   a6, #$0
   008584:  48 e7 00 18          movem.l  a3-a4, -(a7)
   008588:  28 6e 00 14          movea.l  $14(a6), a4
@@ -12507,7 +12759,9 @@ L8580:
   0085a0:  4c ee 18 00 ff f8    movem.l  -$8(a6), a3-a4
   0085a6:  4e 5e                unlk     a6
   0085a8:  4e 75                rts
-L85aa:
+* GA_ControlFFFFFFFF  -  System 7 $6C8A (same trap slot $FFFFFFFF, code r=0.97).
+* S7: Patch #103 replaces special; card commands: $00 $02 $12 $13 $14 $16 $17 $29
+GA_ControlFFFFFFFF:
   0085aa:  4e 56 00 00          link.w   a6, #$0
   0085ae:  48 e7 01 10          movem.l  d7/a3, -(a7)
   0085b2:  26 6e 00 08          movea.l  $8(a6), a3
@@ -12516,7 +12770,7 @@ L85aa:
   0085ba:  30 28 00 02          move.w   $2(a0), d0
   0085be:  2e 00                move.l   d0, d7
   0085c0:  2f 0b                move.l   a3, -(a7)
-  0085c2:  4e ba 02 86          jsr      $884a(pc)  ; -> sub_884a
+  0085c2:  4e ba 02 86          jsr      $884a(pc)  ; -> s7_sub_6f4e
   0085c6:  20 53                movea.l  (a3), a0
   0085c8:  70 02                moveq    #$2, d0
   0085ca:  c0 a8 00 1c          and.l    $1c(a0), d0
@@ -12560,7 +12814,9 @@ L862e:
   00862e:  4c ee 08 80 ff f8    movem.l  -$8(a6), d7/a3
   008634:  4e 5e                unlk     a6
   008636:  4e 75                rts
-L8638:
+* GA_ControlFFFFFFFE  -  System 7 $6D1E (same trap slot $FFFFFFFE, code r=0.91).
+* S7: Patch #104 replaces special; card commands: $00 $11 $26
+GA_ControlFFFFFFFE:
   008638:  48 e7 01 10          movem.l  d7/a3, -(a7)
   00863c:  20 38 08 88          move.l   $888.w, d0
   008640:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -12600,7 +12856,9 @@ L8694:
   008694:  20 07                move.l   d7, d0
   008696:  4c df 08 80          movem.l  (a7)+, d7/a3
   00869a:  4e 75                rts
-sub_869c:
+* StoreCtxWord_AA6  -  System 7 $6D92 (similar code, r=0.88).
+* S7: StoreCtxWord_AA6  -  the single most-called helper (~159x).  Fetches the
+StoreCtxWord_AA6:
   00869c:  48 e7 03 18          movem.l  d6-d7/a3-a4, -(a7)
   0086a0:  2c 2f 00 14          move.l   $14(a7), d6
   0086a4:  20 38 08 88          move.l   $888.w, d0
@@ -12641,13 +12899,14 @@ L86da:
   0086f8:  20 50                movea.l  (a0), a0
   0086fa:  20 50                movea.l  (a0), a0
   0086fc:  2f 28 02 14          move.l   $214(a0), -(a7)
-  008700:  4e ba 07 52          jsr      $8e54(pc)  ; -> sub_8e54
+  008700:  4e ba 07 52          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008704:  70 ff                moveq    #$ff, d0
   008706:  4f ef 00 0c          lea.l    $c(a7), a7
 L870a:
   00870a:  4c df 18 c0          movem.l  (a7)+, d6-d7/a3-a4
   00870e:  4e 75                rts
-sub_8710:
+* s7_sub_6e14  -  System 7 $6E14 (similar code, r=0.83).
+s7_sub_6e14:
   008710:  48 e7 07 18          movem.l  d5-d7/a3-a4, -(a7)
   008714:  20 38 08 88          move.l   $888.w, d0
   008718:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -12762,7 +13021,8 @@ L8816:
 L881c:
   00881c:  4c df 18 00          movem.l  (a7)+, a3-a4
   008820:  4e 75                rts
-sub_8822:
+* s7_sub_6f1c  -  System 7 $6F1C (similar code, r=0.85).
+s7_sub_6f1c:
   008822:  2f 0b                move.l   a3, -(a7)
   008824:  20 38 08 88          move.l   $888.w, d0
   008828:  c0 bc 00 ff ff ff    and.l    #$ffffff, d0
@@ -12782,7 +13042,7 @@ L8846:
   008848:  4e 75                rts
 * Card (re)initialisation  -  System 7 sub_6f4e.  Called by
 * EngineDispatch when the unit is not ready.
-sub_884a:
+s7_sub_6f4e:
   00884a:  4e 56 ff ec          link.w   a6, #$ffec
   00884e:  48 e7 17 18          movem.l  d3/d5-d7/a3-a4, -(a7)
   008852:  42 6e ff fa          clr.w    -$6(a6)
@@ -12813,7 +13073,7 @@ L889a:
   0088a0:  c0 a8 00 1c          and.l    $1c(a0), d0
   0088a4:  67 2c                beq.b    $88d2  ; -> L88d2
   0088a6:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  0088aa:  4e ba 05 20          jsr      $8dcc(pc)  ; -> sub_8dcc
+  0088aa:  4e ba 05 20          jsr      $8dcc(pc)  ; -> s7_sub_7570
   0088ae:  4a 80                tst.l    d0
   0088b0:  58 8f                addq.l   #$4, a7
   0088b2:  67 1e                beq.b    $88d2  ; -> L88d2
@@ -12824,7 +13084,7 @@ L889a:
   0088c2:  72 06                moveq    #$6, d1
   0088c4:  2f 01                move.l   d1, -(a7)
   0088c6:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  0088ca:  4e ba 05 88          jsr      $8e54(pc)  ; -> sub_8e54
+  0088ca:  4e ba 05 88          jsr      $8e54(pc)  ; -> s7_sub_75fe
   0088ce:  4f ef 00 0c          lea.l    $c(a7), a7
 L88d2:
   0088d2:  55 8f                subq.l   #$2, a7
@@ -12903,7 +13163,7 @@ L8990:
   0089ce:  20 6e ff fc          movea.l  -$4(a6), a0
   0089d2:  52 68 01 80          addq.w   #$1, $180(a0)
   0089d6:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  0089da:  4e ba f2 7a          jsr      $7c56(pc)  ; -> sub_7c56
+  0089da:  4e ba f2 7a          jsr      $7c56(pc)  ; -> s7_sub_63b0
   0089de:  7c 00                moveq    #$0, d6
   0089e0:  58 8f                addq.l   #$4, a7
 L89e2:
@@ -12944,7 +13204,7 @@ L8a40:
   008a46:  20 6e ff fc          movea.l  -$4(a6), a0
   008a4a:  48 68 00 24          pea.l    $24(a0)
   008a4e:  2f 0c                move.l   a4, -(a7)
-  008a50:  4e ba f2 92          jsr      $7ce4(pc)  ; -> sub_7ce4
+  008a50:  4e ba f2 92          jsr      $7ce4(pc)  ; -> s7_sub_6442
   008a54:  50 8f                addq.l   #$8, a7
 L8a56:
   008a56:  4a ac 00 18          tst.l    $18(a4)
@@ -12974,7 +13234,7 @@ L8a7e:
   008a88:  72 03                moveq    #$3, d1
   008a8a:  2f 01                move.l   d1, -(a7)
   008a8c:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008a90:  4e ba 03 c2          jsr      $8e54(pc)  ; -> sub_8e54
+  008a90:  4e ba 03 c2          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008a94:  20 6e ff fc          movea.l  -$4(a6), a0
   008a98:  00 a8 00 00 00 10 00 1c ori.l    #$10, $1c(a0)
   008aa0:  55 8f                subq.l   #$2, a7
@@ -12992,7 +13252,7 @@ L8ab2:
   008abe:  72 03                moveq    #$3, d1
   008ac0:  2f 01                move.l   d1, -(a7)
   008ac2:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008ac6:  4e ba 03 8c          jsr      $8e54(pc)  ; -> sub_8e54
+  008ac6:  4e ba 03 8c          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008aca:  20 6e ff fc          movea.l  -$4(a6), a0
   008ace:  00 a8 00 00 00 10 00 1c ori.l    #$10, $1c(a0)
   008ad6:  55 8f                subq.l   #$2, a7
@@ -13027,9 +13287,9 @@ L8ae8:
   008b28:  2f 00                move.l   d0, -(a7)
   008b2a:  2f 00                move.l   d0, -(a7)
   008b2c:  4e ba d6 f6          jsr      $6224(pc)  ; -> EngineDispatch
-  008b30:  4e ba 04 a6          jsr      $8fd8(pc)  ; -> sub_8fd8
+  008b30:  4e ba 04 a6          jsr      $8fd8(pc)  ; -> s7_sub_77a6
   008b34:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008b38:  4e ba d6 76          jsr      $61b0(pc)  ; -> sub_61b0
+  008b38:  4e ba d6 76          jsr      $61b0(pc)  ; -> s7_sub_494e
   008b3c:  72 01                moveq    #$1, d1
   008b3e:  b2 80                cmp.l    d0, d1
   008b40:  4f ef 00 12          lea.l    $12(a7), a7
@@ -13043,7 +13303,7 @@ L8ae8:
   008b56:  72 04                moveq    #$4, d1
   008b58:  2f 01                move.l   d1, -(a7)
   008b5a:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008b5e:  4e ba 02 f4          jsr      $8e54(pc)  ; -> sub_8e54
+  008b5e:  4e ba 02 f4          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008b62:  4f ef 00 0c          lea.l    $c(a7), a7
   008b66:  60 14                bra.b    $8b7c  ; -> L8b7c
 L8b68:
@@ -13052,7 +13312,7 @@ L8b68:
   008b6c:  72 04                moveq    #$4, d1
   008b6e:  2f 01                move.l   d1, -(a7)
   008b70:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008b74:  4e ba 02 de          jsr      $8e54(pc)  ; -> sub_8e54
+  008b74:  4e ba 02 de          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008b78:  4f ef 00 0c          lea.l    $c(a7), a7
 L8b7c:
   008b7c:  20 6e ff fc          movea.l  -$4(a6), a0
@@ -13073,7 +13333,7 @@ L8b9a:
   008bac:  72 09                moveq    #$9, d1
   008bae:  2f 01                move.l   d1, -(a7)
   008bb0:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008bb4:  4e ba 02 9e          jsr      $8e54(pc)  ; -> sub_8e54
+  008bb4:  4e ba 02 9e          jsr      $8e54(pc)  ; -> s7_sub_75fe
   008bb8:  70 ff                moveq    #$ff, d0
   008bba:  4f ef 00 0c          lea.l    $c(a7), a7
   008bbe:  60 5c                bra.b    $8c1c  ; -> L8c1c
@@ -13081,7 +13341,7 @@ L8bc0:
   008bc0:  2f 2b 02 68          move.l   $268(a3), -(a7)
   008bc4:  20 6e ff fc          movea.l  -$4(a6), a0
   008bc8:  2f 28 00 0c          move.l   $c(a0), -(a7)
-  008bcc:  4e ba 00 58          jsr      $8c26(pc)  ; -> sub_8c26
+  008bcc:  4e ba 00 58          jsr      $8c26(pc)  ; -> s7_sub_73c4
   008bd0:  28 40                movea.l  d0, a4
   008bd2:  20 0c                move.l   a4, d0
   008bd4:  50 8f                addq.l   #$8, a7
@@ -13102,7 +13362,7 @@ L8bc0:
   008c0a:  70 00                moveq    #$0, d0
   008c0c:  21 40 00 b4          move.l   d0, $b4(a0)
   008c10:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008c14:  4e ba f0 40          jsr      $7c56(pc)  ; -> sub_7c56
+  008c14:  4e ba f0 40          jsr      $7c56(pc)  ; -> s7_sub_63b0
   008c18:  58 8f                addq.l   #$4, a7
 L8c1a:
   008c1a:  70 00                moveq    #$0, d0
@@ -13110,7 +13370,8 @@ L8c1c:
   008c1c:  4c ee 18 e8 ff d4    movem.l  -$2c(a6), d3/d5-d7/a3-a4
   008c22:  4e 5e                unlk     a6
   008c24:  4e 75                rts
-sub_8c26:
+* s7_sub_73c4  -  System 7 $73C4 (similar code, r=0.99).
+s7_sub_73c4:
   008c26:  4e 56 ff fc          link.w   a6, #$fffc
   008c2a:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   008c2e:  2e 2e 00 0c          move.l   $c(a6), d7
@@ -13196,7 +13457,8 @@ L8d16:
   008d16:  4c ee 18 80 ff f0    movem.l  -$10(a6), d7/a3-a4
   008d1c:  4e 5e                unlk     a6
   008d1e:  4e 75                rts
-sub_8d20:
+* s7_sub_74be  -  System 7 $74BE (checked by hand, r=0.53).
+s7_sub_74be:
   008d20:  48 e7 03 10          movem.l  d6-d7/a3, -(a7)
   008d24:  2c 2f 00 10          move.l   $10(a7), d6
   008d28:  59 8f                subq.l   #$4, a7
@@ -13222,7 +13484,8 @@ L8d52:
 L8d5a:
   008d5a:  4c df 08 c0          movem.l  (a7)+, d6-d7/a3
   008d5e:  4e 75                rts
-sub_8d60:
+* s7_sub_74f6  -  System 7 $74F6 (similar code, r=0.95).
+s7_sub_74f6:
   008d60:  2f 0b                move.l   a3, -(a7)
   008d62:  26 6f 00 08          movea.l  $8(a7), a3
   008d66:  20 0b                move.l   a3, d0
@@ -13244,13 +13507,14 @@ L8d7c:
 L8d92:
   008d92:  26 5f                movea.l  (a7)+, a3
   008d94:  4e 75                rts
-sub_8d96:
+* s7_sub_7534  -  System 7 $7534 (by call graph, r=0.65).
+s7_sub_7534:
   008d96:  4e 56 ff fe          link.w   a6, #$fffe
   008d9a:  2f 0b                move.l   a3, -(a7)
   008d9c:  1d 7c 00 01 ff ff    move.b   #$1, -$1(a6)
   008da2:  2f 2e 00 10          move.l   $10(a6), -(a7)
   008da6:  2f 2e 00 08          move.l   $8(a6), -(a7)
-  008daa:  4e ba ff b4          jsr      $8d60(pc)  ; -> sub_8d60
+  008daa:  4e ba ff b4          jsr      $8d60(pc)  ; -> s7_sub_74f6
   008dae:  26 40                movea.l  d0, a3
   008db0:  48 6e ff ff          pea.l    -$1(a6)
   008db4:  4e ba 17 68          jsr      $a51e(pc)  ; -> sub_a51e
@@ -13260,7 +13524,8 @@ sub_8d96:
   008dc4:  26 6e ff fa          movea.l  -$6(a6), a3
   008dc8:  4e 5e                unlk     a6
   008dca:  4e 75                rts
-sub_8dcc:
+* s7_sub_7570  -  System 7 $7570 (similar code, r=0.94).
+s7_sub_7570:
   008dcc:  2f 0b                move.l   a3, -(a7)
   008dce:  26 6f 00 08          movea.l  $8(a7), a3
   008dd2:  20 53                movea.l  (a3), a0
@@ -13285,7 +13550,7 @@ L8de4:
   008e02:  72 18                moveq    #$18, d1
   008e04:  d0 81                add.l    d1, d0
   008e06:  2f 00                move.l   d0, -(a7)
-  008e08:  4e ba ff 8c          jsr      $8d96(pc)  ; -> sub_8d96
+  008e08:  4e ba ff 8c          jsr      $8d96(pc)  ; -> s7_sub_7534
   008e0c:  20 53                movea.l  (a3), a0
   008e0e:  70 00                moveq    #$0, d0
   008e10:  30 10                move.w   (a0), d0
@@ -13296,7 +13561,7 @@ L8de4:
   008e1a:  22 28 01 30          move.l   $130(a0), d1
   008e1e:  d2 bc 00 00 03 d4    add.l    #$3d4, d1
   008e24:  2f 01                move.l   d1, -(a7)
-  008e26:  4e ba ff 6e          jsr      $8d96(pc)  ; -> sub_8d96
+  008e26:  4e ba ff 6e          jsr      $8d96(pc)  ; -> s7_sub_7534
   008e2a:  20 53                movea.l  (a3), a0
   008e2c:  70 00                moveq    #$0, d0
   008e2e:  30 10                move.w   (a0), d0
@@ -13304,7 +13569,7 @@ L8de4:
   008e32:  70 ff                moveq    #$ff, d0
   008e34:  2f 00                move.l   d0, -(a7)
   008e36:  2f 3c 04 00 00 50    move.l   #$4000050, -(a7)
-  008e3c:  4e ba ff 58          jsr      $8d96(pc)  ; -> sub_8d96
+  008e3c:  4e ba ff 58          jsr      $8d96(pc)  ; -> s7_sub_7534
   008e40:  20 53                movea.l  (a3), a0
   008e42:  00 a8 00 00 00 04 00 08 ori.l    #$4, $8(a0)
   008e4a:  4f ef 00 24          lea.l    $24(a7), a7
@@ -13313,7 +13578,8 @@ L8e4e:
 L8e50:
   008e50:  26 5f                movea.l  (a7)+, a3
   008e52:  4e 75                rts
-sub_8e54:
+* s7_sub_75fe  -  System 7 $75FE (by call graph, r=0.66).
+s7_sub_75fe:
   008e54:  4e 56 00 00          link.w   a6, #$0
   008e58:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   008e5c:  20 38 08 88          move.l   $888.w, d0
@@ -13354,7 +13620,7 @@ L8ec4:
   008ecc:  6e e0                bgt.b    $8eae  ; -> L8eae
   008ece:  70 24                moveq    #$24, d0
   008ed0:  2f 00                move.l   d0, -(a7)
-  008ed2:  4e ba fe 4c          jsr      $8d20(pc)  ; -> sub_8d20
+  008ed2:  4e ba fe 4c          jsr      $8d20(pc)  ; -> s7_sub_74be
   008ed6:  26 40                movea.l  d0, a3
   008ed8:  20 0b                move.l   a3, d0
   008eda:  58 8f                addq.l   #$4, a7
@@ -13389,7 +13655,8 @@ L8f0e:
   008f58:  6f 6f 74 20 74 6f 20 72 dc.b     $6F, $6F, $74, $20, $74, $6F, $20, $72  ; oot to r
   008f60:  65 2d 65 6e 61 62 6c 65 dc.b     $65, $2D, $65, $6E, $61, $62, $6C, $65  ; e-enable
   008f68:  20 69 74 2e 00 00    dc.b     $20, $69, $74, $2E, $00, $00  ;  it...
-sub_8f6e:
+* s7_sub_7742  -  System 7 $7742 (similar code, r=0.90).
+s7_sub_7742:
   008f6e:  48 e7 01 10          movem.l  d7/a3, -(a7)
   008f72:  2e 2f 00 0c          move.l   $c(a7), d7
   008f76:  59 8f                subq.l   #$4, a7
@@ -13398,7 +13665,7 @@ sub_8f6e:
   008f7c:  60 16                bra.b    $8f94  ; -> L8f94
 L8f7e:
   008f7e:  2f 0b                move.l   a3, -(a7)
-  008f80:  4e ba 00 1e          jsr      $8fa0(pc)  ; -> sub_8fa0
+  008f80:  4e ba 00 1e          jsr      $8fa0(pc)  ; -> s7_sub_81d8
   008f84:  be 80                cmp.l    d0, d7
   008f86:  58 8f                addq.l   #$4, a7
   008f88:  66 04                bne.b    $8f8e  ; -> L8f8e
@@ -13414,7 +13681,8 @@ L8f94:
 L8f9a:
   008f9a:  4c df 08 80          movem.l  (a7)+, d7/a3
   008f9e:  4e 75                rts
-sub_8fa0:
+* s7_sub_81d8  -  System 7 $81D8 (checked by hand, r=0.56).
+s7_sub_81d8:
   008fa0:  48 e7 01 18          movem.l  d7/a3-a4, -(a7)
   008fa4:  28 6f 00 10          movea.l  $10(a7), a4
   008fa8:  20 54                movea.l  (a4), a0
@@ -13441,7 +13709,8 @@ L8fca:
 L8fd2:
   008fd2:  4c df 18 80          movem.l  (a7)+, d7/a3-a4
   008fd6:  4e 75                rts
-sub_8fd8:
+* s7_sub_77a6  -  System 7 $77A6 (checked by hand, r=0.51).
+s7_sub_77a6:
   008fd8:  4e 56 ff 42          link.w   a6, #$ff42
   008fdc:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   008fe0:  47 ee ff f4          lea.l    -$c(a6), a3
@@ -13489,7 +13758,7 @@ L905c:
   009066:  55 8f                subq.l   #$2, a7
   009068:  48 6e ff 94          pea.l    -$6c(a6)
   00906c:  48 6e ff dc          pea.l    -$24(a6)
-  009070:  4e ba 13 9a          jsr      $a40c(pc)  ; -> sub_a40c
+  009070:  4e ba 13 9a          jsr      $a40c(pc)  ; -> s7_sub_c264
   009074:  30 1f                move.w   (a7)+, d0
   009076:  48 c0                ext.l    d0
   009078:  2d 40 ff e4          move.l   d0, -$1c(a6)
@@ -13539,7 +13808,7 @@ L90f4:
 L90fc:
   0090fc:  70 0b                moveq    #$b, d0
   0090fe:  2f 00                move.l   d0, -(a7)
-  009100:  4e ba fe 6c          jsr      $8f6e(pc)  ; -> sub_8f6e
+  009100:  4e ba fe 6c          jsr      $8f6e(pc)  ; -> s7_sub_7742
   009104:  2d 40 ff e8          move.l   d0, -$18(a6)
   009108:  58 8f                addq.l   #$4, a7
   00910a:  67 00 00 b4          beq.w    $91c0  ; -> L91c0
@@ -13614,7 +13883,7 @@ L91c0:
   0091d8:  67 00 00 c6          beq.w    $92a0  ; -> L92a0
   0091dc:  70 0e                moveq    #$e, d0
   0091de:  2f 00                move.l   d0, -(a7)
-  0091e0:  4e ba fd 8c          jsr      $8f6e(pc)  ; -> sub_8f6e
+  0091e0:  4e ba fd 8c          jsr      $8f6e(pc)  ; -> s7_sub_7742
   0091e4:  2d 40 ff e8          move.l   d0, -$18(a6)
   0091e8:  58 8f                addq.l   #$4, a7
   0091ea:  67 00 00 b4          beq.w    $92a0  ; -> L92a0
@@ -13691,7 +13960,7 @@ L92a0:
 L92be:
   0092be:  42 06                clr.b    d6
   0092c0:  2f 07                move.l   d7, -(a7)
-  0092c2:  4e ba fc aa          jsr      $8f6e(pc)  ; -> sub_8f6e
+  0092c2:  4e ba fc aa          jsr      $8f6e(pc)  ; -> s7_sub_7742
   0092c6:  2d 40 ff e8          move.l   d0, -$18(a6)
   0092ca:  58 8f                addq.l   #$4, a7
   0092cc:  66 06                bne.b    $92d4  ; -> L92d4
@@ -14384,7 +14653,7 @@ L9a16:
   009a50:  2d 41 ff 82          move.l   d1, -$7e(a6)
   009a54:  54 8f                addq.l   #$2, a7
 L9a56:
-  009a56:  4e ba ec b8          jsr      $8710(pc)  ; -> sub_8710
+  009a56:  4e ba ec b8          jsr      $8710(pc)  ; -> s7_sub_6e14
   009a5a:  72 00                moveq    #$0, d1
   009a5c:  12 00                move.b   d0, d1
   009a5e:  67 f6                beq.b    $9a56  ; -> L9a56
@@ -14463,7 +14732,7 @@ L9b5e:
   009b60:  10 2e 00 2b          move.b   $2b(a6), d0
   009b64:  66 22                bne.b    $9b88  ; -> L9b88
 L9b66:
-  009b66:  4e ba eb a8          jsr      $8710(pc)  ; -> sub_8710
+  009b66:  4e ba eb a8          jsr      $8710(pc)  ; -> s7_sub_6e14
   009b6a:  72 00                moveq    #$0, d1
   009b6c:  12 00                move.b   d0, d1
   009b6e:  67 f6                beq.b    $9b66  ; -> L9b66
@@ -14915,7 +15184,7 @@ L9fde:
   00a06a:  4f ef 00 0e          lea.l    $e(a7), a7
   00a06e:  66 0a                bne.b    $a07a  ; -> La07a
 La070:
-  00a070:  4e ba e6 9e          jsr      $8710(pc)  ; -> sub_8710
+  00a070:  4e ba e6 9e          jsr      $8710(pc)  ; -> s7_sub_6e14
   00a074:  72 00                moveq    #$0, d1
   00a076:  12 00                move.b   d0, d1
   00a078:  67 f6                beq.b    $a070  ; -> La070
@@ -15252,7 +15521,8 @@ sub_a404:
 sub_a408:
   00a408:  70 03                moveq    #$3, d0
   00a40a:  60 d4                bra.b    $a3e0  ; -> La3e0
-sub_a40c:
+* s7_sub_c264  -  System 7 $C264 (identical code).
+s7_sub_c264:
   00a40c:  22 1f                move.l   (a7)+, d1
   00a40e:  24 1f                move.l   (a7)+, d2
   00a410:  22 42                movea.l  d2, a1
@@ -15307,7 +15577,8 @@ sub_a468:
   00a46a:  20 5f                movea.l  (a7)+, a0
   00a46c:  a0 23                dc.w     $a023
   00a46e:  4e fa ff d4          jmp      $a444(pc)  ; -> La444
-sub_a472:
+* s7_sub_bfde  -  System 7 $BFDE (similar code, r=0.80).
+s7_sub_bfde:
   00a472:  22 5f                movea.l  (a7)+, a1
   00a474:  20 5f                movea.l  (a7)+, a0
   00a476:  a0 25                dc.w     $a025
@@ -15353,7 +15624,8 @@ sub_a4be:
   00a4c6:  a0 2e                dc.w     $a02e
   00a4c8:  22 41                movea.l  d1, a1
   00a4ca:  4e fa ff 78          jmp      $a444(pc)  ; -> La444
-sub_a4ce:
+* s7_sub_b14e  -  System 7 $B14E (checked by hand, r=0.29).
+s7_sub_b14e:
   00a4ce:  4e 56 00 00          link.w   a6, #$0
   00a4d2:  20 6e 00 10          movea.l  $10(a6), a0
   00a4d6:  22 6e 00 0c          movea.l  $c(a6), a1
@@ -15399,6 +15671,8 @@ sub_a51e:
   00a52c:  20 5f                movea.l  (a7)+, a0
   00a52e:  58 4f                addq.w   #$4, a7
   00a530:  4e d0                jmp      (a0)
+* HWPrivProbe  -  System 7 $C01A (identical code).
+* S7: HWPrivProbe(enable)  -  _HWPriv selector 2 = SwapDataCache: turns the
 HWPrivProbe:
   00a532:  22 5f                movea.l  (a7)+, a1
   00a534:  70 00                moveq    #$0, d0
