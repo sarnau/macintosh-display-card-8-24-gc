@@ -54,7 +54,7 @@ lists the earlier statements this work corrected.
 
 ## Bugs, documentation
 
-* 26 entries of bugs and slips in the shipping software are listed in the
+* 27 entries of bugs and slips in the shipping software are listed in the
   README with addresses and effects, among them the give-up routine's unscaled
   restore loop, the inverted cursor replay, QDDone's answer for other
   ports, and the control panel's retry that rejects a working card.
