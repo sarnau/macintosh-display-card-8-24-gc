@@ -174,7 +174,7 @@ and `$BF` set or clear the `OPS` bits SM (supervisor mode) and DI
 |---|---|---|
 | 1 | `ACEFLoad` uploads `Runtime` (sections incl. `PublicIn`, `PublicOu`, `Vec`) | held: `$44000028` is 0 (section 11) |
 | 2 | waits until `PublicOu[0]` (image+$400) reads `$32100456` -- a constant of the *uploaded file* (it is the static first word of `PublicOu`), so it only proves the upload landed | - |
-| 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the top of DRAM (+$138), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
+| 3 | pokes `image+$18` <- unit flags (+$168), `image+$00` <- `$42005300`, `image+$08` <- card address of the last byte of card RAM (+$138: `$0C1FFFFF`, the top of VRAM, without SIMMs; else the top of DRAM), `image+$14` <- card address of `(+$134 - $6D1) & ~$FF` (+$134 here is the Runtime's reservation from the same ACEFLoad; Antelope reads it as heapMax) | `Boot` polls `$4C006400` (PublicIn+0) until it reads `$42005300`, then clears it (**verified**) |
 | 4 | reads `image+$40C` (= `PublicOu+$0C`, the file's static `$4C007000`, HifComm; it does not wait for Boot, which later puts the slot in the top nibble, and `PokeHardwareLong` makes a slot address of it anyway) = mailbox address; writes `mailbox+$0C` <- ack-word address (+$140) and `mailbox+$00` <- `$73333337` ('s337') | Boot (`$2003050`) and kernel init (`$2002004`-`$200200C`) read the host flags from `PublicIn+$18` into `gr64` (**verified**) |
 | 5 | cs3 uploads and links Antelope and fills `PublicIn+$04`/`$20`-`$2C`/`$40`; cs5 writes the flags to `image+$18` and then -1 to `$44000028` (`$1DDC`) | the Am29000 starts at `Boot`, whose poll passes at once (`$42005300` is already there) |
 
@@ -3059,7 +3059,7 @@ followed by a jump); Antelope reads it through `$BB`. Set by the host
 | 19 | `$80000` | - | init: the timer runs without its interrupt (TMR.IE clear: `$7530` instead of `$01007530`) |
 | 20 | `$100000` | DRAM above `$0D000000` | init picks the heap base (`$20025CC`); services `$C1` and `$CB` |
 | 21 | `$200000` | GC card types | init: OPS.SM: the program runs in supervisor mode |
-| 23 | `$800000` | GC card types | not tested on the card; the host's `ACEFLoad` uses the same bit as "load into the top of DRAM" |
+| 23 | `$800000` | GC card types | not tested on the card; the host's `ACEFLoad` uses the same bit as "load into the top of card RAM" (VRAM on a stock card); a `Code` section goes to vaddr + `$0C000000` |
 | 24 | `$1000000` | `globals+$254` | not tested by the kernel |
 | 27 | `$8000000` | kernel | "regions registered": set by the region add (`$CC`, `$20014B4`), cleared by the remove (`$2001764`) and at init; the TLB-miss handler and the table walker `$2001C2C` test it |
 | 28 | `$10000000` | - | service `$D2` restarts the kernel |
@@ -4379,3 +4379,56 @@ The 137-bit stream PrimaryInit shifts into `$44800000` (`$22CE`-`$2406`,
 `$053`/`$093`, `$2405B`/`$2409B`, then 4 bits that are 1 on Two-Page and 2
 otherwise, then 2 bits = 1) is not the clock; see 11.3 (most likely an
 MFB configuration chain).
+
+### 11.9 Where everything goes: a stock card and with SIMMs
+
+Offsets in the slot's memory (the host sees `$sCxxxxxx`, the card
+`$4Cxxxxxx`). The boundaries are computed as follows:
+
+* **Top of RAM, unit `+$138`** (Init29K `$24C6`-`$25B2`): `$0C1FFFFF`, the
+  last byte of VRAM; `$0C2FFFFF` / `$0C3FFFFF` when TestRAMLong passes at
+  `$0C200000` / also `$0C300000` (a pass at `$0C300000` alone is error
+  `$FFFFD8E8`); the `$0D` bank tests give `$0D3FFFFF`, `$0D4FFFFF` or
+  `$0D7FFFFF`.
+* **A program's region** (ReserveEngineRegion `$2B5E`): `+$134` = (`+$138` −
+  (bss + 2·data + round1K(text) + `$400`) + `$3FF`) & ~`$3FF`, with only a
+  `$0C000000` floor; nothing compares it with the frame buffer. Antelope
+  (text `$3CAD8`, data `$2AB8`, bss `$A64`) needs `$42FD4` bytes; on a stock
+  card its base is `$0C1BD400`. Its absolute `Code` section goes to vaddr +
+  `$0C000000` = `$0C00F000` (ACEFLoad `$3736`-`$3770`), in the kernel's
+  first 64 KB.
+* **Stacks** (kernel init `$2002414`): the memory stack's top is the
+  program base ([PublicIn+`$40`]); gr127 = base − `$10000` (64 KB); the
+  register stack lies below (gr126 = gr127 − `$200`).
+* **Heap** (`$20025B0`-`$20025F0`): the break starts at the frame-buffer
+  base ([PublicOut+`$1C`]) + rowBytes × (lines + 6), with rowBytes from the
+  monitor, not the current depth, so the deepest mode is always reserved
+  (also stored at `$4C003120`). With flag bit 20 (top of RAM above
+  `$0D000000`, DRVR `$2B44`) the break is `$sD000000` instead. sbrk (`$101`)
+  refuses anything above gr127 − `$3000`. HeapCreate (`$372D4`) asks for
+  service `$C1`'s free value − `$1000` and retries 1000 bytes smaller until
+  it succeeds. PQDInit takes a `$A000` (40 KB) PQDAlloc arena; the caches
+  (CacheAlloc `$15958`: offscreens, fonts, tables) are blocks in the same
+  heap. The drawing-stream buffer is in the packet area, not in the heap.
+
+| stock card (2 MB VRAM) | contents |
+|---|---|
+| `$0C000000`-`$0C0083FF` | the Runtime's shared areas |
+| `$0C008C00` | the command packet |
+| `$0C00F000` | Antelope's `Code` stub |
+| `$0C010000` (`$0C011400` on TV) | the frame buffer |
+| frame-buffer end - `$0C1A9400` | the heap: about 421 KB with a 13" monitor, 651 KB with Two-Page, 177 KB with PAL (the smallest) |
+| `$0C1AD400`-`$0C1BD400` | the 64 KB memory stack (register stack just below) |
+| `$0C1BD400` / `$0C1FA000` / `$0C1FCAB8` | Antelope's text / data / bss |
+| `$0C1FD51C`-`$0C1FFFD4` | the saved copy of `.data` |
+
+With 2 MB of SIMMs (`+$138` = `$0C3FFFFF`) Antelope moves to `$0C3BD400`
+and the stack to `$0C3AD400`; the heap still starts at the end of the frame
+buffer and runs on through the DRAM to `$0C3A9400` (about 2.4 MB with a 13"
+monitor). With 8 MB (`$0D7FFFFF`, flag bit 20) Antelope is at `$0D7BD400`
+and the heap is `$0D000000`-`$0D7A9400` (about 7.66 MB); the VRAM above the
+frame buffer then goes unused (service `$CB`, which would grow
+`$4C003120`, has no callers). Service `$C1` then reports [PublicIn+`$08`] −
+`$1000` − break, ignoring Antelope and the stacks at the top, so HeapCreate
+retries about 340 times before its request fits. Nothing ties video modes
+or acceleration to the amount of RAM, and the control panel shows none.

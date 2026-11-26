@@ -74,6 +74,7 @@ tells.
 | Antelope `'rle '` encoder `$3A8BC` (System 6) | the repeat-line test compares `lenLongs` *bytes*, a quarter of the line (§10) | a line can be dropped as a repeat when only its first quarter matches |
 | `gc24` codec `$A19A` (System 6) | Close disposes the state handle but not the dither table (§10) | leaks `$20008` bytes per 8-bit codec instance |
 | Antelope TestCLUT | writes the RAMDAC index as a word, so the RAMDAC sees 0, not `$FE` (§11.5) | tests entry 0; passes either way |
+| Hand service `$C1` with 8 MB of SIMMs | the free-memory value ignores Antelope and the stacks at the top of RAM (§11.9) | HeapCreate retries about 340 times, 1000 bytes smaller each time, before its request fits |
 | declaration ROM `$70B4`, `$70F4` | two mode lists lack the `$FF` terminator and run into the B-bank lists (§11.8) | harmless: the Slot Manager takes the first match |
 | declaration ROM | four unreachable TV timing tables (`$3BCA`, `$4196`, `$4762`, `$4D2E`) and two unreferenced mode lists (§11.8) | left-overs |
 

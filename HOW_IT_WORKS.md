@@ -18,23 +18,43 @@ pixel maps in its own memory, while the 68k goes on. When the card cannot do
 a call, the Mac draws it itself, so nothing depends on the card handling
 everything.
 
+Apple described the card in *develop* issue 3 (July 1990, "8•24 GC: The
+Naked Truth", pp. 331-347; `develop-03_9007_July_1990.pdf` in the repo
+root). Its names: **GC QuickDraw** for the accelerator (Antelope here), the
+**Am29000 kernel** for Runtime, the **IPC software** for `gc24` and the
+`.GraphAccel` driver, and the **asynchronous buffer** for the drawing
+stream; MFB is the frame buffer controller, RDNC the NuBus controller. Apple
+rates the Am29000 at 30 MHz and 22 MIPS; the kernel's timer reload of
+`$7530` (30,000) is exactly 1 ms at that clock. The article also says
+that only one 8•24 GC accelerates, the one in the lowest slot (the others
+work as plain video cards), and that with no monitor attached the card
+stays active and accelerates other screens, reaching them with NuBus block
+transfers; the code was not traced for these.
+
 ## The hardware, as the software sees it
 
 | card address | host address | what |
 |---|---|---|
-| (instruction side) | slot base + 0 | 64 KB SRAM (8 × Motorola MCM6295, 16K×4): fast instruction memory for the Am29000 ("instruction cache" in Apple's papers); the host tests 128 KB there and needs 64 KB. Where the Am29000 sees it is not settled from the code |
+| `$02000000`-`$0200FFFF` (instructions), `$40000000`.. (data) | slot base + `$02000000` (where the kernel is loaded) and slot base + 0 (where the host tests it) | 64 KB SRAM (8 × Motorola MCM6295, 16K×4): the Am29000's instruction memory ("instruction cache" in Apple's papers). The kernel fills it exactly: `Hand` `$2000000`, `Boot` `$2003000`, `Cache` (bss) `$2003800`-`$200FFFF`; the kernel's data accesses reach it at `$40003400`/`$40003800`. Antelope runs from VRAM/DRAM, not from here. That the two host windows are the same chips is inferred |
 | `$4C000000`-`$4C1FFFFF` | slot base + `$0C000000` | 2 MB video memory (16 × Toshiba TC52425x, 256K×4), also the program memory on a stock card. The first 64 KB hold the kernel's shared areas (vector table, service table, `PublicIn`/`PublicOut`, the mailbox, the video command block, the command packet at `$4C008C00`); the frame buffer starts at `+$10000` |
-| `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM on two optional 64-pin SIMMs (empty on a stock card; Apple's kit adds 2 × 1 MB, third-party SIMMs up to 8 MB): more room for off-screen pixel maps, caches and the heap; the host probes how much |
+| `$4C200000`.., `$4D000000`.. | slot base + `$0C200000`.., `$0D000000`.. | DRAM on two optional 64-pin SIMMs (empty on a stock card; Apple's kit adds 2 × 1 MB, up to 8 MB in all; Apple's figures are 0, 2 or 8 MB): more room for off-screen pixel maps, caches and the heap; the host probes how much |
 | `$4C400000`.. | | the video memory's block-write alias (fills with one colour per write) |
 | `$44000000`.. | slot base + `$04000000` | card registers: layout, interrupts, display start and row bytes (`$44000000`, `$440000A0`), the Am29000's run control (`$44000028`) |
 | `$46800000` | slot base + `$06800000` | the DP8531 clock synthesiser |
 | `$46C00000` | slot base + `$06C00000` | the RAMDAC (a Brooktree part marked "RAMDAC 428", 357S0010-A, ©88 Apple; the AC842 of Apple's papers): colour-table index, data (R, G, B in turn) and pixel mode, on data bits 31-24 |
-| `$02000000`.. | | the kernel's code (`Hand` at `$2000000`, `Boot` at `$2003000`) |
 | low addresses | the Mac's memory | read and written over NuBus (host pixel maps, handles) |
 
 The frame buffer has two layouts, linear and 4-way word-interleaved; the
 video driver picks one per monitor and depth, and the card's fills and
 copies take faster paths in the linear one.
+
+On a stock card (no SIMMs) everything shares the 2 MB VRAM: the kernel's
+areas and the packet in the first 64 KB, then the frame buffer (sized for
+the monitor's deepest mode), then the heap for the caches and offscreens
+(about 420 KB with a 13" monitor, 650 KB with Two-Page, 180 KB with PAL),
+a 64 KB stack and, at the top, Antelope's 270 KB of code and data. SIMMs
+move Antelope to the top of the DRAM and give the heap the rest
+(`control-panel/HOST_CARD_PROTOCOL.md` 11.9).
 
 ## Video modes
 
@@ -58,8 +78,9 @@ programs. The pixel clock comes from a National DP8531 synthesiser (20 MHz
 reference; 100, 57.27, 30.24 and 15.67 MHz for the four monitors, 4 × the
 dot clock on TV): PrimaryInit loads it for the sensed monitor, and TV modes
 reload it. At 1-8 bits TV modes use the interleaved layout and set the
-RAMDAC mode's bit that System 7.1's source for the original 8•24 calls
-convolution, its anti-flicker filter. In 24-bit modes the RAMDAC's colour
+RAMDAC mode's convolution bit: Apple's anti-flicker filter for interlaced
+output, (above + 2 × pixel + below) / 4, used at 1-8 bits and never at 24
+(*develop* 3, pp. 335-336). In 24-bit modes the RAMDAC's colour
 table acts as a gamma lookup per channel.
 
 ## Two programs on the card
@@ -113,6 +134,9 @@ in card memory:
   host objects up to date (GDevices, colour tables, inverse tables, pixel
   patterns, offscreens, fonts), the host writes a selector and arguments and
   waits. The card replies "done" (1) or "not handled" (0, the Mac draws it).
+  StretchBits can reply early (`ReleaseHostEarly(1)` at `$2E3DC`, under a
+  condition not traced), so the Mac goes on while the card copies: the
+  overlap *develop* describes for CopyBits.
 * **The drawing stream.** Lines, rectangles, ovals, round rectangles, arcs,
   polygons, regions and text are not sent one by one. The host appends
   records to a buffer in card memory, and the card plays them back
@@ -132,7 +156,15 @@ to show it again.
 Programs on the Mac can also load their own code onto the card through the
 patches' module interface and run it as tasks; such code gets the
 accelerator's entry table (BitBlt, RgnBlt, the shape drawers, text,
-DrawMultiObject, address mapping).
+DrawMultiObject, address mapping). *develop* (1990) still said third
+parties could not run code on the card; this interface is in the System 7
+package only.
+
+Apple's advice to programs in the same article follows from this design:
+use NewGWorld, so an offscreen lives in card memory and CopyBits to the
+screen needs no NuBus traffic (the patches point such a PixMap at the
+card's copy), and call PortChanged, PixPatChanged and GDeviceChanged after
+changing those structures directly, since the card keeps copies.
 
 ## Debug switches, dead code and bugs
 

@@ -92,8 +92,8 @@
 *  HOST-WRITTEN FIELDS OF PublicIn ($4C006400), cross-checked with DRVR.s
 *  (see ../../HOST_CARD_PROTOCOL.md):
 *    +00 $42005300 boot go (Boot polls it)   +04 entry of the loaded program:
-*    the init code ends with PC1 <- [+04], iretinv   +08 top of card DRAM (heap
-*    end, service $20012AC)   +10 kernel heap pointer (written here by init)
+*    the init code ends with PC1 <- [+04], iretinv   +08 last byte of card RAM (heap
+*    end, service $20012AC; the VRAM top without SIMMs)   +10 kernel heap pointer (written here by init)
 *    +18 host flags -> gr64 (bit 11 = mailbox disabled, bit 20 = DRAM > $0D000000)
 *    +20/24/28/2C/30 start/end/text/data/bss of the loaded program (init copies
 *    the data section)   +40 region start (stack = +40 - $10000)

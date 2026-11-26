@@ -2620,7 +2620,8 @@ ClassifyTrapNum:
 *    +$12C l  cs4 argument             +$130 l  BASE of the image ACEFLoad put
 *             on the card (host-visible; comm header lives here, see Init29K)
 *    +$134 l  start of the card-RAM region reserved for the engine (see $2B5E)
-*    +$138 l  LAST valid card-DRAM address found by Init29K's memory probe
+*    +$138 l  LAST valid card-RAM address found by Init29K's memory probe
+*             (the VRAM top $0C1FFFFF when no SIMMs are fitted)
 *             ($0C1FFFFF.. $0C3FFFFF or $0D3FFFFF/$0D4FFFFF/$0D7FFFFF)
 *    +$13C l  pointer to the ACK word the card reports into (cleared by cs51)
 *    +$140 l  the same address as handed to the card;  +$144 l MAILBOX address read
@@ -2939,7 +2940,7 @@ ClassifyTrapNum:
 * $0D100000/$0D400000/$0D500000 with AliasCheck) respond: 0 = only the
 * 2 MB VRAM window, 1/2 = the next one or two 1 MB windows, 4/5/8 = the larger
 * configurations behind the alias windows.  Errors: $FFFFD8EA = SRAM below
-* $10000 good bytes or no DRAM at $0C000000/$0C1FFFF0; $FFFFD8E8 = the DRAM
+* $10000 good bytes or no VRAM at $0C000000/$0C1FFFF0; $FFFFD8E8 = the DRAM
 * windows are inconsistent.  Callers treat the carry/error return as failure
 * and copy it to +$17C.
   021de:  4e 56 00 00          link.w   a6, #$0
@@ -3790,8 +3791,9 @@ LoadFirmware:
 * image base +$130, publishes the layout to the card: +$20 = superslot(+$134),
 * +$24 = superslot(+$134 + text + data + bss), +$28 = text size, +$2C = data
 * size, +$30 = bss size, +$40 = superslot(+$134).  The returned value (d5) is
-* the +$134 start, so the loaded text lands at the TOP of card DRAM and the
-* Am29000 side learns the sizes from image +$20..+$40.
+* the +$134 start, so the loaded text lands at the TOP of card RAM ($0C1BD400
+* in VRAM on a stock card; nothing keeps it clear of the frame buffer, the
+* kernel puts the heap between the two) and the Am29000 side learns the sizes from image +$20..+$40.
   02b5e:  4e 56 00 00          link.w   a6, #$0
   02b62:  48 e7 0f 18          movem.l  d4-d7/a3-a4, -(a7)
   02b66:  28 2e 00 0c          move.l   $c(a6), d4

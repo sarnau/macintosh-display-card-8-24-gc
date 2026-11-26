@@ -53,8 +53,10 @@ their bodies). There are two loaders, not one:
 
 * **`Init29K` (`$23CC`, DoControl cs2)** brings the card up from scratch.
   Only card types `$2C`/`$7E` (the GC) are touched. It writes 0 to hardware
-  register `$04000028` (holds the Am29000 until cs5 writes -1), pattern-tests the card's 128 KB SRAM, probes the DRAM
-  banks at `$0C000000`/`$0D000000` in 1 MB steps (top of RAM → unit `+$138`),
+  register `$04000028` (holds the Am29000 until cs5 writes -1), pattern-tests 128 KB of the card's SRAM window (64 KB fitted, at least 64 KB
+  required), probes VRAM at `$0C000000` and the SIMM banks at `$0C200000`/
+  `$0C300000` and `$0D000000`.. (last RAM byte → unit `+$138`, `$0C1FFFFF`
+  without SIMMs),
   then runs `ACEFLoad` on the **Runtime** ACEF. `ACEFLoad` special-cases the
   section named `PublicIn`: the out-parameter it returns (unit `+$130`) is
   that section's host-visible address. `Init29K` then reads **image+$400**
@@ -104,7 +106,8 @@ magic byte's low nibble"; that was a misreading.
              gc24  (68k accelerator engine)  ◀──▶  Am29000 firmware (ACEF)
                  │  patches QuickDraw bottlenecks to route drawing to the card
                  ▲
-   user  ──▶  cdev (control panel)  — depth / gray / monitor / gamma UI,
+   user  ──▶  cdev (control panel)  — acceleration on/off (PupS+0),
+                                       depth / gray / monitor / gamma UI,
                                        status + error reporting
 ```
 
