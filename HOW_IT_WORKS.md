@@ -130,6 +130,15 @@ key per section; [`control-panel/SECOND_MASK.md`](control-panel/SECOND_MASK.md))
    uses, and enters the command loop. Turning the accelerator off writes 0
    again.
 
+If a step fails, `gc24` 32 records an error code in the driver (Control
+20; the INIT reads the last error back with Status 21) and closes the
+driver, but removes nothing: the QuickDraw patches stay installed. With the
+accelerator not running they hand every call to the Mac's own QuickDraw
+(*reading*: the patches check the driver's state before sending), so the
+machine works like one with a plain video card. When the patches give up on
+a card that stops answering, they disable the accelerator and ask for a
+restart.
+
 The feature flags (from the control panel's `PupS` resource and the card
 type) switch processor and kernel features: paging, supervisor mode,
 unaligned-access emulation, the timer, a floating-point coprocessor, and

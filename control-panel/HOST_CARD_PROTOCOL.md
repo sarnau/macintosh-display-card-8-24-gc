@@ -4377,7 +4377,8 @@ not active); it reports through Paul Mercer's ShowINIT instead of System
 is `'gc24'`). Every failure goes to one exit (System 7 `$63E`, System 6
 `$61C`) that calls `_Close` on the driver and returns -1. That exit removes
 nothing: the Gestalt function, the DCE, the locked DRVR and, because DoClose
-is a no-op, the QuickDraw patches all stay installed. Shift is tested only
+is a no-op (System 7 `$FD8`, System 6 `$1010`: `clr.w` the result, return),
+the QuickDraw patches all stay installed. Shift is tested only
 after Gestalt `'gc24'` is installed, and it exits before the driver is
 opened, so `_Close` then gets an uninitialised refnum. A missing `Date`,
 ACEF 1, ACEF 100 or `PupS` (or an empty `PupS` handle) is reported with
